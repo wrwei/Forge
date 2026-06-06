@@ -1,0 +1,82 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 05-06-2026 10:20:16
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "MovementController_Ctrl.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate MovementController_Ctrl
+P_MovementController_Ctrl = let
+	id__ = 0
+	
+	const_MovementController_Ctrl_thr = 1
+	const_MovementController_Ctrl_lv = 1
+	const_MovementController_Ctrl_evadeTime = 1
+	const_MovementController_Ctrl_stuckPeriod = 1
+	const_MovementController_Ctrl_stuckDist = 0
+	const_MovementController_Ctrl_outPeriod = 1
+	
+	
+		
+within
+	MovementController_Ctrl::O__(id__,
+			    const_MovementController_Ctrl_thr,
+			    const_MovementController_Ctrl_lv,
+			    const_MovementController_Ctrl_evadeTime,
+			    const_MovementController_Ctrl_stuckPeriod,
+			    const_MovementController_Ctrl_stuckDist,
+			    const_MovementController_Ctrl_outPeriod)
+
+assert P_MovementController_Ctrl :[deadlock-free]	
+assert P_MovementController_Ctrl;RUN({r__}) :[deadlock-free]
+assert P_MovementController_Ctrl :[deterministic]
+assert P_MovementController_Ctrl :[divergence-free]
+
+-- generate MovementController_Ctrl_stm_ref0
+P_MovementController_Ctrl_stm_ref0 = let
+	id__ = 0
+	
+	const_MovementController_thr = 1
+	const_MovementController_lv = 1
+	const_MovementController_evadeTime = 1
+	const_MovementController_stuckPeriod = 1
+	const_MovementController_stuckDist = 0
+	const_MovementController_outPeriod = 1
+	
+	
+within
+	MovementController_Ctrl::stm_ref0::O__(
+		id__,
+		const_MovementController_thr,
+		const_MovementController_lv,
+		const_MovementController_evadeTime,
+		const_MovementController_stuckPeriod,
+		const_MovementController_stuckDist,
+		const_MovementController_outPeriod
+	)
+assert P_MovementController_Ctrl_stm_ref0 :[deadlock-free]	
+assert P_MovementController_Ctrl_stm_ref0;RUN({r__}) :[deadlock-free]
+assert P_MovementController_Ctrl_stm_ref0 :[deterministic]
+assert P_MovementController_Ctrl_stm_ref0 :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_MovementController_Ctrl_stm_ref0[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_MovementController_Ctrl_stm_ref0
+-- timed deadlock free
+assert prioritise(P_MovementController_Ctrl[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_MovementController_Ctrl
