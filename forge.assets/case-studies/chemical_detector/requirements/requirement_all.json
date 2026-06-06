@@ -1,0 +1,814 @@
+{
+  "requirements": [
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "SystemArchitecture",
+      "id": "CD-ARCH1",
+      "description": "The Chemical Detector system is an autonomous mobile robot that searches for the source of a target chemical in an unknown environment. It carries a Vehicle with gas sensors, an obstacle detector, and an odometer, and is capable of moving with configurable linear velocity and turning to any of four directions (Left, Right, Back, Front) relative to its body. The system operates in a continuous sense-analyse-act loop until the chemical source is confirmed.",
+      "priority": "1",
+      "types": [
+        "architecture"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "ControllerArchitecture",
+      "id": "CD-ARCH2",
+      "description": "The Chemical Detector is composed of three subsystems: (1) a sensing-and-actuation surface — the Vehicle — that exposes sensor events (gas, obstacle, odometer) and provides movement operations (move, randomWalk, shortRandomWalk); (2) a gas-analysis subsystem that classifies sensor readings and decides whether to keep searching, change direction towards a stronger signal, or stop because the chemical source has been found; and (3) a movement subsystem that performs random-walk search, follows direction commands, handles obstacle avoidance, and recovers when stuck. The two reasoning subsystems communicate only via the turn, stop, and resume events; the movement subsystem emits the flag event to the Vehicle when the chemical source is found.",
+      "priority": "1",
+      "types": [
+        "architecture"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "StatusEnum",
+      "id": "CD-DM1",
+      "description": "The Status enumeration captures the outcome of a single gas-analysis cycle. It has exactly two values: noGas (current reading does not indicate the target chemical) and gasD (current reading indicates the target chemical is present).",
+      "priority": "1",
+      "types": [
+        "data_type"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "AngleEnum",
+      "id": "CD-DM2",
+      "description": "The Angle enumeration represents a turn direction relative to the robot body. It has exactly four values: Left, Right, Back, Front. The movement subsystem uses Angle values as the operand of the move operation.",
+      "priority": "1",
+      "types": [
+        "data_type"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "LocEnum",
+      "id": "CD-DM3",
+      "description": "The Loc enumeration represents the side of the robot on which an obstacle has been detected. It has exactly three values: left, right, front. The movement subsystem receives Loc values through the obstacle event and passes them to the changeDirection operation.",
+      "priority": "1",
+      "types": [
+        "data_type"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "ChemType",
+      "id": "CD-DM4",
+      "description": "Chem is an opaque type representing the identity of a chemical species. Sensor readings carry a Chem value to identify which chemical the reading is for. Equality is the only operation needed on Chem.",
+      "priority": "2",
+      "types": [
+        "data_type"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "IntensityType",
+      "id": "CD-DM5",
+      "description": "Intensity is a totally-ordered type representing the strength of a sensor reading. The system compares two intensities via the goreq function (see CD-Fn4). Comparison is the only operation needed on Intensity.",
+      "priority": "2",
+      "types": [
+        "data_type"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "GasSensorRecord",
+      "id": "CD-DM6",
+      "description": "A GasSensor is a record with two fields: c (the chemical identity) and i (the measured intensity for that chemical). The Vehicle's gas event carries a multi-sensor reading: an ordered list of GasSensor values captured at one point in time.",
+      "priority": "1",
+      "types": [
+        "data_type"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "GasSensorReading",
+      "id": "CD-DM7",
+      "description": "A GasSensorReading is an ordered list of GasSensor values produced by the Vehicle's gas event. The position in the list (1-based) encodes which sensor produced each value and maps to a sensing direction. The gas-analysis subsystem classifies the most recent reading.",
+      "priority": "1",
+      "types": [
+        "data_type"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "IntensityThreshold",
+      "id": "CD-Const1",
+      "description": "The constant thr (Intensity) is the intensity threshold for declaring a chemical source 'found'. When the peak intensity of the current gas reading is at or above thr, the gas-analysis subsystem transitions to its final state and the movement subsystem emits the flag event. The value is configured at system startup and does not change at run time.",
+      "priority": "1",
+      "types": [
+        "constants"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "LinearVelocity",
+      "id": "CD-Const2",
+      "description": "The constant lv (real) is the linear velocity (in arbitrary units) at which the Vehicle moves during normal travel. It is the first argument to every move(lv, a) call made by the movement subsystem. The value is configured at system startup.",
+      "priority": "1",
+      "types": [
+        "constants"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "EvadeTime",
+      "id": "CD-Const3",
+      "description": "The constant evadeTime (nat) is the duration the system waits inside the Avoiding state after issuing a changeDirection command. This gives the changeDirection action time to complete before the next behaviour fires.",
+      "priority": "2",
+      "types": [
+        "constants"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "StuckPeriod",
+      "id": "CD-Const4",
+      "description": "The constant stuckPeriod (nat) is the time-window threshold for the stuck-detection rule. If less time than stuckPeriod has elapsed since the first obstacle of the current evasion sequence, the robot is considered to be making progress and continues avoiding; otherwise the recovery behaviour activates.",
+      "priority": "2",
+      "types": [
+        "constants"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "StuckDist",
+      "id": "CD-Const5",
+      "description": "The constant stuckDist (real) is the distance threshold for stuck detection. If the robot has travelled more than stuckDist between the first and second obstacles of an evasion sequence (d1 - d0 > stuckDist), it is considered to have escaped; otherwise it is considered stuck and the recovery behaviour activates.",
+      "priority": "2",
+      "types": [
+        "constants"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "OutPeriod",
+      "id": "CD-Const6",
+      "description": "The constant outPeriod (nat) is the duration the robot spends in the GettingOut state executing a shortRandomWalk after stuck detection has fired. It bounds the recovery manoeuvre before the robot returns to normal navigation.",
+      "priority": "2",
+      "types": [
+        "constants"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "AnalysisFunction",
+      "id": "CD-Fn1",
+      "description": "The analysis function takes a sequence of GasSensor readings and returns a Status: noGas if no reading indicates the target chemical, gasD otherwise. This is the primary classifier used by the gas-analysis subsystem to decide whether the Vehicle should keep moving or stop.",
+      "priority": "1",
+      "types": [
+        "function"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "IntensityFunction",
+      "id": "CD-Fn2",
+      "description": "The intensity function takes a non-empty sequence of GasSensor readings and returns the maximum intensity across the sequence. Precondition: the input sequence is non-empty. Postcondition: the result is greater than or equal to every i field in the input, and the result equals some sensor's i field.",
+      "priority": "1",
+      "types": [
+        "function"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "LocationFunction",
+      "id": "CD-Fn3",
+      "description": "The location function takes a non-empty sequence of GasSensor readings and returns the Angle of the sensor with the highest intensity. Precondition: the input sequence is non-empty. Postcondition: there exists an index x such that gs[x].i equals intensity(gs) and the result equals angle(x). Used to steer the robot towards the strongest signal.",
+      "priority": "1",
+      "types": [
+        "function"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "IntensityCompare",
+      "id": "CD-Fn4",
+      "description": "The goreq function (intensity-greater-or-equal) compares two Intensity values and returns true iff the first is at least as large as the second. It is the only ordering predicate needed on Intensity and is used in the threshold check (intensity(gs) >= thr) and inside the intensity function's correctness condition.",
+      "priority": "1",
+      "types": [
+        "function"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "GasEvent",
+      "id": "CD-Evt1",
+      "description": "The gas event carries one multi-sensor gas reading (an ordered list of GasSensor values). The Vehicle emits gas; the gas-analysis subsystem receives the reading and classifies it.",
+      "priority": "1",
+      "types": [
+        "event"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "ObstacleEvent",
+      "id": "CD-Evt2",
+      "description": "The obstacle event carries a value of type Loc indicating the side of the robot on which an obstacle has been detected. The Vehicle emits obstacle; the movement subsystem receives it and stores the value in the l variable for the movement subsystem.",
+      "priority": "1",
+      "types": [
+        "event"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "OdometerEvent",
+      "id": "CD-Evt3",
+      "description": "The odometer reports the current cumulative distance travelled by the Vehicle. The movement subsystem samples this distance (into d0 or d1) to support stuck detection.",
+      "priority": "2",
+      "types": [
+        "event"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "TurnEvent",
+      "id": "CD-Evt4",
+      "description": "The turn event carries a value of type Angle indicating the direction the robot should face next. The gas-analysis subsystem emits turn (with the result of the location function); the movement subsystem consumes it to update the a variable and trigger movement transitions.",
+      "priority": "1",
+      "types": [
+        "event"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "StopEvent",
+      "id": "CD-Evt5",
+      "description": "The stop signal event (no payload) is emitted by the gas-analysis subsystem when the chemical source has been confirmed (peak intensity is at or above thr). The movement subsystem consumes stop to transition the movement subsystem to the Found state.",
+      "priority": "1",
+      "types": [
+        "event"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "ResumeEvent",
+      "id": "CD-Evt6",
+      "description": "The resume signal event (no payload) is emitted by the gas-analysis subsystem after analysing a no-gas reading. The movement subsystem consumes resume to return its movement subsystem to the Waiting state and continue searching.",
+      "priority": "1",
+      "types": [
+        "event"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "FlagEvent",
+      "id": "CD-Evt7",
+      "description": "The flag signal event (no payload) is emitted by the movement subsystem upon entering the Found state. It signals to the Vehicle that the chemical source has been located so the platform may halt and report.",
+      "priority": "1",
+      "types": [
+        "event"
+      ]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationMove",
+      "id": "CD-OP1",
+      "description": "The Vehicle provides a move operation taking a linear velocity and a body-relative direction (Left, Right, Back, Front). Calling move causes the Vehicle to move at that velocity in that direction; the motion continues until a subsequent move call supersedes it. Commanding zero velocity (facing Front) halts the Vehicle.",
+      "priority": "1",
+      "types": [
+        "operation"
+      ]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationRandomWalk",
+      "id": "CD-OP2",
+      "description": "The randomWalk() operation is provided by the Vehicle. It performs an unbounded random-walk search. The robot invokes randomWalk while in the Waiting state to keep moving between sensor readings.",
+      "priority": "2",
+      "types": [
+        "operation"
+      ]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationShortRandomWalk",
+      "id": "CD-OP3",
+      "description": "The shortRandomWalk() operation is provided by the Vehicle and runs for a bounded period of time. The robot invokes shortRandomWalk on entry to the GettingOut state to perform a recovery manoeuvre when stuck detection has fired.",
+      "priority": "2",
+      "types": [
+        "operation"
+      ]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationChangeDirection",
+      "id": "CD-OP4",
+      "description": "The changeDirection(l : Loc) operation is invoked from the Avoiding-state entry behaviour. Its specified behaviour steers away from the detected obstacle: an obstacle on the left turns the robot right, an obstacle on the right turns it left, and an obstacle in front turns it back, in each case moving at the linear-velocity constant.",
+      "priority": "1",
+      "types": [
+        "operation"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_gs",
+      "id": "CD-GA-Var1",
+      "description": "The gas-analysis subsystem retains the most recent gas reading, replacing it whenever a new gas event arrives and using it as the input to the analysis, intensity, and location computations. It is initially empty.",
+      "priority": "1",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_sts",
+      "id": "CD-GA-Var2",
+      "description": "The gas-analysis subsystem maintains a state variable sts of type Status. sts is assigned in the Analysis state entry action (sts = analysis(gs)) and used as a guard in the transitions leaving Analysis.",
+      "priority": "1",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_ins",
+      "id": "CD-GA-Var3",
+      "description": "The gas-analysis subsystem maintains a state variable ins of type Intensity. ins is assigned in the GasDetected state entry action (ins = intensity(gs)) and compared against thr in the transitions leaving GasDetected.",
+      "priority": "1",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_anl",
+      "id": "CD-GA-Var4",
+      "description": "The gas-analysis subsystem maintains a state variable anl of type Angle. anl is assigned during the GasDetected -> Reading transition (anl = location(gs)) and immediately sent over the turn event in the same transition action.",
+      "priority": "2",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_a",
+      "id": "CD-MV-Var1",
+      "description": "The movement subsystem remembers the most recent commanded direction, updating it whenever a turn event arrives, and uses it when starting or restarting motion.",
+      "priority": "1",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_d0",
+      "id": "CD-MV-Var2",
+      "description": "The movement subsystem records d0, the distance travelled sampled when the current evasion sequence begins (on entry to Avoiding). It is used by stuck detection (the robot is judged to have advanced when d1 - d0 exceeds stuckDist).",
+      "priority": "2",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_d1",
+      "id": "CD-MV-Var3",
+      "description": "The movement subsystem records d1, the distance travelled sampled when a second obstacle is hit during an evasion sequence. Together with d0 it drives stuck detection.",
+      "priority": "2",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_l",
+      "id": "CD-MV-Var4",
+      "description": "The movement subsystem remembers the side of the most recent obstacle, updating it on each obstacle event, and uses it when steering away (changeDirection).",
+      "priority": "1",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Clock_T",
+      "id": "CD-MV-Clock1",
+      "description": "The movement subsystem tracks the time elapsed since the start of the current evasion sequence, restarting this timing whenever a fresh evasion begins (on entry to Avoiding). The elapsed time is compared against stuckPeriod when deciding, in AvoidingAgain, whether the robot is stuck.",
+      "priority": "2",
+      "types": [
+        "variable"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_StateNoGas",
+      "id": "CD-GA-FR1",
+      "description": "NoGas is a state of the gas-analysis subsystem reached after analysis classifies a reading as not indicating the target chemical. NoGas has no entry, during, or exit actions. The only transition out of NoGas returns to Reading; the resume event is sent on the way in.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_StateReading",
+      "id": "CD-GA-FR2",
+      "description": "Reading is the initial state of the gas-analysis subsystem: control transitions from the initial state to Reading on system start. Reading has no entry, during, or exit actions. The only transition out of Reading consumes a gas event and moves to Analysis.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_StateAnalysis",
+      "id": "CD-GA-FR3",
+      "description": "Analysis is the state where the gas-analysis subsystem classifies the most recent reading. On entry, the analysis function is applied to gs and the result is assigned to sts. Analysis has two outgoing transitions, both guarded by sts and both leaving Analysis on the same step.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_StateGasDetected",
+      "id": "CD-GA-FR4",
+      "description": "GasDetected is the state entered when analysis has classified the reading as gasD. On entry the peak intensity of the reading is computed. GasDetected has two outcomes, decided by whether the peak intensity is at or above the threshold thr: at or above, the source is found, so the subsystem emits stop and concludes; below, it returns to Reading, steering toward the strongest signal and continuing the search.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_StateWaiting",
+      "id": "CD-MV-FR1",
+      "description": "Waiting is the initial state of the movement subsystem. The during action is randomWalk(), so while no event is being processed the robot performs unbounded random-walk search. Waiting receives turn (-> Going), stop (-> Found), and resume (-> Waiting self-loop) events.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_StateGoing",
+      "id": "CD-MV-FR2",
+      "description": "Going is the state where the robot moves with linear velocity lv in direction a. The entry action move(lv, a) starts the motion. Going self-loops on a new turn event (re-issues move with the new angle), transitions to Found on stop, to Avoiding on obstacle, and to Waiting on resume.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_StateFound",
+      "id": "CD-MV-FR3",
+      "description": "Found is the state entered when the chemical source has been confirmed. On entry the movement subsystem sends the flag event to the Vehicle and issues a halt command (zero velocity). Once in Found the movement subsystem remains stopped.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_StateAvoiding",
+      "id": "CD-MV-FR4",
+      "description": "Avoiding is the state entered when an obstacle is detected during normal travel. On entry the movement subsystem records the current distance travelled, steers away from the obstacle (changeDirection), and waits evadeTime for the turn to complete. Avoiding leaves to TryingAgain on a turn event, to Found on stop, and to Waiting on resume.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_StateTryingAgain",
+      "id": "CD-MV-FR5",
+      "description": "TryingAgain is the state where the robot resumes movement after an avoidance manoeuvre, restarting motion in the most recent commanded direction. TryingAgain self-loops on a new turn event, leaves to Found on stop, to Waiting on resume, and to AvoidingAgain on a fresh obstacle (recording the current distance to seed stuck detection).",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_StateAvoidingAgain",
+      "id": "CD-MV-FR6",
+      "description": "AvoidingAgain is the state entered after a second obstacle is hit during a single evasion sequence. It has two outcomes: if the robot is judged to be making progress (less than stuckPeriod has elapsed since the evasion began, or it has advanced more than stuckDist), it returns to Avoiding; otherwise it is stuck and proceeds to GettingOut. It also leaves to Found on stop and to Waiting on resume.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_StateGettingOut",
+      "id": "CD-MV-FR7",
+      "description": "GettingOut is the recovery state entered when stuck detection has fired. The entry action sequences shortRandomWalk() (a terminating random-walk) and wait(outPeriod) (bounded wait). GettingOut transitions to Going on turn, to Found on stop, and to Waiting on resume.",
+      "priority": "1",
+      "types": [
+        "state"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_Init",
+      "id": "CD-GA-Beh1",
+      "description": "On system startup, the gas-analysis subsystem transitions from its initial state to Reading. No guard, no trigger, no action.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_Reading_to_Analysis",
+      "id": "CD-GA-Beh2",
+      "description": "In Reading, on receiving a gas event, the gas-analysis subsystem adopts the carried reading and begins classifying it (the Analysis behaviour).",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_NoGas_to_Reading",
+      "id": "CD-GA-Beh3",
+      "description": "In NoGas, the gas-analysis subsystem transitions back to Reading. No guard, no trigger, no action. This is an autonomous transition that allows the next reading to be collected.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_Analysis_to_NoGas",
+      "id": "CD-GA-Beh4",
+      "description": "In Analysis, when the classification is noGas, the gas-analysis subsystem emits the resume event (so the movement subsystem returns to searching) and proceeds to await the next reading.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_Analysis_to_GasDetected",
+      "id": "CD-GA-Beh5",
+      "description": "In Analysis, when the classification is gasD, the gas-analysis subsystem proceeds to evaluate the detected signal's intensity (the GasDetected behaviour).",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_GasDetected_to_Final",
+      "id": "CD-GA-Beh6",
+      "description": "In GasDetected, when the peak intensity is at or above the threshold thr, the gas-analysis subsystem emits the stop event (so the movement subsystem halts) and concludes its search, processing no further readings.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "GA_GasDetected_to_Reading",
+      "id": "CD-GA-Beh7",
+      "description": "In GasDetected, when the peak intensity is below the threshold thr, the gas-analysis subsystem chooses the direction of the strongest signal and emits a turn event carrying that direction, then returns to Reading to continue searching.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Init",
+      "id": "CD-MV-Beh1",
+      "description": "On system startup, the movement subsystem transitions from its initial state to Waiting. No guard, no trigger, no action.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Waiting_to_Going",
+      "id": "CD-MV-Beh2",
+      "description": "In Waiting, on a turn event, the movement subsystem begins moving (the Going behaviour) in the carried direction.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Waiting_self_resume",
+      "id": "CD-MV-Beh3",
+      "description": "In Waiting, on receiving the resume event, the movement subsystem self-loops back to Waiting. Trigger: resume. No guard, no action. (Resume in Waiting is effectively a no-op but is permitted so cross-state resume transitions are uniformly handled.)",
+      "priority": "2",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Waiting_to_Found",
+      "id": "CD-MV-Beh4",
+      "description": "In Waiting, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Going_self_turn",
+      "id": "CD-MV-Beh5",
+      "description": "In Going, on a turn event, the movement subsystem stays in Going and re-issues its move in the newly carried direction.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Going_to_Found",
+      "id": "CD-MV-Beh6",
+      "description": "In Going, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Going_to_Avoiding",
+      "id": "CD-MV-Beh7",
+      "description": "In Going, on an obstacle event, the movement subsystem begins avoiding the obstacle (the Avoiding behaviour) and starts timing the new evasion sequence.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Going_to_Waiting",
+      "id": "CD-MV-Beh8",
+      "description": "In Going, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action.",
+      "priority": "2",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Found_to_Final",
+      "id": "CD-MV-Beh9",
+      "description": "Once in Found, the movement subsystem stays halted; it has already emitted the flag event and stopped the platform on entry.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Avoiding_to_TryingAgain",
+      "id": "CD-MV-Beh10",
+      "description": "In Avoiding, on a turn event, the movement subsystem proceeds to TryingAgain (resuming motion).",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Avoiding_to_Found",
+      "id": "CD-MV-Beh11",
+      "description": "In Avoiding, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_Avoiding_to_Waiting",
+      "id": "CD-MV-Beh12",
+      "description": "In Avoiding, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action.",
+      "priority": "2",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_TryingAgain_self_turn",
+      "id": "CD-MV-Beh13",
+      "description": "In TryingAgain, on a turn event, the movement subsystem stays in TryingAgain and re-issues its move in the newly carried direction.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_TryingAgain_to_Found",
+      "id": "CD-MV-Beh14",
+      "description": "In TryingAgain, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_TryingAgain_to_Waiting",
+      "id": "CD-MV-Beh15",
+      "description": "In TryingAgain, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action.",
+      "priority": "2",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_TryingAgain_to_AvoidingAgain",
+      "id": "CD-MV-Beh16",
+      "description": "In TryingAgain, on a fresh obstacle event, the movement subsystem proceeds to AvoidingAgain, recording the current distance travelled to seed stuck detection.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_AvoidingAgain_to_Avoiding",
+      "id": "CD-MV-Beh17",
+      "description": "In AvoidingAgain, when the robot is judged to be making progress (less than stuckPeriod has elapsed since the evasion began, or it has advanced more than stuckDist), the movement subsystem returns to Avoiding and restarts the evasion timer.",
+      "priority": "2",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_AvoidingAgain_to_GettingOut",
+      "id": "CD-MV-Beh18",
+      "description": "In AvoidingAgain, when the robot is judged to be stuck (at least stuckPeriod has elapsed since the evasion began and it has advanced no more than stuckDist), the movement subsystem proceeds to GettingOut.",
+      "priority": "2",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_AvoidingAgain_to_Found",
+      "id": "CD-MV-Beh19",
+      "description": "In AvoidingAgain, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_AvoidingAgain_to_Waiting",
+      "id": "CD-MV-Beh20",
+      "description": "In AvoidingAgain, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action.",
+      "priority": "2",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_GettingOut_to_Going",
+      "id": "CD-MV-Beh21",
+      "description": "In GettingOut, on a turn event, the movement subsystem resumes moving (the Going behaviour) in the carried direction.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_GettingOut_to_Found",
+      "id": "CD-MV-Beh22",
+      "description": "In GettingOut, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action.",
+      "priority": "1",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MV_GettingOut_to_Waiting",
+      "id": "CD-MV-Beh23",
+      "description": "In GettingOut, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action.",
+      "priority": "2",
+      "types": [
+        "transition"
+      ]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "UniqueTransitions",
+      "id": "CD-DC1",
+      "description": "Each behavioural requirement (CD-GA-Beh1..7 and CD-MV-Beh1..23) maps to exactly one transition. There are no duplicate transitions for the same source state and trigger event combination.",
+      "priority": "2",
+      "types": [
+        "constraint"
+      ]
+    }
+  ]
+}

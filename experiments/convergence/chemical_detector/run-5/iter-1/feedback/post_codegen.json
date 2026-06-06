@@ -1,0 +1,63 @@
+{
+  "phase": "codegen",
+  "status": "complete",
+  "summary": "Iter-1 cold codegen for chemical_detector (run-8, condition B): 17 Java files under chemdetector/ implementing two controllers (GasAnalysis, Movement), Vehicle/Actuator surfaces, Telemetry sensor service, events, datamodel, constants. All 81 requirement IDs traced in result_codegen.json.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Final states rerouted to live modes (Done / Found self-loop)",
+      "detail": "CD-GA-Beh6 and CD-MV-Beh9 specify transitions to final state j1. Per CLAUDE.md, the theory-generated controller must not contain a Final state (unprovable deadlock-freedom residual). GasAnalysis therefore transitions GasDetected->Done (live mode, event self-loop on gas) while still sending stop; Movement transitions into Found and stays there (event self-loop on stop) while still emitting flag and halting via move(0, Front)."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Chem and Intensity realised as primitives",
+      "detail": "CD-DM4 Chem is an int (nat) compared by ==; CD-DM5 Intensity is a double (real) ordered by goreq. Dedicated wrapper types would force method-chain expressions that the extraction rules ban."
+    },
+    {
+      "kind": "design_choice",
+      "title": "odometer realised as sensor method, not input event",
+      "detail": "CD-Evt3 describes odometer as an event, but its uses (CD-MV-FR4 entry 'odometer ? d0', CD-MV-Beh16 action 'odometer ? d1') are receive-AS-ACTION communications, which the pipeline's action statement set does not include. Realised as zero-arg Telemetry.odometer() read in the corresponding transition actions (d0 = odometer(); d1 = odometer())."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Vehicle operations as plain methods, no operation classes",
+      "detail": "CD-OP1..4 are Vehicle-provided motion operations (move, randomWalk, shortRandomWalk, changeDirection), not controller-side computation groups, so no compute()-style operation classes were generated; they are methods on Vehicle invoked from transition actions."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Guard totality encoded as predicate + its negation",
+      "detail": "Two-way autonomous splits (Analysis on sts, GasDetected on ins>=thr, AvoidingAgain on makingProgress) use one named predicate and its literal negation (b / !b) so the extracted guard cover is trivially total for the provers, instead of two independently-named predicates."
+    },
+    {
+      "kind": "invented_default",
+      "title": "analysis() target-chemical criterion",
+      "detail": "A reading indicates the target chemical iff c == targetChem AND i > 0.0. The spec does not define the per-sensor detection criterion."
+    },
+    {
+      "kind": "invented_default",
+      "title": "angle() index-to-direction mapping",
+      "detail": "1->Front, 2->Right, 3->Back, 4->Left, out-of-range->Front. The spec says position maps to direction but gives no table."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Constant values",
+      "detail": "thr=1.0, lv=1.0, evadeTime=1, stuckPeriod=1, stuckDist=1.0, outPeriod=1, targetChem=1. Spec says configured at startup; values chosen inside the FDR4 {0..1} instantiation ranges."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Safe defaults for empty readings",
+      "detail": "intensity([]) = 0.0, location([]) = Front (via angle(0)), analysis([]) = noGas, per the sensor-layer safe-default rule; spec preconditions assume non-empty input."
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "goreq used directly in guards vs inlined comparison",
+      "detail": "The threshold guard is written ins >= thr (plain comparison) rather than goreq(ins, thr) to keep the extracted guard a simple comparison; goreq exists on Telemetry and is used inside intensity()/location() per CD-Fn4."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Waiting 'during randomWalk()' encoded as head-of-mode-block call",
+      "detail": "CD-MV-FR1 specifies during action randomWalk(); encoded as vehicle.randomWalk() at the head of the Waiting mode block, the pattern the extraction lifts as the state action."
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile through vacuity) and iterate on feedback."
+}

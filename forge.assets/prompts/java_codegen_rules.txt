@@ -1,0 +1,170 @@
+JAVA CODE GENERATION RULES
+
+IMPORTANT: When the user specifies a requirement file to work from, read ONLY that file.
+Do NOT read or reference other requirement files unless they are explicitly mentioned in
+the specified file. Only generate code for the requirements contained in the given file.
+
+Target: Java 17, Gradle 8.12+, JUnit Jupiter 5.11+
+
+Language features to use:
+- Records for immutable value types
+- Sealed interfaces for algebraic data types
+- var for local variable type inference
+- Optional and OptionalInt for nullable return values
+
+Language features NOT to use:
+- Do NOT use lambda expressions, streams (.stream(), .filter(), .map(), .anyMatch(), etc.),
+  method references (::), or functional interfaces (Function, Predicate, Consumer, Supplier).
+  Use only imperative for-loops and direct assignments. This is REQUIRED for formal model
+  extraction — lambdas and streams cannot be mapped to the RoboChart specification model.
+- Do NOT use pattern-matching instanceof (e.g., `event instanceof Foo f`). Use traditional
+  instanceof followed by an explicit cast on a separate line:
+  if (event instanceof SomeEvent) {
+      SomeEvent se = (SomeEvent) event;
+      ...
+  }
+- Do NOT use switch expressions with pattern matching
+- Do NOT use ternary conditional expressions (condition ? valueIfTrue : valueIfFalse).
+  Use plain if-else statements instead. This is REQUIRED for formal model extraction —
+  the ternary operator cannot be mapped to the RoboChart specification model.
+  WRONG:  boolean safe = idx == -1 ? true : sensor.distance(idx) > limit;
+  RIGHT:  boolean safe = sensor.distance(idx) > limit;
+  (The sentinel check is handled elsewhere; predicates must be simple comparisons.)
+
+Package structure:
+- Derive the base package from the system name and domain (e.g., com.example.controller)
+- Organise sub-packages by concern (e.g., sensor, actuator, event, controller)
+
+Reserved-word collisions (RoboChart):
+- The Java identifiers below collide with reserved keywords in the RoboChart
+  textual notation (.rct), into which the pipeline's M2T phase transcodes the
+  extracted model. The M2T-RCT emitter does NOT escape Java identifiers, so
+  any identifier the ETL passes through verbatim must avoid these names.
+- RoboChart-reserved identifiers (case-sensitive):
+    event, state, transition, action, trigger, condition,
+    clock, entry, during, exit, module, connection, requires, uses,
+    interface, function, datatype, enumeration, var, const, stm, wait
+- WHERE the collision matters depends on what the ETL extracts:
+  * SAFE — does NOT reach the .rct file as a verbatim identifier:
+    - The controller's step() method parameter (the controller class itself
+      becomes a RoboChart state machine; step() isn't extracted as a
+      RoboChart function, so the parameter name is invisible). The canonical
+      `public void step(InputEvent event) { ... }` shape is fine.
+    - Local variables inside any method body (locals don't make it into
+      the RoboChart model at all).
+    - Java type names like `InputEvent`, `OutputEvent`, sealed-interface
+      records (these become RoboChart event channels by name, but the
+      colliding word is only the per-record name, not the interface name).
+  * UNSAFE — DOES reach the .rct file as a verbatim identifier and WILL
+    cause Phase 5b (CSP generation) to abort with
+    "mismatched input ... expecting ')'" or similar:
+    - Parameter names of any Sensor / Operation / helper method that the
+      ETL extracts as a RoboChart function. Sensor methods referenced
+      from controller guards or actions become `function <name>(p : T) : R`
+      declarations in the .rct — and the parameter name `p` is taken
+      verbatim. A Java `double currentOdometer(double event)` becomes the
+      unparseable `function currentOdometer ( event : real ) : real`.
+    - Names of Ctrl_State variables (fields the controller exposes as
+      state). A Java field `private int event;` on the controller becomes
+      the unparseable `var event : nat` in the Ctrl_State interface.
+    - Names of public RoboChart-relevant fields on Sensor / Vehicle /
+      Operation classes that the ETL lifts into interfaces.
+- Common substitutions for the UNSAFE positions:
+    sensor-method parameter named `event` → `value`, `payload`, `signal`
+    controller state field named `state`  → `currentMode`, `mode`, `status`
+    method named `wait(n)`                → `pause(n)`, `delay(n)`
+                                            (annotated `@RoboChartWait` —
+                                            the ETL recognises these as
+                                            RoboChart `wait` calls
+                                            regardless of the Java name)
+    field named `clock`                   → `tick`, `timer`, `cycleClock`
+
+Code style:
+- No wildcard imports
+- Final fields by default, mutable only when required
+- Package-private class visibility unless public access is needed
+- Javadoc on public API only, no unnecessary comments
+- No System.out.println in library code (only in demo/main classes)
+
+Controller style:
+- The controller shall use a SINGLE-METHOD, MODE-NESTED IF-ELSE state machine
+- One public method: step(InputEvent event) that handles both event-triggered and autonomous transitions
+- Track current mode as a simple enum field
+- Use a PURE TWO-LEVEL if-else structure:
+  1. Outer if-else chain selects the current mode (EXACTLY one block per mode, using currentMode == X only)
+  2. Inner if-else chain within each mode block selects transitions, ordered by priority
+  NO EXCEPTIONS: every outer branch must be currentMode == X. Do NOT use currentMode != X at the outer level.
+  High-priority transitions that apply across multiple modes (e.g., operator overrides, emergency stops)
+  must be DUPLICATED as the first inner branches in each applicable mode block, giving them highest
+  priority within that mode.
+- NAMED BOOLEAN PREDICATES: Before the if-else chain, declare named boolean variables for ALL guard conditions.
+  Use descriptive names that encode the sensor/function, reference, and comparison direction
+  (e.g., boolean velBelowThreshold = ...; boolean obstaclePresent = ...).
+  Reuse the same variable when the same condition appears in multiple modes.
+  Do NOT write complex expressions inline in if-conditions — only use named booleans, event instanceof, and currentMode checks.
+  Each predicate RHS MUST be a SIMPLE comparison or boolean expression using only:
+    - sensor/operation method calls: sensor.distance(idx), calcVel.speed()
+    - constants: MyConstants.SAFE_THRESHOLD
+    - arithmetic and comparisons: <=, >=, <, >, ==, !=, +, -, *, /
+    - boolean operators: &&, ||, !
+    - previously-declared named booleans
+  Do NOT use ternary expressions (?:), method chains, or conditional logic in predicates.
+  Do NOT add sentinel checks (e.g., index == -1) as ternary guards around comparisons.
+  Do NOT declare sentinel-existence predicates (e.g., itemExists = idx != -1,
+  targetExists = target != -1) or use them as guard prefixes. The sentinel/no-data
+  case is handled by the Sensor and Operation layers, which return safe default values
+  when no data exists. Controller predicates must call sensor/operation methods
+  directly without existence checks.
+  WRONG: boolean safe = idx == -1 ? true : sensor.distance(idx) > 1.0;
+  WRONG: boolean targetExists = target != -1;
+         boolean safe = !targetExists || sensor.distance(target) > 1.0;
+  RIGHT: boolean safe = sensor.distance(idx) > 1.0;
+  RIGHT: boolean distTargetAbove1 = sensor.distance(target) > 1.0;
+  This is REQUIRED for formal model extraction; ternary expressions and sentinel
+  guards become opaque and unverifiable.
+- Assign currentMode directly in each branch; fire entry actions inline
+- Do NOT use: event queues, threads, while-loops, Transition records, TransitionTable,
+  lambdas, streams, method references, or functional interfaces
+- Do NOT split transitions across multiple methods
+
+Operation compute() style:
+- Operation compute() methods MUST use only direct `this.field = expression` assignments
+- Do NOT declare local intermediate variables in compute() — every assignment RHS must be a
+  single expression using only: sensor.method() calls, Math.sqrt(), arithmetic (+, -, *, /),
+  boolean operators (&&, ||, !), comparisons (<=, >=, <, >, ==, !=), and previously-assigned
+  fields of the same class (this.field or bare field name)
+- Do NOT use lambda expressions, streams, method references, or functional interfaces
+  anywhere in compute() methods. Use only imperative for-loops and direct field assignments.
+- This is REQUIRED for formal model extraction; lambdas, streams, and local variables cannot
+  be mapped to the RoboChart specification model
+
+RoboChart type annotations:
+- Generate a @RoboChartType annotation class in an `annotation` subpackage:
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+    public @interface RoboChartType {
+        String value();
+    }
+- Annotate fields and parameters whose Java type does not directly convey the RoboChart type:
+  - int fields/parameters representing natural numbers (indices, counts, non-negative quantities): @RoboChartType("nat")
+  - double fields/parameters that map to RoboChart real: @RoboChartType("real")
+  - int fields/parameters that map to RoboChart int (signed integers): no annotation needed (default mapping)
+  - boolean fields/parameters: no annotation needed (direct mapping)
+- Apply the annotation ONLY on field declarations, method parameters, and method return types.
+  Do NOT annotate local variables, generic type arguments, or type-use positions.
+  CORRECT:
+    @RoboChartType("nat")
+    private int targetIdx = -1;
+
+    public double distance(@RoboChartType("nat") int index) { ... }
+  WRONG (will not compile):
+    @RoboChartType("real") double vel = calcVel.vel();   // local variable — NO
+    Map<@RoboChartType("nat") Integer, Obstacle>         // type argument — NO
+- The annotation is consumed by downstream model extraction (Spoon AST → RoboChart EMF).
+  Without it, the transformation must guess whether a Java int is a RoboChart nat or int.
+
+Output format:
+- Output must be a JSON object: {"files": [{"path": "relative/path", "content": "java source"}]}
+- Each file must include package declaration and all required imports
+- No markdown, no explanations, no code fences — JSON only
+- File paths are relative to the project root (e.g., "src/main/java/com/example/controller/MyController.java")

@@ -1,0 +1,62 @@
+{
+  "phase": "codegen",
+  "status": "complete-with-notes",
+  "summary": "Iter-1 cold codegen for chemical_detector: 17 Java files (two controllers, sealed event hierarchies, sensors, vehicle, clock, constants, enums, GasSensor record, @RoboChartType). All 88 requirement ids traced in result_codegen.json.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "No Final states; terminal transitions rerouted to live modes",
+      "detail": "CD-GA-Beh6/CD-MV-Beh9 specify final state j1. CLAUDE.md forbids a Final state on the theory-generated controller (Isabelle deadlock_free closer hangs). GasAnalysis gains a live Done mode absorbing gas; Movement's Found self-loops on stop. stop/flag still emitted on entry.",
+      "requirement_ids": ["CD-GA-Beh6", "CD-MV-Beh9", "CD-GA-FR4", "CD-MV-FR3"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Odometer modelled as sensor read, not input event",
+      "detail": "Spec's 'odometer ? d0' mid-entry reception encoded as d0 = sensors.odometer() (zero-arg sensor method -> Sensors interface var).",
+      "requirement_ids": ["CD-Evt3", "CD-MV-FR4", "CD-MV-Beh16"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "CD-OP1..4 are Vehicle methods, not compute() operation classes",
+      "detail": "Spec marks them Vehicle-provided. M2M models move (2-arg) as operation Call; randomWalk/shortRandomWalk/changeDirection (0/1-arg) as output-event communications.",
+      "requirement_ids": ["CD-OP1", "CD-OP2", "CD-OP3", "CD-OP4"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Chem literals {CH4, CO2}; target injected via constructor; presence-based analysis",
+      "detail": "Chem is opaque in spec. analysis returns gasD iff any reading's chemical equals the target, at any intensity.",
+      "requirement_ids": ["CD-DM4", "CD-Fn1"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Intensity encoded as double/real; empty-reading defaults",
+      "detail": "goreq is the ordering predicate; intensity() returns 0.0 and location() returns Front for empty readings.",
+      "requirement_ids": ["CD-DM5", "CD-Fn2", "CD-Fn3", "CD-Fn4"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "All constants = 1",
+      "detail": "THR, LV, EVADE_TIME, STUCK_PERIOD, STUCK_DIST, OUT_PERIOD all 1/1.0 to fit FDR4 type ranges {0..1}.",
+      "requirement_ids": ["CD-Const1", "CD-Const2", "CD-Const3", "CD-Const4", "CD-Const5", "CD-Const6"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Waiting during-action randomWalk() encoded as top-of-mode statement (extracts as entry)",
+      "detail": "RoboChart 'during' is not producible by the pipeline; entry is the closest extractable encoding.",
+      "requirement_ids": ["CD-MV-FR1", "CD-OP2"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "angle() index map 0-based: 0=Front, 1=Left, 2=Right, else Back",
+      "detail": "Spec leaves the (1-based) index->direction map abstract.",
+      "requirement_ids": ["CD-DM7"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Total guard covers on autonomous-only modes; no self-loops",
+      "detail": "Analysis (two-valued sts), GasDetected (goreq vs !goreq), AvoidingAgain (stuck disjunction vs negation) have jointly-exhaustive guards per CLAUDE.md. M2M deadlock-lint advisories on these states are expected and ignorable.",
+      "requirement_ids": ["CD-GA-Beh4", "CD-GA-Beh5", "CD-GA-Beh6", "CD-GA-Beh7", "CD-MV-Beh17", "CD-MV-Beh18"]
+    }
+  ],
+  "next_step": "Run the deterministic pipeline via experiments/scripts/run_experiment_iteration.py."
+}

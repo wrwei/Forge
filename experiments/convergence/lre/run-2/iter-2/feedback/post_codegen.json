@@ -1,0 +1,21 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter 2)",
+  "status": "complete",
+  "summary": "Minimal fixes from iter-1 feedback: 21 @RoboChartType(\"real\") annotations added (preflight rule4); autonomous transitions gated on new InputEvent.Tick with explicit higher-priority guard negations so generated Dafny ensures premises are self-contained.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Tick input event added beyond LRE-DM6's event list",
+      "detail": "Tick carries no operator request; it models the control cycle so autonomous guard evaluation is event-specific in the extracted model, preventing event-triggered branches from violating autonomous Dafny postconditions.",
+      "java_trace": [{"file": "src/main/java/lre/event/InputEvent.java", "element": "Tick", "requirement_ids": ["LRE-DM6"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Guard negation conjuncts redundant in Java but required for extraction",
+      "detail": "else-if already encodes priority; the explicit !inOpez / !camGuard conjuncts make the extracted formal guards mutually exclusive where target modes differ. Same-target branches (three MOM->HCM guards) are not mutually excluded.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "step", "requirement_ids": ["LRE-Beh8", "LRE-Beh9", "LRE-Beh10", "LRE-Beh11", "LRE-DC1"]}]
+    }
+  ],
+  "next_step": "Re-run the deterministic pipeline."
+}

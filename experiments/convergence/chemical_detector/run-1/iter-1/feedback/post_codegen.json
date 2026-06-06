@@ -1,0 +1,48 @@
+{
+  "phase": "codegen",
+  "status": "complete",
+  "summary": "Cold codegen (run-4 iter 1) of chemical_detector: 2 controllers, sensor service, Vehicle actuator, Clock, constants, events; all requirement ids traced in result_codegen.json.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "No Final states in either controller",
+      "detail": "Spec final state j1 (CD-GA-Beh6, CD-MV-Beh9) omitted per CLAUDE.md rule that the theory-generated controller must not contain Final. GasDetected reroutes to Reading after sending stop; Found self-loops on stop (idempotent flag/halt re-emission)."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Odometer modeled as sensor variable, not event",
+      "detail": "CD-Evt3's odometer?d0 / odometer?d1 occur inside actions, inexpressible as triggers in the one-event-per-step Java encoding; implemented as zero-arg DetectorSensors.odometerDistance() assignments."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Vehicle operations are plain methods",
+      "detail": "CD-OP1..4 are platform operations invoked as actions (move/randomWalk/shortRandomWalk/changeDirection on Vehicle); no compute() operation classes needed."
+    },
+    {
+      "kind": "invented_default",
+      "title": "analysis() classification rule",
+      "detail": "'Reading indicates target chemical' implemented as c == Chem.TARGET && i > 0. Chem is an invented two-literal enum (TARGET, OTHER)."
+    },
+    {
+      "kind": "invented_default",
+      "title": "angle(index) mapping",
+      "detail": "0->Front, 1->Left, 2->Right, >=3->Back over 0-based indices."
+    },
+    {
+      "kind": "design_choice",
+      "title": "during randomWalk() as top-of-mode statement",
+      "detail": "Pipeline extracts entry, not during; randomWalk() placed at head of Waiting mode block per CLAUDE.md."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Complementary guard pairs for total cover",
+      "detail": "Autonomous-only modes (Analysis, GasDetected, AvoidingAgain) use P / !P guard pairs so one transition is always enabled without self-loops."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Constant values",
+      "detail": "THR=1.0, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=1, STUCK_DIST=1.0, OUT_PERIOD=1 (within {0..1} CSP ranges)."
+    }
+  ],
+  "next_step": "Run experiments/scripts/run_experiment_iteration.py"
+}

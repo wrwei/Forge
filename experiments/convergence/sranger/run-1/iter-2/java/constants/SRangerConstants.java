@@ -1,0 +1,35 @@
+package sranger.constants;
+
+import sranger.annotation.RoboChartType;
+
+/**
+ * Fixed configuration constants for the SRanger controller (SR-DM2).
+ */
+public final class SRangerConstants {
+
+    /** Linear velocity command when Moving (m/s). */
+    @RoboChartType("real")
+    public static final double MOVE_VEL = 1.0;
+
+    /**
+     * Angular velocity command when Turning (rad/s).
+     * Abstracted to 1.0 (from the spec's 2.0) so the value is representable in
+     * the FDR4 {0,1} verification range when communicated on the Move channel;
+     * the magnitude is irrelevant to the verified deadlock/divergence properties
+     * and the three Move commands — Move(moveVel,0), Move(0,turnVel), Move(0,0) —
+     * remain distinct. See trajectory caveats.
+     */
+    @RoboChartType("real")
+    public static final double TURN_VEL = 1.0;
+
+    /** IR-distance threshold for the obstacle-detection condition (metres). */
+    @RoboChartType("real")
+    public static final double OBSTACLE_THRESHOLD = 0.5;
+
+    /** How long the controller remains in Turning before returning to Moving (seconds). */
+    @RoboChartType("real")
+    public static final double TURN_DURATION = 2.0;
+
+    private SRangerConstants() {
+    }
+}

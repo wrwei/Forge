@@ -1,0 +1,103 @@
+diff --git a/forge.transformations/src/main/resources/transformations/java2dafny.egl b/forge.transformations/src/main/resources/transformations/java2dafny.egl
+index b21a39d..1bf6cf1 100644
+--- a/forge.transformations/src/main/resources/transformations/java2dafny.egl
++++ b/forge.transformations/src/main/resources/transformations/java2dafny.egl
+@@ -360,7 +360,15 @@ class [%=controllerName%] {
+                 condition = t.get("guard");
+             }
+ %]
+-        ensures [%=condition%] ==> mode == [%=t.get("targetMode")%]
++        ensures old([%=condition%]) ==> mode == [%=t.get("targetMode")%]
++[%      // FORK run-6 (lre): premise wrapped in old(). The abstracted sensor
++        // functions are bodyless with `reads this`, so after any real mode
++        // write their post-state values are unconstrained and a post-state
++        // premise can never be discharged on sibling return paths. old()
++        // evaluates the guard in the pre-state, where the if-else path
++        // conditions (with explicit negation chaining in the Java) make the
++        // premises mutually exclusive. Identity-write paths are unaffected
++        // (old(e) == e when the heap is unchanged). %]
+ [%      }
+     }
+ %]
+diff --git a/forge.transformations/src/main/resources/transformations/thy_generation_rule.egl b/forge.transformations/src/main/resources/transformations/thy_generation_rule.egl
+index fca1755..4e03293 100644
+--- a/forge.transformations/src/main/resources/transformations/thy_generation_rule.egl
++++ b/forge.transformations/src/main/resources/transformations/thy_generation_rule.egl
+@@ -265,6 +265,7 @@ var const_string: String;
+ // existential); machines without one keep `by (metis St.exhaust_disc)`
+ // (auto times out on their arithmetic guards — see the LRE regression).
+ var hasPayloadDomain = false;
++var hasSeqPayloadDomain = false;  // FORK run-6: true only for SeqType (list) payload domains -- see closer selection below
+ //PART 1: transfer all constants in Robochart
+ for(vrl in p.machines.at(0).variableList){
+ 	var i=0;
+@@ -365,7 +366,7 @@ for(t in p.types){
+ 				hasPayloadDomain = true;
+ 			} else if(evType0.isTypeOf(SeqType)){
+ 				const_string = "definition Seq" + sv0.firstToUpperCase() + " :: \"((" + evType0.domain.zmType() + ") list) set\" where [simp]: \"Seq" + sv0.firstToUpperCase() + " = UNIV\"";
+-				hasPayloadDomain = true;
++				hasPayloadDomain = true; hasSeqPayloadDomain = true;
+ 			}
+ %][%=const_string%]
+ 	  [%
+@@ -388,7 +389,7 @@ for(t in p.types){
+ 		}
+ 	else if(tr.trigger.parameter.type.isTypeOf(SeqType)){
+ 		const_string= "definition Seq" + tr.trigger.parameter.name.firstToUpperCase() + " :: \"((" + tr.trigger.parameter.type.domain.zmType() + ") list) set\" where [simp]: \"Seq" + tr.trigger.parameter.name.firstToUpperCase() + " = UNIV\"";
+-		hasPayloadDomain = true;
++		hasPayloadDomain = true; hasSeqPayloadDomain = true;
+ }%][%=const_string%]
+ 	  [%
+ 	}
+@@ -401,7 +402,7 @@ for(t in p.types){
+ 		}
+ 		else if(tr.action.parameter.type.isTypeOf(SeqType)){
+ 			const_string= "definition Seq" + tr.action.communication.parameter.name.firstToUpperCase() + " :: \"(" + tr.action.communication.parameter.type.zmType() + " list) set\" where [simp]: \"Seq" + tr.action.communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+-			hasPayloadDomain = true;
++			hasPayloadDomain = true; hasSeqPayloadDomain = true;
+ 	}
+ %][%=const_string%]
+ 	  [%
+@@ -421,7 +422,7 @@ hasPayloadDomain = true;
+ }
+ else if(tr.action.parameter.type.isTypeOf(SeqType)){
+ const_string= "definition Seq" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() + " :: \"(" + tr.action.statements.at(i).communication.parameter.type.zmType() + " list) set\" where [simp]: \"Seq" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+-hasPayloadDomain = true;
++hasPayloadDomain = true; hasSeqPayloadDomain = true;
+ }
+ %][%=const_string%]
+   [%
+@@ -444,7 +445,7 @@ hasPayloadDomain = true;
+ else if(tr.target.actions.at(0).action.communication.parameter.type.isTypeOf(SeqType)){
+ 
+ const_string= "definition Seq" + tr.target.actions.at(0).action.communication.parameter.name.firstToUpperCase()+ " :: \"(" + tr.target.actions.at(0).action.communication.parameter.domain.type.zmType() +" list) set\" where [simp]: \"Seq" + tr.target.actions.at(0).action.communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+-hasPayloadDomain = true;
++hasPayloadDomain = true; hasSeqPayloadDomain = true;
+ }%][%=const_string%]
+   [%
+ }
+@@ -464,7 +465,7 @@ hasPayloadDomain = true;
+ else if(tr.target.actions.at(0).action.statements.at(i).parameter.type.isTypeOf(SeqType)){
+ 
+ const_string= "definition Seq" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase()+ " :: \"(" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.zmType() +" list) set\" where [simp]: \"Seq" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+-hasPayloadDomain = true;
++hasPayloadDomain = true; hasSeqPayloadDomain = true;
+ }
+ %][%=const_string%]
+   [%
+@@ -1364,7 +1365,14 @@ definition [z_defs]: "[%=stm_name%]_axioms = True"
+ lemma [%=stm_name%]_deadlock_free: "[%=stm_name%]_axioms  \<Longrightarrow> deadlock_free [%=stm_name%]Machine"
+   unfolding [%=stm_name%]Machine_def
+   apply deadlock_free
+-[% var ddTac; if(hasPayloadDomain){ ddTac = "using St.exhaust_disc by auto"; } else { ddTac = "by (metis St.exhaust_disc)"; } %]
++[% var ddTac; if(hasSeqPayloadDomain){ ddTac = "using St.exhaust_disc by auto"; } else { ddTac = "by (metis St.exhaust_disc)"; }
++// FORK run-6 (lre): the discriminator is now SeqType-payload, not any-payload.
++// Evidence: a machine with scalar (TypeRef real) payload domains (OpVel/OpHdng
++// = UNIV [simp]) AND real-arithmetic guards times out under `auto` (>600s) but
++// closes under `by (metis St.exhaust_disc)` in ~68s -- the scalar-UNIV
++// existential does not trip metis the way the SeqGs list-set did. Only
++// list-payload (SeqType) machines keep the `auto` closer.
++%]
+   [%=ddTac%]
+   (* FORK: the deadlock_free closing tactic is selected by `hasPayloadDomain`
+      (set in PART 2 when this machine emits a typed-payload domain set such as

@@ -1,0 +1,56 @@
+-- CSP-M instantiation overrides for the LRE controller
+--
+-- The RoboChart CSP generator produces stubs for uninterpreted functions
+-- and small default type ranges. These overrides provide meaningful
+-- interpretations that allow FDR4 to explore the full guard space.
+--
+-- All safety thresholds are 1 (MIN_SAFE_DIST, STATIC_OBS_HORIZ_DIST,
+-- STATIC_OBS_VERT_DIST, STATIC_OBS_DFLT_VERT_DIST). The type ranges
+-- and function definitions below ensure every boolean predicate in the
+-- controller can be both true and false during state exploration.
+
+-- generate nat
+nametype core_nat = {0..1}
+
+-- generate int
+nametype core_int = { -1..1}
+
+-- generate real
+nametype core_real = {0..2}
+
+-- generate core_clock_type
+nametype core_clock_type = {0..1}
+
+-- generate string
+nametype core_string = {0}
+
+-- generate odist
+-- Overall Euclidean distance: index 0 → distance 0 (below threshold),
+-- index 1 → distance 2 (above threshold). This ensures guards like
+-- "odist(cstc) > 1" can be both true and false.
+odist(index) = if index == 0 then 0 else 2
+
+-- generate hdist
+-- Horizontal distance: same split as odist.
+hdist(index) = if index == 0 then 0 else 2
+
+-- generate vdist
+-- Vertical distance: same split as odist.
+vdist(index) = if index == 0 then 0 else 2
+
+-- generate nsRelDist
+nsRelDist(x) = 0
+
+-- generate ewRelDist
+ewRelDist(x) = 0
+
+-- generate obsNsVel
+obsNsVel(x) = 0
+
+-- generate obsEwVel
+obsEwVel(x) = 0
+
+-- generate sqrt
+-- Approximate sqrt: identity within the type range.
+-- sqrt(0)=0, sqrt(1)=1, sqrt(2)=2 is acceptable for threshold checks.
+sqrt(x) = x

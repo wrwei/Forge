@@ -1,0 +1,44 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter 1, cold)",
+  "status": "complete",
+  "summary": "Cold codegen of the LRE controller from requirement_all.json: 15 Java files (annotation, mode, constants, event, sensor, actuator, operation, controller). All 51 requirement IDs traced in result_codegen.json. Seven items below need user review.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "cstc/cdyn typed as plain int, not @RoboChartType(\"nat\")",
+      "detail": "LRE-Var5/Var6 call them natural numbers, but the -1 'no obstacle' sentinel is not a nat. Declared as signed int (default RoboChart int mapping), matching the hand-maintained csp_overrides.csp core_int = {-1..1}."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor safe large distance = 1.0e6",
+      "detail": "LRE-DM5 mandates a 'safe large distance' when no obstacle exists but gives no value. Used 1000000.0 (NO_OBSTACLE_DIST), comfortably above every threshold (all 1.0)."
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CalcCPA: obstacle velocities treated as relative; CPA in horizontal plane",
+      "detail": "LRE-OP5 says CalcCPA 'accesses the obstacle's relative position and velocity'. Obstacle obs_ns_vel/obs_ew_vel are treated as already-relative velocities; CPA uses the 2-D horizontal plane (obs_depth/obs_roc unused). tcpa = -(r.v)/|v|^2, cda = |r + v*tcpa|."
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CalcCPA division by zero when no dynamic obstacle exists",
+      "detail": "Sensor returns zero-velocity defaults (per LRE-OP5), so closingSpeedSq = 0 and tcpa/cda evaluate to NaN in Java. NaN makes cdaBelowMinSafe and tcpaNonNegative false (no spurious CAM entry) and !cdaBelowMinSafe true (CAM exits to OCM when no dynamic obstacle) — safe behaviour, but the verifiers may flag the division; revisit if Dafny complains."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Velocity thresholds are literal 1.0",
+      "detail": "LRE-Beh4/9/11 compare vel/hvel/vvel against 1 m/s; LreConstants defines only distance thresholds, so the velocity comparisons use the literal 1.0. Distance guards in LRE-Beh4 ('greater than 1') use MIN_SAFE_DIST (default 1)."
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CAM has no entry action",
+      "detail": "LRE-FR4 says CAM 'performs evasive manoeuvres' but no concrete advVel/advHdng output is specified, and LRE-DM7 limits outputs to advVel/advHdng. No entry action emitted for CAM."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Inner-branch priority: operator events > inOpez > CAM > HCM; opVel/opHdng payload fields added",
+      "detail": "The spec gives no relative priority among MOM's autonomous transitions; ordered as operator overrides, exclusion zone, collision avoidance, then the three HCM guards (Beh9, Beh10, Beh11). OCM pass-through captures reqVel/reqHdng payloads into controller fields opVel/opHdng (typed-trigger pattern); these two fields are not in the LRE-Var list."
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile through vacuity) and iterate from post_* feedback."
+}

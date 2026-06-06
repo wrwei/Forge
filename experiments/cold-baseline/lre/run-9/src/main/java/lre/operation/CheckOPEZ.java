@@ -1,0 +1,28 @@
+package lre.operation;
+
+import lre.constants.LreConstants;
+import lre.sensor.Sensor;
+
+/**
+ * LRE-OP2: Determines whether the AUV is within the Object Proximity
+ * Exclusion Zone. Reads cstc from CalcCStc explicitly.
+ */
+public final class CheckOPEZ {
+
+    private final Sensor sensor;
+    private final CalcCStc calcCStc;
+
+    private boolean inOpez;
+
+    public CheckOPEZ(Sensor sensor, CalcCStc calcCStc) {
+        this.sensor = sensor;
+        this.calcCStc = calcCStc;
+    }
+
+    public void compute() {
+        this.inOpez = sensor.odist(calcCStc.cstc()) <= LreConstants.minSafeDist
+                   || sensor.depth() <= 0.0;
+    }
+
+    public boolean inOpez() { return inOpez; }
+}

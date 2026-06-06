@@ -1,0 +1,94 @@
+plugins {
+    id 'java-library'
+    id 'application'
+}
+
+application {
+    mainClass = 'forge.transformations.core.App'
+}
+
+group = 'forge.transformations'
+version = '0.1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Eclipse EMF Core
+    implementation 'org.eclipse.emf:org.eclipse.emf.common:2.42.0'
+    implementation 'org.eclipse.emf:org.eclipse.emf.ecore:2.41.0'
+    implementation 'org.eclipse.emf:org.eclipse.emf.ecore.xmi:2.16.0'
+
+    // Epsilon ETL (Model-to-Model Transformation) and EGL (Model-to-Text Generation)
+    implementation 'org.eclipse.epsilon:org.eclipse.epsilon.etl.engine:2.8.0'
+    implementation 'org.eclipse.epsilon:org.eclipse.epsilon.egl.engine:2.8.0'
+    implementation 'org.eclipse.epsilon:org.eclipse.epsilon.eol.engine:2.8.0'
+    implementation 'org.eclipse.epsilon:org.eclipse.epsilon.emc.emf:2.8.0'
+
+    // Spoon Java Analysis Framework (replaces MoDisco for Java parsing)
+    // Spoon bundles its own JDT internally — do NOT add a separate JDT dependency
+    implementation 'fr.inria.gforge.spoon:spoon-core:11.3.0'
+
+    // YAML parsing for pipeline manifest
+    implementation 'org.yaml:snakeyaml:2.2'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.register('generateSpoonEcore', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'forge.transformations.t2m.SpoonEcoreGenerator'
+    workingDir = projectDir
+}
+
+// Standalone RoboChart CSP Generator (official RoboChart toolchain)
+// Uses isolated classpath from lib/robochart-csp-gen/ to avoid conflicts
+// with project's own EMF/Epsilon dependencies.
+//
+// Usage: ./gradlew roboChartCspGen -ProboChartProject=/path/to/rct/project
+//        ./gradlew roboChartCspGen -ProboChartProject=/path/to/rct/project -PiteratedComp=false
+//
+// Output: CSP files in <roboChartProject>/csp-gen/
+tasks.register('roboChartCspGen', JavaExec) {
+    def generatorJars = fileTree(dir: 'lib/robochart-csp-gen', include: '*.jar')
+    classpath = files(generatorJars)
+    mainClass = 'circus.robocalc.robochart.generator.csp.Main'
+    // Generator exits non-zero on model validation errors but still produces partial output
+    ignoreExitValue = true
+
+    def rctProject = providers.gradleProperty('roboChartProject').getOrElse('')
+    def iterComp = providers.gradleProperty('iteratedComp').getOrElse('true')
+    def assertComp = providers.gradleProperty('assertionComp').getOrElse('true')
+
+    args iterComp, assertComp, rctProject
+    workingDir = rctProject.isEmpty() ? projectDir : file(rctProject)
+
+    doFirst {
+        if (rctProject.isEmpty()) {
+            throw new IllegalArgumentException(
+                'Required property -ProboChartProject=<path> not set.\n' +
+                'Usage: ./gradlew roboChartCspGen -ProboChartProject=/path/to/rct/project'
+            )
+        }
+        println "RoboChart CSP Generator (standalone)"
+        println "  Project: ${rctProject}"
+        println "  Iterated compression: ${iterComp}"
+        println "  Assertion compression: ${assertComp}"
+    }
+}

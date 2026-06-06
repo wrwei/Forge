@@ -1,0 +1,33 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter 1, cold)",
+  "status": "complete",
+  "summary": "Cold codegen of the full LRE package (15 files) from requirement_all.json + system description. 4 design uncertainties surfaced below.",
+  "issues": [
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CAM has no defined entry action",
+      "raw": "LRE-FR4 says CAM 'performs evasive manoeuvres' but LRE-DM7 restricts outputs to advVel/advHdng and no requirement specifies what CAM advises on entry.",
+      "fix_directive": "Confirm whether entering CAM should emit an advVel/advHdng output. Currently MOM->CAM and HCM->CAM transitions set the mode with no output action."
+    },
+    {
+      "kind": "invented_default",
+      "title": "CPA math: 2D horizontal CPA with tcpa=-1 / cda=hdist(cdyn) fallback",
+      "raw": "LRE-OP5 names cda/tcpa but gives no formula. Implemented standard 2D horizontal CPA: tcpa = -(r.v)/(v.v); cda = |r + v*tcpa| when tcpa>0 else |r|. When relative speed is zero (incl. no dynamic obstacle), tcpa=-1.0 and cda=sensor.hdist(cdyn) so cda is the safe large distance when no obstacle exists (reconciles LRE-DM5's zero-field accessors with LRE-OP5's 'large-distance defaults').",
+      "fix_directive": "Review the CPA fallback defaults if CAM entry/exit behaviour looks wrong under verification."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Beh4 distance thresholds use literal 1.0, not minSafeDist",
+      "raw": "LRE-Beh4 says odist > 1 (literal); LreConstants.minSafeDist also defaults to 1. Used the literal 1.0 per the requirement text.",
+      "fix_directive": "Confirm whether the OCM->MOM odist guards should reference minSafeDist instead of the literal."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Computed variables live on operation classes, not the controller",
+      "raw": "LRE-Var1..8 say 'the controller maintains' inOpez/hvel/vvel/vel/cstc/cdyn/cda/tcpa. Implemented them as fields of the operation classes (per the operation pattern in chain_of_thought_codegen.txt), read by the controller's named predicates each step.",
+      "fix_directive": "If the formal model requires these as Ctrl_State variables on the controller itself, mirror them into controller fields."
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile -> vacuity) and iterate on feedback."
+}

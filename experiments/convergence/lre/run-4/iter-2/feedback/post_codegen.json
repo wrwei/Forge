@@ -1,0 +1,24 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter 2, feedback-driven)",
+  "status": "complete",
+  "summary": "Iter-2 fixes driven by iter-1 feedback: (1) added @RoboChartType(\"real\") to all 21 preflight-flagged double fields/params; (2) added Tick input event and gated all autonomous transitions on it with cross-target exclusion predicates (!inOpez, !collisionCourse) so the Dafny per-branch ensures hold on every return path; (3) tooling fix: thy_generation_rule.egl deadlock_free closer selection refined (scalar payload domains -> metis; only Seq payload domains -> auto).",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Tick input event added (not in LRE-DM6)",
+      "detail": "Autonomous transitions are now event-gated on a control-cycle Tick (record Tick() in InputEvent). This is the documented pattern for making Dafny's per-branch ensures premises event-specific so operator events don't silently violate them. Spec deviation: LRE-DM6 lists six operator events; Tick is a scheduler artefact, not an operator input."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Priority-encoding negations added to autonomous guards",
+      "detail": "Same-mode autonomous branches with different targets now carry explicit mutual-exclusion conjuncts (!inOpez, !collisionCourse) that were previously implicit in Java else-if priority. Java behaviour is unchanged; the extracted model gains explicit priority. New named predicate: collisionCourse = cdaBelowMinSafe && tcpaNonNegative."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Isabelle theory template closer fix (tooling, not Java)",
+      "detail": "The deadlock_free proof timed out because the template chose `using St.exhaust_disc by auto` whenever any payload domain exists; for scalar (real) payload domains the residual is param-free and `by (metis St.exhaust_disc)` closes in ~88s while auto exceeds 600s on the real-arithmetic guards. Selection now keys on Seq payload domains only. Verified in a scratch session before patching."
+    }
+  ],
+  "next_step": "Run the deterministic pipeline; expect preflight/dafny_verify/isabelle_verify to be re-judged."
+}

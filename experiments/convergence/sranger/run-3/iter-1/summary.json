@@ -1,0 +1,56 @@
+{
+  "iter": 1,
+  "study": "sranger",
+  "actor": "me-as-developer",
+  "java_file_count": 9,
+  "java_loc": 207,
+  "phase_results": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "failed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phase_wall_clocks_s": {
+    "compile": 7.46,
+    "coverage": 0.09,
+    "preflight": 2.58,
+    "t2m": 2.84,
+    "m2m": 3.97,
+    "m2t": 6.51,
+    "dafny_gen": 3.68,
+    "isabelle_gen": 3.48,
+    "fdr4": 1.53,
+    "dafny_verify": 4.75,
+    "isabelle_verify": 616.68,
+    "vacuity": 0.03
+  },
+  "pipeline_wall_clock_s": 653.58,
+  "pipeline_wall_clock_productive_s": 36.9,
+  "pipeline_wall_clock_hung_phases": [
+    {
+      "phase": "isabelle_verify",
+      "wall_s": 616.68,
+      "status": "failed",
+      "reason": "ran to timeout ceiling without a verdict (hung); discounted from productive pipeline time"
+    }
+  ],
+  "converged": false,
+  "failure_summary": "dafny_verify: Turning postcondition (turnDurationElapsed ==> Moving) preempted by higher-priority EndTask branch; isabelle_verify: deadlock_free metis timed out (616.7s) because the terminal Final mode has no bare-precondition operation.",
+  "actor_codegen_summary": "Cold codegen of full Java tree (8 classes + Clock) from canonical inputs: 3-mode mode-nested if-else controller, Move modelled as actuator.apply(OutputEvent.Move) entry actions, clock.now()-clockResetTime since() timed Turning->Moving transition, faithful terminal Final mode.",
+  "codegen_cost": {
+    "kind": "estimated",
+    "tokens_in": null,
+    "tokens_out": null,
+    "tool_uses": null,
+    "wall_clock_s": null,
+    "notes": "me-as-developer interactive session; per-iter token counts not separately measurable from within the session (no /cost tool access). Iter-1 included deep pipeline-source study (ETL/EGL) to derive encoding choices, plus a pre-snapshot re-run after fixing two non-verdict issues (machine-specific Dafny/WSL tool paths; switching Move from a 2-arg operation-call that pushed turnVel=2 outside the {0,1} CSP channel to the in-range OutputEvent encoding)."
+  }
+}

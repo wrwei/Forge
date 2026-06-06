@@ -1,0 +1,1604 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 04-06-2026 10:22:06
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+module SRangerController_Module
+	exports
+	
+	transparent diamond
+	transparent sbisim
+	transparent dbisim
+	transparent chase
+	
+	-- declaring channels
+	-- declaring robotic platform events
+	channel endTask: InOut
+	channel obstacle: InOut
+	channel tick: InOut
+	
+	
+	-- declaring module termination channel
+	channel terminate
+	
+	-- declaring robotic platform variables
+	channel get_NO_READING_DEFAULT, set_NO_READING_DEFAULT: core_real
+	channel get_latestDistance, set_latestDistance: core_real
+	channel get_distance, set_distance: core_real
+	channel get_clockResetTime, set_clockResetTime: core_nat
+	
+	-- channel set with all visible events
+	sem__events = {|
+		endTask,
+		obstacle,
+		tick
+	|}
+	
+	-- declaring controller
+		module ctrl_ref0
+			shared_variable_events = {|
+				set_EXT_NO_READING_DEFAULT,
+				set_EXT_latestDistance,
+				set_EXT_distance,
+				set_EXT_clockResetTime
+			|}
+			
+		exports
+			transparent diamond
+			transparent sbisim
+			transparent dbisim
+			transparent chase
+	
+			-- declaring controller events
+			channel endTask: InOut
+			channel obstacle: InOut
+			channel tick: InOut
+			
+			channel set_NO_READING_DEFAULT: core_real
+			channel get_NO_READING_DEFAULT: core_real
+			channel set_latestDistance: core_real
+			channel get_latestDistance: core_real
+			channel set_distance: core_real
+			channel get_distance: core_real
+			channel set_clockResetTime: core_nat
+			channel get_clockResetTime: core_nat
+			
+			channel set_EXT_NO_READING_DEFAULT: core_real
+			channel set_EXT_latestDistance: core_real
+			channel set_EXT_distance: core_real
+			channel set_EXT_clockResetTime: core_nat
+			
+			-- declaring call and ret events for undefined operations
+			channel moveCall: core_real.core_real
+			
+			-- declaring controller termination channel
+			channel terminate
+			
+			-- channel set with all visible events
+			sem__events = {|
+				terminate
+			,	endTask,
+				obstacle,
+				tick
+			,	set_EXT_NO_READING_DEFAULT, set_NO_READING_DEFAULT,
+				set_EXT_latestDistance, set_latestDistance,
+				set_EXT_distance, set_distance,
+				set_EXT_clockResetTime, set_clockResetTime
+			,	moveCall
+			|}
+	
+			-- defined operations
+		
+			-- declaring machines
+			module stm_ref0
+			exports
+				transparent diamond
+				transparent sbisim
+				transparent dbisim
+				transparent chase
+			
+				-- Transition identifiers
+				-- declaring identifiers of transitions
+				datatype NIDS = 
+				              NID_HALTED|
+				              NID_TURNING|
+				              NID_MOVING|
+				              NID_i0
+				
+				channel internal__ : NIDS
+				
+				-- Flow channels		
+				channel interrupt
+				channel exited
+				channel exit
+				channel terminate
+				
+				-- Variable channels
+				channel get_NO_READING_DEFAULT, set_NO_READING_DEFAULT, setL_NO_READING_DEFAULT, setR_NO_READING_DEFAULT: core_real
+				channel get_latestDistance, set_latestDistance, setL_latestDistance, setR_latestDistance: core_real
+				channel get_distance, set_distance, setL_distance, setR_distance: core_real
+				channel get_clockResetTime, set_clockResetTime, setL_clockResetTime, setR_clockResetTime: core_nat
+				
+				-- Shared variable channels
+				channel set_EXT_NO_READING_DEFAULT: core_real
+				channel set_EXT_latestDistance: core_real
+				channel set_EXT_distance: core_real
+				channel set_EXT_clockResetTime: core_nat
+				
+				-- Local variable channels for defined operations that are required by the state machine
+				
+				-- Declaring state machine events
+				channel endTask__: NIDS.InOut
+				channel endTask: InOut
+				channel obstacle__: NIDS.InOut
+				channel obstacle: InOut
+				channel tick__: NIDS.InOut
+				channel tick: InOut
+				
+				-- Declaring call and ret events for undefined operations
+				channel moveCall: core_real.core_real
+				
+				enterSS = {|
+				HALTED::enter,
+				TURNING::enter,
+				MOVING::enter,
+				i0::enter
+				|}
+				
+				enteredSS = 	{|
+				HALTED::entered,
+				TURNING::entered,
+				MOVING::entered
+				|}
+				
+				internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
+				
+				shared_variable_events = {|
+					set_EXT_NO_READING_DEFAULT,
+					set_EXT_latestDistance,
+					set_EXT_distance,
+					set_EXT_clockResetTime
+				|}
+				
+				-- channel set with all visible events
+				sem__events = {|
+					terminate
+				,	set_EXT_NO_READING_DEFAULT, set_NO_READING_DEFAULT,
+					set_EXT_latestDistance, set_latestDistance,
+					set_EXT_distance, set_distance,
+					set_EXT_clockResetTime, set_clockResetTime
+				,	endTask,
+					obstacle,
+					tick
+				,	moveCall
+					|}
+			
+				-- Nodes --
+				-- declaring all nodes
+				
+				----------------------------------------------------------------------
+				-- State: HALTED
+				module HALTED
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					--	Rule: behaviours(Node)
+					--  Note that FDR has problems with efficiently compiling the process below
+					-- 	if using a different recursion pattern.
+					D__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel) = 
+					dbisim(let
+						-- IMPLEMENTATION NOTE: 
+						-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+						-- however FDR struggles with that form in certain cases. So we use the exception operator
+						-- instead to 'terminate'.
+						
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= true&CALL__move(
+									id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel,
+									0,
+									0
+								) ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+						
+					VS_O__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel) = 
+					dbisim(let
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= true&CALL__move(
+									id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel,
+									0,
+									0
+								) ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+					
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: TURNING
+				module TURNING
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					--	Rule: behaviours(Node)
+					--  Note that FDR has problems with efficiently compiling the process below
+					-- 	if using a different recursion pattern.
+					D__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel) = 
+					dbisim(let
+						-- IMPLEMENTATION NOTE: 
+						-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+						-- however FDR struggles with that form in certain cases. So we use the exception operator
+						-- instead to 'terminate'.
+						
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= true&CALL__move(
+									id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel,
+									0,
+									const_SRangerController_turnVel
+								) ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+						
+					VS_O__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel) = 
+					dbisim(let
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= true&CALL__move(
+									id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel,
+									0,
+									const_SRangerController_turnVel
+								) ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+					
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: MOVING
+				module MOVING
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					--	Rule: behaviours(Node)
+					--  Note that FDR has problems with efficiently compiling the process below
+					-- 	if using a different recursion pattern.
+					D__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel) = 
+					dbisim(let
+						-- IMPLEMENTATION NOTE: 
+						-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+						-- however FDR struggles with that form in certain cases. So we use the exception operator
+						-- instead to 'terminate'.
+						
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= true&CALL__move(
+									id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel,
+									const_SRangerController_moveVel,
+									0
+								) ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+						
+					VS_O__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel) = 
+					dbisim(let
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= true&CALL__move(
+									id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel,
+									const_SRangerController_moveVel,
+									0
+								) ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+					
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- Initial: i0
+				module i0
+				exports
+				
+					channel enter, interrupt
+					
+					D__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= share__choice(interrupt -> SKIP) ; Inactive
+						within
+							Inactive [| {terminate} |> SKIP)
+					
+					VS_O__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel) = D__(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel)
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				-- END of Nodes --
+				
+				-- Operation calls --
+				-- Only the undefined operations are declared here.
+				-- If the state machine is in isolation, all required operations will be undefined.
+				-- If it is in the context of a controller, the required operations not provided by the
+				-- controller will be declared here, and the defined operations will be defined in the
+				-- context of the Controller module, and therefore within scope of the state machine module.
+				CALL__move(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel,
+							param_p0,
+							param_p1) 	= moveCall.param_p0.param_p1 -> SKIP
+				
+				-- END of Operation calls --
+				
+				-- STM processes
+				STM(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+				( 
+					(
+						(
+							(IteratedStateful(id__,
+									    const_SRangerController_obstacleThreshold,
+									    const_SRangerController_turnVel,
+									    const_SRangerController_turnDuration,
+									    const_SRangerController_moveVel) \ {terminate} ; share__choice(terminate -> SKIP))
+						 	[[ share__ <- x__ | x__ <- {|set_EXT_NO_READING_DEFAULT,set_EXT_latestDistance,set_EXT_distance,set_EXT_clockResetTime|} ]]
+						)
+					[| {share__} |]
+					SKIP
+					)
+					[| union(sharedVarSync,{terminate}) |]
+					dbisim(sharedVarMemory(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel))
+				)\sharedVarHide
+				
+				STM_VS_O(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+				( 
+					(
+						(
+							(IteratedStateful_VS_O(id__,
+									    const_SRangerController_obstacleThreshold,
+									    const_SRangerController_turnVel,
+									    const_SRangerController_turnDuration,
+									    const_SRangerController_moveVel) \ {terminate} ; share__choice(terminate -> SKIP))
+						 	[[ share__ <- x__ | x__ <- {|set_EXT_NO_READING_DEFAULT,set_EXT_latestDistance,set_EXT_distance,set_EXT_clockResetTime|} ]]
+						)
+					[| {share__} |]
+					SKIP
+					)
+					[| union(sharedVarSync,{terminate}) |]
+					dbisim(sharedVarMemory(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel))
+				)\sharedVarHide
+				
+				-- Transitions
+				Transitions(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = ((let
+					Trans = share__choice(get_distance?distance -> (
+						((share__ -> SKIP
+						 [] dbisim((true)&(internal__!NID_i0 -> SKIP ;  ((SKIP ; MOVING::enter -> SKIP))))
+						 	 [] dbisim((true)&(endTask__!NID_MOVING.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; HALTED::enter -> SKIP)))
+						 	 [] dbisim(((distance<=const_SRangerController_obstacleThreshold))&(obstacle__!NID_MOVING.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; TURNING::enter -> SKIP)))
+						 	 [] dbisim((true)&(tick__!NID_MOVING.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; MOVING::enter -> SKIP)))
+						 	 [] dbisim((true)&(endTask__!NID_TURNING.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; HALTED::enter -> SKIP)))
+						 	 [] dbisim((true)&(tick__!NID_TURNING.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; MOVING::enter -> SKIP)))
+						 	 [] dbisim((true)&(tick__!NID_TURNING.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; TURNING::enter -> SKIP)))
+						 	 [] dbisim((true)&(tick__!NID_HALTED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; HALTED::enter -> SKIP)))
+						 ) ; Trans)
+						 []
+						 (interrupt -> share__choice(exit -> SKIP) ; share__choice(exited -> terminate -> SKIP))
+						 []
+						 terminate -> SKIP
+					)
+					)
+				within
+					Trans
+				)
+				)
+				
+				-- Stateful
+				-- RULE: Stateful(stm:StateMachineBody) : CSPProcess
+				
+				-- Named process definitions
+				MachineBody(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = 
+					dbisim((
+					let
+						finalNodesEntered = {||}
+					within
+						((let
+							-- IMPLEMENTATION NOTE:
+							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+							-- modules for defining the semantics of each node.
+							enterSS = {|
+							HALTED::enter,
+							TURNING::enter,
+							MOVING::enter,
+							i0::enter
+							|}
+							hideSet = union(enterSS,{|exit,exited,internal__|})
+						within 
+							((let
+								-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+								-- because CSPM modules are used for the semantics of Node.
+								flowevts = union(enterSS,{|exit,exited,interrupt|})
+								transSync = {|internal__.NID_i0,endTask__.NID_MOVING.in,obstacle__.NID_MOVING.in,tick__.NID_MOVING.in,endTask__.NID_TURNING.in,tick__.NID_TURNING.in,tick__.NID_TURNING.in,tick__.NID_HALTED.in|}
+							within
+								((
+								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+								   HALTED::D__(id__,
+								   		    const_SRangerController_obstacleThreshold,
+								   		    const_SRangerController_turnVel,
+								   		    const_SRangerController_turnDuration,
+								   		    const_SRangerController_moveVel)
+								   [| { share__, terminate } |] (
+								   TURNING::D__(id__,
+								   		    const_SRangerController_obstacleThreshold,
+								   		    const_SRangerController_turnVel,
+								   		    const_SRangerController_turnDuration,
+								   		    const_SRangerController_moveVel)
+								   [| { share__, terminate } |] (
+								   MOVING::D__(id__,
+								   		    const_SRangerController_obstacleThreshold,
+								   		    const_SRangerController_turnVel,
+								   		    const_SRangerController_turnDuration,
+								   		    const_SRangerController_moveVel)
+								   [| { share__, terminate } |] (
+								   i0::D__(id__,
+								   		    const_SRangerController_obstacleThreshold,
+								   		    const_SRangerController_turnVel,
+								   		    const_SRangerController_turnDuration,
+								   		    const_SRangerController_moveVel)
+								   )
+								   )
+								   )
+								 )
+								 [[HALTED::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_HALTED.in|}]]
+								 [[TURNING::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_TURNING.in,tick__.NID_TURNING.in,tick__.NID_TURNING.in|}]]
+								 [[MOVING::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_MOVING.in,obstacle__.NID_MOVING.in,tick__.NID_MOVING.in|}]]
+								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+								 )
+								  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+								  [[set_distance <- setL_distance]]
+								 )
+								 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+								 			,setL_distance
+								|}) |]
+								 ((i0::enter -> Transitions(id__,
+								 		    const_SRangerController_obstacleThreshold,
+								 		    const_SRangerController_turnVel,
+								 		    const_SRangerController_turnDuration,
+								 		    const_SRangerController_moveVel))
+								  [[ share__ <- x__ | x__ <- {| share__,setL_distance |} ]]
+								 )
+								)[[setL_distance <- set_distance]]
+								)
+							)
+							 \ hideSet)
+							[[
+								endTask__.x____ <- endTask,
+								obstacle__.x____ <- obstacle,
+								tick__.x____ <- tick
+								| x____ <- NIDS
+							]]
+						)
+						 [| {| interrupt |} |] SKIP)
+					)
+					)
+				
+				Behaviour(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = 
+					dbisim((MachineBody(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel)\ enteredSS)
+					)
+				
+				IteratedBehaviour(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = 
+					dbisim((MachineBody(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel)\ enteredSS)
+					)
+				
+				Stateful(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = 
+					((
+						(Behaviour(id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel) [| union(getsetLocalChannels,{terminate}) |] varMemory(id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel))
+					 	\getsetLocalChannels
+					)
+					)
+				
+				IteratedStateful(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) =
+					(Behaviour(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel))
+				
+				-- Visible counterparts
+				MachineBody_VS_O(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = 
+					dbisim((
+					let
+						finalNodesEntered = {||}
+					within
+						((let
+							-- IMPLEMENTATION NOTE:
+							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+							-- modules for defining the semantics of each node.
+							enterSS = {|
+							HALTED::enter,
+							TURNING::enter,
+							MOVING::enter,
+							i0::enter
+							|}
+							hideSet = union(enterSS,{|exit,exited,internal__|})
+						within 
+							((let
+								-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+								-- because CSPM modules are used for the semantics of Node.
+								flowevts = union(enterSS,{|exit,exited,interrupt|})
+								transSync = {|internal__.NID_i0,endTask__.NID_MOVING.in,obstacle__.NID_MOVING.in,tick__.NID_MOVING.in,endTask__.NID_TURNING.in,tick__.NID_TURNING.in,tick__.NID_TURNING.in,tick__.NID_HALTED.in|}
+							within
+								((
+								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+								   HALTED::VS_O__(id__,
+								   		    const_SRangerController_obstacleThreshold,
+								   		    const_SRangerController_turnVel,
+								   		    const_SRangerController_turnDuration,
+								   		    const_SRangerController_moveVel)
+								   [| { share__, terminate } |] (
+								   TURNING::VS_O__(id__,
+								   		    const_SRangerController_obstacleThreshold,
+								   		    const_SRangerController_turnVel,
+								   		    const_SRangerController_turnDuration,
+								   		    const_SRangerController_moveVel)
+								   [| { share__, terminate } |] (
+								   MOVING::VS_O__(id__,
+								   		    const_SRangerController_obstacleThreshold,
+								   		    const_SRangerController_turnVel,
+								   		    const_SRangerController_turnDuration,
+								   		    const_SRangerController_moveVel)
+								   [| { share__, terminate } |] (
+								   i0::VS_O__(id__,
+								   		    const_SRangerController_obstacleThreshold,
+								   		    const_SRangerController_turnVel,
+								   		    const_SRangerController_turnDuration,
+								   		    const_SRangerController_moveVel)
+								   )
+								   )
+								   )
+								 )
+								 [[HALTED::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_HALTED.in|}]]
+								 [[TURNING::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_TURNING.in,tick__.NID_TURNING.in,tick__.NID_TURNING.in|}]]
+								 [[MOVING::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_MOVING.in,obstacle__.NID_MOVING.in,tick__.NID_MOVING.in|}]]
+								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+								 )
+								  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+								  [[set_distance <- setL_distance]]
+								 )
+								 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+								 			,setL_distance
+								|}) |]
+								 ((i0::enter -> Transitions(id__,
+								 		    const_SRangerController_obstacleThreshold,
+								 		    const_SRangerController_turnVel,
+								 		    const_SRangerController_turnDuration,
+								 		    const_SRangerController_moveVel))
+								  [[ share__ <- x__ | x__ <- {| share__,setL_distance |} ]]
+								 )
+								)[[setL_distance <- set_distance]]
+								)
+							)
+							 \ hideSet)
+							[[
+								endTask__.x____ <- endTask,
+								obstacle__.x____ <- obstacle,
+								tick__.x____ <- tick
+								| x____ <- NIDS
+							]]
+						)
+						 [| {| interrupt |} |] SKIP)
+					)
+					)
+				
+				Behaviour_VS_O(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = 
+					dbisim((MachineBody_VS_O(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel))
+					)
+				
+				IteratedBehaviour_VS_O(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = 
+					dbisim((MachineBody_VS_O(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel))
+					)
+				
+				Stateful_VS_O(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = 
+					dbisim((
+						(Behaviour_VS_O(id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel) [| union(getsetLocalChannels,{terminate}) |] varMemory(id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel))
+					 	\getsetLocalChannels
+					)
+					)
+				
+				IteratedStateful_VS_O(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) =
+					(Behaviour_VS_O(id__,
+							    const_SRangerController_obstacleThreshold,
+							    const_SRangerController_turnVel,
+							    const_SRangerController_turnDuration,
+							    const_SRangerController_moveVel))
+				
+				-- END
+				
+				-- Memory
+				-- Memory variables
+				
+				-- varMemory process
+				varMemory(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = terminate -> SKIP
+				
+				getsetLocalChannels = {||}
+				
+				-- Definition of the behaviour of state machines (default, optimised, visible, visible and optimised)
+				FVS__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = STM_VS_O(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel)
+				
+				D__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = STM(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) \ internal_events
+				O__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = sbisim(diamond(D__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel)))
+				VS__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = FVS__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel)
+				VS_O__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = sbisim(diamond(FVS__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel)))
+				HEXT__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = O__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) [|shared_variable_events|] SKIP
+				HUP__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = O__(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) [|{share__}|] SKIP
+				
+				-- Shared memory
+				-- Shared memory variables
+				Memory_NO_READING_DEFAULT(NO_READING_DEFAULT) =
+					get_NO_READING_DEFAULT!NO_READING_DEFAULT -> Memory_NO_READING_DEFAULT(NO_READING_DEFAULT)
+					[]
+					set_NO_READING_DEFAULT?x__ -> Memory_NO_READING_DEFAULT(x__)
+					[]
+					set_EXT_NO_READING_DEFAULT?x__ -> Memory_NO_READING_DEFAULT(x__)
+					[]
+					terminate -> SKIP
+				Memory_latestDistance(latestDistance) =
+					get_latestDistance!latestDistance -> Memory_latestDistance(latestDistance)
+					[]
+					set_latestDistance?x__ -> Memory_latestDistance(x__)
+					[]
+					set_EXT_latestDistance?x__ -> Memory_latestDistance(x__)
+					[]
+					terminate -> SKIP
+				Memory_distance(distance) =
+					get_distance!distance -> Memory_distance(distance)
+					[]
+					set_distance?x__ -> Memory_distance(x__)
+					[]
+					set_EXT_distance?x__ -> Memory_distance(x__)
+					[]
+					terminate -> SKIP
+				Memory_clockResetTime(clockResetTime) =
+					get_clockResetTime!clockResetTime -> Memory_clockResetTime(clockResetTime)
+					[]
+					set_clockResetTime?x__ -> Memory_clockResetTime(x__)
+					[]
+					set_EXT_clockResetTime?x__ -> Memory_clockResetTime(x__)
+					[]
+					terminate -> SKIP
+				
+				-- sharedVarMemory process
+				sharedVarMemory(id__,
+						    const_SRangerController_obstacleThreshold,
+						    const_SRangerController_turnVel,
+						    const_SRangerController_turnDuration,
+						    const_SRangerController_moveVel) = Memory_NO_READING_DEFAULT(0)
+				[| { terminate } |] (
+				Memory_latestDistance(0)
+				[| { terminate } |] (
+				Memory_distance(0)
+				[| { terminate } |] (
+				Memory_clockResetTime(0)
+				)
+				)
+				)
+				
+				sharedVarSync = {|get_NO_READING_DEFAULT,set_NO_READING_DEFAULT,set_EXT_NO_READING_DEFAULT,get_latestDistance,set_latestDistance,set_EXT_latestDistance,get_distance,set_distance,set_EXT_distance,get_clockResetTime,set_clockResetTime,set_EXT_clockResetTime|}
+				
+				sharedVarHide = {|get_NO_READING_DEFAULT,get_latestDistance,get_distance,get_clockResetTime|}
+			endmodule
+			
+				-- undefined operations
+				CALL__move(id__,
+						    param_p0,
+						    param_p1) 	= moveCall.param_p0.param_p1 -> SKIP
+				
+				-- declaring controller memory
+				Memory(id__, NO_READING_DEFAULT, latestDistance, distance, clockResetTime, obstacleThreshold, turnVel, turnDuration, moveVel) = (
+				set_EXT_NO_READING_DEFAULT?x__ -> stm_ref0::set_EXT_NO_READING_DEFAULT!x__ -> 
+				Memory(id__,x__,latestDistance,distance,clockResetTime,obstacleThreshold,turnVel,turnDuration,moveVel)
+				 []
+				set_EXT_latestDistance?x__ -> stm_ref0::set_EXT_latestDistance!x__ -> 
+				Memory(id__,NO_READING_DEFAULT,x__,distance,clockResetTime,obstacleThreshold,turnVel,turnDuration,moveVel)
+				 []
+				set_EXT_distance?x__ -> stm_ref0::set_EXT_distance!x__ -> 
+				Memory(id__,NO_READING_DEFAULT,latestDistance,x__,clockResetTime,obstacleThreshold,turnVel,turnDuration,moveVel)
+				 []
+				set_EXT_clockResetTime?x__ -> stm_ref0::set_EXT_clockResetTime!x__ -> 
+				Memory(id__,NO_READING_DEFAULT,latestDistance,distance,x__,obstacleThreshold,turnVel,turnDuration,moveVel)
+				)
+				
+				D__(id__,
+						    const_SRangerController_Ctrl_obstacleThreshold,
+						    const_SRangerController_Ctrl_turnVel,
+						    const_SRangerController_Ctrl_turnDuration,
+						    const_SRangerController_Ctrl_moveVel) = 	((
+						let
+							const_SRangerController_obstacleThreshold = const_SRangerController_Ctrl_obstacleThreshold
+							const_SRangerController_turnVel = const_SRangerController_Ctrl_turnVel
+							const_SRangerController_turnDuration = const_SRangerController_Ctrl_turnDuration
+							const_SRangerController_moveVel = const_SRangerController_Ctrl_moveVel
+						within 
+						stm_ref0::D__(id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel)[[
+							stm_ref0::terminate <- terminate,
+							stm_ref0::endTask <- endTask,
+							stm_ref0::obstacle <- obstacle,
+							stm_ref0::tick <- tick,
+							stm_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							stm_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							stm_ref0::set_latestDistance <- set_latestDistance,
+							stm_ref0::get_latestDistance <- get_latestDistance,
+							stm_ref0::set_distance <- set_distance,
+							stm_ref0::get_distance <- get_distance,
+							stm_ref0::set_clockResetTime <- set_clockResetTime,
+							stm_ref0::get_clockResetTime <- get_clockResetTime,
+							stm_ref0::moveCall <- moveCall
+						]]
+					)
+						[|
+							union(
+								{|
+								|},
+								{|
+									stm_ref0::set_EXT_NO_READING_DEFAULT,stm_ref0::set_EXT_latestDistance,stm_ref0::set_EXT_distance,stm_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					Memory(id__, 0, 0, 0, 0, const_SRangerController_Ctrl_obstacleThreshold, const_SRangerController_Ctrl_turnVel, const_SRangerController_Ctrl_turnDuration, const_SRangerController_Ctrl_moveVel)
+				)
+				\ union(
+					{|
+					|},
+					{|
+						stm_ref0::set_EXT_NO_READING_DEFAULT,stm_ref0::set_EXT_latestDistance,stm_ref0::set_EXT_distance,stm_ref0::set_EXT_clockResetTime
+					|}
+				)
+				[|{|terminate|}|>SKIP
+				
+				-- VS version
+				VS__(id__,
+						    const_SRangerController_Ctrl_obstacleThreshold,
+						    const_SRangerController_Ctrl_turnVel,
+						    const_SRangerController_Ctrl_turnDuration,
+						    const_SRangerController_Ctrl_moveVel) = 	((
+						let
+							const_SRangerController_obstacleThreshold = const_SRangerController_Ctrl_obstacleThreshold
+							const_SRangerController_turnVel = const_SRangerController_Ctrl_turnVel
+							const_SRangerController_turnDuration = const_SRangerController_Ctrl_turnDuration
+							const_SRangerController_moveVel = const_SRangerController_Ctrl_moveVel
+						within 
+						stm_ref0::VS__(id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel)[[
+							stm_ref0::terminate <- terminate,
+							stm_ref0::endTask <- endTask,
+							stm_ref0::obstacle <- obstacle,
+							stm_ref0::tick <- tick,
+							stm_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							stm_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							stm_ref0::set_latestDistance <- set_latestDistance,
+							stm_ref0::get_latestDistance <- get_latestDistance,
+							stm_ref0::set_distance <- set_distance,
+							stm_ref0::get_distance <- get_distance,
+							stm_ref0::set_clockResetTime <- set_clockResetTime,
+							stm_ref0::get_clockResetTime <- get_clockResetTime,
+							stm_ref0::moveCall <- moveCall
+						]]
+					)
+						[|
+							union(
+								{|
+								|},
+								{|
+									stm_ref0::set_EXT_NO_READING_DEFAULT,stm_ref0::set_EXT_latestDistance,stm_ref0::set_EXT_distance,stm_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					Memory(id__, 0, 0, 0, 0, const_SRangerController_Ctrl_obstacleThreshold, const_SRangerController_Ctrl_turnVel, const_SRangerController_Ctrl_turnDuration, const_SRangerController_Ctrl_moveVel)
+				)
+				\ union(
+					{|
+					|},
+					{|
+						stm_ref0::set_EXT_NO_READING_DEFAULT,stm_ref0::set_EXT_latestDistance,stm_ref0::set_EXT_distance,stm_ref0::set_EXT_clockResetTime
+					|}
+				)
+				[|{|terminate|}|>SKIP
+			
+				-- O version (optimised) THESE TWO PROCESSES SHOULD BE KEPT IN SYNC WITH THE ABOVE TWO
+				O__(id__,
+						    const_SRangerController_Ctrl_obstacleThreshold,
+						    const_SRangerController_Ctrl_turnVel,
+						    const_SRangerController_Ctrl_turnDuration,
+						    const_SRangerController_Ctrl_moveVel) = sbisim(diamond(	((
+						let
+							const_SRangerController_obstacleThreshold = const_SRangerController_Ctrl_obstacleThreshold
+							const_SRangerController_turnVel = const_SRangerController_Ctrl_turnVel
+							const_SRangerController_turnDuration = const_SRangerController_Ctrl_turnDuration
+							const_SRangerController_moveVel = const_SRangerController_Ctrl_moveVel
+						within 
+						stm_ref0::O__(id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel)[[
+							stm_ref0::terminate <- terminate,
+							stm_ref0::endTask <- endTask,
+							stm_ref0::obstacle <- obstacle,
+							stm_ref0::tick <- tick,
+							stm_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							stm_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							stm_ref0::set_latestDistance <- set_latestDistance,
+							stm_ref0::get_latestDistance <- get_latestDistance,
+							stm_ref0::set_distance <- set_distance,
+							stm_ref0::get_distance <- get_distance,
+							stm_ref0::set_clockResetTime <- set_clockResetTime,
+							stm_ref0::get_clockResetTime <- get_clockResetTime,
+							stm_ref0::moveCall <- moveCall
+						]]
+					)
+						[|
+							union(
+								{|
+								|},
+								{|
+									stm_ref0::set_EXT_NO_READING_DEFAULT,stm_ref0::set_EXT_latestDistance,stm_ref0::set_EXT_distance,stm_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					dbisim(Memory(id__, 0, 0, 0, 0, const_SRangerController_Ctrl_obstacleThreshold, const_SRangerController_Ctrl_turnVel, const_SRangerController_Ctrl_turnDuration, const_SRangerController_Ctrl_moveVel))
+				)
+				\ union(
+					{|
+					|},
+					{|
+						stm_ref0::set_EXT_NO_READING_DEFAULT,stm_ref0::set_EXT_latestDistance,stm_ref0::set_EXT_distance,stm_ref0::set_EXT_clockResetTime
+					|}
+				)
+				[|{|terminate|}|>SKIP
+				))
+								
+				-- VS_O version
+				VS_O__(id__,
+						    const_SRangerController_Ctrl_obstacleThreshold,
+						    const_SRangerController_Ctrl_turnVel,
+						    const_SRangerController_Ctrl_turnDuration,
+						    const_SRangerController_Ctrl_moveVel) = sbisim(diamond(	((
+						let
+							const_SRangerController_obstacleThreshold = const_SRangerController_Ctrl_obstacleThreshold
+							const_SRangerController_turnVel = const_SRangerController_Ctrl_turnVel
+							const_SRangerController_turnDuration = const_SRangerController_Ctrl_turnDuration
+							const_SRangerController_moveVel = const_SRangerController_Ctrl_moveVel
+						within 
+						stm_ref0::VS_O__(id__,
+								    const_SRangerController_obstacleThreshold,
+								    const_SRangerController_turnVel,
+								    const_SRangerController_turnDuration,
+								    const_SRangerController_moveVel)[[
+							stm_ref0::terminate <- terminate,
+							stm_ref0::endTask <- endTask,
+							stm_ref0::obstacle <- obstacle,
+							stm_ref0::tick <- tick,
+							stm_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							stm_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							stm_ref0::set_latestDistance <- set_latestDistance,
+							stm_ref0::get_latestDistance <- get_latestDistance,
+							stm_ref0::set_distance <- set_distance,
+							stm_ref0::get_distance <- get_distance,
+							stm_ref0::set_clockResetTime <- set_clockResetTime,
+							stm_ref0::get_clockResetTime <- get_clockResetTime,
+							stm_ref0::moveCall <- moveCall
+						]]
+					)
+						[|
+							union(
+								{|
+								|},
+								{|
+									stm_ref0::set_EXT_NO_READING_DEFAULT,stm_ref0::set_EXT_latestDistance,stm_ref0::set_EXT_distance,stm_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					dbisim(Memory(id__, 0, 0, 0, 0, const_SRangerController_Ctrl_obstacleThreshold, const_SRangerController_Ctrl_turnVel, const_SRangerController_Ctrl_turnDuration, const_SRangerController_Ctrl_moveVel))
+				)
+				\ union(
+					{|
+					|},
+					{|
+						stm_ref0::set_EXT_NO_READING_DEFAULT,stm_ref0::set_EXT_latestDistance,stm_ref0::set_EXT_distance,stm_ref0::set_EXT_clockResetTime
+					|}
+				)
+				[|{|terminate|}|>SKIP
+				))
+			
+				HEXT(id__,
+						    const_SRangerController_Ctrl_obstacleThreshold,
+						    const_SRangerController_Ctrl_turnVel,
+						    const_SRangerController_Ctrl_turnDuration,
+						    const_SRangerController_Ctrl_moveVel) = O__(id__,
+						    const_SRangerController_Ctrl_obstacleThreshold,
+						    const_SRangerController_Ctrl_turnVel,
+						    const_SRangerController_Ctrl_turnDuration,
+						    const_SRangerController_Ctrl_moveVel) [|shared_variable_events|] SKIP			
+	
+		endmodule
+	
+	-- declaring module memory
+	Memory(id__, NO_READING_DEFAULT, latestDistance, distance, clockResetTime, obstacleThreshold, turnVel, turnDuration, moveVel) = (
+					set_NO_READING_DEFAULT?x__ -> 
+					ctrl_ref0::set_EXT_NO_READING_DEFAULT!x__ -> 
+					Memory(id__,x__,latestDistance,distance,clockResetTime,obstacleThreshold,turnVel,turnDuration,moveVel)
+					  []
+					set_latestDistance?x__ -> 
+					ctrl_ref0::set_EXT_latestDistance!x__ -> 
+					Memory(id__,NO_READING_DEFAULT,x__,distance,clockResetTime,obstacleThreshold,turnVel,turnDuration,moveVel)
+					  []
+					set_distance?x__ -> 
+					ctrl_ref0::set_EXT_distance!x__ -> 
+					Memory(id__,NO_READING_DEFAULT,latestDistance,x__,clockResetTime,obstacleThreshold,turnVel,turnDuration,moveVel)
+					  []
+					set_clockResetTime?x__ -> 
+					ctrl_ref0::set_EXT_clockResetTime!x__ -> 
+					Memory(id__,NO_READING_DEFAULT,latestDistance,distance,x__,obstacleThreshold,turnVel,turnDuration,moveVel)
+					)
+	
+	D__(id__,
+			    const_SRangerController_Module_SRangerController_Platform_obstacleThreshold,
+			    const_SRangerController_Module_SRangerController_Platform_turnVel,
+			    const_SRangerController_Module_SRangerController_Platform_turnDuration,
+			    const_SRangerController_Module_SRangerController_Platform_moveVel) = 	(
+			(
+				(SKIP)
+					[|{||}|]
+				(
+					(
+						let
+							const_SRangerController_Ctrl_obstacleThreshold = const_SRangerController_Module_SRangerController_Platform_obstacleThreshold
+							const_SRangerController_Ctrl_turnVel = const_SRangerController_Module_SRangerController_Platform_turnVel
+							const_SRangerController_Ctrl_turnDuration = const_SRangerController_Module_SRangerController_Platform_turnDuration
+							const_SRangerController_Ctrl_moveVel = const_SRangerController_Module_SRangerController_Platform_moveVel
+						within 
+						ctrl_ref0::D__(id__,
+								    const_SRangerController_Ctrl_obstacleThreshold,
+								    const_SRangerController_Ctrl_turnVel,
+								    const_SRangerController_Ctrl_turnDuration,
+								    const_SRangerController_Ctrl_moveVel)[[
+							ctrl_ref0::terminate <- terminate,
+							ctrl_ref0::endTask <- endTask,
+							ctrl_ref0::obstacle <- obstacle,
+							ctrl_ref0::tick <- tick,
+							ctrl_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							ctrl_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							ctrl_ref0::set_latestDistance <- set_latestDistance,
+							ctrl_ref0::get_latestDistance <- get_latestDistance,
+							ctrl_ref0::set_distance <- set_distance,
+							ctrl_ref0::get_distance <- get_distance,
+							ctrl_ref0::set_clockResetTime <- set_clockResetTime,
+							ctrl_ref0::get_clockResetTime <- get_clockResetTime
+						]]
+					)
+						[|
+							union(
+								{|
+									set_NO_READING_DEFAULT,
+									set_latestDistance,
+									set_distance,
+									set_clockResetTime
+								|},
+								{|
+									ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					Memory(id__, 0, 0, 0, 0, const_SRangerController_Module_SRangerController_Platform_obstacleThreshold, const_SRangerController_Module_SRangerController_Platform_turnVel, const_SRangerController_Module_SRangerController_Platform_turnDuration, const_SRangerController_Module_SRangerController_Platform_moveVel)
+				)
+			)
+			\ Union({
+				{|
+				|},
+				{|
+					ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+				|},
+				{|
+				|}
+			})
+			[|{|terminate|}|>SKIP
+		)
+		\{|terminate|}
+	
+	-- visible state equivalent
+	
+	VS__(id__,
+			    const_SRangerController_Module_SRangerController_Platform_obstacleThreshold,
+			    const_SRangerController_Module_SRangerController_Platform_turnVel,
+			    const_SRangerController_Module_SRangerController_Platform_turnDuration,
+			    const_SRangerController_Module_SRangerController_Platform_moveVel) = 	(
+			(
+				(SKIP)
+					[|{||}|]
+				(
+					(
+						let
+							const_SRangerController_Ctrl_obstacleThreshold = const_SRangerController_Module_SRangerController_Platform_obstacleThreshold
+							const_SRangerController_Ctrl_turnVel = const_SRangerController_Module_SRangerController_Platform_turnVel
+							const_SRangerController_Ctrl_turnDuration = const_SRangerController_Module_SRangerController_Platform_turnDuration
+							const_SRangerController_Ctrl_moveVel = const_SRangerController_Module_SRangerController_Platform_moveVel
+						within 
+						ctrl_ref0::VS__(id__,
+								    const_SRangerController_Ctrl_obstacleThreshold,
+								    const_SRangerController_Ctrl_turnVel,
+								    const_SRangerController_Ctrl_turnDuration,
+								    const_SRangerController_Ctrl_moveVel)[[
+							ctrl_ref0::terminate <- terminate,
+							ctrl_ref0::endTask <- endTask,
+							ctrl_ref0::obstacle <- obstacle,
+							ctrl_ref0::tick <- tick,
+							ctrl_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							ctrl_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							ctrl_ref0::set_latestDistance <- set_latestDistance,
+							ctrl_ref0::get_latestDistance <- get_latestDistance,
+							ctrl_ref0::set_distance <- set_distance,
+							ctrl_ref0::get_distance <- get_distance,
+							ctrl_ref0::set_clockResetTime <- set_clockResetTime,
+							ctrl_ref0::get_clockResetTime <- get_clockResetTime
+						]]
+					)
+						[|
+							union(
+								{|
+									set_NO_READING_DEFAULT,
+									set_latestDistance,
+									set_distance,
+									set_clockResetTime
+								|},
+								{|
+									ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					Memory(id__, 0, 0, 0, 0, const_SRangerController_Module_SRangerController_Platform_obstacleThreshold, const_SRangerController_Module_SRangerController_Platform_turnVel, const_SRangerController_Module_SRangerController_Platform_turnDuration, const_SRangerController_Module_SRangerController_Platform_moveVel)
+				)
+			)
+			\ Union({
+				{|
+				|},
+				{|
+					ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+				|},
+				{|
+				|}
+			})
+			[|{|terminate|}|>SKIP
+		)
+		\{|terminate|}
+	
+	-- O version (optimised)
+	
+	O__(id__,
+			    const_SRangerController_Module_SRangerController_Platform_obstacleThreshold,
+			    const_SRangerController_Module_SRangerController_Platform_turnVel,
+			    const_SRangerController_Module_SRangerController_Platform_turnDuration,
+			    const_SRangerController_Module_SRangerController_Platform_moveVel) = sbisim(diamond(	(
+			(
+				(SKIP)
+					[|{||}|]
+				(
+					(
+						let
+							const_SRangerController_Ctrl_obstacleThreshold = const_SRangerController_Module_SRangerController_Platform_obstacleThreshold
+							const_SRangerController_Ctrl_turnVel = const_SRangerController_Module_SRangerController_Platform_turnVel
+							const_SRangerController_Ctrl_turnDuration = const_SRangerController_Module_SRangerController_Platform_turnDuration
+							const_SRangerController_Ctrl_moveVel = const_SRangerController_Module_SRangerController_Platform_moveVel
+						within 
+						ctrl_ref0::O__(id__,
+								    const_SRangerController_Ctrl_obstacleThreshold,
+								    const_SRangerController_Ctrl_turnVel,
+								    const_SRangerController_Ctrl_turnDuration,
+								    const_SRangerController_Ctrl_moveVel)[[
+							ctrl_ref0::terminate <- terminate,
+							ctrl_ref0::endTask <- endTask,
+							ctrl_ref0::obstacle <- obstacle,
+							ctrl_ref0::tick <- tick,
+							ctrl_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							ctrl_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							ctrl_ref0::set_latestDistance <- set_latestDistance,
+							ctrl_ref0::get_latestDistance <- get_latestDistance,
+							ctrl_ref0::set_distance <- set_distance,
+							ctrl_ref0::get_distance <- get_distance,
+							ctrl_ref0::set_clockResetTime <- set_clockResetTime,
+							ctrl_ref0::get_clockResetTime <- get_clockResetTime
+						]]
+					)
+						[|
+							union(
+								{|
+									set_NO_READING_DEFAULT,
+									set_latestDistance,
+									set_distance,
+									set_clockResetTime
+								|},
+								{|
+									ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					dbisim(Memory(id__, 0, 0, 0, 0, const_SRangerController_Module_SRangerController_Platform_obstacleThreshold, const_SRangerController_Module_SRangerController_Platform_turnVel, const_SRangerController_Module_SRangerController_Platform_turnDuration, const_SRangerController_Module_SRangerController_Platform_moveVel))
+				)
+			)
+			\ Union({
+				{|
+				|},
+				{|
+					ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+				|},
+				{|
+				|}
+			})
+			[|{|terminate|}|>SKIP
+		)
+		\{|terminate|}
+	))
+	
+	-- visible state optimised equivalent
+	
+	VS_O__(id__,
+			    const_SRangerController_Module_SRangerController_Platform_obstacleThreshold,
+			    const_SRangerController_Module_SRangerController_Platform_turnVel,
+			    const_SRangerController_Module_SRangerController_Platform_turnDuration,
+			    const_SRangerController_Module_SRangerController_Platform_moveVel) = sbisim(diamond(	(
+			(
+				(SKIP)
+					[|{||}|]
+				(
+					(
+						let
+							const_SRangerController_Ctrl_obstacleThreshold = const_SRangerController_Module_SRangerController_Platform_obstacleThreshold
+							const_SRangerController_Ctrl_turnVel = const_SRangerController_Module_SRangerController_Platform_turnVel
+							const_SRangerController_Ctrl_turnDuration = const_SRangerController_Module_SRangerController_Platform_turnDuration
+							const_SRangerController_Ctrl_moveVel = const_SRangerController_Module_SRangerController_Platform_moveVel
+						within 
+						ctrl_ref0::VS_O__(id__,
+								    const_SRangerController_Ctrl_obstacleThreshold,
+								    const_SRangerController_Ctrl_turnVel,
+								    const_SRangerController_Ctrl_turnDuration,
+								    const_SRangerController_Ctrl_moveVel)[[
+							ctrl_ref0::terminate <- terminate,
+							ctrl_ref0::endTask <- endTask,
+							ctrl_ref0::obstacle <- obstacle,
+							ctrl_ref0::tick <- tick,
+							ctrl_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							ctrl_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							ctrl_ref0::set_latestDistance <- set_latestDistance,
+							ctrl_ref0::get_latestDistance <- get_latestDistance,
+							ctrl_ref0::set_distance <- set_distance,
+							ctrl_ref0::get_distance <- get_distance,
+							ctrl_ref0::set_clockResetTime <- set_clockResetTime,
+							ctrl_ref0::get_clockResetTime <- get_clockResetTime
+						]]
+					)
+						[|
+							union(
+								{|
+									set_NO_READING_DEFAULT,
+									set_latestDistance,
+									set_distance,
+									set_clockResetTime
+								|},
+								{|
+									ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					dbisim(Memory(id__, 0, 0, 0, 0, const_SRangerController_Module_SRangerController_Platform_obstacleThreshold, const_SRangerController_Module_SRangerController_Platform_turnVel, const_SRangerController_Module_SRangerController_Platform_turnDuration, const_SRangerController_Module_SRangerController_Platform_moveVel))
+				)
+			)
+			\ Union({
+				{|
+				|},
+				{|
+					ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+				|},
+				{|
+				|}
+			})
+			[|{|terminate|}|>SKIP
+		)
+		\{|terminate|}
+	))
+	
+	-- O version (optimised) with visible assignments
+	
+	AS_O__(id__,
+			    const_SRangerController_Module_SRangerController_Platform_obstacleThreshold,
+			    const_SRangerController_Module_SRangerController_Platform_turnVel,
+			    const_SRangerController_Module_SRangerController_Platform_turnDuration,
+			    const_SRangerController_Module_SRangerController_Platform_moveVel) = sbisim(diamond(	(
+			(
+				(SKIP)
+					[|{||}|]
+				(
+					(
+						let
+							const_SRangerController_Ctrl_obstacleThreshold = const_SRangerController_Module_SRangerController_Platform_obstacleThreshold
+							const_SRangerController_Ctrl_turnVel = const_SRangerController_Module_SRangerController_Platform_turnVel
+							const_SRangerController_Ctrl_turnDuration = const_SRangerController_Module_SRangerController_Platform_turnDuration
+							const_SRangerController_Ctrl_moveVel = const_SRangerController_Module_SRangerController_Platform_moveVel
+						within 
+						ctrl_ref0::O__(id__,
+								    const_SRangerController_Ctrl_obstacleThreshold,
+								    const_SRangerController_Ctrl_turnVel,
+								    const_SRangerController_Ctrl_turnDuration,
+								    const_SRangerController_Ctrl_moveVel)[[
+							ctrl_ref0::terminate <- terminate,
+							ctrl_ref0::endTask <- endTask,
+							ctrl_ref0::obstacle <- obstacle,
+							ctrl_ref0::tick <- tick,
+							ctrl_ref0::set_NO_READING_DEFAULT <- set_NO_READING_DEFAULT,
+							ctrl_ref0::get_NO_READING_DEFAULT <- get_NO_READING_DEFAULT,
+							ctrl_ref0::set_latestDistance <- set_latestDistance,
+							ctrl_ref0::get_latestDistance <- get_latestDistance,
+							ctrl_ref0::set_distance <- set_distance,
+							ctrl_ref0::get_distance <- get_distance,
+							ctrl_ref0::set_clockResetTime <- set_clockResetTime,
+							ctrl_ref0::get_clockResetTime <- get_clockResetTime
+						]]
+					)
+						[|
+							union(
+								{|
+									set_NO_READING_DEFAULT,
+									set_latestDistance,
+									set_distance,
+									set_clockResetTime
+								|},
+								{|
+									ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+								|}
+							)
+						|]
+					dbisim(Memory(id__, 0, 0, 0, 0, const_SRangerController_Module_SRangerController_Platform_obstacleThreshold, const_SRangerController_Module_SRangerController_Platform_turnVel, const_SRangerController_Module_SRangerController_Platform_turnDuration, const_SRangerController_Module_SRangerController_Platform_moveVel))
+				)
+			)
+			\ Union({
+				{|
+				|},
+				{|
+					ctrl_ref0::set_EXT_NO_READING_DEFAULT,ctrl_ref0::set_EXT_latestDistance,ctrl_ref0::set_EXT_distance,ctrl_ref0::set_EXT_clockResetTime
+				|},
+				{|
+				|}
+			})
+			[|{|terminate|}|>SKIP
+		)
+		\{|terminate|}
+	))
+	
+endmodule

@@ -1,0 +1,63 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter 1, cold)",
+  "status": "complete",
+  "summary": "Full cold codegen for the lre case study from requirement_all.json: 15 Java files (annotation, mode, constants, events, datamodel, sensor, actuator, 5 operations, controller) plus result_codegen.json. All 52 requirements traced. 8 review items below.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "cstc/cdyn are plain int, not @RoboChartType(\"nat\")",
+      "detail": "LRE-Var5/Var6 call cstc/cdyn 'natural number' variables but define -1 as the no-obstacle sentinel. A nat cannot hold -1 (would break Dafny nat semantics), so both fields and the sensor index parameters stay int with no annotation.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "cstc", "requirement_ids": ["LRE-Var5", "LRE-Var6"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Beh4 literal threshold 1 mapped to minSafeDist",
+      "detail": "LRE-Beh4 says odist(cdyn) > 1 and odist(cstc) > 1; minSafeDist defaults to 1 and is described as the minimal safe distance to any obstacle, so the guards use LreConstants.minSafeDist instead of a bare literal. vel <= 1 keeps the literal (1 m/s is the MOM nominal speed, no named constant).",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "step", "requirement_ids": ["LRE-Beh4"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "CheckOPEZ/CalcCPA read the closest-obstacle index from the Sensor directly",
+      "detail": "LRE-OP2/OP5 say these operations use the index computed by CalcCStc/CalcCDyn. The compute() rules restrict RHS expressions to sensor calls and own fields, so CheckOPEZ and CalcCPA call sensor.closestStaticIndex()/closestDynamicIndex() themselves — the identical value, without a cross-operation getter call.",
+      "java_trace": [{"file": "src/main/java/lre/operation/CheckOPEZ.java", "element": "compute", "requirement_ids": ["LRE-OP2", "LRE-OP5"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "CalcCPA formula: horizontal-plane CPA with hdist-based separation",
+      "detail": "LRE-OP5 names no formula. Implemented standard horizontal CPA: relative velocity v = obstacle velocity - AUV velocity; tcpa = -(r.v)/(v.v); cda^2 = hdist(cdyn)^2 - (r.v)^2/(v.v). Using hdist for the separation term means the Sensor's safe-large default makes cda large when no dynamic obstacle exists (the zero-default accessors alone would give a spurious cda=0). When v.v = 0 the separation never changes: tcpa = -1 (never approaching), cda = current hdist. cda^2 clamped at 0 before sqrt.",
+      "java_trace": [{"file": "src/main/java/lre/operation/CalcCPA.java", "element": "compute", "requirement_ids": ["LRE-OP5"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor safe large distance = 1.0e6 m",
+      "detail": "LRE-DM5 requires 'a safe large distance' for missing obstacles but gives no value. 1.0e6 is far above every threshold (all default 1).",
+      "java_trace": [{"file": "src/main/java/lre/sensor/Sensor.java", "element": "hdist", "requirement_ids": ["LRE-DM5"]}]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CAM has no specified entry action or evasive output",
+      "detail": "LRE-FR4 says CAM 'performs evasive manoeuvres' but no requirement defines an advVel/advHdng value for it, and LRE-DM7 limits outputs to advVel/advHdng. CAM is entered with no output; the evasive manoeuvre itself is unspecified and unimplemented.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "step", "requirement_ids": ["LRE-FR4"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Transition priority order within MOM/HCM invented",
+      "detail": "Requirements do not rank simultaneous transitions. Chosen inner order: operator events first (reqOCM, endTask, reqHCM), then autonomous inOpez -> OCM, then CAM guard (cda/tcpa), then the three HCM guards. HCM: reqOCM, inOpez, CAM guard, then return-to-MOM.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "step", "requirement_ids": ["LRE-Beh5", "LRE-Beh8", "LRE-Beh9", "LRE-DC1"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Mode entry advisories fired inline at every entering transition",
+      "detail": "MOM entry advVel(1) duplicated on OCM->MOM and HCM->MOM (LRE-FR2); HCM entry advVel(0) duplicated on all four MOM->HCM transitions including reqHCM (LRE-FR3 says 0 m/s on entering HCM). advVel(0) also fired on MOM->OCM endTask (LRE-Beh7) and CAM->OCM safe (LRE-Beh18) as transition actions.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "step", "requirement_ids": ["LRE-FR2", "LRE-FR3", "LRE-Beh7", "LRE-Beh18"]}]
+    },
+    {
+      "kind": "scope_question",
+      "title": "No demo main class or unit tests generated",
+      "detail": "Requirements define no executable scenario; only the library code needed by the verification pipeline was generated.",
+      "java_trace": []
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile through vacuity) and iterate on its feedback."
+}

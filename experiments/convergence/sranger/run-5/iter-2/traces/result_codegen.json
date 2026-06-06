@@ -1,0 +1,35 @@
+{
+  "study": "sranger",
+  "codegen_trace": [
+    {"requirement_gid": "SR-ARCH1", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "SRangerController"},
+    {"requirement_gid": "SR-ARCH2", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "SRangerController"},
+    {"requirement_gid": "SR-DM1", "java_file": "src/main/java/sranger/mode/SRangerMode.java", "java_element": "SRangerMode"},
+    {"requirement_gid": "SR-DM2", "java_file": "src/main/java/sranger/constants/SRangerConstants.java", "java_element": "SRangerConstants"},
+    {"requirement_gid": "SR-DM3", "java_file": "src/main/java/sranger/event/InputEvent.java", "java_element": "InputEvent"},
+    {"requirement_gid": "SR-DM4", "java_file": "src/main/java/sranger/actuator/Actuator.java", "java_element": "move"},
+    {"requirement_gid": "SR-DM5", "java_file": "src/main/java/sranger/sensor/Sensor.java", "java_element": "Sensor"},
+    {"requirement_gid": "SR-DM6", "java_file": "src/main/java/sranger/actuator/Actuator.java", "java_element": "Actuator"},
+    {"requirement_gid": "SR-SF1", "java_file": "src/main/java/sranger/sensor/Sensor.java", "java_element": "distance"},
+    {"requirement_gid": "SR-Var1", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "clockResetTime"},
+    {"requirement_gid": "SR-Var1", "java_file": "src/main/java/sranger/sensor/Clock.java", "java_element": "Clock"},
+    {"requirement_gid": "SR-FR1", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-FR2", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-FR3", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-GP1", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-GP2", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-Beh1", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "currentMode"},
+    {"requirement_gid": "SR-Beh2", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-Beh3", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-Beh4", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-Beh5", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-Beh6", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-Beh7", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"},
+    {"requirement_gid": "SR-DC1", "java_file": "src/main/java/sranger/controller/SRangerController.java", "java_element": "step"}
+  ],
+  "notes": [
+    "Terminal mode is named Halted, not Final: the Isabelle theory-generated (primary) controller must not contain a RoboChart Final state (CLAUDE.md, Interpreting Isabelle Results). Halted is an ordinary absorbing state with a tick self-loop so the deadlock-freedom proof has a bare-precondition operation for it. SR-DM1/SR-FR3/SR-Beh3/SR-Beh6's 'Final' maps to Halted.",
+    "The Halted tick self-loop is an invented transition not in SR-Beh1..7; it does not duplicate any source-mode/trigger combination, so SR-DC1 still holds.",
+    "Output event Move(lv, av) is realised as the two-argument Actuator.move(lv, av) call; the M2M models multi-arg actuator calls as RoboChart operation Calls (LOperations), preserving both payload values.",
+    "SR-FR1's entry action for the initial Moving mode is issued from the constructor (Java-level power-up); the model-level Initial -> Moving transition carries no action."
+  ]
+}

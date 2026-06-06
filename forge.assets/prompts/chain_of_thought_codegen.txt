@@ -1,0 +1,180 @@
+STEP-BY-STEP REASONING FOR JAVA SOURCE CODE GENERATION
+
+IMPORTANT: When the user specifies a requirement file to work from, read ONLY that file.
+Do NOT read or reference other requirement files unless they are explicitly mentioned in
+the specified file. Only generate code for the requirements contained in the given file.
+
+Phase 0: Annotation Infrastructure
+
+Step 0: Generate the @RoboChartType annotation class.
+- Create a @RoboChartType annotation in an `annotation` subpackage
+- @Retention(SOURCE), @Target({FIELD, PARAMETER, METHOD})
+- Single String value() attribute for the RoboChart type name (e.g., "nat", "real")
+- This annotation tells downstream model extraction what RoboChart type a Java variable represents
+- Apply throughout subsequent phases: any int that represents a natural number gets @RoboChartType("nat"),
+  any double that maps to RoboChart real gets @RoboChartType("real")
+
+Phase 1: Data Types and Events
+
+Step 1: Identify data types from the requirements.
+- Extract all domain-specific value types (measurements, parameters, entities)
+- Use Java records for immutable value types
+- Identify classification rules (e.g., subtypes, categories) from the domain
+
+Step 2: Design collection/registry types.
+- If the domain has indexed or categorised entities, create an immutable registry type
+- Support filtering by classification (e.g., by subtype or category)
+- Use copy-on-write operations for immutability
+
+Step 3: Identify events from the requirements.
+- Input events: commands or requests from external actors (operators, other systems)
+- Output events: advisories, commands, or notifications to downstream systems
+- Data-carrying events hold a payload; signal events carry no data
+- Use sealed interfaces with record implementations for type safety
+
+Step 4: Define the operating modes (states).
+- Extract all named modes/states from the requirements
+- Create a simple enum with one value per mode
+- Identify the initial mode
+
+Step 5: Define domain constants and thresholds.
+- Extract all numeric thresholds, limits, and configurable parameters from the requirements
+- Group into a constants class or record
+- Distinguish between fixed constants and configurable parameters
+
+Step 6: Design the actuator (output interface).
+- Create a mutable object that receives output commands (e.g., advised values)
+- Track last-issued values for inspection and testing
+
+Phase 2: Sensor / Input Computations
+
+Step 7: Identify derived quantities.
+- Extract all computed values from the requirements (e.g., derived velocities, distances, scores)
+- Implement each as a pure function or cached computation on the sensor/input class
+
+Step 8: Identify comparison functions.
+- Extract functions that compare or measure relationships between entities
+  (e.g., distance functions, similarity scores, risk assessments)
+- These become methods on the sensor/input class
+
+Step 9: Identify aggregation and selection logic.
+- If the domain selects "closest", "best", "worst", or "most relevant" entities,
+  implement these as cached computations updated on each cycle
+- Use Optional/OptionalInt for nullable results
+
+Step 10: Identify complex derived quantities.
+- Extract any multi-step computed values from the requirements
+  (e.g., time-to-event, projected distances, risk indices)
+- Handle edge cases (division by zero, missing data) with documented defaults
+
+Step 11: Identify zone or region membership predicates.
+- Extract any spatial, temporal, or logical zone checks from the requirements
+- Implement as boolean-returning methods on the sensor/input class
+
+Phase 2b: Controller Operations
+
+Requirements with types: ["operation"] define named computation groups that the controller
+invokes. These are specification-level abstractions over the sensor computations already
+implemented in Phase 2. Each operation becomes a separate class in an `operation` subpackage.
+
+Step 11b: Create operation classes.
+- For each requirement with types: ["operation"], create a public class in the `operation`
+  subpackage (e.g., com.example.operation.CalcMetrics)
+- Class name MUST exactly match the operation name from the requirement
+- Each class takes Sensor and constants as constructor parameters
+- Each class has a single public void compute() method that performs the computation
+  and returns any results via getter methods
+- The compute() method body MUST use only direct `this.field = expression` assignments.
+  CRITICAL: Do NOT declare local intermediate variables in compute(). Each assignment RHS
+  must be a single expression using sensor.method() calls, Math.sqrt(), arithmetic operators,
+  boolean operators, and previously-assigned fields of the same class.
+  Do NOT use lambda expressions, streams, method references, or functional interfaces.
+  Use only imperative for-loops and direct field assignments.
+  This is REQUIRED for formal model extraction — lambdas, streams, and local variables
+  cannot be mapped to the RoboChart specification model.
+- Store computed values in private fields, exposed via getters named after the
+  state variables they compute (matching the variable names from the requirements)
+- Example structure (with @RoboChartType annotations for model extraction):
+    public final class ComputeMetrics {
+        private final Sensor sensor;
+        @RoboChartType("real")
+        private double hspeed;
+        @RoboChartType("real")
+        private double speed;
+        @RoboChartType("nat")
+        private int count;
+        public ComputeMetrics(Sensor sensor) { this.sensor = sensor; }
+        public void compute() {
+            this.hspeed = Math.sqrt(sensor.xVel() * sensor.xVel() + sensor.yVel() * sensor.yVel());
+            this.speed = Math.sqrt(this.hspeed * this.hspeed + sensor.zVel() * sensor.zVel());
+            this.count = sensor.count();
+        }
+        public double hspeed() { return hspeed; }
+        public double speed() { return speed; }
+        public int count() { return count; }
+    }
+
+Phase 3: Mode-Nested If-Else State Machine Controller
+
+The controller should be a SINGLE-METHOD, MODE-NESTED IF-ELSE state machine.
+The state machine model will be extracted from this code later via Spoon AST analysis
+and ETL transformations. A mode-nested structure with named boolean predicates makes
+the state machine directly and faithfully extractable:
+- The outer if-else chain selects the current mode → maps directly to source states
+- The inner if-else chain within each mode block selects transitions → preserves branch priority
+- Named boolean predicates for guard conditions → extractable guard names instead of opaque expressions
+
+Step 12: Controller structure.
+- Fields: mode enum (initialised to the initial state), sensor/input, actuator/output, constants
+- No event queue, no thread, no while-loop, no volatile flags
+
+Step 13: Single public method.
+- void step(InputEvent event) — evaluates ALL transitions (event-triggered and autonomous)
+- The method is called once per control cycle by the caller
+- The outer if-else chain selects the current mode (one block per mode)
+- Within each mode block, an inner if-else chain selects transitions, ordered by priority
+
+Step 14: Named boolean predicates for guard conditions.
+- BEFORE the outer if-else chain, declare named boolean variables for ALL guard conditions
+- Each boolean variable captures one atomic condition from the formal requirements
+- Derive predicate names from the requirements specification:
+  - Name encodes: the sensor function or quantity, the entity reference, and the comparison direction
+  - Examples: velBelowThreshold, distanceAboveLimit, zoneActive, entityPresent
+- Reuse the SAME variable name across modes when the condition is the same
+- Each predicate RHS MUST be a simple comparison or boolean expression. Examples:
+    boolean queueLong = sensor.queueLong();
+    boolean waitAboveThreshold = sensor.waitTime() > 30.0;
+    boolean speedBelowLimit = calcSpeed.speed() <= Constants.MAX_SPEED;
+- Do NOT use ternary expressions (?:) in predicates. Do NOT wrap comparisons in sentinel
+  checks like `index == -1 ? true : expr`. Call the sensor/operation method directly.
+  Do NOT declare sentinel-existence predicates (e.g., itemExists = idx != -1) or use
+  them as guard prefixes. The Sensor layer returns safe defaults for missing data, so
+  controller predicates must call sensor/operation methods directly without existence checks.
+  WRONG: boolean safe = idx == -1 ? true : sensor.distance(idx) > limit;
+  WRONG: boolean itemExists = idx != -1;
+         boolean safe = !itemExists || sensor.distance(idx) > 1.0;
+  RIGHT: boolean safe = sensor.distance(idx) > limit;
+  RIGHT: boolean distAboveOne = sensor.distance(idx) > 1.0;
+- This is CRITICAL: the ETL extracts these variable names as guard identifiers in the formal model.
+  Ternary expressions, sentinel guards, and existence-check predicates become opaque and unverifiable.
+- For negations, use the NOT operator on the named variable (e.g., !zoneActive),
+  do NOT create a separate variable for the negation
+
+Step 15: Pure mode-nested if-else structure.
+- The outer if-else chain has EXACTLY ONE block per mode (using currentMode == X).
+  No exceptions — every outer branch is a mode check. No currentMode != X at the outer level.
+- High-priority transitions (e.g., operator overrides, emergency stops) are DUPLICATED as the
+  first inner branches in each applicable mode block, ensuring they have highest priority.
+- Use traditional instanceof checks (NOT pattern-matching instanceof). When event data is needed,
+  cast the event on a separate line inside the if-body.
+- For each mode block, derive the inner if-else chain from the requirements:
+  1. List all transitions leaving this state, ordered by priority (highest first)
+  2. Event-triggered transitions: check event type via instanceof, then guard predicates
+  3. Autonomous (guard-only) transitions: check guard predicates only (no event check)
+  4. Each branch assigns currentMode and fires any entry actions inline
+
+Step 16: Entry actions are placed inline.
+- Immediately after setting currentMode, execute any entry actions for the target state
+- No separate entry action method — keeps everything in the if-else for extractability
+
+Step 17: Output all files as a JSON manifest.

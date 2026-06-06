@@ -1,0 +1,160 @@
+// Example test structure using JUnit 5 with @Nested classes
+// Tests should cover: sensor computations, mode transitions (guarded and blocked),
+// high-priority overrides, and a demo app exercising key scenarios.
+
+// FILE: src/test/java/com/example/controller/sensor/SensorTest.java
+package com.example.controller.sensor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class SensorTest {
+
+    private Sensor sensor;
+
+    @BeforeEach
+    void setUp() {
+        sensor = new Sensor();
+    }
+
+    @Nested
+    class DerivedQuantities {
+
+        @Test
+        void reportsQueueLongWhenAboveThreshold() {
+            sensor.update(11, 0.0);
+            assertTrue(sensor.queueLong());
+        }
+
+        @Test
+        void reportsQueueNotLongAtThreshold() {
+            sensor.update(10, 0.0);
+            assertFalse(sensor.queueLong());
+        }
+    }
+
+    @Nested
+    class BoundaryConditions {
+
+        @Test
+        void handlesZeroInputs() {
+            sensor.update(0, 0.0);
+            assertFalse(sensor.queueLong());
+            assertEquals(0.0, sensor.waitTime());
+        }
+    }
+}
+
+// FILE: src/test/java/com/example/controller/TrafficControllerTest.java
+package com.example.controller;
+
+import com.example.controller.actuator.Actuator;
+import com.example.controller.event.InputEvent;
+import com.example.controller.mode.TrafficMode;
+import com.example.controller.sensor.Sensor;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class TrafficControllerTest {
+
+    private Sensor sensor;
+    private Actuator actuator;
+    private TrafficController ctrl;
+
+    @BeforeEach
+    void setUp() {
+        sensor = new Sensor();
+        actuator = new Actuator();
+        ctrl = new TrafficController(sensor, actuator);
+    }
+
+    @Test
+    void startsInRedMode() {
+        assertEquals(TrafficMode.RED, ctrl.currentMode());
+    }
+
+    @Nested
+    class RedModeTransitions {
+
+        @Test
+        void transitionsToGreenWhenQueueLongAndTimerExpires() {
+            sensor.update(15, 0.0);
+            ctrl.step(new InputEvent.TimerExpired());
+            assertEquals(TrafficMode.GREEN, ctrl.currentMode());
+            assertEquals("GREEN", actuator.lastSignal());
+        }
+
+        @Test
+        void staysRedWhenQueueShortAndWaitBelowThreshold() {
+            sensor.update(5, 10.0);
+            ctrl.step(new InputEvent.TimerExpired());
+            assertEquals(TrafficMode.RED, ctrl.currentMode());
+        }
+    }
+
+    @Nested
+    class HighPriorityOverrides {
+
+        @Test
+        void emergencyStopFromGreenGoesToRed() {
+            // First transition to GREEN
+            sensor.update(15, 0.0);
+            ctrl.step(new InputEvent.TimerExpired());
+            assertEquals(TrafficMode.GREEN, ctrl.currentMode());
+
+            // Emergency stop overrides
+            ctrl.step(new InputEvent.EmergencyStop());
+            assertEquals(TrafficMode.RED, ctrl.currentMode());
+            assertEquals("RED", actuator.lastSignal());
+        }
+    }
+
+    @Nested
+    class AutonomousTransitions {
+
+        @Test
+        void greenTransitionsToYellowWhenGuardsSatisfied() {
+            // Transition to GREEN first
+            sensor.update(15, 0.0);
+            ctrl.step(new InputEvent.TimerExpired());
+            assertEquals(TrafficMode.GREEN, ctrl.currentMode());
+
+            // Update sensor so guards trigger autonomous transition
+            sensor.update(2, 5.0);
+            ctrl.step(new InputEvent.Resume());  // any non-matching event
+            assertEquals(TrafficMode.YELLOW, ctrl.currentMode());
+        }
+    }
+}
+
+// FILE: src/main/java/com/example/controller/DemoApp.java
+package com.example.controller;
+
+import com.example.controller.actuator.Actuator;
+import com.example.controller.event.InputEvent;
+import com.example.controller.sensor.Sensor;
+
+public class DemoApp {
+    public static void main(String[] args) {
+        var sensor = new Sensor();
+        var actuator = new Actuator();
+        var ctrl = new TrafficController(sensor, actuator);
+
+        System.out.println("=== Traffic Controller Demo ===");
+        System.out.println("Initial mode: " + ctrl.currentMode());
+
+        // Scenario: queue builds up, timer expires, transitions through modes
+        sensor.update(15, 40.0);
+        ctrl.step(new InputEvent.TimerExpired());
+        System.out.println("After timer (queue=15): " + ctrl.currentMode());
+
+        ctrl.step(new InputEvent.EmergencyStop());
+        System.out.println("After emergency stop: " + ctrl.currentMode());
+
+        System.out.println("=== Demo complete ===");
+    }
+}

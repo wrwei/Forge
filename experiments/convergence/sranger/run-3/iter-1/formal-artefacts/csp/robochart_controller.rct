@@ -1,0 +1,105 @@
+diagram SRangerController
+
+interface Inputs {
+	event endTask
+	event obstacle
+	event tick
+}
+
+interface Outputs {
+	event move : real
+}
+
+interface Sensors {
+	var NO_READING_DEFAULT : real
+	var lastReading : real
+	var distance : real
+	var clockResetTime : nat
+}
+
+interface Actuators {
+}
+
+interface Ctrl_State {
+}
+
+interface Constants {
+	const obstaclethreshold : real = 1
+	const turnduration : real = 2
+}
+
+stm SRangerController {
+	uses Inputs uses Outputs requires Ctrl_State requires Constants requires Sensors
+	clock clockResetTime
+	state Final {
+		entry move ! 0
+	}
+	state Turning {
+		entry move ! 0
+	}
+	state Moving {
+		entry move ! 1
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to Moving
+	}
+	transition t1 {
+		from Moving
+		to Final
+		trigger endTask
+	}
+	transition t2 {
+		from Moving
+		to Turning
+		trigger obstacle
+		# clockResetTime
+		condition distance <= obstaclethreshold
+	}
+	transition t3 {
+		from Moving
+		to Moving
+		trigger tick
+	}
+	transition t4 {
+		from Turning
+		to Final
+		trigger endTask
+	}
+	transition t5 {
+		from Turning
+		to Moving
+		condition since ( clockResetTime ) >= turnduration
+	}
+	transition t6 {
+		from Turning
+		to Turning
+		trigger tick
+	}
+}
+
+controller SRangerController_Ctrl {
+	uses Inputs uses Outputs requires Ctrl_State requires Constants requires Sensors
+	sref stm_ref0 = SRangerController
+	connection SRangerController_Ctrl on endTask to stm_ref0 on endTask
+	connection SRangerController_Ctrl on obstacle to stm_ref0 on obstacle
+	connection SRangerController_Ctrl on tick to stm_ref0 on tick
+	connection stm_ref0 on move to SRangerController_Ctrl on move
+}
+
+module SRangerController_Module {
+	robotic platform SRangerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event endTask
+		event obstacle
+		event tick
+		event move : real
+	}
+	cref ctrl_ref0 = SRangerController_Ctrl
+	connection SRangerController_Platform on endTask to ctrl_ref0 on endTask
+	connection SRangerController_Platform on obstacle to ctrl_ref0 on obstacle
+	connection SRangerController_Platform on tick to ctrl_ref0 on tick
+	connection ctrl_ref0 on move to SRangerController_Platform on move
+}
+

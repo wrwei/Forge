@@ -1,0 +1,12 @@
+{
+  "phase": "codegen",
+  "label": "Phase 2 — Interactive Codegen (iter 2)",
+  "status": "complete",
+  "summary": "Minimal GasAnalysisController fixes from iter-1 feedback: goreq guard call replaced by direct >= comparison; gas-triggered bare-precondition self-loops added to Analysis/GasDetected; Located self-loop captures payload.",
+  "issues": [
+    {"kind": "design_choice", "title": "goreq guard call replaced by direct comparison", "detail": "M2M cannot model multi-arg sensor calls in guards (mistyped Sensors var; Dafny arity error). ins >= THR is goreq's definition (CD-Fn4); CD-GA-Beh6/7 semantics unchanged."},
+    {"kind": "design_choice", "title": "Gas self-loops on Analysis and GasDetected", "detail": "Isabelle deadlock_free closer requires a bare-precondition op per mode; both modes had guarded-only exits (iter-1 timeout). Event-triggered no-guard branch is the preferred pattern; spec deviation (CD-GA-FR3/FR4 list no gas self-loop) documented."},
+    {"kind": "design_choice", "title": "Located self-loop captures gas payload", "detail": "Fixes latent 'trigger gas ? v' against default var v : real (type mismatch vs Seq(GasSensor))."}
+  ],
+  "next_step": "Re-run the pipeline; expect fdr4/dafny_verify/isabelle_verify to progress."
+}

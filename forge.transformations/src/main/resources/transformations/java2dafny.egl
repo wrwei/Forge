@@ -1,0 +1,1264 @@
+[%
+// java2dafny.egl
+// Generates Dafny verification code (.dfy) directly from a Spoon Java EMF model.
+//
+// Injected variables:
+//   resolvedValues : Map<EObject, Object>  — literal/constant values from SpoonDiscoverer
+//
+// The template discovers the mode enum, controller class, state fields,
+// and step() method if-else chain from the Spoon model, then generates
+// Dafny source with mode datatype, abstracted functions, transition methods
+// with requires/ensures contracts, and determinism lemmas.
+
+// =============================================================================
+// Section 1: Model Discovery
+// =============================================================================
+
+// FORK: aligned with the ETL's DEFAULT_ENUM_SUFFIXES = ["Mode","State"]
+// (see Java2RoboChartTransformer.java). "Status" was previously
+// included as a third suffix, but Status is a domain enum (e.g.
+// chemical_detector's Status = noGas | gasD); picking it up here
+// could cause findModeFieldName / findModeEnum to misidentify the
+// controller's mode field when the primary structural detection
+// (findModeEnumForClass) falls through.
+var modeSuffixes = Sequence{"Mode", "State"};
+var stepMethodName = "step";
+
+// Pick the controller class first so findModeEnum() can read its
+// mode-field type to find the paired mode enum (multi-controller
+// case studies, e.g. chemical_detector).
+var controllerClass = findControllerClass();
+if (controllerClass.isUndefined()) {
+    throw "No controller class found in Spoon model";
+}
+var modeEnum = findModeEnum();
+if (modeEnum.isUndefined()) {
+    throw "No mode enum found in Spoon model";
+}
+
+var modeNames = extractEnumValues(modeEnum);
+var controllerName = getFeature(controllerClass, "name");
+var initialMode = findInitialMode(controllerClass);
+if (initialMode == "") {
+    initialMode = modeNames.first();
+}
+
+// =============================================================================
+// Section 2: Field & Target Discovery
+// =============================================================================
+
+// Discover abstracted targets (non-static final fields whose method calls
+// become bodyless Dafny functions)
+var abstractedTargets = discoverAbstractedTargets(controllerClass);
+
+// Mutable collections accumulated during expression formatting
+var abstractedMethods = new Map;      // name -> "args"/"noargs"
+var abstractedArgCount = new Map;     // name -> integer arity (0 for noargs)
+var abstractedArgTypesList = new Map; // name -> Sequence of Dafny param type strings
+var abstractedArgTypes = new Map;     // name -> Dafny param type
+var abstractedReturnTypes = new Map;  // name -> Dafny return type
+var realNames = new OrderedSet;       // names known to be real-typed
+var staticConstants = new Map;        // name -> value string
+var staticConstantTypes = new Map;    // name -> Dafny type ("real"/"int"/"bool")
+
+// Extract state fields (non-final, non-mode)
+var stateVars = extractStateFields(controllerClass);
+
+// Extract static final fields as constants
+extractStaticConstants(controllerClass, abstractedMethods, abstractedTargets,
+    abstractedArgTypes, abstractedReturnTypes, realNames, staticConstants);
+// Infer per-constant Dafny type from the Java field's declared type
+// so int-valued constants emit as `const X: int := 200` rather than
+// `: real := 200` (Dafny refuses int → real implicit coercion).
+for (cls in Spoon!CtClass.all) {
+    for (tm in getChildren(cls, "typeMember")) {
+        if (tm.eClass().getName() = "CtField" and hasStaticFinalModifier(tm)) {
+            var cn = getFeature(tm, "name");
+            if (cn.isUndefined()) { continue; }
+            if (not staticConstants.containsKey(cn)) { continue; }
+            if (staticConstantTypes.containsKey(cn)) { continue; }
+            var ft = getFeature(tm, "type");
+            if (ft.isDefined()) {
+                var ftn = getFeature(ft, "name");
+                if (ftn.isDefined()) {
+                    staticConstantTypes.put(cn, mapDafnyType(ftn));
+                }
+            }
+        }
+    }
+}
+
+// Build state field name -> Dafny type map (for type inference in function params)
+var stateFieldTypes = new Map;
+for (f in stateVars) {
+    stateFieldTypes.put(f.get("name"), f.get("dafnyType"));
+}
+
+// Populate realNames from state fields
+for (f in stateVars) {
+    if (f.get("dafnyType") = "real") {
+        realNames.add(f.get("name"));
+    }
+}
+
+// =============================================================================
+// Section 3: Step Method Analysis
+// =============================================================================
+
+var stepMethod = findStepMethod(controllerClass);
+var predicateDefs = new Map;
+var modeTransitions = new Sequence;
+
+if (stepMethod.isDefined()) {
+    var body = getFeature(stepMethod, "body");
+    if (body.isDefined()) {
+        // Pass 1: Collect local variable definitions
+        var stmts = getFeature(body, "statement");
+        if (stmts.isDefined()) {
+            for (stmt in stmts) {
+                if (stmt.eClass().getName() = "CtLocalVariable") {
+                    var varName = getFeature(stmt, "name");
+                    var typeRef = getFeature(stmt, "type");
+                    var typeName = "";
+                    if (typeRef.isDefined()) {
+                        typeName = getFeature(typeRef, "name");
+                    }
+                    var init = getFeature(stmt, "assignment");
+                    if (init.isUndefined()) {
+                        init = getFeature(stmt, "defaultExpression");
+                    }
+                    if (varName.isUndefined() or init.isUndefined()) {
+                        continue;
+                    }
+
+                    if (typeName = "boolean") {
+                        // Boolean: inline full predicate expression
+                        predicateDefs.put(varName, formatSpoonExpr(init,
+                            abstractedMethods, abstractedTargets, abstractedArgTypes,
+                            abstractedReturnTypes, realNames));
+                    } else {
+                        // Non-boolean: format initializer (side effect: registers abstracted methods)
+                        formatSpoonExpr(init, abstractedMethods, abstractedTargets,
+                            abstractedArgTypes, abstractedReturnTypes, realNames);
+                        if (abstractedMethods.containsKey(varName)) {
+                            var dafnyType = mapDafnyType(typeName);
+                            abstractedReturnTypes.put(varName, dafnyType);
+                            if (dafnyType = "real") {
+                                realNames.add(varName);
+                            }
+                            predicateDefs.put(varName, varName + "()");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Pass 2: Recursively inline nested predicate references
+        predicateDefs = inlinePredicateDefs(predicateDefs);
+
+        // Pass 3: Walk the outer if-else chain
+        var outerIf = findFirstCtIf(body);
+        while (outerIf.isDefined() and outerIf.eClass().getName() = "CtIf") {
+            var cond = getFeature(outerIf, "condition");
+            var modeName = extractModeFromCondition(cond);
+            if (modeName.isDefined() and modeName <> "") {
+                var thenBlock = getFeature(outerIf, "then");
+                var transitions = extractTransitions(thenBlock, predicateDefs,
+                    abstractedMethods, abstractedTargets, abstractedArgTypes,
+                    abstractedReturnTypes, realNames);
+                var mt = new Map;
+                mt.put("modeName", modeName);
+                mt.put("transitions", transitions);
+                modeTransitions.add(mt);
+            }
+            var elseBlock = getFeature(outerIf, "else");
+            if (elseBlock.isDefined()) {
+                outerIf = findFirstCtIf(elseBlock);
+            } else {
+                outerIf = null;
+            }
+        }
+    }
+}
+
+// Collect event names from instanceof checks
+var eventNames = new OrderedSet;
+for (mt in modeTransitions) {
+    for (t in mt.get("transitions")) {
+        if (t.get("eventType").isDefined() and t.get("eventType") <> "") {
+            eventNames.add(t.get("eventType"));
+        }
+    }
+}
+
+// Identify modes with multiple guard-only transitions (for determinism lemmas)
+var lemmaModesNeeded = new Sequence;
+for (mt in modeTransitions) {
+    var guardOnly = mt.get("transitions").select(t |
+        (t.get("eventType").isUndefined() or t.get("eventType") = "") and
+        t.get("guard").isDefined() and t.get("guard") <> "");
+    if (guardOnly.size() > 1) {
+        lemmaModesNeeded.add(mt.get("modeName"));
+    }
+}
+
+%]
+// Auto-generated Dafny verification code from Java source
+// Source: [%=controllerName%].java (Spoon EMF model)
+
+datatype Mode = [%=modeNames.concat(" | ")%]
+
+[%
+// Domain enums (every CtEnum that ISN'T any controller's mode enum)
+// emit as Dafny datatypes so guards like `sts == noGas` resolve.
+// Other-controller mode enums are excluded — they'd collide on
+// shared literal names like `Final` (every machine has its own Final)
+// and Dafny refuses ambiguous datatype constructor references.
+var modeEnumNames = new Set;
+modeEnumNames.add(getFeature(modeEnum, "name"));
+for (cls in Spoon!CtClass.all) {
+    if (findStepMethod(cls).isDefined()) {
+        var pairedEnum = findModeEnumForClass(cls);
+        if (pairedEnum.isDefined()) {
+            modeEnumNames.add(getFeature(pairedEnum, "name"));
+        }
+    }
+}
+for (de in Spoon!CtEnum.all) {
+    var dn = getFeature(de, "name");
+    if (dn.isUndefined() or dn = "") { continue; }
+    if (modeEnumNames.includes(dn)) { continue; }
+    var dvals = extractEnumValues(de);
+%]
+datatype [%=dn%] = [%=dvals.concat(" | ")%]
+[%
+}
+%]
+[% if (eventNames.size() > 0) { %]
+datatype InputEvent = NoEvent[% for (e in eventNames) { %] | [%=e%][% } %]
+
+[% } %]
+[% if (staticConstants.size() > 0) { %]
+
+// Static constants
+[%
+    // FORK: sort the Map keys before emission. `keySet()` returns
+    // HashMap iteration order, so unsorted iteration produces
+    // different .dfy contents across JVM runs — flagged by the
+    // deterministic-pipeline audit.
+    var staticConstantNames = staticConstants.keySet().asSequence();
+    staticConstantNames.sortBy(s | s);
+    for (name in staticConstantNames) {
+    var ctype = "real";
+    if (staticConstantTypes.containsKey(name)) {
+        ctype = staticConstantTypes.get(name);
+    }
+%]
+const [%=name%]: [%=ctype%] := [%=staticConstants.get(name)%]
+[% } %]
+[% } %]
+
+class [%=controllerName%] {
+    var mode: Mode
+[% if (stateVars.size() > 0) { %]
+
+    // State variables (updated from sensor each step)
+[% for (f in stateVars) { %]
+    var [%=f.get("name")%]: [%=f.get("dafnyType")%]
+[% } %]
+[% } %]
+[% if (abstractedMethods.size() > 0) { %]
+
+    // Abstracted functions (from dependency objects -- uninterpreted)
+[%
+    // FORK: sort keys for deterministic emission order (HashMap
+    // iteration would otherwise vary across runs).
+    var abstractedMethodNames = abstractedMethods.keySet().asSequence();
+    abstractedMethodNames.sortBy(s | s);
+    for (name in abstractedMethodNames) {
+    var hasArgs = (abstractedMethods.get(name) = "args");
+    var retType = "real";
+    if (abstractedReturnTypes.containsKey(name)) {
+        retType = abstractedReturnTypes.get(name);
+    } else if (not hasArgs and (name.startsWith("in") or name.startsWith("is"))) {
+        retType = "bool";
+    }
+    if (hasArgs) {
+        // Build a parameter list of the right arity using the per-arg
+        // type list when available; fall back to the single abstractedArgTypes
+        // entry for legacy single-arg dependency calls.
+        var arity = 1;
+        if (abstractedArgCount.containsKey(name)) {
+            arity = abstractedArgCount.get(name);
+        }
+        var paramList = "";
+        var perArgTypes = abstractedArgTypesList.containsKey(name)
+                ? abstractedArgTypesList.get(name) : new Sequence;
+        var pi = 0;
+        while (pi < arity) {
+            if (pi > 0) { paramList = paramList + ", "; }
+            var pt = "real";
+            if (pi < perArgTypes.size()) {
+                pt = perArgTypes.at(pi);
+            } else if (pi = 0 and abstractedArgTypes.containsKey(name)) {
+                pt = abstractedArgTypes.get(name);
+            }
+            paramList = paramList + "p" + pi.asString() + ": " + pt;
+            pi = pi + 1;
+        }
+%]
+    function [%=name%]([%=paramList%]): [%=retType%]
+        reads this
+[%  } else { %]
+    function [%=name%](): [%=retType%]
+        reads this
+[%  }
+} %]
+[% } %]
+[% if (predicateDefs.size() > 0) { %]
+
+    // Guard predicates (inlined from Java local variables in step())
+[%
+    // FORK: sort keys for deterministic comment ordering.
+    var predicateDefNames = predicateDefs.keySet().asSequence();
+    predicateDefNames.sortBy(s | s);
+    for (key in predicateDefNames) { %]
+    //   [%=key%] := [%=predicateDefs.get(key)%]
+[% } %]
+[% } %]
+
+    ghost predicate Valid()
+        reads this
+    {
+        true  // Extend with domain invariants
+    }
+
+    constructor()
+        ensures mode == [%=initialMode%]
+        ensures Valid()
+    {
+        mode := [%=initialMode%];
+[% for (f in stateVars) { %]
+        [%=f.get("name")%] := [%=defaultValue(f.get("dafnyType"))%];
+[% } %]
+    }
+[% for (mt in modeTransitions) {
+    var modeName = mt.get("modeName");
+    var transitions = mt.get("transitions");
+%]
+
+    method transitionFrom[%=modeName%](event: InputEvent)
+        requires mode == [%=modeName%]
+        requires Valid()
+        modifies this
+[%  for (t in transitions) {
+        if (t.get("guard").isDefined() and t.get("guard") <> "" and t.get("targetMode").isDefined()) {
+            var condition = "";
+            if (t.get("eventType").isDefined() and t.get("eventType") <> "") {
+                condition = "event == " + t.get("eventType") + " && " + t.get("guard");
+            } else {
+                condition = t.get("guard");
+            }
+%]
+        ensures [%=condition%] ==> mode == [%=t.get("targetMode")%]
+[%      }
+    }
+%]
+        ensures Valid()
+    {
+[%  var first = true;
+    for (t in transitions) {
+        var condition = "";
+        if (t.get("eventType").isDefined() and t.get("eventType") <> "" and
+            t.get("guard").isDefined() and t.get("guard") <> "") {
+            condition = "event == " + t.get("eventType") + " && " + t.get("guard");
+        } else if (t.get("eventType").isDefined() and t.get("eventType") <> "") {
+            condition = "event == " + t.get("eventType");
+        } else if (t.get("guard").isDefined() and t.get("guard") <> "") {
+            condition = t.get("guard");
+        } else {
+            continue;
+        }
+        var keyword = "if";
+        if (not first) { keyword = "else if"; }
+%]
+        [%=keyword%] ([%=condition%]) {
+            mode := [%=t.get("targetMode")%];
+[%      if (t.get("action").isDefined() and t.get("action") <> "") { %]
+            // action: [%=t.get("action")%]
+[%      } %]
+        }
+[%      first = false;
+    }
+%]
+    }
+[% } %]
+
+    method step(event: InputEvent)
+        requires Valid()
+        modifies this
+        ensures Valid()
+    {
+[% var firstMode = true;
+for (mt in modeTransitions) {
+    var keyword = "if";
+    if (not firstMode) { keyword = "else if"; }
+%]
+        [%=keyword%] (mode == [%=mt.get("modeName")%]) {
+            transitionFrom[%=mt.get("modeName")%](event);
+        }
+[% firstMode = false;
+} %]
+    }
+}
+[% for (modeName in lemmaModesNeeded) { %]
+
+// Lemma: transitions from [%=modeName%] are deterministic by if-else priority
+lemma [%=modeName%]_deterministic()
+    ensures true  // The if-else chain guarantees exactly one branch executes
+{
+    // Determinism follows from the sequential if-else structure.
+    // Each guard is only evaluated when all prior guards are false.
+}
+[% } %]
+[%
+
+// =============================================================================
+// Helper Operations
+// =============================================================================
+
+// --- EMF Navigation ---
+
+operation getFeature(obj : Any, featureName : String) : Any {
+    if (obj.isUndefined()) { return; }
+    var f = obj.eClass().getEStructuralFeature(featureName);
+    if (f.isUndefined()) { return; }
+    return obj.eGet(f);
+}
+
+operation getChildren(obj : Any, featureName : String) : Any {
+    if (obj.isUndefined()) { return new Sequence; }
+    var f = obj.eClass().getEStructuralFeature(featureName);
+    if (f.isUndefined()) { return new Sequence; }
+    var val = obj.eGet(f);
+    if (val.isUndefined()) { return new Sequence; }
+    // EMF ELists are iterable but not EOL Sequences; wrap for safe use
+    if (val.isKindOf(Collection)) {
+        var result = new Sequence;
+        result.addAll(val);
+        return result;
+    }
+    return Sequence{val};
+}
+
+// --- Model Discovery ---
+
+// Find the mode enum bound to a specific controller class via its
+// mode-typed field (one of `currentMode` / `mode`). Walks the class's
+// fields, finds one whose declared type matches a known CtEnum, and
+// returns that enum. Mirrors the ETL's findModeEnumForController so
+// the Dafny generator picks the right pair for multi-controller
+// case studies (e.g. chemical_detector, where the top-level
+// dispatcher has step() but no mode field).
+operation findModeEnumForClass(c : Any) : Any {
+    var fieldCandidates = Sequence{"mode", "currentMode"};
+    for (tm in c.typeMember) {
+        if (tm.eClass().getName() <> "CtField") { continue; }
+        var fName = getFeature(tm, "name");
+        if (fName.isUndefined()) { continue; }
+        if (not fieldCandidates.includes(fName)) { continue; }
+        var fType = getFeature(tm, "type");
+        if (fType.isUndefined()) { continue; }
+        var fTypeName = getFeature(fType, "name");
+        if (fTypeName.isUndefined()) { continue; }
+        for (e in Spoon!CtEnum.all) {
+            if (e.name = fTypeName) { return e; }
+        }
+    }
+    return;
+}
+
+operation findModeEnum() : Any {
+    // Prefer the mode enum paired with the picked controller class.
+    if (controllerClass.isDefined()) {
+        var paired = findModeEnumForClass(controllerClass);
+        if (paired.isDefined()) { return paired; }
+    }
+    // Fallback: any CtEnum whose name ends with a known suffix.
+    for (obj in Spoon!CtEnum.all) {
+        var name = getFeature(obj, "name");
+        if (name.isDefined()) {
+            for (suffix in modeSuffixes) {
+                if (name.endsWith(suffix)) { return obj; }
+            }
+        }
+    }
+    return;
+}
+
+operation findControllerClass() : Any {
+    // Prefer a class that has BOTH step() AND an enum-typed mode field.
+    // Without this guard, the chemical_detector dispatcher
+    // `ChemicalDetector` (no mode field, step() just routes events) is
+    // picked and the Dafny output mis-uses the Status enum as Mode.
+    for (obj in Spoon!CtClass.all) {
+        if (findStepMethod(obj).isDefined()
+                and findModeEnumForClass(obj).isDefined()) {
+            return obj;
+        }
+    }
+    // Fallback: any class with step() (legacy behaviour for LRE).
+    for (obj in Spoon!CtClass.all) {
+        if (findStepMethod(obj).isDefined()) { return obj; }
+    }
+    return;
+}
+
+operation findStepMethod(classDecl : Any) : Any {
+    for (tm in getChildren(classDecl, "typeMember")) {
+        if (tm.eClass().getName() = "CtMethod" and getFeature(tm, "name") = stepMethodName) {
+            return tm;
+        }
+    }
+    return;
+}
+
+operation extractEnumValues(enumObj : Any) : Sequence {
+    var names = new Sequence;
+    for (val in getChildren(enumObj, "value")) {
+        var name = getFeature(val, "name");
+        if (name.isDefined()) { names.add(name); }
+    }
+    return names;
+}
+
+operation findModeFieldName(classDecl : Any) : String {
+    for (tm in getChildren(classDecl, "typeMember")) {
+        if (tm.eClass().getName() = "CtField") {
+            var typeRef = getFeature(tm, "type");
+            if (typeRef.isDefined()) {
+                var typeName = getFeature(typeRef, "name");
+                if (typeName.isDefined()) {
+                    for (suffix in modeSuffixes) {
+                        if (typeName.endsWith(suffix)) { return getFeature(tm, "name"); }
+                    }
+                }
+            }
+        }
+    }
+    return "";
+}
+
+operation findInitialMode(classDecl : Any) : String {
+    var modeFieldName = findModeFieldName(classDecl);
+    if (modeFieldName = "") { return ""; }
+    for (tm in getChildren(classDecl, "typeMember")) {
+        if (tm.eClass().getName() = "CtField" and getFeature(tm, "name") = modeFieldName) {
+            var init = getFeature(tm, "assignment");
+            if (init.isUndefined()) { init = getFeature(tm, "defaultExpression"); }
+            if (init.isDefined()) { return extractEnumLiteralName(init); }
+        }
+    }
+    return "";
+}
+
+operation discoverAbstractedTargets(classDecl : Any) : OrderedSet {
+    var targets = new OrderedSet;
+    for (tm in getChildren(classDecl, "typeMember")) {
+        if (tm.eClass().getName() = "CtField" and hasFinalModifier(tm) and not hasStaticFinalModifier(tm)) {
+            var name = getFeature(tm, "name");
+            if (name.isDefined()) { targets.add(name); }
+        }
+    }
+    return targets;
+}
+
+operation extractStateFields(classDecl : Any) : Sequence {
+    var fields = new Sequence;
+    var modeFieldName = findModeFieldName(classDecl);
+    for (tm in getChildren(classDecl, "typeMember")) {
+        if (tm.eClass().getName() = "CtField") {
+            var name = getFeature(tm, "name");
+            if (name.isDefined() and name <> modeFieldName and not hasFinalModifier(tm)) {
+                var typeRef = getFeature(tm, "type");
+                var javaType = "double";
+                if (typeRef.isDefined()) { javaType = getFeature(typeRef, "name"); }
+                var entry = new Map;
+                entry.put("name", name);
+                entry.put("dafnyType", mapDafnyType(javaType));
+                fields.add(entry);
+            }
+        }
+    }
+    return fields;
+}
+
+operation extractStaticConstants(classDecl : Any, abstractedMethods : Map,
+        abstractedTargets : OrderedSet, abstractedArgTypes : Map,
+        abstractedReturnTypes : Map, realNames : OrderedSet, staticConstants : Map) {
+    // Static finals on the controller itself
+    for (tm in getChildren(classDecl, "typeMember")) {
+        if (tm.eClass().getName() = "CtField" and hasStaticFinalModifier(tm)) {
+            var name = getFeature(tm, "name");
+            if (name.isDefined()) {
+                var init = getFeature(tm, "assignment");
+                if (init.isUndefined()) { init = getFeature(tm, "defaultExpression"); }
+                var value = "0.0";
+                if (init.isDefined()) {
+                    value = formatSpoonExpr(init, abstractedMethods, abstractedTargets,
+                        abstractedArgTypes, abstractedReturnTypes, realNames);
+                }
+                staticConstants.put(name, value);
+            }
+        }
+    }
+    // Static finals on every other class in the model (Constants
+    // classes, sensor-utility classes, etc.). Without this, refs like
+    // `Constants.THR` inside the controller body fall through to
+    // formatSpoonExpr's `unresolved field` branch and Dafny rejects
+    // them as undeclared identifiers.
+    for (other in Spoon!CtClass.all) {
+        if (other = classDecl) { continue; }
+        for (tm in getChildren(other, "typeMember")) {
+            if (tm.eClass().getName() = "CtField" and hasStaticFinalModifier(tm)) {
+                var name = getFeature(tm, "name");
+                if (name.isUndefined()) { continue; }
+                if (staticConstants.containsKey(name)) { continue; }
+                var init = getFeature(tm, "assignment");
+                if (init.isUndefined()) { init = getFeature(tm, "defaultExpression"); }
+                var value = "0.0";
+                if (init.isDefined()) {
+                    value = formatSpoonExpr(init, abstractedMethods, abstractedTargets,
+                        abstractedArgTypes, abstractedReturnTypes, realNames);
+                }
+                staticConstants.put(name, value);
+            }
+        }
+    }
+}
+
+operation hasFinalModifier(element : Any) : Boolean {
+    var mods = getFeature(element, "modifier");
+    if (mods.isUndefined()) { return false; }
+    if (mods.isKindOf(Collection)) {
+        for (m in mods) {
+            if (m.toString() = "FINAL") { return true; }
+        }
+    }
+    return false;
+}
+
+operation hasStaticFinalModifier(element : Any) : Boolean {
+    var mods = getFeature(element, "modifier");
+    if (mods.isUndefined()) { return false; }
+    var isStatic = false;
+    var isFinal = false;
+    if (mods.isKindOf(Collection)) {
+        for (m in mods) {
+            if (m.toString() = "STATIC") { isStatic = true; }
+            if (m.toString() = "FINAL") { isFinal = true; }
+        }
+    }
+    return isStatic and isFinal;
+}
+
+// --- If-Else Chain Walking ---
+
+operation findFirstCtIf(block : Any) : Any {
+    for (stmt in getChildren(block, "statement")) {
+        if (stmt.eClass().getName() = "CtIf") { return stmt; }
+    }
+    return;
+}
+
+operation extractModeFromCondition(cond : Any) : String {
+    if (cond.isUndefined()) { return ""; }
+    if (cond.eClass().getName() = "CtBinaryOperator" and getFeature(cond, "operatorKind").toString() = "EQ") {
+        var left = getFeature(cond, "leftOperand");
+        var right = getFeature(cond, "rightOperand");
+        if (left.isDefined() and isCurrentModeRef(left) and right.isDefined()) {
+            return extractEnumLiteralName(right);
+        }
+    }
+    return "";
+}
+
+operation isCurrentModeRef(expr : Any) : Boolean {
+    if (expr.eClass().getName() = "CtFieldRead" or expr.eClass().getName() = "CtFieldWrite") {
+        var varRef = getFeature(expr, "variable");
+        if (varRef.isDefined()) {
+            var name = getFeature(varRef, "name");
+            // Generic: look for the mode field name, not hardcoded "currentMode"
+            return name = findModeFieldName(controllerClass);
+        }
+    }
+    return false;
+}
+
+operation extractEnumLiteralName(expr : Any) : String {
+    if (expr.eClass().getName() = "CtFieldRead") {
+        var varRef = getFeature(expr, "variable");
+        if (varRef.isDefined()) { return getFeature(varRef, "name"); }
+    }
+    return "";
+}
+
+operation extractTransitions(thenBlock : Any, predicateDefs : Map,
+        abstractedMethods : Map, abstractedTargets : OrderedSet,
+        abstractedArgTypes : Map, abstractedReturnTypes : Map,
+        realNames : OrderedSet) : Sequence {
+    var transitions = new Sequence;
+    if (thenBlock.isUndefined()) { return transitions; }
+
+    var ifStmt = findFirstCtIf(thenBlock);
+    while (ifStmt.isDefined() and ifStmt.eClass().getName() = "CtIf") {
+        var cond = getFeature(ifStmt, "condition");
+        var thenBody = getFeature(ifStmt, "then");
+
+        var eventType = extractInstanceofType(cond);
+        var guard = formatGuardCondition(cond, eventType.isDefined() and eventType <> "",
+            predicateDefs, abstractedMethods, abstractedTargets, abstractedArgTypes,
+            abstractedReturnTypes, realNames);
+        var targetMode = findTargetMode(thenBody);
+        var action = findAction(thenBody, abstractedMethods, abstractedTargets,
+            abstractedArgTypes, abstractedReturnTypes, realNames);
+
+        if (targetMode.isDefined() and targetMode <> "") {
+            var t = new Map;
+            t.put("eventType", eventType);
+            t.put("guard", guard);
+            t.put("targetMode", targetMode);
+            t.put("action", action);
+            transitions.add(t);
+        }
+
+        var elseBlock = getFeature(ifStmt, "else");
+        if (elseBlock.isDefined()) {
+            ifStmt = findFirstCtIf(elseBlock);
+        } else {
+            ifStmt = null;
+        }
+    }
+    return transitions;
+}
+
+operation extractInstanceofType(cond : Any) : String {
+    if (cond.isUndefined()) { return ""; }
+
+    if (cond.eClass().getName() = "CtBinaryOperator" and
+            getFeature(cond, "operatorKind").toString() = "INSTANCEOF") {
+        var right = getFeature(cond, "rightOperand");
+        if (right.isDefined() and right.eClass().getName() = "CtTypeAccess") {
+            var accessedType = getFeature(right, "accessedType");
+            if (accessedType.isDefined()) { return getFeature(accessedType, "name"); }
+        }
+    }
+
+    if (cond.eClass().getName() = "CtBinaryOperator" and
+            getFeature(cond, "operatorKind").toString() = "AND") {
+        var left = extractInstanceofType(getFeature(cond, "leftOperand"));
+        if (left <> "") { return left; }
+        var right = extractInstanceofType(getFeature(cond, "rightOperand"));
+        if (right <> "") { return right; }
+    }
+
+    return "";
+}
+
+operation formatGuardCondition(cond : Any, skipInstanceof : Boolean, predicateDefs : Map,
+        abstractedMethods : Map, abstractedTargets : OrderedSet,
+        abstractedArgTypes : Map, abstractedReturnTypes : Map,
+        realNames : OrderedSet) : String {
+    if (cond.isUndefined()) { return ""; }
+    var typeName = cond.eClass().getName();
+    var opKind = "";
+    if (typeName = "CtBinaryOperator" or typeName = "CtUnaryOperator") {
+        opKind = getFeature(cond, "operatorKind").toString();
+    }
+
+    // Compound AND
+    if (typeName = "CtBinaryOperator" and opKind = "AND") {
+        var leftG = formatGuardCondition(getFeature(cond, "leftOperand"), skipInstanceof,
+            predicateDefs, abstractedMethods, abstractedTargets, abstractedArgTypes,
+            abstractedReturnTypes, realNames);
+        var rightG = formatGuardCondition(getFeature(cond, "rightOperand"), skipInstanceof,
+            predicateDefs, abstractedMethods, abstractedTargets, abstractedArgTypes,
+            abstractedReturnTypes, realNames);
+        if (leftG <> "" and rightG <> "") { return leftG + " && " + rightG; }
+        if (leftG <> "") { return leftG; }
+        if (rightG <> "") { return rightG; }
+        return "";
+    }
+
+    // Compound OR
+    if (typeName = "CtBinaryOperator" and opKind = "OR") {
+        var leftG = formatGuardCondition(getFeature(cond, "leftOperand"), skipInstanceof,
+            predicateDefs, abstractedMethods, abstractedTargets, abstractedArgTypes,
+            abstractedReturnTypes, realNames);
+        var rightG = formatGuardCondition(getFeature(cond, "rightOperand"), skipInstanceof,
+            predicateDefs, abstractedMethods, abstractedTargets, abstractedArgTypes,
+            abstractedReturnTypes, realNames);
+        if (leftG <> "" and rightG <> "") { return leftG + " || " + rightG; }
+        if (leftG <> "") { return leftG; }
+        if (rightG <> "") { return rightG; }
+        return "";
+    }
+
+    // NOT
+    if (typeName = "CtUnaryOperator" and opKind = "NOT") {
+        var inner = getFeature(cond, "expression");
+        var innerG = formatGuardCondition(inner, skipInstanceof,
+            predicateDefs, abstractedMethods, abstractedTargets, abstractedArgTypes,
+            abstractedReturnTypes, realNames);
+        if (innerG <> "") { return "!(" + innerG + ")"; }
+        return "";
+    }
+
+    // Skip pure instanceof leaf nodes when requested
+    if (skipInstanceof and typeName = "CtBinaryOperator" and opKind = "INSTANCEOF") {
+        return "";
+    }
+
+    // Variable read (boolean predicate reference) — inline the definition
+    if (typeName = "CtVariableRead") {
+        var varRef = getFeature(cond, "variable");
+        var name = "";
+        if (varRef.isDefined()) { name = getFeature(varRef, "name"); }
+        if (name <> "") {
+            var def = name;
+            if (predicateDefs.containsKey(name)) { def = predicateDefs.get(name); }
+            if (def.indexOf("||") >= 0) { return "(" + def + ")"; }
+            return def;
+        }
+    }
+
+    return formatSpoonExpr(cond, abstractedMethods, abstractedTargets,
+        abstractedArgTypes, abstractedReturnTypes, realNames);
+}
+
+operation findTargetMode(block : Any) : String {
+    if (block.isUndefined()) { return ""; }
+    for (stmt in getChildren(block, "statement")) {
+        if (stmt.eClass().getName() = "CtAssignment") {
+            var assigned = getFeature(stmt, "assigned");
+            if (assigned.isDefined() and assigned.eClass().getName() = "CtFieldWrite") {
+                var varRef = getFeature(assigned, "variable");
+                if (varRef.isDefined() and getFeature(varRef, "name") = findModeFieldName(controllerClass)) {
+                    var rhs = getFeature(stmt, "assignment");
+                    return extractEnumLiteralName(rhs);
+                }
+            }
+        }
+    }
+    return "";
+}
+
+operation findAction(block : Any, abstractedMethods : Map, abstractedTargets : OrderedSet,
+        abstractedArgTypes : Map, abstractedReturnTypes : Map,
+        realNames : OrderedSet) : String {
+    if (block.isUndefined()) { return ""; }
+    for (stmt in getChildren(block, "statement")) {
+        if (stmt.eClass().getName() = "CtInvocation") {
+            var execRef = getFeature(stmt, "executableRef");
+            var methodName = "";
+            if (execRef.isDefined()) { methodName = getFeature(execRef, "name"); }
+            if (methodName = "receive" or methodName = "apply") {
+                var args = getChildren(stmt, "argument");
+                if (args.size() > 0) {
+                    var arg = args.first();
+                    if (arg.eClass().getName() = "CtConstructorCall") {
+                        var argExecRef = getFeature(arg, "executableRef");
+                        if (argExecRef.isDefined()) {
+                            var argType = getFeature(argExecRef, "type");
+                            var eventName = "?";
+                            if (argType.isDefined()) { eventName = getFeature(argType, "name"); }
+                            var innerArgs = getChildren(arg, "argument");
+                            if (innerArgs.size() > 0) {
+                                var val = formatSpoonExpr(innerArgs.first(), abstractedMethods,
+                                    abstractedTargets, abstractedArgTypes, abstractedReturnTypes, realNames);
+                                return eventName + "(" + val + ")";
+                            }
+                            return eventName;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return "";
+}
+
+// --- Predicate Inlining ---
+
+operation inlinePredicateDefs(predicateDefs : Map) : Map {
+    var result = new Map;
+    // FORK: sort keys throughout this fixed-point computation. The
+    // outer/inner Map iteration order would otherwise depend on
+    // HashMap probe order, which can yield different substitution
+    // traces — and with non-monotonic regex patterns, different
+    // final strings — across JVM runs. The audit flagged this as
+    // the highest-severity determinism issue in Phase 5b.
+    var sortedKeys = predicateDefs.keySet().asSequence();
+    sortedKeys.sortBy(s | s);
+    for (key in sortedKeys) {
+        result.put(key, predicateDefs.get(key));
+    }
+
+    // Identify terminal defs: name -> name() (function forwarding)
+    var terminalKeys = new OrderedSet;
+    for (key in sortedKeys) {
+        if (result.get(key) = key + "()") {
+            terminalKeys.add(key);
+        }
+    }
+
+    var changed = true;
+    var maxPasses = 10;
+    while (changed and maxPasses > 0) {
+        changed = false;
+        maxPasses = maxPasses - 1;
+        for (key in sortedKeys) {
+            if (terminalKeys.includes(key)) { continue; }
+            var value = result.get(key);
+            for (otherKey in sortedKeys) {
+                if (otherKey = key) { continue; }
+                var pattern = "\\b" + otherKey + "\\b(?!\\()";
+                var def = result.get(otherKey);
+                var replacement = def;
+                if (not isSimpleExpr(def)) {
+                    replacement = "(" + def + ")";
+                }
+                var newValue = value.replaceAll(pattern, replacement);
+                if (newValue <> value) {
+                    result.put(key, newValue);
+                    value = newValue;
+                    changed = true;
+                }
+            }
+        }
+    }
+    return result;
+}
+
+operation isSimpleExpr(expr : String) : Boolean {
+    if (expr.matches("\\w+\\([^)]*\\)")) { return true; }
+    if (expr.matches("\\w+")) { return true; }
+    return false;
+}
+
+// --- Spoon Expression Formatting ---
+
+operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
+        abstractedTargets : OrderedSet, abstractedArgTypes : Map,
+        abstractedReturnTypes : Map, realNames : OrderedSet) : String {
+    if (expr.isUndefined()) { return "?"; }
+
+    var typeName = expr.eClass().getName();
+
+    if (typeName = "CtBinaryOperator") {
+        var op = getFeature(expr, "operatorKind").toString();
+        var left = formatSpoonExpr(getFeature(expr, "leftOperand"), abstractedMethods,
+            abstractedTargets, abstractedArgTypes, abstractedReturnTypes, realNames);
+        var right = formatSpoonExpr(getFeature(expr, "rightOperand"), abstractedMethods,
+            abstractedTargets, abstractedArgTypes, abstractedReturnTypes, realNames);
+        // Coerce int literals to real when compared against real-typed expressions
+        if (isComparisonOp(op)) {
+            if (isRealExpr(left, realNames, abstractedMethods) and isIntLiteral(right)) {
+                right = right + ".0";
+            } else if (isRealExpr(right, realNames, abstractedMethods) and isIntLiteral(left)) {
+                left = left + ".0";
+            }
+        }
+        return left + " " + mapOperator(op) + " " + right;
+    }
+
+    if (typeName = "CtUnaryOperator") {
+        var op = getFeature(expr, "operatorKind").toString();
+        var operand = formatSpoonExpr(getFeature(expr, "expression"), abstractedMethods,
+            abstractedTargets, abstractedArgTypes, abstractedReturnTypes, realNames);
+        return mapUnaryOp(op) + operand;
+    }
+
+    if (typeName = "CtVariableRead") {
+        var varRef = getFeature(expr, "variable");
+        if (varRef.isDefined()) { return getFeature(varRef, "name"); }
+        return "?";
+    }
+
+    if (typeName = "CtFieldRead") {
+        // Check resolvedValues (injected, globally visible)
+        if (resolvedValues.isDefined() and resolvedValues.containsKey(expr)) {
+            var resolved = resolvedValues.get(expr);
+            return formatResolvedValue(resolved);
+        }
+        var varRef = getFeature(expr, "variable");
+        if (varRef.isDefined()) { return getFeature(varRef, "name"); }
+        return "?";
+    }
+
+    if (typeName = "CtLiteral") {
+        if (resolvedValues.isDefined() and resolvedValues.containsKey(expr)) {
+            var resolved = resolvedValues.get(expr);
+            return formatResolvedValue(resolved);
+        }
+        // Fallback: check type name
+        var litType = getFeature(expr, "type");
+        var litTypeName = "";
+        if (litType.isDefined()) { litTypeName = getFeature(litType, "name"); }
+        if (litTypeName = "boolean") { return "false"; }
+        if (litTypeName = "int" or litTypeName = "long") { return "0"; }
+        return "0.0";
+    }
+
+    if (typeName = "CtInvocation") {
+        var execRef = getFeature(expr, "executableRef");
+        var methodName = "?";
+        if (execRef.isDefined()) { methodName = getFeature(execRef, "name"); }
+        var target = getFeature(expr, "target");
+        var args = getChildren(expr, "argument");
+
+        // Check if target is a known abstracted dependency object
+        var targetVarName = resolveTargetVarName(target);
+        if (targetVarName.isDefined() and abstractedTargets.includes(targetVarName)) {
+            if (args.size() > 0) {
+                abstractedMethods.put(methodName, "args");
+                // Infer argument type
+                if (not abstractedArgTypes.containsKey(methodName)) {
+                    var argType = inferArgDafnyType(args.first(), abstractedReturnTypes, stateFieldTypes);
+                    abstractedArgTypes.put(methodName, argType);
+                }
+                var argStrs = new Sequence;
+                for (a in args) {
+                    argStrs.add(formatSpoonExpr(a, abstractedMethods, abstractedTargets,
+                        abstractedArgTypes, abstractedReturnTypes, realNames));
+                }
+                return methodName + "(" + argStrs.concat(", ") + ")";
+            } else {
+                abstractedMethods.put(methodName, "noargs");
+                return methodName + "()";
+            }
+        }
+
+        // Static method call: target is a CtTypeAccess
+        // (e.g. `Sensor.goreq(ins, THR)`). Treat the same as an
+        // abstracted dependency call so it shows up as a Dafny
+        // function without target prefix. Returns and arg types are
+        // read from the executable signature; arity is preserved so
+        // multi-arg methods get the right number of parameters in
+        // the Dafny declaration.
+        if (target.isDefined() and target.eClass().getName() = "CtTypeAccess") {
+            abstractedMethods.put(methodName, "args");
+            abstractedArgCount.put(methodName, args.size());
+            if (not abstractedArgTypesList.containsKey(methodName)) {
+                var ats = new Sequence;
+                if (execRef.isDefined()) {
+                    var argTypeRefs = getChildren(execRef, "argumentType");
+                    for (atr in argTypeRefs) {
+                        var atn = getFeature(atr, "name");
+                        ats.add(atn.isDefined() ? mapDafnyType(atn) : "real");
+                    }
+                }
+                while (ats.size() < args.size()) { ats.add("real"); }
+                abstractedArgTypesList.put(methodName, ats);
+            }
+            if (not abstractedArgTypes.containsKey(methodName) and args.size() > 0) {
+                abstractedArgTypes.put(methodName,
+                    abstractedArgTypesList.get(methodName).first());
+            }
+            if (not abstractedReturnTypes.containsKey(methodName)) {
+                var retT = "real";
+                if (execRef.isDefined()) {
+                    var retTypeRef = getFeature(execRef, "type");
+                    if (retTypeRef.isDefined()) {
+                        var rtn = getFeature(retTypeRef, "name");
+                        if (rtn.isDefined()) { retT = mapDafnyType(rtn); }
+                    }
+                }
+                abstractedReturnTypes.put(methodName, retT);
+            }
+            var argStrs2 = new Sequence;
+            for (a in args) {
+                argStrs2.add(formatSpoonExpr(a, abstractedMethods, abstractedTargets,
+                    abstractedArgTypes, abstractedReturnTypes, realNames));
+            }
+            return methodName + "(" + argStrs2.concat(", ") + ")";
+        }
+
+        var targetName = formatSpoonExpr(target, abstractedMethods, abstractedTargets,
+            abstractedArgTypes, abstractedReturnTypes, realNames);
+        if (args.size() > 0) {
+            var argStrs = new Sequence;
+            for (a in args) {
+                argStrs.add(formatSpoonExpr(a, abstractedMethods, abstractedTargets,
+                    abstractedArgTypes, abstractedReturnTypes, realNames));
+            }
+            return targetName + "." + methodName + "(" + argStrs.concat(", ") + ")";
+        }
+        return targetName + "." + methodName + "()";
+    }
+
+    if (typeName = "CtTypeAccess") {
+        var accessedType = getFeature(expr, "accessedType");
+        if (accessedType.isDefined()) { return getFeature(accessedType, "name"); }
+        return "?";
+    }
+
+    if (typeName = "CtThisAccess") { return "this"; }
+
+    if (typeName = "CtConstructorCall") {
+        // Single-arg wrapper records (e.g. `new Intensity(0.8)`) get
+        // unwrapped to their argument's value. The Dafny model treats
+        // these as the underlying primitive (the goreq abstraction
+        // accepts `real`, not Intensity). Multi-arg constructors fall
+        // through to a placeholder — they need richer modelling.
+        var ctorArgs = getChildren(expr, "argument");
+        if (ctorArgs.size() = 1) {
+            return formatSpoonExpr(ctorArgs.first(), abstractedMethods, abstractedTargets,
+                abstractedArgTypes, abstractedReturnTypes, realNames);
+        }
+        return "0.0  /* unhandled constructor call */";
+    }
+
+    return "/* " + typeName + " */";
+}
+
+operation formatResolvedValue(resolved : Any) : String {
+    if (resolved.isKindOf(Native("java.lang.Double"))) {
+        var d = resolved;
+        if (d = d.floor()) {
+            return d.intValue().toString() + ".0";
+        }
+        return d.toString();
+    }
+    if (resolved.isKindOf(Native("java.lang.Integer"))) {
+        return resolved.toString();
+    }
+    return resolved.toString();
+}
+
+operation resolveTargetVarName(target : Any) : String {
+    if (target.isUndefined()) { return ""; }
+    if (target.eClass().getName() = "CtFieldRead" or target.eClass().getName() = "CtVariableRead") {
+        var varRef = getFeature(target, "variable");
+        if (varRef.isDefined()) { return getFeature(varRef, "name"); }
+    }
+    if (target.eClass().getName() = "CtThisAccess") { return "this"; }
+    return "";
+}
+
+// --- Type Mapping ---
+
+operation mapDafnyType(javaType : String) : String {
+    if (javaType.isUndefined()) { return "real"; }
+    if (javaType = "boolean") { return "bool"; }
+    if (javaType = "double" or javaType = "float") { return "real"; }
+    if (javaType = "int" or javaType = "long" or javaType = "short" or javaType = "byte") { return "int"; }
+    // Domain enums (other than the controller's own mode enum): use
+    // the enum's name as the Dafny type. The corresponding `datatype
+    // <name> = lit1 | lit2 | ...` declaration is emitted separately
+    // at the top of the .dfy.
+    for (e in Spoon!CtEnum.all) {
+        if (getFeature(e, "name") = javaType) { return javaType; }
+    }
+    return "real";
+}
+
+operation defaultValue(dafnyType : String) : String {
+    if (dafnyType = "bool") { return "false"; }
+    if (dafnyType = "int" or dafnyType = "nat") { return "0"; }
+    // Enum default: first literal of the matching CtEnum
+    for (e in Spoon!CtEnum.all) {
+        if (getFeature(e, "name") = dafnyType) {
+            var vals = extractEnumValues(e);
+            if (vals.size() > 0) { return vals.first(); }
+        }
+    }
+    return "0.0";
+}
+
+operation mapOperator(op : String) : String {
+    if (op = "EQ") { return "=="; }
+    if (op = "NE") { return "!="; }
+    if (op = "LT") { return "<"; }
+    if (op = "GT") { return ">"; }
+    if (op = "LE") { return "<="; }
+    if (op = "GE") { return ">="; }
+    if (op = "AND") { return "&&"; }
+    if (op = "OR") { return "||"; }
+    if (op = "PLUS") { return "+"; }
+    if (op = "MINUS") { return "-"; }
+    if (op = "MUL") { return "*"; }
+    if (op = "DIV") { return "/"; }
+    if (op = "INSTANCEOF") { return "is"; }
+    return op;
+}
+
+operation mapUnaryOp(op : String) : String {
+    if (op = "NOT") { return "!"; }
+    if (op = "NEG") { return "-"; }
+    return op;
+}
+
+operation isComparisonOp(op : String) : Boolean {
+    return op = "EQ" or op = "NE" or op = "LT" or op = "GT" or op = "LE" or op = "GE";
+}
+
+operation isRealExpr(expr : String, realNames : OrderedSet, abstractedMethods : Map) : Boolean {
+    if (expr.isUndefined()) { return false; }
+    if (realNames.includes(expr)) { return true; }
+    if (expr.indexOf("(") >= 0) {
+        var funcName = expr.substring(0, expr.indexOf("("));
+        if (abstractedMethods.containsKey(funcName)) { return true; }
+    }
+    return false;
+}
+
+operation isIntLiteral(expr : String) : Boolean {
+    if (expr.isUndefined()) { return false; }
+    return expr.matches("-?\\d+");
+}
+
+operation inferArgDafnyType(argExpr : Any, abstractedReturnTypes : Map, stateFieldTypes : Map) : String {
+    if (argExpr.eClass().getName() = "CtInvocation") {
+        var execRef = getFeature(argExpr, "executableRef");
+        if (execRef.isDefined()) {
+            var name = getFeature(execRef, "name");
+            if (name.isDefined() and abstractedReturnTypes.containsKey(name)) {
+                return abstractedReturnTypes.get(name);
+            }
+        }
+    }
+    if (argExpr.eClass().getName() = "CtVariableRead" or argExpr.eClass().getName() = "CtFieldRead") {
+        var varRef = getFeature(argExpr, "variable");
+        if (varRef.isDefined()) {
+            var varName = getFeature(varRef, "name");
+            // Check abstractedReturnTypes (function return types)
+            if (varName.isDefined() and abstractedReturnTypes.containsKey(varName)) {
+                return abstractedReturnTypes.get(varName);
+            }
+            // Check known state field types (e.g. cstc:int, cdyn:int)
+            if (varName.isDefined() and stateFieldTypes.containsKey(varName)) {
+                return stateFieldTypes.get(varName);
+            }
+            // Check the variable reference's nested type (Spoon stores type on CtFieldReference)
+            if (varRef.isDefined()) {
+                var varType = getFeature(varRef, "type");
+                if (varType.isDefined()) {
+                    var vtName = getFeature(varType, "name");
+                    if (vtName.isDefined()) {
+                        return mapDafnyType(vtName);
+                    }
+                }
+            }
+        }
+    }
+    // Fall back to expression's direct type reference
+    var typeRef = getFeature(argExpr, "type");
+    if (typeRef.isDefined()) {
+        var typeName = getFeature(typeRef, "name");
+        return mapDafnyType(typeName);
+    }
+    return "real";
+}
+
+%]

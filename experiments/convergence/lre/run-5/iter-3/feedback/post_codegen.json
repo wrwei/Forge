@@ -1,0 +1,21 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter 3)",
+  "status": "complete",
+  "summary": "Iter-3 fix driven by iter-2 post_dafny_verify: LRE-Var1..8 quantities moved onto the controller as fields assigned at top of step(); guard predicates read the fields, making Dafny ensures premises heap-stable under mode assignments.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Computed variables moved from operations onto the controller (supersedes iter-1 choice)",
+      "raw": "Guard calls like checkOPEZ.inOpez() became uninterpreted Dafny functions with 'reads this'; 'mode := X' (modifies this) made every other transition's ensures premise unstable. Controller FIELDS are frame-tracked precisely by Dafny, so premises over fields survive mode assignments. Also matches LRE-Var1..8 wording: 'the controller maintains a ... variable'.",
+      "fix_directive": "None — requirement-faithful direction."
+    },
+    {
+      "kind": "design_choice",
+      "title": "cstc/cdyn annotated nat per LRE-Var5/6 despite -1 sentinel",
+      "raw": "Requirements call them natural-number variables with -1 meaning 'none'. Sentinel handling stays in the Sensor layer (safe-default returns).",
+      "fix_directive": "Switch to int (no annotation) if a downstream verifier rejects negative nat values."
+    }
+  ],
+  "next_step": "Run the pipeline; check dafny_verify and that m2m/m2t/fdr4/isabelle still pass with the new Ctrl_State fields."
+}

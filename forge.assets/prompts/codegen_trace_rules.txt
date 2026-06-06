@@ -1,0 +1,99 @@
+REQUIREMENT-TO-JAVA TRACEABILITY (result_codegen.json)
+
+Each codegen layer must produce a fresh
+`java.generated.project/result_codegen.json` as part of its wrap-up.
+The dashboard's Coverage phase consumes this file to check that every
+requirement maps to at least one Java element and to flag any Java
+element that no requirement claims.
+
+This is a deterministic transformation — no creativity. Follow the
+steps below exactly.
+
+## Steps
+
+1. Determine the requirements file. If the user explicitly named one,
+   use that. Otherwise default to
+   `forge.assets/case-studies/<study>/requirements/requirement_all.json`
+   where `<study>` is the active case study. Read ONLY the chosen
+   file — do not pull in other tier files unless the chosen file
+   references them.
+
+2. Extract every requirement entry from that file. Each entry has
+   `id`, `name`, `kind`, `description`, and `types`.
+
+3. Walk `java.generated.project/src/main/java/` with Glob and Grep.
+   Build an index of every class, record, enum, interface, public
+   field, and public method you find. Use relative paths starting
+   with `src/main/java/...`.
+
+4. For each requirement, decide which Java element(s) implement it:
+   - `types: ["architecture"]` → the controller class (often
+     `<...>Controller`).
+   - `types: ["data_type"]` → records and enums (Mode, Obstacle, etc.).
+   - `types: ["event"]` → sealed event interfaces + variant records.
+   - `types: ["operation"]` → operation classes in the
+     `operation/` subpackage.
+   - `types: ["distance"]` or sensor-derived quantities → methods on
+     the Sensor class.
+   - `types: ["constants"]` → the constants class.
+   - `types: ["state"]` → enum constants on the Mode enum.
+   - `types: ["variable"]` → fields on the controller (or operation
+     classes if the variable is computed there).
+   - `types: ["guard_predicate"]` → named boolean predicates inside
+     the controller's `step()` method.
+   - `types: ["actuator"]` → the Actuator class or its receive method.
+
+   Also match on `name` and `description` text where the type hint is
+   ambiguous.
+
+5. Write the result to `java.generated.project/result_codegen.json`
+   with this EXACT shape:
+
+```json
+{
+    "codegen_trace": [
+        {
+            "requirement_gid": "REQ-ID",
+            "java_file": "src/main/java/lre/controller/LreController.java",
+            "java_element": "LreController",
+            "element_type": "class"
+        },
+        {
+            "requirement_gid": "REQ-ID2",
+            "java_file": "src/main/java/lre/sensor/Sensor.java",
+            "java_element": "hdist",
+            "element_type": "method"
+        }
+    ]
+}
+```
+
+   Valid `element_type` values: `class`, `record`, `enum`, `interface`,
+   `field`, `method`.
+
+## Rules
+
+- **Every** requirement must produce at least one entry. If a
+  requirement is purely non-functional and has no direct code element,
+  map it to the most relevant class (typically the controller).
+- A requirement may map to multiple Java elements — emit one entry
+  per mapping.
+- `java_element` is the simple name (class name, method name, field
+  name) — NOT the fully qualified name.
+- `java_file` is a relative path starting with `src/main/java/...`
+  using forward slashes regardless of OS.
+- Use the Write tool to overwrite the file — do not append.
+- The Coverage phase reads this exact path:
+  `java.generated.project/result_codegen.json` (relative to the
+  repo root).
+
+## Don't
+
+- Don't invoke `/gen-trace` as a slash command — execute the steps
+  above directly using Read/Glob/Grep/Write.
+- Don't ask the user for permission to write
+  `result_codegen.json` — it's part of the codegen output and the
+  dashboard auto-allows writes inside `java.generated.project/`.
+- Don't skip this step "because it just ran" — every layer that
+  changes Java code must refresh the trace so Coverage stays
+  consistent with the source tree.

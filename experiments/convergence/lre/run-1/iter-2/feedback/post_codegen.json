@@ -1,0 +1,56 @@
+{
+  "phase": "codegen",
+  "status": "complete",
+  "summary": "Cold codegen of the LRE controller (run-4 iter-1): 13 Java files, all 43 requirements traced in result_codegen.json. Issues list design choices and invented defaults for user review.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Lowercase event record names to match RoboChart event names",
+      "detail": "Records named reqVel/reqHdng/reqOCM/reqMOM/reqHCM/endTask and advVel/advHdng (not Java-conventional PascalCase) so extracted event names match the spec.",
+      "java_trace": [{"file": "src/main/java/lre/event/InputEvent.java", "element": "InputEvent", "requirement_ids": ["LRE-DM6", "LRE-DM7"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Safe large distance = 1000.0",
+      "detail": "LRE-DM5 requires a 'safe large distance' for missing obstacles but gives no value; Sensor.SAFE_LARGE_DISTANCE = 1000.0.",
+      "java_trace": [{"file": "src/main/java/lre/sensor/Sensor.java", "element": "Sensor", "requirement_ids": ["LRE-DM5"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "3D CPA geometry implemented in Sensor layer (cdaTo/tcpaTo)",
+      "detail": "Standard CPA equations in 3D incl. depth/rate-of-climb; tcpa=-(r.v)/|v|^2, 0 when relative speed is zero; cda clamps time at >=0. Lives in Sensor because compute() may not declare locals/conditionals and division needs a guard.",
+      "java_trace": [{"file": "src/main/java/lre/sensor/Sensor.java", "element": "Sensor.tcpaTo", "requirement_ids": ["LRE-OP5"]}]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CAM entry action unspecified",
+      "detail": "LRE-FR4 says 'evasive manoeuvres' but DM7 limits outputs to advVel/advHdng and no requirement defines the evasive output; CAM entered with no entry action.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "LreController.step", "requirement_ids": ["LRE-FR4"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Beh4 thresholds taken literally as 1.0",
+      "detail": "vel<=1 and odist>1 use literal 1.0, not minSafeDist (which is also 1 by default).",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "LreController.step", "requirement_ids": ["LRE-Beh4"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "cstc/cdyn keep the -1 sentinel per spec; no sentinel guards in controller",
+      "detail": "Fields are @RoboChartType(\"nat\") int initialised to -1; controller predicates call sensor functions directly (sensor returns safe defaults).",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "LreController.cstc", "requirement_ids": ["LRE-Var5", "LRE-Var6"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Operation invocation order in step()",
+      "detail": "CalcVel, CalcCStc, CalcCDyn, CheckOPEZ, CalcCPA — so CheckOPEZ sees this cycle's cstc and CalcCPA this cycle's cdyn.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "LreController.step", "requirement_ids": ["LRE-OP2", "LRE-OP5"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "OCM passthrough as explicit self-loops",
+      "detail": "Beh2/Beh3 assign currentMode = OCM redundantly so the ETL extracts explicit self-transitions with the advVel/advHdng actions.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "LreController.step", "requirement_ids": ["LRE-Beh2", "LRE-Beh3"]}]
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile through vacuity) and iterate on feedback."
+}

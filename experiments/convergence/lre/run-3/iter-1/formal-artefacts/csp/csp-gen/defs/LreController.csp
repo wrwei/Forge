@@ -1,0 +1,1130 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 05-06-2026 18:32:22
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+module LreController
+exports
+	transparent diamond
+	transparent sbisim
+	transparent dbisim
+	transparent chase
+
+	-- Transition identifiers
+	-- declaring identifiers of transitions
+	datatype NIDS = 
+	              NID_HCM|
+	              NID_MOM|
+	              NID_OCM|
+	              NID_CAM|
+	              NID_i0
+	
+	channel internal__ : NIDS
+	
+	-- Flow channels		
+	channel interrupt
+	channel exited
+	channel exit
+	channel terminate
+	
+	-- Variable channels
+	channel get_v, set_v, setL_v, setR_v: core_real
+	channel get_opVel, set_opVel, setL_opVel, setR_opVel: core_real
+	channel get_opHdng, set_opHdng, setL_opHdng, setR_opHdng: core_real
+	channel get_vel, set_vel, setL_vel, setR_vel: core_real
+	channel get_inOpez, set_inOpez, setL_inOpez, setR_inOpez: core_boolean
+	channel get_cdyn, set_cdyn, setL_cdyn, setR_cdyn: core_nat
+	channel get_cstc, set_cstc, setL_cstc, setR_cstc: core_nat
+	channel get_cda, set_cda, setL_cda, setR_cda: core_real
+	channel get_tcpa, set_tcpa, setL_tcpa, setR_tcpa: core_real
+	channel get_hvel, set_hvel, setL_hvel, setR_hvel: core_real
+	channel get_vvel, set_vvel, setL_vvel, setR_vvel: core_real
+	
+	-- Shared variable channels
+	channel set_EXT_opVel: core_real
+	channel set_EXT_opHdng: core_real
+	channel set_EXT_vel: core_real
+	channel set_EXT_inOpez: core_boolean
+	channel set_EXT_cdyn: core_nat
+	channel set_EXT_cstc: core_nat
+	channel set_EXT_cda: core_real
+	channel set_EXT_tcpa: core_real
+	channel set_EXT_hvel: core_real
+	channel set_EXT_vvel: core_real
+	
+	-- Local variable channels for defined operations that are required by the state machine
+	
+	-- Declaring state machine events
+	channel reqVel__: NIDS.InOut.core_real
+	channel reqVel: InOut.core_real
+	channel reqHdng__: NIDS.InOut.core_real
+	channel reqHdng: InOut.core_real
+	channel reqMOM__: NIDS.InOut
+	channel reqMOM: InOut
+	channel reqOCM__: NIDS.InOut
+	channel reqOCM: InOut
+	channel endTask__: NIDS.InOut
+	channel endTask: InOut
+	channel reqHCM__: NIDS.InOut
+	channel reqHCM: InOut
+	channel advVel__: NIDS.InOut.core_real
+	channel advVel: InOut.core_real
+	channel advHdng__: NIDS.InOut.core_real
+	channel advHdng: InOut.core_real
+	
+	-- Declaring call and ret events for undefined operations
+	
+	enterSS = {|
+	HCM::enter,
+	MOM::enter,
+	OCM::enter,
+	CAM::enter,
+	i0::enter
+	|}
+	
+	enteredSS = 	{|
+	HCM::entered,
+	MOM::entered,
+	OCM::entered,
+	CAM::entered
+	|}
+	
+	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
+	
+	shared_variable_events = {|
+		set_EXT_opVel,
+		set_EXT_opHdng,
+		set_EXT_vel,
+		set_EXT_inOpez,
+		set_EXT_cdyn,
+		set_EXT_cstc,
+		set_EXT_cda,
+		set_EXT_tcpa,
+		set_EXT_hvel,
+		set_EXT_vvel
+	|}
+	
+	-- channel set with all visible events
+	sem__events = {|
+		terminate
+	,	set_EXT_opVel, set_opVel,
+		set_EXT_opHdng, set_opHdng,
+		set_EXT_vel, set_vel,
+		set_EXT_inOpez, set_inOpez,
+		set_EXT_cdyn, set_cdyn,
+		set_EXT_cstc, set_cstc,
+		set_EXT_cda, set_cda,
+		set_EXT_tcpa, set_tcpa,
+		set_EXT_hvel, set_hvel,
+		set_EXT_vvel, set_vvel
+	,	reqVel,
+		reqHdng,
+		reqMOM,
+		reqOCM,
+		endTask,
+		reqHCM,
+		advVel,
+		advHdng
+		|}
+
+	-- Nodes --
+	-- declaring all nodes
+	
+	----------------------------------------------------------------------
+	-- State: HCM
+	module HCM
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: MOM
+	module MOM
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: OCM
+	module OCM
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: CAM
+	module CAM
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- Initial: i0
+	module i0
+	exports
+	
+		channel enter, interrupt
+		
+		D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+			dbisim(let
+				Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+				
+				Termination = terminate -> SKIP
+				
+				Active 		= share__choice(interrupt -> SKIP) ; Inactive
+			within
+				Inactive [| {terminate} |> SKIP)
+		
+		VS_O__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist)
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	-- END of Nodes --
+	
+	-- Operation calls --
+	-- Only the undefined operations are declared here.
+	-- If the state machine is in isolation, all required operations will be undefined.
+	-- If it is in the context of a controller, the required operations not provided by the
+	-- controller will be declared here, and the defined operations will be defined in the
+	-- context of the Controller module, and therefore within scope of the state machine module.
+	
+	-- END of Operation calls --
+	
+	-- STM processes
+	STM(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+	( 
+		(
+			(
+				(IteratedStateful(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist) \ {terminate} ; share__choice(terminate -> SKIP))
+			 	[[ share__ <- x__ | x__ <- {|set_EXT_opVel,set_EXT_opHdng,set_EXT_vel,set_EXT_inOpez,set_EXT_cdyn,set_EXT_cstc,set_EXT_cda,set_EXT_tcpa,set_EXT_hvel,set_EXT_vvel|} ]]
+			)
+		[| {share__} |]
+		SKIP
+		)
+		[| union(sharedVarSync,{terminate}) |]
+		dbisim(sharedVarMemory(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist))
+	)\sharedVarHide
+	
+	STM_VS_O(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+	( 
+		(
+			(
+				(IteratedStateful_VS_O(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist) \ {terminate} ; share__choice(terminate -> SKIP))
+			 	[[ share__ <- x__ | x__ <- {|set_EXT_opVel,set_EXT_opHdng,set_EXT_vel,set_EXT_inOpez,set_EXT_cdyn,set_EXT_cstc,set_EXT_cda,set_EXT_tcpa,set_EXT_hvel,set_EXT_vvel|} ]]
+			)
+		[| {share__} |]
+		SKIP
+		)
+		[| union(sharedVarSync,{terminate}) |]
+		dbisim(sharedVarMemory(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist))
+	)\sharedVarHide
+	
+	-- Transitions
+	Transitions(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = ((let
+		Trans = share__choice(get_vvel?vvel -> get_cstc?cstc -> get_cda?cda -> get_cdyn?cdyn -> get_tcpa?tcpa -> get_inOpez?inOpez -> get_hvel?hvel -> get_vel?vel -> (
+			((share__ -> SKIP
+			 [] dbisim((true)&(internal__!NID_i0 -> SKIP ;  ((SKIP ; OCM::enter -> SKIP))))
+			 	 [] dbisim((true)&(reqVel__!NID_OCM.in?opVel:{opVel|opVel <- core_real, true} -> share__choice(set_opVel!opVel -> SKIP) ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(get_opVel?opVel -> true&(share__choice(advVel.out!opVel -> SKIP))) ; OCM::enter -> SKIP)))
+			 	 [] dbisim((true)&(reqHdng__!NID_OCM.in?opHdng:{opHdng|opHdng <- core_real, true} -> share__choice(set_opHdng!opHdng -> SKIP) ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(get_opHdng?opHdng -> true&(share__choice(advHdng.out!opHdng -> SKIP))) ; OCM::enter -> SKIP)))
+			 	 [] dbisim((((((vel<=1) and (not ((inOpez)))) and (odist(cdyn)>1)) and (odist(cstc)>1)))&(reqMOM__!NID_OCM.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; MOM::enter -> SKIP)))
+			 	 [] dbisim((true)&(reqOCM__!NID_MOM.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; OCM::enter -> SKIP)))
+			 	 [] dbisim((true)&(endTask__!NID_MOM.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(advVel.out!0 -> SKIP)) ; OCM::enter -> SKIP)))
+			 	 [] dbisim((true)&(reqHCM__!NID_MOM.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; HCM::enter -> SKIP)))
+			 	 [] dbisim((((cda<const_LreController_minsafedist) and (tcpa>=0)))&(internal__!NID_MOM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; CAM::enter -> SKIP)))
+			 	 [] dbisim((inOpez)&(internal__!NID_MOM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; OCM::enter -> SKIP)))
+			 	 [] dbisim((((hvel>=1) and (hdist(cstc)<=const_LreController_staticobshorizdist)))&(internal__!NID_MOM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; HCM::enter -> SKIP)))
+			 	 [] dbisim(((vdist(cstc)<=const_LreController_staticobsdfltvertdist))&(internal__!NID_MOM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; HCM::enter -> SKIP)))
+			 	 [] dbisim((((vvel>=1) and (vdist(cstc)<=const_LreController_staticobsvertdist)))&(internal__!NID_MOM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; HCM::enter -> SKIP)))
+			 	 [] dbisim((true)&(reqOCM__!NID_HCM.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; OCM::enter -> SKIP)))
+			 	 [] dbisim((((cda<const_LreController_minsafedist) and (tcpa>=0)))&(internal__!NID_HCM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; CAM::enter -> SKIP)))
+			 	 [] dbisim((inOpez)&(internal__!NID_HCM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; OCM::enter -> SKIP)))
+			 	 [] dbisim((((hdist(cstc)>const_LreController_staticobshorizdist) and (vdist(cstc)>const_LreController_staticobsvertdist)))&(internal__!NID_HCM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; MOM::enter -> SKIP)))
+			 	 [] dbisim((true)&(reqOCM__!NID_CAM.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; OCM::enter -> SKIP)))
+			 	 [] dbisim(((cda>=const_LreController_minsafedist))&(internal__!NID_CAM -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(advVel.out!0 -> SKIP)) ; OCM::enter -> SKIP)))
+			 ) ; Trans)
+			 []
+			 (interrupt -> share__choice(exit -> SKIP) ; share__choice(exited -> terminate -> SKIP))
+			 []
+			 terminate -> SKIP
+		)
+		)
+	within
+		Trans
+	)
+	)
+	
+	-- Stateful
+	-- RULE: Stateful(stm:StateMachineBody) : CSPProcess
+	
+	-- Named process definitions
+	MachineBody(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = 
+		dbisim((
+		let
+			finalNodesEntered = {||}
+		within
+			((let
+				-- IMPLEMENTATION NOTE:
+				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+				-- modules for defining the semantics of each node.
+				enterSS = {|
+				HCM::enter,
+				MOM::enter,
+				OCM::enter,
+				CAM::enter,
+				i0::enter
+				|}
+				hideSet = union(enterSS,{|exit,exited,internal__|})
+			within 
+				((let
+					-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+					-- because CSPM modules are used for the semantics of Node.
+					flowevts = union(enterSS,{|exit,exited,interrupt|})
+					transSync = {|internal__.NID_i0,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_HCM.in,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_CAM.in,internal__.NID_CAM|}
+				within
+					((
+					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+					   HCM::D__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   MOM::D__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   OCM::D__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   CAM::D__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   i0::D__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   )
+					   )
+					   )
+					   )
+					 )
+					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_HCM.in,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM|}]]
+					 [[MOM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM|}]]
+					 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+					 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
+					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+					 )
+					  [[ share__ <- x__ | x__ <- {| share__,setR_opHdng,setR_opVel |} ]] 
+					  [[set_vvel <- setL_vvel,set_cstc <- setL_cstc,set_cda <- setL_cda,set_cdyn <- setL_cdyn,set_tcpa <- setL_tcpa,set_inOpez <- setL_inOpez,set_hvel <- setL_hvel,set_vel <- setL_vel]]
+					 )
+					 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+					 			,setL_vvel
+					 			,setL_cstc
+					 			,setL_cda
+					 			,setL_cdyn
+					 			,setL_tcpa
+					 			,setL_inOpez
+					 			,setL_hvel
+					 			,setL_vel
+					 			,setR_opHdng
+					 			 			,setR_opVel
+					 			|}) |]
+					 ((i0::enter -> Transitions(id__,
+					 		    const_LreController_minsafedist,
+					 		    const_LreController_staticobshorizdist,
+					 		    const_LreController_staticobsdfltvertdist,
+					 		    const_LreController_staticobsvertdist))
+					  [[ share__ <- x__ | x__ <- {| share__,setL_vvel,setL_cstc,setL_cda,setL_cdyn,setL_tcpa,setL_inOpez,setL_hvel,setL_vel |} ]]
+					  [[set_opHdng <- setR_opHdng,set_opVel <- setR_opVel]]
+					 )
+					)[[setL_vvel <- set_vvel,setL_cstc <- set_cstc,setL_cda <- set_cda,setL_cdyn <- set_cdyn,setL_tcpa <- set_tcpa,setL_inOpez <- set_inOpez,setL_hvel <- set_hvel,setL_vel <- set_vel]]
+					 [[setR_opHdng <- set_opHdng,setR_opVel <- set_opVel]]
+					)
+				)
+				 \ hideSet)
+				[[
+					reqVel__.x____ <- reqVel,
+					reqHdng__.x____ <- reqHdng,
+					reqMOM__.x____ <- reqMOM,
+					reqOCM__.x____ <- reqOCM,
+					endTask__.x____ <- endTask,
+					reqHCM__.x____ <- reqHCM,
+					advVel__.x____ <- advVel,
+					advHdng__.x____ <- advHdng
+					| x____ <- NIDS
+				]]
+			)
+			 [| {| interrupt |} |] SKIP)
+		)
+		)
+	
+	Behaviour(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = 
+		dbisim((MachineBody(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist)\ enteredSS)
+		)
+	
+	IteratedBehaviour(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = 
+		dbisim((MachineBody(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist)\ enteredSS)
+		)
+	
+	Stateful(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = 
+		((
+			(Behaviour(id__,
+					    const_LreController_minsafedist,
+					    const_LreController_staticobshorizdist,
+					    const_LreController_staticobsdfltvertdist,
+					    const_LreController_staticobsvertdist) [| union(getsetLocalChannels,{terminate}) |] varMemory(id__,
+					    const_LreController_minsafedist,
+					    const_LreController_staticobshorizdist,
+					    const_LreController_staticobsdfltvertdist,
+					    const_LreController_staticobsvertdist))
+		 	\getsetLocalChannels
+		)
+		)
+	
+	IteratedStateful(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) =
+		(dbisim(
+			sbisim(
+				Behaviour(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist)
+				[| {|get_v,set_v,terminate|} |]
+				Memory_v(0)
+			)\{|get_v,set_v|}
+		)
+		)
+	
+	-- Visible counterparts
+	MachineBody_VS_O(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = 
+		dbisim((
+		let
+			finalNodesEntered = {||}
+		within
+			((let
+				-- IMPLEMENTATION NOTE:
+				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+				-- modules for defining the semantics of each node.
+				enterSS = {|
+				HCM::enter,
+				MOM::enter,
+				OCM::enter,
+				CAM::enter,
+				i0::enter
+				|}
+				hideSet = union(enterSS,{|exit,exited,internal__|})
+			within 
+				((let
+					-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+					-- because CSPM modules are used for the semantics of Node.
+					flowevts = union(enterSS,{|exit,exited,interrupt|})
+					transSync = {|internal__.NID_i0,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_HCM.in,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_CAM.in,internal__.NID_CAM|}
+				within
+					((
+					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+					   HCM::VS_O__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   MOM::VS_O__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   OCM::VS_O__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   CAM::VS_O__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   i0::VS_O__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   )
+					   )
+					   )
+					   )
+					 )
+					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_HCM.in,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM|}]]
+					 [[MOM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM|}]]
+					 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+					 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
+					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+					 )
+					  [[ share__ <- x__ | x__ <- {| share__,setR_opHdng,setR_opVel |} ]] 
+					  [[set_vvel <- setL_vvel,set_cstc <- setL_cstc,set_cda <- setL_cda,set_cdyn <- setL_cdyn,set_tcpa <- setL_tcpa,set_inOpez <- setL_inOpez,set_hvel <- setL_hvel,set_vel <- setL_vel]]
+					 )
+					 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+					 			,setL_vvel
+					 			,setL_cstc
+					 			,setL_cda
+					 			,setL_cdyn
+					 			,setL_tcpa
+					 			,setL_inOpez
+					 			,setL_hvel
+					 			,setL_vel
+					 			,setR_opHdng
+					 			 			,setR_opVel
+					 			|}) |]
+					 ((i0::enter -> Transitions(id__,
+					 		    const_LreController_minsafedist,
+					 		    const_LreController_staticobshorizdist,
+					 		    const_LreController_staticobsdfltvertdist,
+					 		    const_LreController_staticobsvertdist))
+					  [[ share__ <- x__ | x__ <- {| share__,setL_vvel,setL_cstc,setL_cda,setL_cdyn,setL_tcpa,setL_inOpez,setL_hvel,setL_vel |} ]]
+					  [[set_opHdng <- setR_opHdng,set_opVel <- setR_opVel]]
+					 )
+					)[[setL_vvel <- set_vvel,setL_cstc <- set_cstc,setL_cda <- set_cda,setL_cdyn <- set_cdyn,setL_tcpa <- set_tcpa,setL_inOpez <- set_inOpez,setL_hvel <- set_hvel,setL_vel <- set_vel]]
+					 [[setR_opHdng <- set_opHdng,setR_opVel <- set_opVel]]
+					)
+				)
+				 \ hideSet)
+				[[
+					reqVel__.x____ <- reqVel,
+					reqHdng__.x____ <- reqHdng,
+					reqMOM__.x____ <- reqMOM,
+					reqOCM__.x____ <- reqOCM,
+					endTask__.x____ <- endTask,
+					reqHCM__.x____ <- reqHCM,
+					advVel__.x____ <- advVel,
+					advHdng__.x____ <- advHdng
+					| x____ <- NIDS
+				]]
+			)
+			 [| {| interrupt |} |] SKIP)
+		)
+		)
+	
+	Behaviour_VS_O(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = 
+		dbisim((MachineBody_VS_O(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist))
+		)
+	
+	IteratedBehaviour_VS_O(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = 
+		dbisim((MachineBody_VS_O(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist))
+		)
+	
+	Stateful_VS_O(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = 
+		dbisim((
+			(Behaviour_VS_O(id__,
+					    const_LreController_minsafedist,
+					    const_LreController_staticobshorizdist,
+					    const_LreController_staticobsdfltvertdist,
+					    const_LreController_staticobsvertdist) [| union(getsetLocalChannels,{terminate}) |] varMemory(id__,
+					    const_LreController_minsafedist,
+					    const_LreController_staticobshorizdist,
+					    const_LreController_staticobsdfltvertdist,
+					    const_LreController_staticobsvertdist))
+		 	\getsetLocalChannels
+		)
+		)
+	
+	IteratedStateful_VS_O(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) =
+		(dbisim(
+			sbisim(
+				Behaviour_VS_O(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist)
+				[| {|get_v,set_v,terminate|} |]
+				Memory_v(0)
+			)\{|get_v,set_v|}
+		)
+		)
+	
+	-- END
+	
+	-- Memory
+	-- Memory variables
+	Memory_v(v) =
+		get_v!v -> Memory_v(v)
+		[]
+		set_v?x__ -> Memory_v(x__)
+		[]
+		terminate -> SKIP
+	
+	-- varMemory process
+	varMemory(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = Memory_v(0)
+	
+	getsetLocalChannels = {|get_v,set_v|}
+	
+	-- Definition of the behaviour of state machines (default, optimised, visible, visible and optimised)
+	FVS__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = STM_VS_O(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist)
+	
+	D__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = STM(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) \ internal_events
+	O__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = sbisim(diamond(D__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist)))
+	VS__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = FVS__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist)
+	VS_O__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = sbisim(diamond(FVS__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist)))
+	HEXT__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = O__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) [|shared_variable_events|] SKIP
+	HUP__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = O__(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) [|{share__}|] SKIP
+	
+	-- Shared memory
+	-- Shared memory variables
+	Memory_opVel(opVel) =
+		get_opVel!opVel -> Memory_opVel(opVel)
+		[]
+		set_opVel?x__ -> Memory_opVel(x__)
+		[]
+		set_EXT_opVel?x__ -> Memory_opVel(x__)
+		[]
+		terminate -> SKIP
+	Memory_opHdng(opHdng) =
+		get_opHdng!opHdng -> Memory_opHdng(opHdng)
+		[]
+		set_opHdng?x__ -> Memory_opHdng(x__)
+		[]
+		set_EXT_opHdng?x__ -> Memory_opHdng(x__)
+		[]
+		terminate -> SKIP
+	Memory_vel(vel) =
+		get_vel!vel -> Memory_vel(vel)
+		[]
+		set_vel?x__ -> Memory_vel(x__)
+		[]
+		set_EXT_vel?x__ -> Memory_vel(x__)
+		[]
+		terminate -> SKIP
+	Memory_inOpez(inOpez) =
+		get_inOpez!inOpez -> Memory_inOpez(inOpez)
+		[]
+		set_inOpez?x__ -> Memory_inOpez(x__)
+		[]
+		set_EXT_inOpez?x__ -> Memory_inOpez(x__)
+		[]
+		terminate -> SKIP
+	Memory_cdyn(cdyn) =
+		get_cdyn!cdyn -> Memory_cdyn(cdyn)
+		[]
+		set_cdyn?x__ -> Memory_cdyn(x__)
+		[]
+		set_EXT_cdyn?x__ -> Memory_cdyn(x__)
+		[]
+		terminate -> SKIP
+	Memory_cstc(cstc) =
+		get_cstc!cstc -> Memory_cstc(cstc)
+		[]
+		set_cstc?x__ -> Memory_cstc(x__)
+		[]
+		set_EXT_cstc?x__ -> Memory_cstc(x__)
+		[]
+		terminate -> SKIP
+	Memory_cda(cda) =
+		get_cda!cda -> Memory_cda(cda)
+		[]
+		set_cda?x__ -> Memory_cda(x__)
+		[]
+		set_EXT_cda?x__ -> Memory_cda(x__)
+		[]
+		terminate -> SKIP
+	Memory_tcpa(tcpa) =
+		get_tcpa!tcpa -> Memory_tcpa(tcpa)
+		[]
+		set_tcpa?x__ -> Memory_tcpa(x__)
+		[]
+		set_EXT_tcpa?x__ -> Memory_tcpa(x__)
+		[]
+		terminate -> SKIP
+	Memory_hvel(hvel) =
+		get_hvel!hvel -> Memory_hvel(hvel)
+		[]
+		set_hvel?x__ -> Memory_hvel(x__)
+		[]
+		set_EXT_hvel?x__ -> Memory_hvel(x__)
+		[]
+		terminate -> SKIP
+	Memory_vvel(vvel) =
+		get_vvel!vvel -> Memory_vvel(vvel)
+		[]
+		set_vvel?x__ -> Memory_vvel(x__)
+		[]
+		set_EXT_vvel?x__ -> Memory_vvel(x__)
+		[]
+		terminate -> SKIP
+	
+	-- sharedVarMemory process
+	sharedVarMemory(id__,
+			    const_LreController_minsafedist,
+			    const_LreController_staticobshorizdist,
+			    const_LreController_staticobsdfltvertdist,
+			    const_LreController_staticobsvertdist) = Memory_opVel(0)
+	[| { terminate } |] (
+	Memory_opHdng(0)
+	[| { terminate } |] (
+	Memory_vel(0)
+	[| { terminate } |] (
+	Memory_inOpez(true)
+	[| { terminate } |] (
+	Memory_cdyn(0)
+	[| { terminate } |] (
+	Memory_cstc(0)
+	[| { terminate } |] (
+	Memory_cda(0)
+	[| { terminate } |] (
+	Memory_tcpa(0)
+	[| { terminate } |] (
+	Memory_hvel(0)
+	[| { terminate } |] (
+	Memory_vvel(0)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	
+	sharedVarSync = {|get_opVel,set_opVel,set_EXT_opVel,get_opHdng,set_opHdng,set_EXT_opHdng,get_vel,set_vel,set_EXT_vel,get_inOpez,set_inOpez,set_EXT_inOpez,get_cdyn,set_cdyn,set_EXT_cdyn,get_cstc,set_cstc,set_EXT_cstc,get_cda,set_cda,set_EXT_cda,get_tcpa,set_tcpa,set_EXT_tcpa,get_hvel,set_hvel,set_EXT_hvel,get_vvel,set_vvel,set_EXT_vvel|}
+	
+	sharedVarHide = {|get_opVel,get_opHdng,get_vel,get_inOpez,get_cdyn,get_cstc,get_cda,get_tcpa,get_hvel,get_vvel|}
+endmodule

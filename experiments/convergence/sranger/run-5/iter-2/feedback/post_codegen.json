@@ -1,0 +1,51 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (sranger, iter 1)",
+  "status": "complete",
+  "summary": "Cold codegen of the SRanger controller from system_description.txt + requirement_all.json (24 requirements). 8 Java files; all requirements traced in result_codegen.json.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Terminal mode renamed Final -> Halted",
+      "detail": "CLAUDE.md requires the theory-generated (primary) controller to contain no RoboChart Final state; SRanger is single-controller. Halted is an ordinary absorbing state entered on endTask, issuing Move(0,0) on entry.",
+      "requirement_ids": ["SR-DM1", "SR-FR3", "SR-Beh3", "SR-Beh6"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Halted tick self-loop (no action)",
+      "detail": "Added beyond SR-Beh1..7 so the terminal mode has a bare-precondition operation for the Isabelle deadlock-freedom proof. No source-mode/trigger duplication; SR-DC1 holds.",
+      "requirement_ids": ["SR-DC1"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move(lv, av) realised as 2-arg Actuator.move call",
+      "detail": "Multi-arg actuator calls become RoboChart operation Calls (LOperations), preserving both payload values; a single-payload OutputEvent record would drop av in extraction.",
+      "requirement_ids": ["SR-DM4", "SR-DM6"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Initial Moving entry action issued from constructor",
+      "detail": "SR-FR1 power-up forward command fires in the constructor at the Java level; the model-level Initial -> Moving transition carries no action.",
+      "requirement_ids": ["SR-FR1", "SR-Beh1"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Moving -> Turning carries both Obstacle trigger and obstacleDetected guard",
+      "detail": "SR-GP1 explicitly requires the predicate as the guard on this transition; SR-Beh2 supplies the trigger.",
+      "requirement_ids": ["SR-GP1", "SR-Beh2"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading default = 1000.0 m",
+      "detail": "Spec says 'a large default value'; 1000.0 chosen, well above obstacleThreshold 0.5.",
+      "requirement_ids": ["SR-DM5"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Turning -> Moving kept autonomous (guard-only)",
+      "detail": "SR-Beh5 says autonomous, no event required; placed below endTask (priority) and above the tick self-loop.",
+      "requirement_ids": ["SR-Beh5", "SR-GP2"]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> ... -> vacuity) and act on per-phase feedback."
+}

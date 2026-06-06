@@ -1,0 +1,33 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter 2)",
+  "status": "complete",
+  "summary": "Iter-2 fixes driven by iter-1 feedback: preflight annotation on Sensor.SAFE_LARGE_DISTANCE; autonomous transitions gated on a new tick input event with mutual-exclusion negations between differently-targeted guards (Dafny postcondition preemption fix).",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Added a tick input event not present in LRE-DM6",
+      "raw": "Autonomous (guard-only) transitions are now gated on 'event instanceof InputEvent.tick'. The Dafny generator emits autonomous guards as unconditional postconditions, which higher-priority event branches (endTask, reqHCM, reqOCM) preempt; gating on tick makes the generated premise event-specific. tick models the periodic control cycle and is not an operator command, so LRE-DM6 is unchanged in spirit.",
+      "fix_directive": "Confirm tick as the control-cycle event; if undesired, the Dafny generator would need to encode if-else priority in its ensures premises instead."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Explicit mutual-exclusion negations between differently-targeted autonomous guards",
+      "raw": "Added !inOpez / !camCondition conjuncts (camCondition = cdaBelowMinSafeDist && tcpaNonNegative) to lower-priority autonomous transitions whose targets differ, making Java else-if priority explicit in each guard. Redundant in Java; required for provable Dafny postconditions and exact RoboChart guard semantics. Same-target overlaps (the three MOM->HCM guards) carry no cross negations.",
+      "fix_directive": "None — semantics unchanged from iter 1."
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CAM has no defined entry action (carried from iter 1)",
+      "raw": "LRE-FR4 says CAM 'performs evasive manoeuvres' but no requirement specifies a CAM entry output.",
+      "fix_directive": "Confirm whether entering CAM should emit an advVel/advHdng output."
+    },
+    {
+      "kind": "invented_default",
+      "title": "CPA math (carried from iter 1)",
+      "raw": "2D horizontal CPA; tcpa=-1.0 and cda=hdist(cdyn) when relative speed is zero.",
+      "fix_directive": "Review if CAM behaviour looks wrong under verification."
+    }
+  ],
+  "next_step": "Run the deterministic pipeline and check preflight + dafny_verify."
+}

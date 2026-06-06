@@ -1,0 +1,75 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 05-06-2026 17:29:07
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "LreController_Module.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate LreController_Module
+P_LreController_Module = let
+	id__ = 0
+	
+	const_LreController_Module_LreController_Platform_minsafedist = 1
+	const_LreController_Module_LreController_Platform_staticobshorizdist = 1
+	const_LreController_Module_LreController_Platform_staticobsdfltvertdist = 1
+	const_LreController_Module_LreController_Platform_staticobsvertdist = 1
+	
+	
+		
+	
+within
+	LreController_Module::O__(id__,
+			    const_LreController_Module_LreController_Platform_minsafedist,
+			    const_LreController_Module_LreController_Platform_staticobshorizdist,
+			    const_LreController_Module_LreController_Platform_staticobsdfltvertdist,
+			    const_LreController_Module_LreController_Platform_staticobsvertdist)
+assert P_LreController_Module :[deadlock-free]	
+assert P_LreController_Module;RUN({r__}) :[deadlock-free]
+assert P_LreController_Module :[deterministic]
+assert P_LreController_Module :[divergence-free]
+
+-- generate LreController_Module_ctrl_ref0
+P_LreController_Module_ctrl_ref0 = let
+	id__ = 0
+	
+	const_LreController_Ctrl_minsafedist = 1
+	const_LreController_Ctrl_staticobshorizdist = 1
+	const_LreController_Ctrl_staticobsdfltvertdist = 1
+	const_LreController_Ctrl_staticobsvertdist = 1
+	
+	
+		
+within
+	LreController_Module::ctrl_ref0::O__(id__,
+			    const_LreController_Ctrl_minsafedist,
+			    const_LreController_Ctrl_staticobshorizdist,
+			    const_LreController_Ctrl_staticobsdfltvertdist,
+			    const_LreController_Ctrl_staticobsvertdist)
+
+assert P_LreController_Module_ctrl_ref0 :[deadlock-free]	
+assert P_LreController_Module_ctrl_ref0;RUN({r__}) :[deadlock-free]
+assert P_LreController_Module_ctrl_ref0 :[deterministic]
+assert P_LreController_Module_ctrl_ref0 :[divergence-free]
+
+-- timed deadlock free
+assert prioritise(P_LreController_Module_ctrl_ref0[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_LreController_Module_ctrl_ref0
+-- timed deadlock free
+assert prioritise(P_LreController_Module[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_LreController_Module

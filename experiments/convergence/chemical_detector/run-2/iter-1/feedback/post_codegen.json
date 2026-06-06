@@ -1,0 +1,65 @@
+{
+  "phase": "codegen",
+  "status": "complete",
+  "summary": "Iter-1 cold codegen for chemical_detector (run-5 condition B): 14 Java files under chemdetector/ implementing two controllers (GasAnalysisController, MovementController), Vehicle platform surface, GasAnalyzer sensor functions, events, modes, constants, and annotations. All 81 requirements traced in result_codegen.json.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "No Final states: GA 'Done' and MV 'Found' are terminal live modes",
+      "detail": "CD-GA-Beh6 and CD-MV-Beh9 specify transitions to final state j1. The Isabelle theory generator cannot prove deadlock-freedom for a machine with a Final state (CLAUDE.md), so: GasDetected -[goreq(ins,thr)]-> Done (still sends stop), with Done self-looping on gas; Found self-loops on stop instead of transitioning to j1 (flag is still emitted on Found entry). Both self-loops are event-triggered bare-precondition operations.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/controller/GasAnalysisController.java", "element": "GasAnalysisController.step", "requirement_ids": ["CD-GA-Beh6", "CD-GA-FR4"]},
+        {"file": "src/main/java/chemdetector/controller/MovementController.java", "element": "MovementController.step", "requirement_ids": ["CD-MV-Beh9", "CD-MV-FR3"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Odometer modeled as zero-arg Vehicle sensor method, not an event",
+      "detail": "CD-Evt3 specifies odometer as an event consumed in entry actions (odometer ? d0). The single-method step() pattern cannot receive a second event inside an entry action, so d0/d1 are captured via 'd0 = vehicle.odometer()' assignments, which the M2M maps to a Sensors-interface variable.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/actuator/Vehicle.java", "element": "Vehicle.odometer", "requirement_ids": ["CD-Evt3", "CD-MV-Var2", "CD-MV-Var3"]}
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "TARGET_CHEM constant and analysis() semantics",
+      "detail": "The spec does not say how a reading 'indicates the target chemical'. Invented: a GasSensor entry indicates the target iff its c field equals ChemConstants.TARGET_CHEM (=1). analysis returns gasD iff any entry matches.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/sensor/GasAnalyzer.java", "element": "GasAnalyzer.analysis", "requirement_ids": ["CD-Fn1"]}
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "angle() index-to-direction mapping",
+      "detail": "CD-DM7/CD-Fn3 reference an angle(x) function mapping 1-based sensor index to direction but do not give the mapping. Invented: 1->Front, 2->Left, 3->Right, otherwise Back. Empty readings: intensity()=0.0, location()=Front (safe defaults per the sensor-layer rule).",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/sensor/GasAnalyzer.java", "element": "GasAnalyzer.angle", "requirement_ids": ["CD-DM7", "CD-Fn3"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Chem and Intensity represented as int(nat) / double(real)",
+      "detail": "CD-DM4/CD-DM5 define opaque types; the pipeline has no opaque-type construct, so Chem = int @RoboChartType(\"nat\") and Intensity = double @RoboChartType(\"real\") in the GasSensor record.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/datamodel/GasSensor.java", "element": "GasSensor", "requirement_ids": ["CD-DM4", "CD-DM5"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Constant values set to 1 / 1.0",
+      "detail": "CD-Const1..6 say values are configured at startup but give no numbers. All set to 1 (nat) / 1.0 (real) to keep the FDR4 state space within the {0..1} type ranges.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/constants/ChemConstants.java", "element": "ChemConstants", "requirement_ids": ["CD-Const1", "CD-Const2", "CD-Const3", "CD-Const4", "CD-Const5", "CD-Const6"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Waiting during-action randomWalk() as top-of-mode statement",
+      "detail": "CD-MV-FR1 specifies randomWalk() as a during action. The extraction pattern supports top-of-mode statements (which become entry actions); vehicle.randomWalk() is placed at the head of the Waiting mode block.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/controller/MovementController.java", "element": "MovementController.step", "requirement_ids": ["CD-MV-FR1"]}
+      ]
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile through vacuity) and iterate on post_* feedback."
+}

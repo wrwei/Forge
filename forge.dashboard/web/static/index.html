@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline Dashboard — Formal-Method-Guided Vibe Coding</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="/static/style.css?v=5">
+    <!-- Set theme BEFORE first paint to avoid flash. Order: localStorage -> system pref -> dark default. -->
+    <script>
+        (function () {
+            var saved = null;
+            try { saved = localStorage.getItem("pipeline-theme"); } catch (e) {}
+            if (!saved) {
+                var prefersLight = window.matchMedia &&
+                    window.matchMedia("(prefers-color-scheme: light)").matches;
+                saved = prefersLight ? "light" : "dark";
+            }
+            document.documentElement.setAttribute("data-theme", saved);
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/haskell.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-left">
+            <h1>Pipeline</h1>
+            <span class="header-subtitle">formal-method-guided vibe coding · 12-channel feedback loop</span>
+        </div>
+        <div class="header-right">
+            <button id="reset-all-btn" type="button"
+                    title="Wipe forge.transformations/output/ + forge.assets/corrections/post_*.{md,json} and reset every phase status. Use after a case-study switch to start from a clean slate.">Reset</button>
+            <button id="theme-toggle" type="button" title="Toggle light/dark theme" aria-label="Toggle theme"></button>
+            <span id="connection-status" class="disconnected">Connecting...</span>
+        </div>
+    </header>
+
+    <!-- Main layout: pipeline tree + log + file sidebar -->
+    <div class="main">
+        <!-- Pipeline tree sidebar -->
+        <div class="pipeline-sidebar" id="pipeline-sidebar">
+            <div class="tree-root" id="pipeline-tree"></div>
+        </div>
+
+        <!-- Resize handle -->
+        <div class="resize-handle" id="resize-left"></div>
+
+        <!-- Log panel: phase output + Claude chat -->
+        <div class="log-panel" id="log-panel">
+            <div class="log-messages" id="log-messages"></div>
+
+            <!-- Working indicator -->
+            <div class="working-indicator" id="working-indicator">
+                <div class="spinner"></div>
+                <span id="working-text">Running...</span>
+            </div>
+
+            <!-- Chat input row -->
+            <div class="chat-input-row" id="chat-input-row">
+                <textarea id="chat-input" rows="2"
+                          placeholder="Talk to Claude…"></textarea>
+                <button id="chat-send-btn" type="button">Send</button>
+                <button id="chat-stop-btn" type="button" hidden>Stop</button>
+                <button id="chat-new-btn" type="button" title="Start a fresh chat">+ New</button>
+            </div>
+        </div>
+
+        <!-- Resize handle -->
+        <div class="resize-handle" id="resize-right"></div>
+
+        <!-- Right panel: tabs between Output Files and Feedback -->
+        <div class="file-panel" id="file-panel">
+            <div class="file-panel-tabs">
+                <button class="panel-tab active" id="tab-files" data-tab="files">Output Files</button>
+                <button class="panel-tab" id="tab-feedback" data-tab="feedback">Feedback</button>
+                <button class="panel-tab" id="tab-requirements" data-tab="requirements" style="display:none;">Requirements</button>
+                <button class="panel-tab" id="tab-prompts" data-tab="prompts" style="display:none;">Prompts</button>
+                <button class="panel-tab" id="tab-source" data-tab="source" style="display:none;">Source</button>
+                <button class="panel-tab" id="tab-commands" data-tab="commands" style="display:none;">Commands</button>
+            </div>
+
+            <!-- Files view (default) -->
+            <div class="panel-view active" id="view-files">
+                <div class="file-panel-header">
+                    <h2>Output Files</h2>
+                    <span class="file-panel-actions">
+                        <button id="clear-btn" class="clear-btn" title="Clear output files">Clear</button>
+                        <button id="publish-btn" class="publish-btn" title="Publish to java.generated.project">Publish</button>
+                        <button id="clean-project-btn" class="clean-project-btn" title="Clean java.generated.project">Clean</button>
+                    </span>
+                </div>
+                <div class="file-list" id="file-list"></div>
+                <div class="file-preview" id="file-preview">
+                    <div class="preview-header" id="preview-header"></div>
+                    <pre><code id="preview-code"></code></pre>
+                </div>
+            </div>
+
+            <!-- Feedback view -->
+            <div class="panel-view" id="view-feedback">
+                <div class="feedback-header">
+                    <div class="feedback-header-row">
+                        <h2 id="feedback-title">Verification Feedback</h2>
+                        <button type="button" class="feedback-copy-btn" id="feedback-copy-btn" title="Copy feedback as text">Copy</button>
+                    </div>
+                    <div class="feedback-subtitle" id="feedback-subtitle">
+                        Select a phase in the pipeline tree to see its latest feedback.
+                    </div>
+                </div>
+                <div class="feedback-body" id="feedback-body"></div>
+            </div>
+
+            <!-- Requirements view -->
+            <div class="panel-view" id="view-requirements">
+                <div class="requirements-header">
+                    <h2>Requirements</h2>
+                    <label class="study-selector">
+                        <span>Case study</span>
+                        <select id="case-study-select"></select>
+                    </label>
+                </div>
+                <div class="requirements-toolbar">
+                    <button type="button" id="req-select-all-btn">Select all</button>
+                    <button type="button" id="req-deselect-btn">Clear</button>
+                    <span class="requirements-spacer"></span>
+                    <button type="button" id="req-load-btn" class="primary-btn">Load selected → Claude</button>
+                </div>
+                <div class="requirements-list" id="requirements-list"></div>
+                <div class="requirements-preview" id="requirements-preview">
+                    <div class="preview-header" id="requirements-preview-header"></div>
+                    <pre><code id="requirements-preview-code"></code></pre>
+                </div>
+            </div>
+
+            <!-- Source view (Phase 2) — generated Java files -->
+            <div class="panel-view" id="view-source">
+                <div class="requirements-header">
+                    <h2>Generated source</h2>
+                    <span class="study-selector"><span>java.generated.project/src/main/java/</span></span>
+                </div>
+                <div class="requirements-toolbar">
+                    <button type="button" id="source-refresh-btn">Refresh</button>
+                    <span class="requirements-spacer"></span>
+                    <span id="source-file-count" class="req-size"></span>
+                </div>
+                <div class="requirements-list" id="source-list"></div>
+                <div class="requirements-preview" id="source-preview">
+                    <div class="preview-header" id="source-preview-header"></div>
+                    <pre><code id="source-preview-code"></code></pre>
+                </div>
+            </div>
+
+            <!-- Prompts view (Phase 2) -->
+            <div class="panel-view" id="view-prompts">
+                <div class="requirements-header">
+                    <h2>Codegen prompts</h2>
+                    <span class="study-selector"><span>Phase 2 — Java Code Generation</span></span>
+                </div>
+                <div class="requirements-toolbar">
+                    <button type="button" id="prompts-select-all-btn">Select all</button>
+                    <button type="button" id="prompts-deselect-btn">Clear</button>
+                    <span class="requirements-spacer"></span>
+                    <button type="button" id="prompts-load-btn" class="primary-btn">Load selected → Claude</button>
+                </div>
+                <div class="requirements-list" id="prompts-list"></div>
+                <div class="requirements-preview" id="prompts-preview">
+                    <div class="preview-header" id="prompts-preview-header"></div>
+                    <pre><code id="prompts-preview-code"></code></pre>
+                </div>
+            </div>
+
+            <!-- Commands view (Phase 7) -->
+            <div class="panel-view" id="view-commands">
+                <div class="requirements-header">
+                    <h2>Slash commands</h2>
+                    <span class="study-selector"><span>Phase 7 — Closed-Loop Refinement</span></span>
+                </div>
+                <p class="commands-hint">
+                    Click a command to insert <code>/&lt;name&gt;</code> into the
+                    Claude chat input below. Commands live in
+                    <code>.claude/commands/</code> at the repo root.
+                </p>
+                <div class="commands-list" id="commands-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tool approval modal -->
+    <div class="modal-overlay" id="agent-approval-overlay" hidden>
+        <div class="modal" id="agent-approval-modal">
+            <div class="modal-header">
+                <span class="modal-tool" id="agent-approval-tool"></span>
+                <span class="modal-target" id="agent-approval-target"></span>
+            </div>
+            <pre class="modal-body" id="agent-approval-body"></pre>
+            <div class="modal-actions">
+                <button type="button" id="agent-approval-deny">Deny</button>
+                <button type="button" id="agent-approval-approve">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=4"></script>
+    <script>
+        // Theme toggle — flip data-theme attribute and persist to localStorage.
+        (function () {
+            var btn = document.getElementById("theme-toggle");
+            if (!btn) return;
+            btn.addEventListener("click", function () {
+                var current = document.documentElement.getAttribute("data-theme") || "dark";
+                var next = (current === "dark") ? "light" : "dark";
+                document.documentElement.setAttribute("data-theme", next);
+                try { localStorage.setItem("pipeline-theme", next); } catch (e) {}
+            });
+        })();
+    </script>
+</body>
+</html>

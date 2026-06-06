@@ -1,0 +1,40 @@
+package lre.operation;
+
+import lre.annotation.RoboChartType;
+import lre.sensor.Sensor;
+
+/**
+ * LRE-OP5: Computes the Closest Distance of Approach (cda) and the Time
+ * to Closest Point of Approach (tcpa) to the closest dynamic obstacle
+ * identified by cdyn. The sentinel case (cdyn == -1) is handled by the
+ * Sensor layer.
+ */
+public final class CalcCPA {
+
+    private final Sensor sensor;
+    private final CalcCDyn calcCDyn;
+
+    @RoboChartType("real")
+    private double cda;
+
+    @RoboChartType("real")
+    private double tcpa;
+
+    public CalcCPA(Sensor sensor, CalcCDyn calcCDyn) {
+        this.sensor = sensor;
+        this.calcCDyn = calcCDyn;
+    }
+
+    public void compute() {
+        this.cda = Math.sqrt(
+            (sensor.nsRelDist(calcCDyn.cdyn()) + sensor.obsNsVel(calcCDyn.cdyn()) * (-(sensor.nsRelDist(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.ewRelDist(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn())) / (sensor.obsNsVel(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.obsEwVel(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn()) + 1.0E-9))) * (sensor.nsRelDist(calcCDyn.cdyn()) + sensor.obsNsVel(calcCDyn.cdyn()) * (-(sensor.nsRelDist(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.ewRelDist(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn())) / (sensor.obsNsVel(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.obsEwVel(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn()) + 1.0E-9)))
+          + (sensor.ewRelDist(calcCDyn.cdyn()) + sensor.obsEwVel(calcCDyn.cdyn()) * (-(sensor.nsRelDist(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.ewRelDist(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn())) / (sensor.obsNsVel(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.obsEwVel(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn()) + 1.0E-9))) * (sensor.ewRelDist(calcCDyn.cdyn()) + sensor.obsEwVel(calcCDyn.cdyn()) * (-(sensor.nsRelDist(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.ewRelDist(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn())) / (sensor.obsNsVel(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.obsEwVel(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn()) + 1.0E-9))));
+        this.tcpa = -(sensor.nsRelDist(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.ewRelDist(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn())) / (sensor.obsNsVel(calcCDyn.cdyn()) * sensor.obsNsVel(calcCDyn.cdyn()) + sensor.obsEwVel(calcCDyn.cdyn()) * sensor.obsEwVel(calcCDyn.cdyn()) + 1.0E-9);
+    }
+
+    @RoboChartType("real")
+    public double cda() { return cda; }
+
+    @RoboChartType("real")
+    public double tcpa() { return tcpa; }
+}

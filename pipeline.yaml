@@ -1,0 +1,267 @@
+# Pipeline Manifest — single source of truth for phase definitions and runtime tuning.
+# Read by both the Python dashboard (forge.dashboard/web/manifest.py) and the Java
+# CLI (forge.transformations App.java) in later tasks of the manifest refactor.
+# Today (Task 1) this file is new but not yet consumed by either side.
+#
+# Path variables:
+#   ${repo}           — repository root (resolved at load time by each consumer)
+#   ${output_dir}     — top-level output_dir value below
+#   ${generated_src}  — top-level generated_src value below
+#   ${corrections_dir}— top-level corrections_dir value below
+
+output_dir: ${repo}/forge.transformations/output
+generated_src: ${repo}/java.generated.project/src/main/java
+corrections_dir: ${repo}/forge.assets/corrections
+
+phases:
+
+  # ── Phase 2a ────────────────────────────────────────────────────────────────
+  compile:
+    label: "2a — Compile (gradle build)"
+    runner:
+      kind: python
+      function: "forge.dashboard.web.runners:run_compile"
+    # Runs `gradlew build` against java.generated.project/.
+    # Feedback written to corrections_dir as post_compile.{md,json}.
+    output_files: []
+
+  # ── Phase 2b ────────────────────────────────────────────────────────────────
+  coverage:
+    label: "2b — Coverage (Requirement ↔ Java trace)"
+    runner:
+      kind: python
+      function: "forge.dashboard.web.runners:run_coverage"
+    depends_on: [compile]
+    # Reads requirements + result_codegen.json + Java source.
+    # Feedback written to corrections_dir as post_coverage.{md,json}.
+    output_files: []
+
+  # ── Phase 2c ────────────────────────────────────────────────────────────────
+  preflight:
+    label: "2c — Preflight (Structural Lint)"
+    runner:
+      kind: java
+      class: forge.transformations.preflight.LintPhase
+    args:
+      source: ${generated_src}
+      output: ${output_dir}
+    depends_on: [compile]
+    output_dir: ${output_dir}
+    output_files: [lint_report.json]
+
+  # ── Phase 3 ─────────────────────────────────────────────────────────────────
+  t2m:
+    label: "3 — Text-to-Model (Spoon Discovery)"
+    runner:
+      kind: java
+      class: forge.transformations.t2m.T2mPhase
+    args:
+      source: ${generated_src}
+      output: ${output_dir}
+    depends_on: [preflight]
+    output_dir: ${output_dir}
+    output_files: [discovered_model.xmi, trace_t2m.json]
+
+  # ── Phase 4 ─────────────────────────────────────────────────────────────────
+  m2m:
+    label: "4 — Model-to-Model (ETL Transformation)"
+    runner:
+      kind: java
+      class: forge.transformations.m2m.TransformPhase
+    args:
+      source: ${generated_src}
+      output: ${output_dir}
+    depends_on: [t2m]
+    output_dir: ${output_dir}
+    output_files: [robochart_model.xmi, trace_m2m.json]
+
+  # ── Phase 5b ────────────────────────────────────────────────────────────────
+  m2t:
+    label: "5b — CSP Generation (RoboChart)"
+    runner:
+      kind: sequence
+      steps:
+        - kind: java
+          class: forge.transformations.m2t.RctPhase
+          args:
+            output: ${output_dir}
+        - kind: gradle
+          task: roboChartCspGen
+          props:
+            roboChartProject: ${output_dir}
+    depends_on: [m2m]
+    output_dir: ${output_dir}/csp-gen
+    output_files:
+      - "file_*.csp"
+      - "instantiations.csp"
+      - "timed/file_*.csp"
+      - "timed/instantiations.csp"
+    clear_dirs: ["${output_dir}/csp-gen"]
+
+  # ── Phase 5a ────────────────────────────────────────────────────────────────
+  dafny_gen:
+    label: "5a — Dafny Generation"
+    runner:
+      kind: java
+      class: forge.transformations.m2t.DafnyPhase
+    args:
+      source: ${generated_src}
+      output: ${output_dir}
+    depends_on: [m2m]
+    output_dir: ${output_dir}
+    output_files: ["*.dfy"]
+
+  # ── Phase 5c ────────────────────────────────────────────────────────────────
+  isabelle_gen:
+    label: "5c — Isabelle Theory Generation"
+    runner:
+      kind: java
+      class: forge.transformations.m2t.IsabellePhase
+    args:
+      output: ${output_dir}
+    depends_on: [m2m]
+    output_dir: ${output_dir}/isabelle
+    output_files: ["*.thy", "ROOT"]
+
+  # ── Phase 6b ────────────────────────────────────────────────────────────────
+  fdr4:
+    label: "6b — Formal Verification (FDR4)"
+    runner:
+      kind: python
+      function: "forge.dashboard.web.runners:run_fdr4"
+    depends_on: [m2t]
+    output_dir: ${output_dir}/csp-gen/defs
+    # FDR4 writes unified feedback to corrections_dir — no files under output_dir.
+    output_files: []
+    # NOTE: preserved-as-is from PHASE_COMMANDS in bridge.py; clearing
+    # csp-gen before FDR4 runs would delete FDR4's input. Currently
+    # works because clear_dirs runs AFTER the phase (TODO: verify in
+    # bridge.py and either fix the underlying semantics or remove this).
+    clear_dirs: ["${output_dir}/csp-gen"]
+    # Runtime tuning (verbatim from forge.dashboard/config.yaml)
+    # csp_file is OPTIONAL. When unset (or pointing at a non-existent
+    # path), the runner auto-discovers a *_coreassertions.csp file under
+    # ${output_dir}/csp-gen/defs/ in this preference order:
+    #   1. *_System_Module_coreassertions.csp  — multi-controller aggregate
+    #   2. *Controller_coreassertions.csp      — single-controller controller-only
+    #      (excludes *_Module_*, *_Ctrl_*, *_InputEnv_*, *_OutputEnv_*)
+    #   3. *_Module_coreassertions.csp         — single-controller module level
+    #   4. unique *_coreassertions.csp         — fallback
+    # Set explicitly only when the default heuristic picks the wrong file
+    # (e.g., when verifying one specific controller within a multi-
+    # controller system rather than the top-level module).
+    # csp_file: "${output_dir}/csp-gen/defs/MyController_coreassertions.csp"
+    # Tool lookup: bare binary names resolve via PATH (shutil.which);
+    # absolute paths are used verbatim. On Windows, FDR4 doesn't self-
+    # register on PATH, so pin the win32 entry.
+    fdr4_path:
+      darwin: refines
+      win32: "C:\\Program Files\\fdr\\bin\\refines.exe"
+    timeout: 600
+    # Windows page-file size is often smaller than 8 GB; the GHC
+    # runtime in refines.exe tries to commit address space up-front, so
+    # a lower cap is friendlier across machines. The dashboard passes
+    # this as +RTS -M<size>m -RTS to refines.exe. Raise locally if you
+    # need more state-space headroom (and grow the page file to match).
+    memory_limit_mb: 4096
+    expected_failures: []
+      # Determinism is no longer checked: run_fdr4 strips the official
+      # generator's :[deterministic] assertions before invoking FDR, because
+      # RoboChart models are non-deterministic by construction (concurrent
+      # transitions + hidden autonomous steps) even though the generated Java
+      # is deterministic. So there is no determinism failure to tolerate here.
+      #
+      # (Note — `InputEnv`/`OutputEnv` patterns are intentionally NOT listed
+      # here. An earlier M2M emitted trivial `initial → final` boundary STMs
+      # that the CSP generator translated into `terminate → SKIP`, tripping the
+      # deadlock-free check; that was fixed at the M2M template level by
+      # declaring boundary events on the robotic platform directly (matching
+      # the ICECCS2023 reference pattern), so those stubs no longer appear in
+      # the generated model and no tolerance entry is needed.)
+
+  # ── Phase 6a ────────────────────────────────────────────────────────────────
+  dafny_verify:
+    label: "6a — Dafny Verification"
+    runner:
+      kind: python
+      function: "forge.dashboard.web.runners:run_dafny_verify"
+    depends_on: [dafny_gen]
+    output_dir: ${output_dir}
+    # Dafny writes unified feedback to corrections_dir — no files under output_dir.
+    output_files: []
+    # Runtime tuning (verbatim from forge.dashboard/config.yaml)
+    # Bare binary names resolve via PATH (shutil.which); absolute paths
+    # are used verbatim. On Windows, Dafny doesn't self-register on
+    # PATH, so pin the win32 entry.
+    dafny_path:
+      darwin: dafny
+      win32: "C:\\Users\\willr\\dafny\\dafny\\Dafny.exe"
+    timeout: 120
+
+  # ── Phase 6c ────────────────────────────────────────────────────────────────
+  isabelle_verify:
+    label: "6c — Isabelle Verification (Z-Machine)"
+    runner:
+      kind: python
+      function: "forge.dashboard.web.runners:run_isabelle_verify"
+    args:
+      session_dir: ${output_dir}/isabelle
+    depends_on: [isabelle_gen]
+    output_dir: ${output_dir}/isabelle
+    # Isabelle build writes unified feedback to corrections_dir — no new artifacts here.
+    output_files: []
+    # Runtime tuning (verbatim from forge.dashboard/config.yaml)
+    # Bare binary names resolve via PATH (shutil.which). Override with
+    # an absolute path if needed. Windows uses wsl.exe — the runner
+    # bridges to the isabelle binary inside WSL via wsl_isabelle_bin.
+    isabelle_path:
+      darwin: isabelle
+      linux: isabelle
+      win32: wsl.exe
+    # WSL distro to target (only used when isabelle_path == "wsl.exe").
+    # Required if the default distro isn't the one with Isabelle —
+    # `wsl.exe --list --verbose` shows which one is starred. Omit to
+    # use whatever wsl.exe picks by default.
+    wsl_distro: Ubuntu
+    # Path to the isabelle binary inside the wsl_distro distro.
+    # Must match docs/design/isabelle_wsl_setup.md.
+    wsl_isabelle_bin: /home/willr/isabelle/Isabelle2023-CyPhyAssure/bin/isabelle
+    timeout: 1800            # seconds; first cold run can take a while
+    memory_limit_mb: 16384
+    # Per-goal timeout passed via `-o timeout=N`. Distinct from the outer subprocess timeout.
+    proof_timeout: 600
+
+  # ── Phase 6d ────────────────────────────────────────────────────────────────
+  # Vacuity audit on the generated Dafny + Isabelle artefacts. Detects
+  # two specific "verifier passes nothing because the obligation was
+  # True" patterns (see web/vacuity.py docstring for the D1 / I1
+  # signal definitions). Cheap — pure Python, no subprocess; writes
+  # post_vacuity.{md,json} to corrections_dir like every other phase.
+  vacuity:
+    label: "6d — Vacuity Audit (Dafny + Isabelle)"
+    runner:
+      kind: python
+      function: "forge.dashboard.web.runners:run_vacuity"
+    depends_on: [dafny_gen, isabelle_gen]
+    output_dir: ${output_dir}
+    # Vacuity writes only unified feedback to corrections_dir — no files under output_dir.
+    output_files: []
+
+agent:
+  # Bare binary names resolve via PATH. asyncio.create_subprocess_exec
+  # does the lookup natively on both Windows and POSIX.
+  claude_path:
+    darwin: claude
+    linux: claude
+    win32: claude.exe
+  approval_timeout_seconds: 300
+  active_case_study: chemical_detector
+  # Fix 3: optional LLM-mediated translation of Isabelle residual goals
+  # into Java-level fix suggestions. Off by default because every
+  # Isabelle failure spawns a `claude -p ...` subprocess (cost + latency),
+  # and the resulting feedback is non-deterministic. Enable for
+  # exploratory debugging when a residual goal does not match any
+  # hand-coded heuristic in feedback/isabelle.py. The suggestion is
+  # appended to the issue's fix_directive labelled "LLM-suggested
+  # (not verified)" so it can be distinguished from rule-based output.
+  llm_residual_translation: false

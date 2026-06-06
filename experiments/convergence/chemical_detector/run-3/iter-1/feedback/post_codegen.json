@@ -1,0 +1,18 @@
+{
+  "phase": "codegen",
+  "label": "Phase 2 — Interactive Codegen (iter 1, cold)",
+  "status": "complete",
+  "summary": "Full cold codegen of chemical_detector: two controllers (GasAnalysisController, MovementController), shared events turn/stop/resume, Vehicle sensing/actuation surface, Clock-based stuck detection.",
+  "issues": [
+    {"kind": "design_choice", "title": "No Final mode in either controller", "detail": "Spec final states modelled as live modes Located/Found with event-triggered self-loops; terminating events (stop, flag) still emitted. Required by the Isabelle theory generator's no-Final constraint (CLAUDE.md)."},
+    {"kind": "design_choice", "title": "Vehicle operations are actuator methods", "detail": "CD-OP1..4 are methods on actuator.Vehicle, not operation/ compute() classes, because the spec defines them as Vehicle-provided actuation primitives."},
+    {"kind": "design_choice", "title": "during randomWalk() encoded as top-of-mode statement", "detail": "CD-MV-FR1's during action has no direct Java encoding; top-of-Waiting-block vehicle.randomWalk() is the supported approximation."},
+    {"kind": "invented_default", "title": "analysis() classifies on chemical identity only", "detail": "gasD iff some reading's c equals the target chem; spec does not define 'indicates the target chemical' precisely."},
+    {"kind": "invented_default", "title": "Safe defaults for empty readings", "detail": "intensity() returns 0.0, location() returns Front when the reading is empty."},
+    {"kind": "invented_default", "title": "angle() index mapping", "detail": "0->Front, 1->Left, 2->Right, else->Back; spec gives no table."},
+    {"kind": "invented_default", "title": "All constants = 1", "detail": "THR, LV, EVADE_TIME, STUCK_PERIOD, STUCK_DIST, OUT_PERIOD all 1 to fit FDR4 type ranges {0..1}."},
+    {"kind": "design_choice", "title": "Intensity = real, Chem = record(nat id)", "detail": "Spec leaves both opaque; equality/ordering only."},
+    {"kind": "design_choice", "title": "Odometer is a sensor method, not a trigger", "detail": "Spec only reads odometer inside actions (odometer ? d0), so it is a zero-arg sensor method assigned in transition actions."}
+  ],
+  "next_step": "Run the pipeline (compile through vacuity) and iterate from post_* feedback."
+}

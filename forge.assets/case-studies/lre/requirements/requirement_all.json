@@ -1,0 +1,412 @@
+{
+  "requirements": [
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "SystemArchitecture",
+      "id": "LRE-ARCH1",
+      "description": "The Last Response Engine (LRE) system is an autonomous underwater vehicle (AUV) controller that mediates between an operator controller (which receives commands from human) and an autopilot controller of the AUV. The LRE receives sensor data (on the AUV) about the environment (depth, velocity, nearby obstacles), receives commands from the operator controller (requested velocity, heading, mode changes), and issues advised velocity and heading to the autopilot controller. The LRE operates in different operating modes based on environmental conditions and operator requests.",
+      "priority": "1",
+      "types": ["architecture"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "ControllerArchitecture",
+      "id": "LRE-ARCH2",
+      "description": "The LRE controller is composed of: (1) a Sensor interface to receive environmental data and obstacle information, (2) an Actuator interface to send advised commands for the autopilot controller, (3) a set of operations that compute derived quantities from sensor data each step (velocities, closest obstacles, collision metrics, exclusion zone status), and (4) a state machine that uses the computed quantities as conditions to determine mode transitions. At each step, the controller evaluates transition conditions to determine if it should switch mode.",
+      "priority": "1",
+      "types": ["architecture"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "LreMode",
+      "id": "LRE-DM1",
+      "description": "The LRE has exactly four operating modes: OCM (Operator Control Mode — LRE is inactive, passes operator inputs directly to autopilot), MOM (Main Operating Mode — LRE controls autonomous behaviour at normal speed), HCM (High Caution Mode — AUV is near an obstacle, reduced velocity), and CAM (Collision Avoidance Mode — potential collision detected, evasive manoeuvre). At start up, the LRE is in OCM.",
+      "priority": "2",
+      "types": ["data_type"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Obstacle",
+      "id": "LRE-DM2",
+      "description": "An Obstacle is a record containing six fields: ns_rel_dist (real, metres, relative distance north-south), ew_rel_dist (real, metres, relative distance east-west), obs_depth (real, metres, obstacle depth), obs_ns_vel (real, m/s, obstacle velocity north-south), obs_ew_vel (real, m/s, obstacle velocity east-west), and obs_roc (real, m/s, obstacle rate of climb). An obstacle is considered static if both obs_ns_vel and obs_ew_vel are zero; otherwise it is dynamic.",
+      "priority": "2",
+      "types": ["data_type"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "ObstacleRegister",
+      "id": "LRE-DM3",
+      "description": "The ObstacleRegister stores a collection of obstacles indexed by natural number identifiers, modelled as a partial function nat (as in 'natural numbers') -> Obstacle. It supports lookup by index, iteration over all obstacles, and filtering by static/dynamic status.",
+      "priority": "2",
+      "types": ["data_type"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "LreConstants",
+      "id": "LRE-DM4",
+      "description": "The AUV defines four constant safety thresholds: minSafeDist (real, default 1, minimal safe distance to any obstacle), staticObsHorizDist (real, default 1, horizontal distance threshold to a static obstacle), staticObsVertDist (real, default 1, vertical distance threshold to a static obstacle), and staticObsDfltVertDist (real, default 1, default vertical distance threshold to a static obstacle).",
+      "priority": "2",
+      "types": ["constants"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "SensorInterface",
+      "id": "LRE-DM5",
+      "description": "The Sensor provides the AUV's raw environmental data: depth (real, metres below surface), ns_vel (real, m/s, north-south horizontal velocity), ew_vel (real, m/s, east-west horizontal velocity), and rate_of_climb (real, m/s, vertical velocity). The Sensor holds an ObstacleRegister and provides: distance functions odist(index) (overall Euclidean distance), hdist(index) (horizontal distance), vdist(index) (vertical distance); obstacle field accessors nsRelDist(index), ewRelDist(index), obsNsVel(index), obsEwVel(index) that return the respective field of the obstacle at the given index; and selection functions closestStaticIndex() and closestDynamicIndex() that return the index of the nearest static or dynamic obstacle respectively, or -1 if none exists. When no obstacle exists, distance functions odist, hdist, and vdist return a safe large distance, and field accessors nsRelDist, ewRelDist, obsNsVel, and obsEwVel return zero.",
+      "priority": "3",
+      "types": ["data_type"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "InputEvent",
+      "id": "LRE-DM6",
+      "description": "The operator controller communicates with the LRE through input events: reqVel (carries a real velocity value in m/s), reqHdng (carries a real heading value in degrees), reqOCM (signal, requests Operator Control Mode), reqMOM (signal, requests Main Operating Mode), reqHCM (signal, requests High Caution Mode), and endTask (signal, indicates end of current task).",
+      "priority": "3",
+      "types": ["event"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "OutputEvent",
+      "id": "LRE-DM7",
+      "description": "The LRE controller communicates with the autopilot controller ONLY through output events: advVel (carries a real velocity value in m/s, advises velocity) and advHdng (carries a real heading value in degrees, advises heading). These are the only two output events; the LRE issues no other outputs to the autopilot.",
+      "priority": "3",
+      "types": ["event"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Actuator",
+      "id": "LRE-DM8",
+      "description": "The Actuator receives advised velocity and heading from the LRE controller via output events (advVel, advHdng) and stores the latest values for the autopilot controller.",
+      "priority": "3",
+      "types": ["actuator"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "HorizontalDistance",
+      "id": "LRE-SF1",
+      "description": "The Sensor provides a function hdist(index) that computes the horizontal distance to the obstacle at the given index, where it returns the square root of (ns_rel_dist^2 + ew_rel_dist^2).",
+      "priority": "4",
+      "types": ["distance"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "VerticalDistance",
+      "id": "LRE-SF2",
+      "description": "The Sensor provides a function vdist(index) that computes the vertical distance to the obstacle at the given index, where it returns the absolute value of (depth - obs_depth).",
+      "priority": "4",
+      "types": ["distance"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "OverallDistance",
+      "id": "LRE-SF3",
+      "description": "The Sensor provides a function odist(index) that computes the overall Euclidean distance to the obstacle at the given index, where it returns the square root of (hdist(index)^2 + vdist(index)^2).",
+      "priority": "4",
+      "types": ["distance"]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationCalcVel",
+      "id": "LRE-OP1",
+      "description": "The CalcVel operation computes horizontal velocity (hvel), vertical velocity (vvel), and total velocity (vel) from raw sensor inputs. hvel is the magnitude of horizontal velocity components (ns_vel, ew_vel). vvel is the rate of climb. vel is the magnitude of hvel and vvel combined. The controller invokes this operation before evaluating transition guards each step.",
+      "priority": "4",
+      "types": ["operation"]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationCheckOPEZ",
+      "id": "LRE-OP2",
+      "description": "The CheckOPEZ operation determines whether the AUV is within an Object Proximity Exclusion Zone. It sets inOpez to true when the overall distance to the closest static obstacle (cstc) is at or below the minSafeDist threshold, or the AUV depth is at or below zero; otherwise inOpez is false. CheckOPEZ uses the closest-static-obstacle index computed by CalcCStc. The no-static-obstacle case is handled by the Sensor layer, which returns a safe large distance when no static obstacle exists. The controller invokes this operation before evaluating transition guards each step.",
+      "priority": "4",
+      "types": ["operation"]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationCalcCStc",
+      "id": "LRE-OP3",
+      "description": "The CalcCStc operation sets cstc to the index of the closest static obstacle by calling sensor.closestStaticIndex(). The closestStaticIndex() function returns the index of the static obstacle with the minimum overall distance (odist), or -1 if no static obstacles exist. The controller invokes this operation before evaluating transition guards each step.",
+      "priority": "4",
+      "types": ["operation"]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationCalcCDyn",
+      "id": "LRE-OP4",
+      "description": "The CalcCDyn operation sets cdyn to the index of the closest dynamic obstacle by calling sensor.closestDynamicIndex(). The closestDynamicIndex() function returns the index of the dynamic obstacle with the minimum overall distance (odist), or -1 if no dynamic obstacles exist. The controller invokes this operation before evaluating transition guards each step.",
+      "priority": "4",
+      "types": ["operation"]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "OperationCalcCPA",
+      "id": "LRE-OP5",
+      "description": "The CalcCPA operation computes the Closest Distance of Approach (cda) and Time at Closest Point of Approach (tcpa) to the closest dynamic obstacle identified by cdyn. It accesses the obstacle's relative position and velocity from the Sensor. The no-dynamic-obstacle case is handled by the Sensor layer, which returns zero-velocity and large-distance defaults when no dynamic obstacle exists. The controller invokes this operation before evaluating transition guards each step.",
+      "priority": "4",
+      "types": ["operation"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_inOpez",
+      "id": "LRE-Var1",
+      "description": "The controller maintains a boolean variable inOpez indicating whether the AUV is currently in an Object Proximity Exclusion Zone (OPEZ), calcuated by CheckOPEZ each step.",
+      "priority": "5",
+      "types": ["variable"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_hvel",
+      "id": "LRE-Var2",
+      "description": "The controller maintains a real variable hvel (m/s) representing the AUV's horizontal velocity, captured by the AUV's sensor.",
+      "priority": "5",
+      "types": ["variable"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_vvel",
+      "id": "LRE-Var3",
+      "description": "The controller maintains a real variable vvel (m/s) representing the AUV's vertical velocity, captured by the AUV's sensor.",
+      "priority": "5",
+      "types": ["variable"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_vel",
+      "id": "LRE-Var4",
+      "description": "The controller maintains a real variable vel (m/s) representing the AUV's overall velocity magnitude, captured by the AUV's sensor.",
+      "priority": "5",
+      "types": ["variable"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_cstc",
+      "id": "LRE-Var5",
+      "description": "The controller maintains a natural number variable cstc denoting the index of the closest static obstacle. Value -1 means no static obstacle exists. Set by CalcCStc each step.",
+      "priority": "5",
+      "types": ["variable"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_cdyn",
+      "id": "LRE-Var6",
+      "description": "The controller maintains a natural number variable cdyn denoting the index of the closest dynamic obstacle. Value -1 means no dynamic obstacle exists. Set by CalcCDyn each step.",
+      "priority": "5",
+      "types": ["variable"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_cda",
+      "id": "LRE-Var7",
+      "description": "The controller maintains a real variable cda (metres) representing the Closest Distance of Approach to the closest dynamic obstacle. Set by CalcCPA each step.",
+      "priority": "5",
+      "types": ["variable"]
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_tcpa",
+      "id": "LRE-Var8",
+      "description": "The controller maintains a real variable tcpa (seconds) representing the Time at Closest Point of Approach to the closest dynamic obstacle. Set by CalcCPA each step.",
+      "priority": "5",
+      "types": ["variable"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "StateOCM",
+      "id": "LRE-FR1",
+      "description": "OCM (Operator Control Mode) is the initial mode on power-up. In OCM, the LRE is inactive and passes operator velocity and heading requests directly to the autopilot controller.",
+      "priority": "6",
+      "types": ["state"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "StateMOM",
+      "id": "LRE-FR2",
+      "description": "In MOM (Main Operating Mode), the LRE takes autonomous control at normal operating speed. On entering MOM, the LRE advises a velocity of 1 m/s to the autopilot controller.",
+      "priority": "6",
+      "types": ["state"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "StateHCM",
+      "id": "LRE-FR3",
+      "description": "In HCM (High Caution Mode), the AUV is approaching an obstacle and operates at reduced velocity. On entering HCM, the LRE advises a velocity of 0 m/s to the autopilot controller.",
+      "priority": "6",
+      "types": ["state"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "StateCAM",
+      "id": "LRE-FR4",
+      "description": "In CAM (Collision Avoidance Mode), a potential collision has been detected and the AUV performs evasive manoeuvres.",
+      "priority": "6",
+      "types": ["state"]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "GuardPredicate_inOpez",
+      "id": "LRE-GP1",
+      "description": "The controller evaluates a named predicate 'inOpez' reflecting whether the AUV is currently in the Object Proximity Exclusion Zone, as determined by the CheckOPEZ operation.",
+      "priority": "7",
+      "types": ["guard_predicate"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "InitialState",
+      "id": "LRE-Beh1",
+      "description": "On power-up, the LRE begins in OCM.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "OCM_PassVelocity",
+      "id": "LRE-Beh2",
+      "description": "In OCM, when the operator controller sends reqVel with a velocity value v, the LRE passes it through to the autopilot controller as advVel with the same value v. The LRE remains in OCM.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "OCM_PassHeading",
+      "id": "LRE-Beh3",
+      "description": "In OCM, when the operator controller sends reqHdng with a heading value h, the LRE passes it through to the autopilot controller as advHdng with the same value h. The LRE remains in OCM.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "OCM_to_MOM",
+      "id": "LRE-Beh4",
+      "description": "The LRE transitions from OCM to MOM when the operator controller sends reqMOM AND all of the following are true: the velocity of the AUV (vel) is less than or equal to 1, the AUV is not in OPEZ, the overall Euclidean distance (the odist function) to cdyn is greater than 1, and the overall Euclidean distance (the odist function) to cstc is greater than 1.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MOM_to_OCM_OPEZ",
+      "id": "LRE-Beh5",
+      "description": "The LRE transitions from MOM to OCM when inOpez is true. The guard is inOpez alone; the depth and distance conditions are subsumed by CheckOPEZ's definition of inOpez.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MOM_to_OCM_reqOCM",
+      "id": "LRE-Beh6",
+      "description": "The LRE transitions from MOM to OCM when the operator controller sends reqOCM.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MOM_to_OCM_endTask",
+      "id": "LRE-Beh7",
+      "description": "The LRE transitions from MOM to OCM when endTask is received. On this transition, send advice velocity to 0 (advVel(0)).",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MOM_to_CAM",
+      "id": "LRE-Beh8",
+      "description": "The LRE transitions from MOM to CAM when the closest distance of approach (cda) is below the minSafeDist threshold AND the time to closest point of approach (tcpa) is non-negative.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MOM_to_HCM_HorizVel",
+      "id": "LRE-Beh9",
+      "description": "The LRE transitions from MOM to HCM when the AUV's horizontal velocity (hvel) is at or above 1 m/s AND the horizontal distance (hdist) to the closest static obstacle (cstc) is at or below the staticObsHorizDist threshold.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MOM_to_HCM_DfltVert",
+      "id": "LRE-Beh10",
+      "description": "The LRE transitions from MOM to HCM when the vertical distance (vdist) to the closest static obstacle (cstc) is at or below the staticObsDfltVertDist threshold, regardless of velocity.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MOM_to_HCM_VertVel",
+      "id": "LRE-Beh11",
+      "description": "The LRE transitions from MOM to HCM when the AUV's vertical velocity (vvel) is at or above 1 m/s AND the vertical distance (vdist) to the closest static obstacle (cstc) is at or below the staticObsVertDist threshold.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "MOM_to_HCM_reqHCM",
+      "id": "LRE-Beh12",
+      "description": "The LRE transitions from MOM to HCM when the operator controller sends reqHCM.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "HCM_to_MOM",
+      "id": "LRE-Beh13",
+      "description": "The LRE transitions from HCM to MOM when the horizontal distance (hdist) to the closest static obstacle (cstc) exceeds the staticObsHorizDist threshold AND the vertical distance (vdist) to the closest static obstacle (cstc) exceeds the staticObsVertDist threshold.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "HCM_to_CAM",
+      "id": "LRE-Beh14",
+      "description": "The LRE transitions from HCM to CAM when the closest distance of approach (cda) is below the minSafeDist threshold AND the time to closest point of approach (tcpa) is non-negative.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "HCM_to_OCM_reqOCM",
+      "id": "LRE-Beh15",
+      "description": "The LRE transitions from HCM to OCM when the operator controller sends reqOCM.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "HCM_to_OCM_OPEZ",
+      "id": "LRE-Beh16",
+      "description": "The LRE transitions from HCM to OCM when inOpez is true. The guard is inOpez alone; the depth and distance conditions are subsumed by CheckOPEZ's definition of inOpez.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "CAM_to_OCM_reqOCM",
+      "id": "LRE-Beh17",
+      "description": "The LRE transitions from CAM to OCM when the operator controller sends reqOCM.",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "CAM_to_OCM_safe",
+      "id": "LRE-Beh18",
+      "description": "The LRE transitions from CAM to OCM when the closest distance of approach (cda) is at or above the minSafeDist threshold. On this transition, advise velocity to 0 (advVel(0)).",
+      "priority": "8",
+      "types": ["transition"]
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "OperatorControlOnly",
+      "id": "LRE-Beh19",
+      "description": "In OCM, the LRE handles exactly three operator inputs: reqVel (pass through velocity), reqHdng (pass through heading), and reqMOM (transition to MOM if guards allow). OCM does not respond to reqOCM since the LRE is already in OCM. In all other modes, operator velocity and heading inputs are overridden by the LRE.",
+      "priority": "8",
+      "types": ["constraint"]
+    },
+    {
+      "kind": "Design Constraint",
+      "name": "UniqueTransitions",
+      "id": "LRE-DC1",
+      "description": "Each behavioral requirement (LRE-Beh1 through LRE-Beh18) maps to exactly one transition. There are no duplicate transitions for the same source mode and trigger event combination.",
+      "priority": "9",
+      "types": ["constraint"]
+    }
+  ]
+}

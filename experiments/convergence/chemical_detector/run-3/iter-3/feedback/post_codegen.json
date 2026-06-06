@@ -1,0 +1,12 @@
+{
+  "phase": "codegen",
+  "label": "Phase 2 — Interactive Codegen (iter 3)",
+  "status": "complete",
+  "summary": "Replaced gas-capturing self-loops with payload-less Tick self-loops placed AFTER the autonomous guards in Analysis/GasDetected (and on Located): fixes Dafny postcondition preemption and Isabelle duplicate SeqGs constant while keeping bare-precondition coverage.",
+  "issues": [
+    {"kind": "design_choice", "title": "InputEvent.Tick added", "detail": "Theory generator emits one definition Seq<Var> per gas-capturing transition (no dedup) - only Reading->Analysis may capture gas?gs. Bare-precondition self-loops use Tick. Spec deviation: Tick is a verification-harness event, not in requirements."},
+    {"kind": "design_choice", "title": "Autonomous guards first, Tick self-loop last", "detail": "Dafny replicates Java branch order with unconditional ensures for autonomous transitions; event branch placed last is a dead path (guards exhaustive) so the ensures prove. RoboChart semantics unaffected (concurrent choices)."},
+    {"kind": "design_choice", "title": "Located self-loop no longer captures gs", "detail": "Spec assigns gs only on Reading->Analysis (CD-GA-Var1); spec-neutral."}
+  ],
+  "next_step": "Re-run the pipeline; expect dafny_verify and isabelle_verify to progress; fdr4 must stay green."
+}

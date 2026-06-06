@@ -1,0 +1,123 @@
+FEW-SHOT EXAMPLE: MODE-NESTED IF-ELSE STATE MACHINE
+
+This example demonstrates the required code structure for a simple traffic light controller
+with three modes (RED, GREEN, YELLOW) and named boolean predicates. The domain is fictional
+— adapt the pattern to the actual requirements.
+
+// FILE: src/main/java/com/example/controller/event/InputEvent.java
+package com.example.controller.event;
+
+// Sealed interface: one record per event type.
+// Signal events carry no data; data-carrying events hold a payload.
+public sealed interface InputEvent {
+    record TimerExpired() implements InputEvent {}
+    record EmergencyStop() implements InputEvent {}
+    record Resume() implements InputEvent {}
+    record SetSpeed(double value) implements InputEvent {}
+}
+
+// FILE: src/main/java/com/example/controller/mode/TrafficMode.java
+package com.example.controller.mode;
+
+// Simple enum: one value per operating mode.
+public enum TrafficMode {
+    RED,
+    GREEN,
+    YELLOW
+}
+
+// FILE: src/main/java/com/example/controller/sensor/Sensor.java
+package com.example.controller.sensor;
+
+// Sensor class: derived quantities computed from raw inputs.
+public final class Sensor {
+
+    private double vehicleCount;
+    private double waitTime;
+
+    public void update(double vehicleCount, double waitTime) {
+        this.vehicleCount = vehicleCount;
+        this.waitTime = waitTime;
+    }
+
+    public double vehicleCount() { return vehicleCount; }
+    public double waitTime() { return waitTime; }
+    public boolean queueLong() { return vehicleCount > 10; }
+}
+
+// FILE: src/main/java/com/example/controller/actuator/Actuator.java
+package com.example.controller.actuator;
+
+// Actuator: receives output commands.
+public final class Actuator {
+    private String lastSignal = "NONE";
+
+    public void setSignal(String signal) { this.lastSignal = signal; }
+    public String lastSignal() { return lastSignal; }
+}
+
+// FILE: src/main/java/com/example/controller/TrafficController.java
+package com.example.controller;
+
+import com.example.controller.actuator.Actuator;
+import com.example.controller.event.InputEvent;
+import com.example.controller.mode.TrafficMode;
+import com.example.controller.sensor.Sensor;
+
+public final class TrafficController {
+    private TrafficMode currentMode = TrafficMode.RED;
+    private final Sensor sensor;
+    private final Actuator actuator;
+
+    public TrafficController(Sensor sensor, Actuator actuator) {
+        this.sensor = sensor;
+        this.actuator = actuator;
+    }
+
+    public TrafficMode currentMode() { return currentMode; }
+
+    public void step(InputEvent event) {
+        // --- Named boolean predicates (declared BEFORE the if-else chain) ---
+        boolean queueLong = sensor.queueLong();
+        boolean waitAboveThreshold = sensor.waitTime() > 30.0;
+
+        // --- Pure mode-nested if-else: every outer branch is currentMode == X ---
+        if (currentMode == TrafficMode.RED) {
+            // Event-triggered transitions first (highest priority)
+            if (event instanceof InputEvent.EmergencyStop) {
+                // already RED — no-op, but demonstrates priority
+            } else if (event instanceof InputEvent.TimerExpired && queueLong) {
+                currentMode = TrafficMode.GREEN;
+                actuator.setSignal("GREEN");
+            } else if (event instanceof InputEvent.TimerExpired && waitAboveThreshold) {
+                currentMode = TrafficMode.GREEN;
+                actuator.setSignal("GREEN");
+            }
+
+        } else if (currentMode == TrafficMode.GREEN) {
+            // High-priority override duplicated in this mode block
+            if (event instanceof InputEvent.EmergencyStop) {
+                currentMode = TrafficMode.RED;
+                actuator.setSignal("RED");
+            } else if (event instanceof InputEvent.TimerExpired) {
+                currentMode = TrafficMode.YELLOW;
+                actuator.setSignal("YELLOW");
+            }
+            // Guard-only (autonomous) transition — no event check
+            else if (!queueLong && !waitAboveThreshold) {
+                currentMode = TrafficMode.YELLOW;
+                actuator.setSignal("YELLOW");
+            }
+
+        } else if (currentMode == TrafficMode.YELLOW) {
+            // High-priority override duplicated in this mode block
+            if (event instanceof InputEvent.EmergencyStop) {
+                currentMode = TrafficMode.RED;
+                actuator.setSignal("RED");
+            } else if (event instanceof InputEvent.TimerExpired) {
+                currentMode = TrafficMode.RED;
+                actuator.setSignal("RED");
+            }
+        }
+    }
+}

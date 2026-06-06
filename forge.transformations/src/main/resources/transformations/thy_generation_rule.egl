@@ -1,0 +1,1931 @@
+[%
+// `stm_name` is injected by IsabelleEgxRunner (set to the first
+// StateMachineDef's name). Do NOT re-declare it here — the old loop
+// `for (stm in RC!StateMachineDef.allInstances){ stm_name=stm.name }`
+// overwrote the injected value with the LAST machine's name, which
+// causes a theory/filename mismatch in multi-controller models.
+%]
+[% // FORK: theory name must match filename; runner writes <stm>_Beh.thy
+%]theory [%=stm_name%]_Beh
+imports "Z_Machines.Z_Machine"
+begin
+
+subsection \<open> Introduction \<close>
+
+text \<open> This theory file is to model the [%=stm_name%] state machine in Z Machine notations.\<close>
+
+notation undefined ("???")
+
+subsection \<open> type definition \<close>
+
+datatype ('s, 'e) tag =
+  State (ofState: 's) | Event (ofEvent: 'e)
+
+abbreviation "is_Event x \<equiv> \<not> is_State x"
+
+type_synonym ('s, 'e) rctrace = "('s, 'e) tag list"
+
+definition wf_rcstore :: "('s, 'e) rctrace \<Rightarrow> 's \<Rightarrow> 's option \<Rightarrow> bool" where
+[z_defs]: "wf_rcstore tr st final = (
+     length(tr) > 0 
+   \<and> tr ! ((length tr) -1) = State st 
+   \<and> (final \<noteq> None \<longrightarrow> (\<forall>i<length tr. tr ! i = State (the final) \<longrightarrow> i= (length tr) -1)) 
+   \<and> (filter is_State tr) ! (length (filter is_State tr) -1) = State  st)"
+   
+[%
+for (p in RC!RCPackage) {
+	if (true){  // FORK: open filter — archive hardcoded "Chemical" or "lre_beh"
+   
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	//query the states  to generate enumtype
+	"Query the states".println();
+	//we assume there is ONLY ONE state machine in the package
+	
+	var k=0;
+	var enum_output: String;
+	var set_output: String;
+	
+	var enum_output_event: String;
+	var set_output_event: String;
+	
+	
+	for (n in p.machines.at(0).nodes){
+		enum_output= enum_output+ n.zmState() +" | ";
+		set_output= set_output+ n.zmState() +", ";}
+	 
+	//to add the context for thy file "enumtype St = "
+	//to cut the last vertical bar
+	enum_output= "enumtype St = " + enum_output.substring(0,(enum_output.length()-2));
+%]
+[%=enum_output%]
+[%//set_output= "definition [z_defs]: \"St = {" + set_output.substring(0,(set_output.length()-2))+"}\"";
+%]
+[%//=set_output
+%] 
+
+
+[%
+//to generate enum for events
+for (e in p.machines.at(0).events){ 
+	"print out the event names".println();
+	 e.name.println();
+	 enum_output_event =  enum_output_event+ e.name +" | ";
+//	 set_output_event = set_output_event+ e.name +", ";
+}
+
+enum_output_event= "enumtype Evt = " + enum_output_event.substring(0,(enum_output_event.length()-2));
+%]
+[%=enum_output_event%]
+[%//set_output_event= "definition \"Evt = {" + set_output_event.substring(0,(set_output_event.length()-2))+"}\"";
+%]
+[%//=set_output_event
+%] 
+
+
+[%
+//--------------------------------------------------------------
+//query the TYPES
+//--------------------------------------------------------------
+"--------------------------------------------------------------".println();
+"Query the types".println();
+"--------------------------------------------------------------".println();
+//for Enumaration type
+for (e in p.types){
+	e.type().name.println();
+	("e.name: " + e.name).println();
+	if(e.type().name="Enumeration"){
+	var enumtype_output: String;
+	var enumtype_set_output: String;
+	var i=0;
+	while(i<e.literals.size()){
+		enumtype_output=enumtype_output+ e.literals.at(i).name +" | ";
+		enumtype_set_output=enumtype_set_output+ e.literals.at(i).name +", ";
+		i++;
+	}
+enumtype_output="enumtype "+ e.name + " = "+ enumtype_output.subString(0, (enumtype_output.length()-3));
+("final enumtype_output: " +enumtype_output).println();
+%]
+[%=enumtype_output%]
+
+[%//enumtype_set_output="definition \""+ e.name + " = {"+ enumtype_set_output.subString(0, (enumtype_set_output.length()-2))+ "}\"";
+//("final enumtype_set_output: " +enumtype_set_output).println();
+%]
+[%//=enumtype_set_output
+%]
+[%
+ }
+}
+
+/////////////////////////////////////////////////////////////////////
+//for Primitive type
+// FORK: skip Isabelle built-ins (real, nat, int, boolean, string) to
+// avoid shadowing HOL.real / HOL.bool, and skip already-emitted names
+// to avoid "duplicate constant" errors when the ETL produces multiple
+// PrimitiveType instances with the same name.
+var emittedPrimitives: Set;
+var builtinPrimitives: Set = Set{"real", "nat", "int", "integer", "boolean", "bool", "string"};
+for(e in p.types){
+	if(e.type().name="PrimitiveType"){
+		if(not builtinPrimitives.includes(e.name) and not emittedPrimitives.includes(e.name)){
+			emittedPrimitives.add(e.name);
+			var primitiveType_output: String;
+			primitiveType_output="type_synonym " + e.name + "= \"nat\"";
+			primitiveType_output.println();%]
+[%=primitiveType_output%]
+[%}
+}
+}
+
+
+/////////////////////////////////////////////////////////////////////
+// FORK: emit `default` and `show` class instances for `real`. The
+// Z_Machines `zstore` requires every field type to have `default`
+// (used to seed the initial state image), and `zmachine` requires
+// `show` (used by trace serialisation). HOL/Real has neither.
+//
+// `default = 0` is arbitrary — only used to satisfy the class, never
+// inspected at verification time. The `show` instance has no body
+// because Haskell_Show treats `show` as unspecified for verification
+// (only mapped to Prelude.show at code-generation time, via the
+// existing integer pattern in Z_Toolkit/Haskell_Show.thy).
+//
+// Both classes are introduced in scope by Z_Machines' transitive
+// imports — `default` from HOL-Library, `show` from
+// Z_Toolkit.Haskell_Show. No extra ROOT-session dependency needed.
+%]
+instantiation real :: default
+begin
+  definition default_real :: "real" where "default_real = 0"
+  instance ..
+end
+
+instantiation real :: "show"
+begin
+  instance ..
+end
+[%
+
+/////////////////////////////////////////////////////////////////////
+//for Record type
+// Isabelle requires record declarations in dependency order: if
+// record A has a field of type B, B must be declared first. The XMI
+// emission order is whatever the ETL added them in (not necessarily
+// dep order), so topologically sort here. Records with no
+// record-typed dependencies emit first, then ones whose deps are
+// already declared.
+"query for record type".println();
+var recordTypes = new Sequence;
+for(e in p.types){
+	if(e.type().name="RecordType"){
+		recordTypes.add(e);
+	}
+}
+// Build dep map: recName -> Set{recName, ...} of records it depends on
+var recDeps = new Map;
+for(rt in recordTypes){
+	var deps = new Set;
+	for(f in rt.fields){
+		if(f.type.isKindOf(RC!TypeRef) and f.type.ref.isDefined()){
+			var refDecl = f.type.ref;
+			if(refDecl.type().name="RecordType"){
+				deps.add(refDecl.name);
+			}
+		}
+	}
+	recDeps.put(rt.name, deps);
+}
+// Kahn-style sort: pick a record whose deps are all already emitted.
+var emitted = new Set;
+var ordered = new Sequence;
+var remaining = new Sequence;
+for(rt in recordTypes){ remaining.add(rt); }
+while(remaining.size() > 0){
+	var next = null;
+	for(rt in remaining){
+		if(next.isUndefined()){
+			var deps = recDeps.get(rt.name);
+			var ready = true;
+			for(d in deps){
+				if(not emitted.includes(d)){ ready = false; }
+			}
+			if(ready){ next = rt; }
+		}
+	}
+	if(next.isUndefined()){
+		// Cycle or unresolved — emit remaining in declared order and break.
+		for(rt in remaining){ ordered.add(rt); }
+		remaining = new Sequence;
+	} else {
+		ordered.add(next);
+		emitted.add(next.name);
+		remaining.remove(next);
+	}
+}
+for(e in ordered){
+		// Build field list inline so all of a record's fields are on
+		// the same logical "command" as `record <name> =`, terminated
+		// by the blank line that follows. Multi-line record syntax
+		// across blank lines confuses the parser in some configurations.
+		//
+		// Field names that collide with Isabelle reserved words (e.g.
+		// `value`, the name of the `value` evaluation command) get a
+		// trailing underscore so Isabelle sees them as fresh identifiers.
+		var isabelleReservedFieldNames = Sequence{"value", "term", "prop"};
+		var fieldList = "";
+		var i=0;
+		while(i<e.fields.size()){
+			if(i > 0){ fieldList = fieldList + " "; }
+			var fname = e.fields.at(i).name;
+			if(isabelleReservedFieldNames.includes(fname)){ fname = fname + "_"; }
+			fieldList = fieldList + fname + " :: " + e.fields.at(i).type.ref.name;
+			i++;
+		}
+%]record [%=e.name%] = [%=fieldList%]
+record_default [%=e.name%]
+show_record [%=e.name%]
+
+[%
+		// FORK: emit `record_default <name>` for the `default` class
+		// instance (needed by the zstore field initialisation) and
+		// `show_record <name>` for the `show` class instance (needed
+		// by `zmachine`, which serialises state for trace output).
+		// Both depend on every field type already being in those
+		// classes — guaranteed because (a) we topo-sorted records
+		// upstream so dependee records come first, and (b) we emit
+		// `instantiation real :: default / :: "show"` for the leaf.
+}
+/////////////////////////////////////////////////////////////////////
+//for Constants
+"query for constants definition".println();
+var const_string: String;
+// FORK: true once PART 2 emits a typed-payload domain set (e.g. `SeqGs`)
+// for this machine. Selects the deadlock_free closing tactic below:
+// machines that consume a typed event payload from such a set need
+// `using St.exhaust_disc by auto` (metis hangs on the `\<in> set`
+// existential); machines without one keep `by (metis St.exhaust_disc)`
+// (auto times out on their arithmetic guards — see the LRE regression).
+var hasPayloadDomain = false;
+//PART 1: transfer all constants in Robochart
+for(vrl in p.machines.at(0).variableList){
+	var i=0;
+	while(i< vrl.vars.size()){
+	
+		if(vrl.vars.at(i).modifier.literal="CONST"){
+		
+		if(vrl.vars.at(i).type.isTypeOf(TypeRef) or vrl.vars.at(i).type.isTypeOf(ProductType)){
+			const_string="consts "+vrl.vars.at(i).name+ " :: \"" + vrl.vars.at(i).type.zmType() +"\"";
+			("const_string: " +const_string).println();
+			 "".println();
+		}
+		if(vrl.vars.at(i).type.isTypeOf(SeqType)){
+			if(vrl.vars.at(i).type.domain.isTypeOf(ProductType)){
+				vrl.vars.at(i).name.println();
+				const_string="consts "+ vrl.vars.at(i).name+ " :: \""+ vrl.vars.at(i).type.domain.productString() +" list\"";
+			} else {
+				const_string="consts "+vrl.vars.at(i).name+ " :: \"" + vrl.vars.at(i).type.domain.type.zmType() +" list\"";}
+		}
+%][%=const_string%]
+	  [%
+	} i++;} }
+
+//------------------------------------------------------------------
+// FORK: collect controller state variables from the Ctrl_State
+// interface. These need to live in the zstore as lenses (so
+// `<sv>\<Zprime> = ...` typechecks). We also use the set to skip the
+// auto-emit `consts <sv> :: "unit \<Rightarrow> ..."` fallback (which
+// would clash with the lens) and to strip the empty parens from
+// zero-arg CallExp references emitted as `<sv>()`.
+//------------------------------------------------------------------
+var stateVarNames: OrderedSet;
+var stateVarTypes: Map;
+for(iface in p.interfaces){
+	if(iface.name = "Ctrl_State"){
+		for(vrl in iface.variableList){
+			for(v in vrl.vars){
+				stateVarNames.add(v.name);
+				stateVarTypes.put(v.name, v.type);
+			}
+		}
+	}
+}
+
+// FORK: collect enum type names — these have a `default` type-class
+// instance (the first constructor), so they're safe to use as zstore
+// lens types. Used to filter the zstore emission below.
+var enumNames: OrderedSet;
+var enumLiteralNames: OrderedSet;
+for(t in p.types){
+	if(t.isTypeOf(Enumeration)){
+		enumNames.add(t.name);
+		for(lit in t.literals){
+			enumLiteralNames.add(lit.name);
+		}
+	}
+}
+
+//------------------------------------------------------------------
+//PART 2: generate consts for input events as the possible input set
+//-------------------------------------------------------------------
+ for(tr in p.machines.at(0).transitions){
+
+	//CASE 0 (FORK): typed-trigger-from-Java pattern. The ETL marks every
+	// trigger as SIMPLE (see setCommunicationType in java2robochart.etl)
+	// even when the Java case binds a typed payload to a state variable
+	// (e.g. `case Gas gas -> { this.gs = gas.value(); ... }`). The
+	// archive's INPUT-trigger path therefore never fires for our models.
+	// Detect the pattern as: typed event + action starting with
+	// `<sv> := v` (CallExp("v") with no args), and emit a consts decl
+	// for the payload-set named after the rebound state-var.
+	if(tr.trigger.isDefined() and tr.trigger.event.isDefined()
+			and tr.trigger.event.type.isDefined()
+			and tr.action.isDefined() and tr.action.isTypeOf(SeqStatement)
+			and tr.action.statements.size() > 0
+			and tr.action.statements.at(0).isTypeOf(Assignment)){
+		var firstAssign0 = tr.action.statements.at(0);
+		var rhs0 = firstAssign0.right;
+		var rhsArgs0 = rhs0.args.isDefined() ? rhs0.args : new Sequence;
+		if(rhs0.isTypeOf(CallExp) and rhsArgs0.isEmpty()
+				and rhs0.`function`.isDefined()
+				and rhs0.`function`.isTypeOf(StringExp)
+				and rhs0.`function`.value="v"){
+			var sv0 = firstAssign0.left.name.name;
+			var evType0 = tr.trigger.event.type;
+			// FORK: emit the payload-set as a NON-EMPTY definition (= UNIV)
+			// rather than an uninterpreted `consts`. A bare `consts X :: "T set"`
+			// is not provably non-empty, so any state whose ONLY outgoing
+			// transition consumes a parameter from this set (e.g. the gas-analysis
+			// Reading state: `params gs_input \<in> SeqGs`) cannot be shown enabled,
+			// and the downstream `deadlock_free` proof's `by (metis St.exhaust_disc)`
+			// hangs searching for an impossible proof. Defining the set = UNIV with
+			// the [simp] attribute lets `using St.exhaust_disc by auto` discharge the
+			// existential. The ICECCS2023 GasAnalysis hand-verification does the same
+			// (definition SeqGasSensor = {...} + SeqGasSensor_def in the proof).
+			if(evType0.isTypeOf(TypeRef) or evType0.isTypeOf(ProductType)){
+				const_string = "definition " + sv0.firstToUpperCase() + " :: \"" + evType0.zmType() + " set\" where [simp]: \"" + sv0.firstToUpperCase() + " = UNIV\"";
+				hasPayloadDomain = true;
+			} else if(evType0.isTypeOf(SeqType)){
+				const_string = "definition Seq" + sv0.firstToUpperCase() + " :: \"((" + evType0.domain.zmType() + ") list) set\" where [simp]: \"Seq" + sv0.firstToUpperCase() + " = UNIV\"";
+				hasPayloadDomain = true;
+			}
+%][%=const_string%]
+	  [%
+		}
+	}
+
+	// FORK: CASES 1-5 below are the archive's INPUT-trigger payload-set
+	// paths. They "never fire for our models" today (the ETL marks every
+	// trigger SIMPLE, so CASE 0 handles the rebound-payload pattern), but
+	// they are converted to the same NON-EMPTY `definition X = UNIV [simp]`
+	// form + `hasPayloadDomain = true` as CASE 0 so the deadlock_free
+	// tactic selection stays correct regardless of which extraction path
+	// emits a payload-set. (See the CASE 0 comment for the rationale.)
+
+	//CASE 1 input event in transition.trigger
+	if(tr.trigger.isDefined() and tr.trigger._type.isDefined() and tr.trigger._type.name="INPUT"){
+		if(tr.trigger.parameter.type.isTypeOf(TypeRef) or tr.trigger.parameter.type.isTypeOf(ProductType)){
+			const_string= "definition " + tr.trigger.parameter.name.firstToUpperCase() + " :: \"" + tr.trigger.parameter.type.zmType() + " set\" where [simp]: \"" + tr.trigger.parameter.name.firstToUpperCase() + " = UNIV\"";
+			hasPayloadDomain = true;
+		}
+	else if(tr.trigger.parameter.type.isTypeOf(SeqType)){
+		const_string= "definition Seq" + tr.trigger.parameter.name.firstToUpperCase() + " :: \"((" + tr.trigger.parameter.type.domain.zmType() + ") list) set\" where [simp]: \"Seq" + tr.trigger.parameter.name.firstToUpperCase() + " = UNIV\"";
+		hasPayloadDomain = true;
+}%][%=const_string%]
+	  [%
+	}
+
+	//CASE 2 input event in transition.action, and there is only one action
+	if(tr.action.isDefined() and tr.action.isTypeOf(CommunicationStmt) and  tr.action.communication._type.name="INPUT"){
+		if(tr.action.communication.parameter.type.isTypeOf(TypeRef) or tr.action.communication.parameter.type.isTypeOf(ProductType)){
+			const_string= "definition " + tr.action.communication.parameter.name.firstToUpperCase() + " :: \"" + tr.action.communication.parameter.type.zmType() + " set\" where [simp]: \"" + tr.action.communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+			hasPayloadDomain = true;
+		}
+		else if(tr.action.parameter.type.isTypeOf(SeqType)){
+			const_string= "definition Seq" + tr.action.communication.parameter.name.firstToUpperCase() + " :: \"(" + tr.action.communication.parameter.type.zmType() + " list) set\" where [simp]: \"Seq" + tr.action.communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+			hasPayloadDomain = true;
+	}
+%][%=const_string%]
+	  [%
+	}
+
+
+//CASE 3 input event in transition.action, and there are MULTIPLE actionS
+if(tr.action.isDefined() and tr.action.isTypeOf(SeqStatement)){
+var i=0;
+while(i<tr.action.statements.size())
+{
+if(tr.action.statements.at(i).isTypeOf(CommunicationStmt) and  tr.action.statements.at(i).communication._type.name="INPUT"){
+if(tr.action.statements.at(i).communication.parameter.type.isTypeOf(TypeRef) or tr.action.statements.at(i).communication.parameter.type.isTypeOf(ProductType)){
+
+const_string= "definition " + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() + " :: \"" + tr.action.statements.at(i).communication.parameter.type.zmType()+ " set\" where [simp]: \"" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+hasPayloadDomain = true;
+}
+else if(tr.action.parameter.type.isTypeOf(SeqType)){
+const_string= "definition Seq" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() + " :: \"(" + tr.action.statements.at(i).communication.parameter.type.zmType() + " list) set\" where [simp]: \"Seq" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+hasPayloadDomain = true;
+}
+%][%=const_string%]
+  [%
+}i++;
+}}
+
+
+//CASE 4 input event in tr.target.action, and there is only one action
+if(tr.target.actions.notEmpty()and (tr.target.actions.at(0).isTypeOf(EntryAction) or tr.target.actions.at(0).isTypeOf(DuringAction)) ){
+
+if(tr.target.actions.at(0).action.isTypeOf(CommunicationStmt) and tr.target.actions.at(0).action.communication._type.name="INPUT"){
+
+
+if(tr.target.actions.at(0).action.communication.parameter.type.isTypeOf(TypeRef) or tr.target.actions.at(0).action.communication.parameter.type.isTypeOf(ProductType) ){
+
+const_string= "definition " + tr.target.actions.at(0).action.communication.parameter.name.firstToUpperCase()+ " :: \"" + tr.target.actions.at(0).action.communication.parameter.type.zmType() +" set\" where [simp]: \"" + tr.target.actions.at(0).action.communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+hasPayloadDomain = true;
+
+}
+else if(tr.target.actions.at(0).action.communication.parameter.type.isTypeOf(SeqType)){
+
+const_string= "definition Seq" + tr.target.actions.at(0).action.communication.parameter.name.firstToUpperCase()+ " :: \"(" + tr.target.actions.at(0).action.communication.parameter.domain.type.zmType() +" list) set\" where [simp]: \"Seq" + tr.target.actions.at(0).action.communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+hasPayloadDomain = true;
+}%][%=const_string%]
+  [%
+}
+
+//CASE 5: input event in tr.target.action, action.isTypeOf(SeqStatement), this is for multiple actions
+else if(tr.target.actions.at(0).action.isTypeOf(SeqStatement)){
+var i=0;
+while(i<tr.target.actions.at(0).action.statements.size())
+{
+if(tr.target.actions.at(0).action.statements.at(i).isTypeOf(CommunicationStmt) and tr.target.actions.at(0).action.statements.at(i).communication._type.name="INPUT"){
+if(tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.isTypeOf(TypeRef) or tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.isTypeOf(ProductType)){
+
+const_string= "definition " + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase()+ " :: \"" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.zmType() +" set\" where [simp]: \"" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+hasPayloadDomain = true;
+
+}
+else if(tr.target.actions.at(0).action.statements.at(i).parameter.type.isTypeOf(SeqType)){
+
+const_string= "definition Seq" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase()+ " :: \"(" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.zmType() +" list) set\" where [simp]: \"Seq" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase() + " = UNIV\"";
+hasPayloadDomain = true;
+}
+%][%=const_string%]
+  [%
+}
+i++;
+}}}}
+ 
+ 
+/////////////////////////////////////////////////////////////////////
+//query for functions to generate ABSTRACT func
+%]
+
+text \<open> function definition \<close>
+
+[%
+//TO Transform functions into CONSTS for the UNSPECIFIED Functions
+for(f in p.functions.select(s|s.name!="card")){ 
+
+var func_type:String;
+var function_string: String;
+
+if(f.type.isTypeOf(ProductType) or f.type.isTypeOf(TypeRef)){
+func_type=f.type.zmType();
+} else if(f.type.isTypeOf(SeqType)){
+if(f.type.domain.isTypeOf(ProductType)){
+func_type="("+ f.type.domain.zmType()+")";}
+else if(f.type.domain.isTypeOf(TypeRef)){
+func_type=f.type.domain.zmType();
+}
+}
+
+//CASE 1: single parameter
+//pattern: consts f.name :: " parameter_type => f.type"
+if(f.parameters.size()=1){
+if(f.parameters.at(0).type.isTypeOf(SeqType)){
+"this is a SeqType".println();
+if(f.parameters.at(0).type.domain.isTypeOf(ProductType)){
+function_string="consts "+f.name+ " :: \" "+ f.parameters.at(0).type.domain.zmType()+" list \\<Rightarrow> "+ func_type+"\"";
+} else {
+("consts "+f.name+ " :: \" "+ f.parameters.at(0).type.domain.zmType() +" list \\<Rightarrow> "+ func_type+"\"").println();
+function_string="consts "+f.name+ " :: \" "+ f.parameters.at(0).type.domain.zmType() +" list \\<Rightarrow> "+ func_type+"\"";}
+} 
+ if(f.parameters.at(0).type.isTypeOf(TypeRef) or f.parameters.at(0).type.isTypeOf(ProductType)){
+("consts "+f.name+ " :: \" "+ f.parameters.at(0).type.zmType() +" \\<Rightarrow> "+ func_type+"\"").println();
+//function_string= "consts "+f.name+ " :: \" "+ f.parameters.at(0).type.ref.name +" \\<Rightarrow> "+ f.type.ref.name+"\"";
+function_string= "consts "+f.name+ " :: \" "+ f.parameters.at(0).type.zmType() +" \\<Rightarrow> "+ func_type+"\"";
+}
+}
+//CASE 2: multiple parameters, we will need pXp pattern in ZM
+//pattern: consts f.name :: " parameter_type (X parameter_type)* => f.type"
+else if(f.parameters.size()>1){
+
+// generate the first part of parameter
+if(f.parameters.at(0).type.isTypeOf(SeqType)){
+if(f.parameters.at(0).type.domain.isTypeOf(ProductType)){
+function_string= f.parameters.at(0).type.domain.zmType()+" list";
+} else {
+function_string= f.parameters.at(0).type.domain.zmType() +" list";}
+} 
+ if(f.parameters.at(0).type.isTypeOf(TypeRef) or f.parameters.at(0).type.isTypeOf(ProductType)){
+function_string= f.parameters.at(0).type.zmType();
+} 
+
+// generate the rest part of parameter: (X parameter_type)*
+var i=1;
+while(i<f.parameters.size()){
+
+
+if(f.parameters.at(i).type.isTypeOf(SeqType)){
+"SeqType domain: ".println();
+if(f.parameters.at(i).type.domain.isTypeOf(ProductType)){
+function_string= function_string+" \\<times> " +f.parameters.at(i).type.domain.productString()+ " list";
+} else {
+f.parameters.at(i).type.domain.ref.name.println();
+function_string=function_string+" \\<times> " + f.parameters.at(i).type.domain.zmType()+ " list";}
+} 
+if(f.parameters.at(i).type.isTypeOf(TypeRef)){
+f.parameters.at(i).type.zmType().println();
+function_string=function_string+" \\<times> " + f.parameters.at(i).type.zmType();
+} 
+if(f.parameters.at(i).type.isTypeOf(ProductType)){
+function_string=function_string+" \\<times> " + f.parameters.at(i).type.zmType();
+}
+
+i++;
+}
+function_string="consts "+f.name+ " :: \" "+function_string+" \\<Rightarrow>"+ func_type+"\"";
+"OUTPUT FUNCTION STRING:".println();
+function_string.println();
+
+}
+
+%]
+[%=function_string%]
+[%
+
+}
+
+// FORK: the block above only emits consts for RC!Function elements
+// declared on the RCPackage. Our ETL represents sensor/operation calls
+// as CallExp with `function` as a StringExp (the method name), so those
+// identifiers never appear in `p.functions` and would otherwise be
+// undeclared in Isabelle ("undefined constant" errors). Here we scan
+// all transitions for such CallExp identifiers and emit a best-effort
+// consts declaration for each unique name not already declared.
+
+// 1. Collect names already declared as RC!Function on the package.
+var declaredFuncNames: Set;
+for (f in p.functions){
+	declaredFuncNames.add(f.name);
+}
+
+// 2. Walk all transitions in all state machines; collect CallExp names
+//    recursively. StringExp.value holds the method name in our ETL shape;
+//    RefExp.ref.name would name a declared Function (already skipped).
+var undeclaredFuncNames: OrderedSet;
+var boolFuncNames: OrderedSet;
+var natFuncNames: OrderedSet;
+for (m in p.machines){
+	for (tr in m.transitions){
+		if (tr.condition.isDefined()){
+			tr.condition.collectCallExpNames(undeclaredFuncNames, declaredFuncNames);
+			tr.condition.collectBoolCallExpNames(boolFuncNames, declaredFuncNames);
+			tr.condition.collectNatCallExpNames(natFuncNames, declaredFuncNames);
+			// FORK: the condition expression is itself in a boolean
+			// position. If it's a bare CallExp (e.g. Java
+			// `else if (intensityAboveThreshold)`), classify the call
+			// as boolean even when not under a Not.
+			if (tr.condition.isTypeOf(CallExp)){
+				var topFn = tr.condition.funcName();
+				if (not declaredFuncNames.includes(topFn)){
+					boolFuncNames.add(topFn);
+				}
+			}
+		}
+	}
+}
+// FORK: choose return type per usage context.
+//   - bool  : appears as direct operand of Not (e.g. `\<not>inOpez()`)
+//   - nat   : appears as a direct arg of another CallExp (e.g. cstc()
+//             passed into hdist(...) which takes nat)
+//   - real  : default (most LRE quantities are doubles)
+// Priority: nat > bool > real. A name appearing in both nat and bool
+// contexts is rare; nat wins because the typecheck error from a
+// nat-vs-bool mismatch is louder than the inverse.
+for (funcName in undeclaredFuncNames){
+	// FORK: skip names that will be declared as zstore lenses. Emitting
+	// both `consts <sv> :: "unit \<Rightarrow> ..."` AND the lens would
+	// either clash or cause `<sv>\<Zprime>` to coerce against the
+	// function type and fail. The zoperation update path now renders
+	// `<sv>()` as bare `<sv>` (see substitution loops), so the consts
+	// fallback is no longer required for these names.
+	if(stateVarNames.includes(funcName)){ continue; }
+	// FORK: enum literals are already declared by their `enumtype X = ...`
+	// command. Auto-emitting `consts noGas :: "unit \<Rightarrow> real"`
+	// shadows the literal with a real-valued function, breaking the
+	// `sts = noGas` typecheck in pre conditions (sts :: Status).
+	if(enumLiteralNames.includes(funcName)){ continue; }
+	var sigType: String;
+	if (natFuncNames.includes(funcName)){
+		sigType = "nat";
+	} else if (boolFuncNames.includes(funcName)){
+		sigType = "bool";
+	} else {
+		sigType = "real";
+	}
+	// FORK (sranger / timed-transition path): `since` is the RoboChart
+	// built-in clock-elapsed reader `since(C)`, APPLIED TO a clock argument
+	// (e.g. `since(clockResetTime())`). The default `unit \<Rightarrow> <T>`
+	// shape used for zero-arg guard calls makes that application ill-typed
+	// (since expects `unit`, the arg `clockResetTime()` is `nat`), which
+	// aborts `zoperation` elaboration with `exception Empty`. Declare it as
+	// a polymorphic function `'a \<Rightarrow> real` so it type-checks against
+	// any clock-value type.
+	var domType: String = "unit";
+	if (funcName == "since"){ domType = "'a"; }
+%][%=("consts " + funcName + " :: \"" + domType + " \\<Rightarrow> " + sigType + "\"  (* FORK: auto-emitted for CallExp identifier used in guards *)")%]
+[%
+}
+%]
+
+subsection \<open> State Space \<close>
+[%
+/////////////////////////////////////////////////////////////////////
+//query for the statemachine and variables and consts TO generate zstore
+// `stm_name` is injected by IsabelleEgxRunner — do NOT re-declare or
+// overwrite. The previous `for(stm in p.machines){ stm_name=stm.name }`
+// loop overwrote the injected value with the LAST machine's name,
+// breaking multi-controller models (zstore/over/Init/zmachine all
+// used MovementController inside GasAnalysisController_Beh.thy).
+"variable query TO generate zstore".println();%]
+
+zstore [%=stm_name%] =
+[%
+//Part 1 of zstore is variables from variableLsit
+for(vrl in p.machines.at(0).variableList){
+	"vrl".println();
+	vrl.println();
+	
+	("vrl.vars.size(): "+vrl.vars.size()).println();
+	 "".println();
+
+	var i=0;
+	while(i< vrl.vars.size()){
+	//vrl.vars.at(i).at(0).type.println();
+	var variable_string: String;
+	if(vrl.vars.at(i).modifier.literal="VAR"){
+	if(vrl.vars.at(i).type.isTypeOf(TypeRef) or vrl.vars.at(i).type.isTypeOf(ProductType)){
+	variable_string=vrl.vars.at(i).name+ " :: \"" + vrl.vars.at(i).type.zmType() +"\"";
+	}
+	else if(vrl.vars.at(i).type.isTypeOf(SeqType)){
+	if(vrl.vars.at(i).type.domain.isTypeOf(ProductType)){
+	variable_string=vrl.vars.at(i).name+ " :: \" " + vrl.vars.at(i).type.domain.productString() +" list\"";} else 
+	variable_string=vrl.vars.at(i).name+ " :: \"" + vrl.vars.at(i).type.domain.zmType() +" list\"";
+	}
+}%]  [%=variable_string%]
+	  [%i++;} }
+
+// FORK: emit lens declarations for state variables used by THIS
+// controller. The Ctrl_State interface holds the union of all
+// controllers' state vars in a multi-machine package, so naively
+// emitting all of them bloats the zstore and dramatically slows the
+// downstream `deadlock_free` proof (10 min+ for chemical_detector vs
+// 20s when restricted). Track usage by scanning this machine's
+// transitions for VarRef name references (LHS of assignments) and
+// CallExp StringExp.value matches (RHS of expressions).
+var usedStateVarNames: OrderedSet;
+for(tr in p.machines.at(0).transitions){
+	if(tr.action.isDefined() and tr.action.isTypeOf(SeqStatement)){
+		for(stmt in tr.action.statements){
+			if(stmt.isTypeOf(Assignment)){
+				usedStateVarNames.add(stmt.left.name.name);
+			}
+		}
+	}
+	// CallExp references in conditions or action RHS — function name
+	// is a StringExp value matching a state var name.
+	for(callExp in tr.eAllContents){
+		if(callExp.isTypeOf(CallExp) and callExp.`function`.isDefined()
+				and callExp.`function`.isTypeOf(StringExp)){
+			var fn = callExp.`function`.value;
+			if(stateVarNames.includes(fn)){
+				usedStateVarNames.add(fn);
+			}
+		}
+	}
+}
+for(svName in stateVarNames){
+	if(not usedStateVarNames.includes(svName)){ continue; }
+	var svType = stateVarTypes.get(svName);
+	var sv_string: String = "";
+	var emit = false;
+	if(svType.isTypeOf(TypeRef) and svType.ref.isDefined()){
+		emit = true;
+		sv_string = svName + " :: \"" + svType.zmType() + "\"";
+	} else if(svType.isTypeOf(SeqType) and svType.domain.isTypeOf(TypeRef)
+			and svType.domain.ref.isDefined()){
+		emit = true;
+		sv_string = svName + " :: \"" + svType.domain.zmType() + " list\"";
+	}
+	if(emit){
+%]  [%=sv_string%]
+[%
+	}
+}
+%][%
+// FORK: archive used `wf_rcstore tr st (Some final)` as the invariant
+// — a trace-shape predicate that the auto tactics (`zpog_full; auto`)
+// could not discharge for operations whose update appends multiple
+// elements like `tr @ [Event x] @ [State y]`. Closing those would
+// require either custom auxiliary lemmas or hand-written proof
+// scripts. We use `True` as the invariant: every operation trivially
+// preserves it, so `_inv` lemmas close automatically and the
+// downstream `deadlock_free` proof can run. The trace-shape condition
+// is then a separate verification problem the user can take on later
+// if needed (replacing `True` here, hand-writing inv preservation).
+%]  st::"St"
+  tr :: "(St, Evt) tag list"
+  triggers:: "Evt set"
+  where inv:
+    "tr \<noteq> []"
+
+subsection \<open> Operations \<close>
+
+[%
+//query for the transitions TO zoperations
+"transitions query TO generate zoperations".println();
+//zoperations_string is used for zmachine section
+//zoperations_set is used for the lemma of structural invariant section
+var zoperations_string:String;
+var zoperations_set: OrderedSet;
+var zop_name: String;
+
+//this para_string is a set to contain all the parameter in para segment, and will be used for lemma generation
+
+for(tr in p.machines.at(0).transitions){ 
+var para_string: OrderedSet;
+
+"START NEW TRANSITION QUERY".println();
+("tr.name: "+tr.name).println();
+
+zop_name=tr.source.zmStateCapt()+"To"+tr.target.zmStateCapt();
+zop_name.println();
+var indexOfOp=1;
+
+//for multiple transitions between same source and target, we add index
+//e.g., MOMToOCM_2
+while (zop_name.isSubstringOf(zoperations_string)){
+zop_name =tr.source.zmStateCapt()+"To"+tr.target.zmStateCapt()+"_"+indexOfOp.asString();
+indexOfOp++;
+}
+
+//**************************************************************
+//to define a tuple for this transition to link the hasPara with the zop
+//this is for the lemma generation. If a zoperation has a para, then we need l in the lemma
+//if zoperation has no para, then we add () in the lemma
+var zop_tuple = new Tuple;
+zop_tuple.name = zop_name;
+zop_tuple.hasPara = false;
+zop_tuple.paras = para_string;
+// FORK: track params that originate from a typed-trigger state-var rebind
+// (Java pattern `case Gas gas -> { this.gs = gas.value(); ... }`). For
+// those, the corresponding state-var read in subsequent expressions is
+// a zero-arg CallExp rendered as `<sv>()` — different substitution
+// shape from the bare-ref `<sv>` used by genuine RoboChart INPUT triggers.
+zop_tuple.lensParas = new OrderedSet;
+
+zoperations_string=zoperations_string+" "+ zop_name;
+%]
+zoperation [%=zop_name%] =
+  over [%=stm_name%]
+[%
+//////////////////////////////////////////////////////
+//query for the transitions TO generate params section using Input type events
+//CASE 1 input event in transition.trigger
+
+var params_string:String;
+params_string="";
+
+//CASE 0 (FORK): typed-trigger-from-Java. Same detection as the consts
+// emission above. Treats the rebound state-var as an implicit input
+// parameter for the zoperation: emits `params <sv>_input \<in> "..."`
+// and records `<sv>` in lensParas so the action-substitution path can
+// strip the `()` from the corresponding lens-read CallExp.
+if(tr.trigger.isDefined() and tr.trigger.event.isDefined()
+		and tr.trigger.event.type.isDefined()
+		and tr.action.isDefined() and tr.action.isTypeOf(SeqStatement)
+		and tr.action.statements.size() > 0
+		and tr.action.statements.at(0).isTypeOf(Assignment)){
+	var firstAssignP = tr.action.statements.at(0);
+	var rhsP = firstAssignP.right;
+	var rhsArgsP = rhsP.args.isDefined() ? rhsP.args : new Sequence;
+	if(rhsP.isTypeOf(CallExp) and rhsArgsP.isEmpty()
+			and rhsP.`function`.isDefined()
+			and rhsP.`function`.isTypeOf(StringExp)
+			and rhsP.`function`.value="v"){
+		var svP = firstAssignP.left.name.name;
+		var evTypeP = tr.trigger.event.type;
+		if(evTypeP.isTypeOf(TypeRef) or evTypeP.isTypeOf(ProductType)){
+			params_string = params_string + svP + "_input \\<in> \"" + svP.firstToUpperCase() + "\" ";
+		} else if(evTypeP.isTypeOf(SeqType)){
+			params_string = params_string + svP + "_input \\<in> \"Seq" + svP.firstToUpperCase() + "\" ";
+		}
+		zop_tuple.hasPara = true;
+		zop_tuple.paras.add(svP);
+		zop_tuple.lensParas.add(svP);
+	}
+}
+
+if(tr.trigger.isDefined() and tr.trigger._type.isDefined() and tr.trigger._type.name="INPUT")
+{
+
+if(tr.trigger.parameter.type.isTypeOf(TypeRef) or tr.trigger.parameter.type.isTypeOf(ProductType)){
+params_string=params_string+ tr.trigger.parameter.name+"_input \\<in> \"" + tr.trigger.parameter.name.firstToUpperCase() +"\" ";
+}
+else 
+if(tr.trigger.parameter.type.isTypeOf(SeqType)){
+params_string= params_string+ tr.trigger.parameter.name+"_input \\<in> \"Seq" + tr.trigger.parameter.name.firstToUpperCase() +"\" ";
+}
+
+zop_tuple.hasPara = true;
+zop_tuple.paras.add(tr.trigger.parameter.name);
+}
+
+//CASE 2 input event in transition.action, and there is only one action
+if(tr.action.isDefined() and tr.action.isTypeOf(CommunicationStmt) and  tr.action.communication._type.name="INPUT"){
+
+if(tr.action.communication.parameter.type.isTypeOf(TypeRef) or tr.action.communication.parameter.type.isTypeOf(ProductType)){
+params_string=params_string + tr.action.communication.parameter.name+"_input \\<in> \"" + tr.action.communication.parameter.name.firstToUpperCase()+"\" ";
+} 
+else if(tr.action.parameter.type.isTypeOf(SeqType)){
+params_string=params_string + tr.action.communication.parameter.name+"_input \\<in> \"Seq" + tr.action.communication.parameter.name.firstToUpperCase() +"\" ";
+}
+zop_tuple.hasPara = true;
+zop_tuple.paras.add(tr.action.communication.parameter.name);
+}
+
+
+//CASE 3 input event in transition.action, and there are MULTIPLE actionS
+if(tr.action.isDefined() and tr.action.isTypeOf(SeqStatement)){
+var i=0;
+while(i<tr.action.statements.size())
+{
+if(tr.action.statements.at(i).isTypeOf(CommunicationStmt) and  tr.action.statements.at(i).communication._type.name="INPUT"){
+if(tr.action.statements.at(i).communication.parameter.type.isTypeOf(TypeRef) or tr.action.statements.at(i).communication.parameter.type.isTypeOf(ProductType)){
+params_string=params_string + tr.action.statements.at(i).communication.parameter.name+"_input \\<in> \"" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\" ";
+} 
+else if(tr.action.parameter.type.isTypeOf(SeqType)){
+params_string=params_string + tr.action.statements.at(i).communication.parameter.name+"_input \\<in> \"Seq" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\" ";
+}
+
+zop_tuple.hasPara = true;
+zop_tuple.paras.add(tr.action.statements.at(i).communication.parameter.name);
+}i++;}}
+
+
+//CASE 4 input event in tr.target.action, and there is only one action
+if(tr.target.actions.notEmpty()and (tr.target.actions.at(0).isTypeOf(EntryAction) or tr.target.actions.at(0).isTypeOf(DuringAction)) ){
+if(tr.target.actions.at(0).action.isTypeOf(CommunicationStmt) and tr.target.actions.at(0).action.communication._type.name="INPUT"){
+
+if(tr.target.actions.at(0).action.communication.parameter.type.isTypeOf(TypeRef) or tr.target.actions.at(0).action.communication.parameter.type.isTypeOf(ProductType)){
+params_string=params_string + tr.target.actions.at(0).action.communication.parameter.name + "_input \\<in> \"" + tr.target.actions.at(0).action.communication.parameter.name.firstToUpperCase() +"\" ";
+} 
+else if(tr.target.actions.at(0).action.communication.parameter.type.isTypeOf(SeqType)){
+params_string=params_string + tr.target.actions.at(0).action.communication.parameter.name + "_input \\<in> \"Seq" + tr.target.actions.at(0).action.communication.parameter.name.firstToUpperCase() +"\" ";
+}
+zop_tuple.hasPara = true;
+zop_tuple.paras.add(tr.target.actions.at(0).action.communication.parameter.name);
+}
+
+//CASE 5: input event in tr.target.action, action.isTypeOf(SeqStatement), this is for multiple actions
+else if(tr.target.actions.at(0).action.isTypeOf(SeqStatement)){
+var i=0;
+while(i<tr.target.actions.at(0).action.statements.size())
+{
+if(tr.target.actions.at(0).action.statements.at(i).isTypeOf(CommunicationStmt) and tr.target.actions.at(0).action.statements.at(i).communication._type.name="INPUT"){
+if(tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.isTypeOf(TypeRef) or tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.isTypeOf(ProductType)){
+params_string=params_string + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name+"_input \\<in> \"" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\" ";
+} 
+else if(tr.target.actions.at(0).action.statements.at(i).parameter.type.isTypeOf(SeqType)){
+params_string=params_string + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name+"_input \\<in> \"Seq" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\"";
+}
+zop_tuple.hasPara = true;
+zop_tuple.paras.add(tr.target.actions.at(0).action.statements.at(i).communication.parameter.name);
+}i++;}}}
+
+
+
+if(zop_tuple.hasPara){%]
+  params [%=params_string %]
+[%
+}
+zoperations_set.add(zop_tuple);
+
+
+//////////////////////////////////////////////////////
+//query the transitions TO generate pre section
+//SUBSECTION 1: state constraint: current state st(source) 
+var pre_string: String;
+pre_string="pre \"st= "+tr.source.zmState();
+
+//SUBSECTION 2: transition condition -> pre
+if (tr.condition.isDefined() )
+{
+("tr.condition: " + tr.condition).println();
+pre_string=pre_string+" \\<and> "+ tr.condition.binaryExpString();
+}
+
+var tr_string:String;
+
+//SUBSECTION 3:transition trigger of Simple/input/output event  -> this should be converted to a 'pre' section
+if(tr.trigger.isDefined()and tr.trigger.event.isDefined() ){
+//pre_string=pre_string+" \\<and> trg=Some "+ tr.trigger.event.name;
+tr_string= "@ [Event "+tr.trigger.event.name+"]";
+}
+
+
+//SUBSECTION 4:transition reset  to pre (TIME property)
+// FORK (sranger / timed-transition path): a clock reset (`# <clock>` on a
+// transition, e.g. Moving->Turning's `# clockResetTime`) was previously
+// rendered as `... \<and> clock=0` appended to the PRECONDITION, referencing
+// an UNDECLARED `clock` variable -> Isabelle aborts with
+// "Extra variables on rhs: clock" at the zoperation definition.
+// In this abstract Z-Machine encoding elapsed time is modelled by the
+// uninterpreted consts `since`/`<clockField>` that appear in the timed
+// GUARD (e.g. `since(clockResetTime) >= turnduration`); there is no `clock`
+// state variable to reset, so the reset action has no separate Z
+// representation and is elided. (A faithful clock-state encoding would
+// declare `clock` in the zstore and emit `clock\<Zprime> = 0` as an UPDATE,
+// not a precondition constraint — out of scope for the const-based time
+// abstraction this template currently uses.)
+if(not tr.reset.isEmpty() ){
+tr.name.println();
+tr.reset.clock.name.println();
+}
+// FORK: state-var reads in conditions are rendered as zero-arg CallExps
+// like `sts()`, but in the zstore-lens world a state var is just `sts`
+// (the lens is implicitly applied to the pre-state). Strip the empty
+// parens for any name declared in the zstore. EOL replace is regex —
+// escape the literal parens.
+for(svName in stateVarNames){
+	if((svName + "()").isSubstringOf(pre_string)){
+		pre_string = pre_string.replace(svName + "\\(\\)", svName);
+	}
+}
+// FORK: enum literals are likewise rendered with empty parens (`noGas()`)
+// but should be bare constructor names so the equality `sts = noGas`
+// typechecks against the Status datatype.
+for(elName in enumLiteralNames){
+	if((elName + "()").isSubstringOf(pre_string)){
+		pre_string = pre_string.replace(elName + "\\(\\)", elName);
+	}
+}
+pre_string=pre_string+"\"";
+pre_string.println();
+%]
+  [%=pre_string%]
+[%
+
+//////////////////////////////////////////////////////
+//query for the transitions TO generate UPDATE section
+%]
+  update "[st\<Zprime>= [%=tr.target.zmState()%]
+  		  [%
+
+if(zop_tuple.hasPara){
+for(p in zop_tuple.paras){
+// FORK: only lens-rebind params correspond to state variables that need
+// an explicit `<sv>\<Zprime> = <sv>_input` storage assignment. Genuine
+// RoboChart INPUT-trigger params are bare value carriers — no storage.
+if(zop_tuple.lensParas.includes(p)){
+%]
+         ,[%=p%]\<Zprime> =[%=p%]_input
+[%}}}
+
+//SUBSECTION 1:transition action to update
+if (tr.action.isDefined() )
+{
+//("tr.action: " + tr.action).println();
+var tr_action_string:String;
+
+//CASE 1: "SeqStatement" means there are MORE THAN ONE actions.
+if(tr.action.isTypeOf(SeqStatement)){
+var i=0;
+while(i<tr.action.statements.size())
+{
+
+if(tr.action.statements.at(i).isTypeOf(Assignment)){
+
+// Skip `<sv> = v` no-op assignments emitted by the EGL's trigger-
+// rebind pass. When robochart2rct.egl rebinds a typed trigger
+// (e.g. `trigger gas ? gs`), the corresponding `gs := v` assignment
+// is redundant — the trigger already binds the payload into `gs`.
+// The Isabelle zoperation form doesn't model trigger bindings as
+// state-var assignments, so we drop them here.
+var assignRhs = tr.action.statements.at(i).right;
+var skipAssign = false;
+if(assignRhs.isTypeOf(CallExp)){
+    var rhsArgs = assignRhs.args.isDefined() ? assignRhs.args : new Sequence;
+    if(rhsArgs.isEmpty() and assignRhs.`function`.isDefined()
+            and assignRhs.`function`.isTypeOf(StringExp)
+            and assignRhs.`function`.value="v"){
+        skipAssign = true;
+    }
+}
+if(not skipAssign){
+//CASE a, there is no input event in this transition
+//this is the default setting: "not zop_tuple.hasPara"
+tr_action_string=","+tr.action.statements.at(i).left.name.name+"\\<Zprime> = "+tr.action.statements.at(i).right.oneSideOfBianryString();
+
+//CASE b, there is input event, we need to use var_input instead of var
+for(p in zop_tuple.paras){
+// FORK: lens-rebind params appear as zero-arg CallExps in subsequent
+// expressions (e.g. `analysis(gs())`). Strip the empty parens AND
+// rename in one pass: `<p>() -> <p>_input`. Bare-ref params (genuine
+// RoboChart INPUT) keep the original `<p> -> <p>_input` substitution.
+// EOL's String.replace uses regex, so the literal `()` must be escaped
+// as `\\(\\)` to avoid matching an empty capture group.
+if(zop_tuple.lensParas.includes(p)){
+if((p + "()").isSubstringOf(tr_action_string)){
+	tr_action_string = tr_action_string.replace(p + "\\(\\)", p + "_input");
+}
+} else {
+if(p.isSubstringOf(tr_action_string))
+//then it means input var is used as parameter in an assignment
+{tr_action_string=tr_action_string.replace(p, (p+"_input"));
+}
+}
+}
+// FORK: strip empty parens from zero-arg state-var CallExps so `gs()`
+// becomes `gs` (the lens), matching the zstore declaration. Done after
+// the lensParas substitution above so an already-rewritten `gs_input`
+// is left alone.
+for(svName in stateVarNames){
+	if((svName + "()").isSubstringOf(tr_action_string)){
+		tr_action_string = tr_action_string.replace(svName + "\\(\\)", svName);
+	}
+}
+// FORK: same for enum literals — bare constructor name, not `noGas()`.
+for(elName in enumLiteralNames){
+	if((elName + "()").isSubstringOf(tr_action_string)){
+		tr_action_string = tr_action_string.replace(elName + "\\(\\)", elName);
+	}
+}
+%]
+         [%=tr_action_string%]
+[%
+}
+} else if(tr.action.statements.at(i).isTypeOf(CommunicationStmt)){
+
+if(tr.action.statements.at(i).communication._type.name="SIMPLE" or tr.action.statements.at(i).communication._type.name="INPUT" or tr.action.statements.at(i).communication._type.name="OUTPUT"){
+tr_string=tr_string+"@ [Event "+tr.action.statements.at(i).communication.event.name +"]";
+}
+}i++;}}
+
+
+//CASE 2: single action in tr.actions
+else if(tr.action.isTypeOf(CommunicationStmt)){
+if(tr.action.communication._type.name="SIMPLE" or tr.action.communication._type.name="INPUT" or tr.action.communication._type.name="OUTPUT"){
+tr_string=tr_string+"@ [Event "+tr.action.communication.event.name +"]";
+}}
+}
+
+
+//-------------------------------------------------------------------
+//query for the target state enter action TO generate update section
+//-------------------------------------------------------------------
+if(tr.target.actions.notEmpty()and (tr.target.actions.at(0).isTypeOf(EntryAction) or tr.target.actions.at(0).isTypeOf(DuringAction)) ){
+var target_action_string: String;
+
+//CASE 1: action.isTypeOf(Assignment)
+if(tr.target.actions.at(0).action.  isTypeOf(Assignment)){
+
+
+//CASE a, there is no input event involved in this target action
+target_action_string=tr.target.actions.at(0).action.left.name.name+"\\<Zprime> ="+tr.target.actions.at(0).action.right.oneSideOfBianryString();
+
+//CASE b, there is input event involved, we need to use var_input instead of var
+for(p in zop_tuple.paras){
+// FORK: lens-rebind params: <p>() -> <p>_input. See main action loop.
+if(zop_tuple.lensParas.includes(p)){
+if((p + "()").isSubstringOf(target_action_string)){
+	target_action_string = target_action_string.replace(p + "\\(\\)", p + "_input");
+}
+} else {
+if(p.isSubstringOf(target_action_string))
+{target_action_string=target_action_string.replace(p, (p+"_input"));
+}
+}}
+// FORK: bare state-var read: <sv>() -> <sv>.
+for(svName in stateVarNames){
+	if((svName + "()").isSubstringOf(target_action_string)){
+		target_action_string = target_action_string.replace(svName + "\\(\\)", svName);
+	}
+}
+for(elName in enumLiteralNames){
+	if((elName + "()").isSubstringOf(target_action_string)){
+		target_action_string = target_action_string.replace(elName + "\\(\\)", elName);
+	}
+}
+%]
+         ,[%=target_action_string%]
+[%
+}
+//CASE 2: action.isTypeOf(Call)
+else if(tr.target.actions.at(0).action.isTypeOf(Call)){
+target_action_string=tr.target.actions.at(0).action.callString();
+%]
+          ,[%=target_action_string%]
+[%
+}
+
+//CASE 3: action.isTypeOf(CommunicationStmt)
+else if(tr.target.actions.at(0).action.isTypeOf(CommunicationStmt)){
+if(tr.target.actions.at(0).action.communication._type.name="SIMPLE" or tr.target.actions.at(0).action.communication._type.name="INPUT" or tr.target.actions.at(0).action.communication._type.name="OUTPUT"){
+target_action_string="event_"+tr.target.actions.at(0).action.communication.event.name +"\\<Zprime> = True";
+tr_string=tr_string+"@ [Event "+tr.target.actions.at(0).action.communication.event.name +"]";
+}
+}
+
+//CASE 4: action.isTypeOf(SeqStatement), this is for multiple actions
+else if(tr.target.actions.at(0).action.isTypeOf(SeqStatement)){
+var i=0;
+while(i<tr.target.actions.at(0).action.statements.size())
+{
+if(tr.target.actions.at(0).action.statements.at(i).isTypeOf(Assignment)){
+
+//CASE a, there is no input event involved in this target action
+target_action_string=tr.target.actions.at(0).action.statements.at(i).left.name.name+"\\<Zprime> ="+tr.target.actions.at(0).action.statements.at(i).right.oneSideOfBianryString();
+
+//CASE b, there is input event involved, we need to use var_input instead of var
+for(p in zop_tuple.paras){
+// FORK: lens-rebind params: <p>() -> <p>_input. See main action loop.
+if(zop_tuple.lensParas.includes(p)){
+	if((p + "()").isSubstringOf(target_action_string)){
+		target_action_string = target_action_string.replace(p + "\\(\\)", p + "_input");
+	}
+} else {
+	if(p.isSubstringOf(target_action_string))
+	//then it means input var is used as parameter in an assignment
+	{target_action_string=target_action_string.replace(p, (p+"_input"));
+	}
+}
+}
+// FORK: bare state-var read: <sv>() -> <sv>.
+for(svName in stateVarNames){
+	if((svName + "()").isSubstringOf(target_action_string)){
+		target_action_string = target_action_string.replace(svName + "\\(\\)", svName);
+	}
+}
+for(elName in enumLiteralNames){
+	if((elName + "()").isSubstringOf(target_action_string)){
+		target_action_string = target_action_string.replace(elName + "\\(\\)", elName);
+	}
+}
+%]
+          ,[%=target_action_string%]
+[%}
+else if(tr.target.actions.at(0).action.statements.at(i).isTypeOf(Call)){
+target_action_string=tr.target.actions.at(0).action.statements.at(i).callString();
+%]
+          ,[%=target_action_string%]
+[%}
+
+else if(tr.target.actions.at(0).action.statements.at(i).isTypeOf(CommunicationStmt)){
+if(tr.target.actions.at(0).action.statements.at(i).communication._type.name="SIMPLE" or tr.target.actions.at(0).action.statements.at(i).communication._type.name="INPUT" or tr.target.actions.at(0).action.statements.at(i).communication._type.name="OUTPUT"  ){
+tr_string=tr_string+"@ [Event "+tr.target.actions.at(0).action.statements.at(i).communication.event.name  +"]";
+}}
+
+else if(tr.target.actions.at(0).action.statements.at(i).isTypeOf(Wait)){
+target_action_string="clock\\<Zprime> = clock + "+tr.target.actions.at(0).action.statements.at(i).duration.binaryExpString();
+%]
+          ,[%=target_action_string%]
+[%
+}
+i++;
+}
+}
+}
+%]         ,tr\<Zprime> =tr [%=tr_string%] @ [State [%=tr.target.zmState()%]]
+[% // next to generate 'trigger'   TODO
+var triggers_string;
+var numOfNewTrig=0;
+
+for(t in p.machines.at(0).transitions.select(t|t.source.name=tr.target.name)){
+if  (t.trigger.isDefined()and t.trigger.event.isDefined() and numOfNewTrig=0)
+{numOfNewTrig++;
+triggers_string=t.trigger.event.name;}
+else if  (t.trigger.isDefined()and t.trigger.event.isDefined() and numOfNewTrig>=1)
+{numOfNewTrig++;
+triggers_string=triggers_string+", "+t.trigger.event.name;}
+}     
+%]         ,triggers\<Zprime> = {[%=triggers_string%]}
+         ]"
+        
+[%
+//'}' in the line below is the close end of transition for loop
+}
+%]
+
+  
+[%
+// FORK: archive left Init RHSs empty with a `(*To be filled in by user*)`
+// comment, producing a parse error in Isabelle (empty-RHS substitutions).
+// Emit sensible defaults so the theory parses:
+//   st       -> initial          (designated pseudo-state from St enumtype)
+//   tr       -> [State initial]  (history starts at the initial state)
+//   triggers -> {}               (no triggers before first step)
+// The developer can hand-edit the defaults to match their domain if
+// Init_inv doesn't close automatically.
+%]
+definition Init :: "[%=stm_name%] subst" where
+  [z_defs]:
+  "Init =
+  [st\<leadsto> initial
+  ,tr\<leadsto> [State initial]
+  ,triggers\<leadsto> {}
+  ]"
+(* FORK: defaults emitted by template; edit to match intended initial state if needed. *)
+  
+  
+zmachine [%=stm_name%]Machine =
+  init Init
+  invariant [%=stm_name%]_inv
+  operations [%=zoperations_string%] 
+
+
+subsection \<open> Structural Invariants \<close>
+
+lemma Init_inv [hoare_lemmas]: "Init establishes [%=stm_name%]_inv"
+  by zpog_full
+
+[%
+var n=0;
+while (n<zoperations_set.size())
+{
+if(zoperations_set.at(n)!="initial"){
+if(zoperations_set.at(n).hasPara){
+// FORK: build the lemma's argument list. For lens-rebind params the
+// param-binder declared on the zoperation is `<sv>_input`, NOT the
+// bare `<sv>` — using bare `<sv>` would collide with the zstore lens
+// of the same name and fail with `Type unification failed: ...
+// lens_scheme ... list`. For traditional INPUT-trigger params the
+// archive convention is to use the bare param name.
+var argString_inv = "(";
+var firstArg_inv = true;
+for(p in zoperations_set.at(n).paras){
+	if(not firstArg_inv){ argString_inv = argString_inv + ", "; }
+	if(zoperations_set.at(n).lensParas.includes(p)){
+		argString_inv = argString_inv + p + "_input";
+	} else {
+		argString_inv = argString_inv + p;
+	}
+	firstArg_inv = false;
+}
+argString_inv = argString_inv + ")";
+%]
+lemma [%=zoperations_set.at(n).name%]_inv [hoare_lemmas]: "[%=zoperations_set.at(n).name%] [%=argString_inv%] preserves [%=stm_name%]_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+[%
+} else if(not zoperations_set.at(n).hasPara){
+%]
+lemma [%=zoperations_set.at(n).name%]_inv [hoare_lemmas]: "[%=zoperations_set.at(n).name%]() preserves [%=stm_name%]_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+
+[%
+}
+}
+n++;
+}
+%]
+
+subsection \<open> Safety Requirements \<close>
+
+[%
+// FORK: archive emitted `zexpr R1 is ""` with an empty body, an
+// intentional user-fillin. The empty term fails to parse. We emit
+// `True` so R1 trivially holds; the `_inv`-style preservation
+// lemmas then close automatically via zpog_full. The developer
+// should hand-edit this predicate to encode the actual safety
+// requirement they want to verify.
+%]
+zexpr R1 is "True"
+
+lemma  "Init establishes R1"
+  by zpog_full
+
+[%
+var n=0;
+while (n<zoperations_set.size())
+{
+if(zoperations_set.at(n)!="initial"){
+if(zoperations_set.at(n).hasPara){
+
+%]
+[%
+// FORK: same lens-rebind / bare distinction as for the _inv lemma above.
+var argString_R1 = "(";
+var firstArg_R1 = true;
+for(p in zoperations_set.at(n).paras){
+	if(not firstArg_R1){ argString_R1 = argString_R1 + ", "; }
+	if(zoperations_set.at(n).lensParas.includes(p)){
+		argString_R1 = argString_R1 + p + "_input";
+	} else {
+		argString_R1 = argString_R1 + p;
+	}
+	firstArg_R1 = false;
+}
+argString_R1 = argString_R1 + ")";
+%]
+lemma "[%=zoperations_set.at(n).name%] [%=argString_R1%] preserves R1 under [%=stm_name%]_inv"
+  by (zpog_full; auto)
+  
+[%
+} else if(not zoperations_set.at(n).hasPara){
+%]
+lemma "[%=zoperations_set.at(n).name%]() preserves R1 under [%=stm_name%]_inv"
+  by (zpog_full; auto)
+  
+[%
+}
+}
+n++;
+}
+%]
+
+[%
+// FORK: archive defined `_axioms = ()` (unit), but the
+// `<stm>_deadlock_free` lemma uses `_axioms \<Longrightarrow> ...`
+// which requires a proposition. Unit `()` is not a bool. Use `True`
+// for the vacuous-axioms case so the lemma typechecks. The developer
+// can replace this with concrete axioms about the machine if needed.
+%]
+definition [z_defs]: "[%=stm_name%]_axioms = True"
+
+lemma [%=stm_name%]_deadlock_free: "[%=stm_name%]_axioms  \<Longrightarrow> deadlock_free [%=stm_name%]Machine"
+  unfolding [%=stm_name%]Machine_def
+  apply deadlock_free
+[% var ddTac; if(hasPayloadDomain){ ddTac = "using St.exhaust_disc by auto"; } else { ddTac = "by (metis St.exhaust_disc)"; } %]
+  [%=ddTac%]
+  (* FORK: the deadlock_free closing tactic is selected by `hasPayloadDomain`
+     (set in PART 2 when this machine emits a typed-payload domain set such as
+     `SeqGs`). The residual goal after `apply deadlock_free` is
+       \<And>st. st = M\<^sub>1 \<or> ... \<or> guarded-disjuncts
+     and St.exhaust_disc is the enumtype discriminator exhaustion lemma that
+     matches the bare `st = X` disjunct for each state. Two cases:
+       * has payload domain -> `using St.exhaust_disc by auto`. metis HANGS
+         (>10 min) when a state's ONLY transition consumes a typed payload
+         (e.g. gas-analysis Reading: `params gs_input \<in> SeqGs`), because the
+         enabledness disjunct is `\<exists>gs_input \<in> SeqGs. ...`. With the set
+         emitted as a [simp] `= UNIV` definition (PART 2), `auto` discharges the
+         existential and closes via the bare disjunct. Verified on
+         chemical_detector (gas-analysis, ~15s).
+       * no payload domain -> `by (metis St.exhaust_disc)` (the ICECCS2023 LRE
+         tactic). `auto` TIMES OUT (>6 min) on LRE's real-arithmetic guards --
+         confirmed by regression -- so LRE-style machines keep metis.
+     Tried and rejected: `(cases st; simp_all)` / `(cases st; auto)` leave the
+     guarded disjunct (e.g. `thr() \<le> ins`) open because the split selects the
+     guarded disjunct instead of the bare one. *)
+ [%
+// '}' in the line below is the close end of package scope: if (p.name="Chemical")
+} 
+}
+%]
+end
+[%
+//-------------------------------------------------------------------
+//                     Operations
+//-------------------------------------------------------------------
+operation OrderedSet toparathString(): String{
+	var str:String;
+	str=self.at(0);
+	var i=1;
+	while(i<self.size()){
+		str= str+", "+self.at(i);
+		i++;
+	}
+	str="("+str + ")";
+	return str;
+}
+%]
+
+
+
+
+
+[*convert initial state name from i1 to initial, final j1 to final*]
+[%
+operation RC!Node zmState(): String{
+  if(self.isTypeOf(Initial)){
+  return "initial";
+  } else if(self.isTypeOf(Final)){
+    return "final";
+  } else{
+  return self.name;
+  }
+  }%]
+  
+
+[*convert initial state name from i1 to Initial, final j1 to Final*]
+[%
+operation RC!Node zmStateCapt(): String{
+  if(self.isTypeOf(Initial)){
+  return "Initial";
+  } else if(self.isTypeOf(Final)){
+    return "Final";
+  } else{
+  return self.name;
+  }
+  }%]
+  
+  
+[*convert boolean type to bool type, real to integer*]
+[%
+operation RC!Type zmType(): String{
+  if(self.isTypeOf(ProductType)){
+  return "("+self.types.at(0).zmType() + "\\<times>" + self.types.at(1).zmType()+")";
+  } else if(self.ref.name="boolean"){
+  return "bool";
+  } else if(self.ref.name="real"){
+  // FORK: archive mapped RoboChart `real` to Isabelle `integer`,
+  // which forced everything into integer arithmetic but caused type
+  // unification failures when literal `1.0` appears in a guard
+  // (Isabelle parses 1.0 as a rational requiring `inverse`-class).
+  // Mapping to Isabelle `real` aligns with our Java `double` source
+  // semantics and unifies cleanly with the FloatExp renderer.
+  return "real";
+  } else  {
+  return self.ref.name;
+  }
+  }%]
+  
+  
+  
+[%
+operation RC!Expression binaryExpString(): String{
+	
+	if(self.isTypeOf(LessThan)){
+		return self.lessThanString();}
+	else if(self.isTypeOf(GreaterThan)){
+		return self.greaterThanString();}
+	else if(self.isTypeOf(LessOrEqual)){
+		return self.lessOrEqualString();}
+	else if(self.isTypeOf(GreaterOrEqual)){
+		return self.greaterOrEqualString();}
+	else if(self.isTypeOf(Equals)){
+		return self.equalsString();}
+	else if (self.isTypeOf(And)){
+		return self.andString();}
+	else if (self.isTypeOf(Or)){
+		return self.orString();}
+	else if (self.isTypeOf(Not)){
+		return self.notString();}
+	else if (self.isTypeOf(Plus)){
+		return self.plusString();}
+	else if (self.isTypeOf(Minus)){
+		return self.minusString();}
+	else if (self.isTypeOf(Mult)){
+		return self.multString();}
+	// FORK: archive's dispatcher missed Different (!=), Div (/), Neg (-x).
+	// `Different` is emitted by the ETL for any Java != in a guard; without
+	// this case the operation returned undefined and the precondition came
+	// out as e.g. "st = MOM \<and> " (empty RHS), unparseable in Isabelle.
+	else if (self.isTypeOf(Different)){
+		return self.differentString();}
+	else if (self.isTypeOf(Div)){
+		return self.divString();}
+	else if (self.isTypeOf(Neg)){
+		return self.negString();}
+	else if(self.isTypeOf(IntegerExp) or self.isTypeOf(RefExp) or self.isTypeOf(CallExp)  or self.isTypeOf(ResultExp) or self.isTypeOf(Selection) or self.isTypeOf(EnumExp) or self.isTypeOf(ArrayExp) or self.isTypeOf(TupleExp) or self.isTypeOf(ClockExp) or self.isTypeOf(SeqExp) or self.isTypeOf(FloatExp) or self.isTypeOf(BooleanExp) or self.isTypeOf(StringExp) ){
+		return self.oneSideOfBianryString();}
+	else if(self.isTypeOf(ParExp)){
+		return self.exp.binaryExpString();
+	}
+}
+%]
+[%
+
+operation RC!Expression lessThanString(): String{
+	return self.left.binaryExpString() +"<" + self.right.binaryExpString();
+}
+%]
+
+[%
+operation RC!Expression lessOrEqualString(): String{
+	return self.left.binaryExpString() +"\\<le>" + self.right.binaryExpString();
+}
+%]
+
+[%
+operation RC!Expression greaterThanString(): String{
+return self.left.binaryExpString() +">" + self.right.binaryExpString();
+}
+%]
+
+[%
+operation RC!Expression greaterOrEqualString(): String{
+	return self.left.binaryExpString() +"\\<ge>" + self.right.binaryExpString();
+}
+%]
+
+[%
+operation RC!Expression equalsString(): String{
+	return self.left.binaryExpString() +"= (" + self.right.binaryExpString()+")";
+}
+%]
+[%
+operation RC!Expression andString(): String{
+	return self.left.binaryExpString() +" \\<and> " + self.right.binaryExpString();
+}
+%]
+
+[%
+operation RC!Expression orString(): String{
+	return "("+self.left.binaryExpString() +" \\<or> " + self.right.binaryExpString()+")";
+}
+%]
+
+[%
+operation RC!Expression notString(): String{
+	return "\\<not>" + self.exp.binaryExpString();
+}
+%]
+
+[%
+operation RC!Expression plusString(): String{
+	return "("+self.left.binaryExpString() +" + " + self.right.binaryExpString()+")";
+}
+%]
+
+[%
+operation RC!Expression minusString(): String{
+	return "("+self.left.binaryExpString() +" - " + self.right.binaryExpString()+")";
+}
+%]
+
+
+[%
+operation RC!Expression multString(): String{
+	return "("+self.left.binaryExpString() +" * " + self.right.binaryExpString()+")";
+}
+%]
+[%
+// FORK: helpers for Different, Div, Neg. See binaryExpString() dispatch above.
+operation RC!Expression differentString(): String{
+	return "("+self.left.binaryExpString() +" \\<noteq> " + self.right.binaryExpString()+")";
+}
+%]
+[%
+operation RC!Expression divString(): String{
+	return "("+self.left.binaryExpString() +" / " + self.right.binaryExpString()+")";
+}
+%]
+[%
+operation RC!Expression negString(): String{
+	return "(- " + self.exp.binaryExpString() + ")";
+}
+%]
+[%
+//DONE
+//to return the string of left or right expression string of the binary expression
+//currently covers 3 types: Integer, RefExp, CallExp
+operation RC!Expression oneSideOfBianryString(): String{
+	if(self.isTypeOf(IntegerExp)){
+		return self.value.toString();
+	}
+	// FORK: handle FloatExp (value may be null if ETL didn't populate) and
+	// BoolExp / StringExp literals. Without this, numeric-literal RHSs
+	// vanish from comparison preconditions and Isabelle parses truncated
+	// operators (e.g. `vel()\<le>`).
+	else if(self.isTypeOf(FloatExp)){
+		// FORK: in EOL, `== null` is harness-dependent for unset
+		// EAttributes — `.isUndefined()` is the idiomatic check.
+		if(self.value.isUndefined()){ return "0"; }
+		return self.value.toString();
+	}
+	else if(self.isTypeOf(BooleanExp)){
+		return self.value.toString();
+	}
+	else if(self.isTypeOf(StringExp)){
+		return "\"" + self.value + "\"";
+	}
+	else if(self.isTypeOf(RefExp)){
+		return self.ref.name;
+	}
+	else if(self.isTypeOf(CallExp)){
+		return self.callExpString();
+	}
+	else if(self.isTypeOf(ResultExp)){
+		return "result";
+	}
+	else if(self.isTypeOf(Selection)){
+		return self.member.name+"("+self.receiver.value.ref.name+"!"+self.receiver.parameters.at(0).ref.name+")";
+	}
+	
+	else if(self.isTypeOf(EnumExp)){
+		return self.literal.name;
+	}
+	else if(self.isTypeOf(SeqExp)){
+		return self.sequenceString();
+	}
+	
+	else if(self.isTypeOf(ArrayExp)){
+		return self.value.ref.name + "."+self.parameters.at(0).value;
+	//e.g., vel[1] -> vel.1
+	}
+	
+	else if(self.isTypeOf(TupleExp)){
+		return "("+ self.values.at(0).oneSideOfBianryString()+", "+self.values.at(1).oneSideOfBianryString() +")";
+	//e.g., (3,4)
+	}
+	
+	else if(self.isTypeOf(ClockExp)){
+		return "clock";
+	}
+} 
+%]
+  
+  
+  
+  
+[*to generate the CallExp expression string for the statement of CallExp type, i.e. functions*]
+[% 
+// FORK: extract a function name from a CallExp's `function` feature,
+// handling both RefExp (archive's shape) and StringExp (the shape our
+// ETL emits). Keeps all callExp-name accesses in one place.
+operation RC!CallExp funcName(): String{
+	if(self.`function`.isTypeOf(StringExp)){
+		return self.`function`.value;
+	}
+	return self.`function`.ref.name;
+}
+
+// FORK: recursive collector for CallExp identifiers used anywhere in
+// an expression tree. Used by the consts-emission pass to discover
+// functions referenced via StringExp-named CallExp (the shape our ETL
+// emits for sensor/operation calls). Deliberately conservative — walks
+// only the structural shapes the template understands.
+operation RC!Expression collectCallExpNames(acc: OrderedSet, declared: Set){
+	if (self.isTypeOf(CallExp)){
+		var fn = self.funcName();
+		if (not declared.includes(fn)){
+			acc.add(fn);
+		}
+		for (a in self.args){
+			a.collectCallExpNames(acc, declared);
+		}
+		return;
+	}
+	if (self.isTypeOf(And) or self.isTypeOf(Or) or self.isTypeOf(LessThan)
+			or self.isTypeOf(LessOrEqual) or self.isTypeOf(GreaterThan)
+			or self.isTypeOf(GreaterOrEqual) or self.isTypeOf(Equals)
+			or self.isTypeOf(Different) or self.isTypeOf(Plus)
+			or self.isTypeOf(Minus) or self.isTypeOf(Mult) or self.isTypeOf(Div)){
+		self.left.collectCallExpNames(acc, declared);
+		self.right.collectCallExpNames(acc, declared);
+		return;
+	}
+	if (self.isTypeOf(Not)){
+		self.exp.collectCallExpNames(acc, declared);
+		return;
+	}
+	if (self.isTypeOf(ParExp)){
+		self.exp.collectCallExpNames(acc, declared);
+		return;
+	}
+	// Leaves (IntegerExp, FloatExp, BooleanExp, StringExp, RefExp, ...) contribute nothing.
+}
+
+// FORK: collect names of CallExps that appear as the direct operand
+// of Not (e.g. `\<not>inOpez()`). These should be typed as boolean,
+// not numeric, in the auto-emitted consts. Recurses through other
+// expression shapes so nested occurrences are still caught.
+operation RC!Expression collectBoolCallExpNames(acc: OrderedSet, declared: Set){
+	if (self.isTypeOf(Not)){
+		// The direct operand of Not is the boolean call site.
+		if (self.exp.isTypeOf(CallExp)){
+			var fn = self.exp.funcName();
+			if (not declared.includes(fn)){
+				acc.add(fn);
+			}
+		} else {
+			// Could be \<not>(\<not> ...) or \<not>(par); recurse.
+			self.exp.collectBoolCallExpNames(acc, declared);
+		}
+		return;
+	}
+	if (self.isTypeOf(And) or self.isTypeOf(Or)){
+		// Boolean operands of And/Or could themselves be CallExps;
+		// while we'd want to type those as bool too, we don't have
+		// signal that they're used purely as bool (vs. e.g. compared).
+		// Conservatively: only Not-direct triggers the bool override.
+		self.left.collectBoolCallExpNames(acc, declared);
+		self.right.collectBoolCallExpNames(acc, declared);
+		return;
+	}
+	if (self.isTypeOf(LessThan) or self.isTypeOf(LessOrEqual) or self.isTypeOf(GreaterThan)
+			or self.isTypeOf(GreaterOrEqual) or self.isTypeOf(Equals) or self.isTypeOf(Different)
+			or self.isTypeOf(Plus) or self.isTypeOf(Minus) or self.isTypeOf(Mult) or self.isTypeOf(Div)){
+		self.left.collectBoolCallExpNames(acc, declared);
+		self.right.collectBoolCallExpNames(acc, declared);
+		return;
+	}
+	if (self.isTypeOf(ParExp)){
+		self.exp.collectBoolCallExpNames(acc, declared);
+		return;
+	}
+	if (self.isTypeOf(CallExp)){
+		// Recurse into args (may contain nested Not-CallExp patterns).
+		for (a in self.args){
+			a.collectBoolCallExpNames(acc, declared);
+		}
+		return;
+	}
+}
+
+// FORK: collect names of CallExps that appear as direct args of
+// another CallExp. Heuristic: in our LRE-style models, functions
+// declared on the RoboChart package take `nat` indices (vdist, hdist,
+// odist take `nat` per RoboChart Function declarations); callees that
+// produce those indices (cstc, cdyn, cda, ...) therefore return `nat`.
+// So if X appears as an arg of any CallExp, mark X's name as
+// nat-returning so the auto-emit pass overrides the default `real`.
+operation RC!Expression collectNatCallExpNames(acc: OrderedSet, declared: Set){
+	if (self.isTypeOf(CallExp)){
+		for (a in self.args){
+			if (a.isTypeOf(CallExp)){
+				var fn = a.funcName();
+				if (not declared.includes(fn)){
+					acc.add(fn);
+				}
+			}
+			// Recurse into args to catch nested cases.
+			a.collectNatCallExpNames(acc, declared);
+		}
+		return;
+	}
+	if (self.isTypeOf(And) or self.isTypeOf(Or) or self.isTypeOf(LessThan)
+			or self.isTypeOf(LessOrEqual) or self.isTypeOf(GreaterThan)
+			or self.isTypeOf(GreaterOrEqual) or self.isTypeOf(Equals)
+			or self.isTypeOf(Different) or self.isTypeOf(Plus)
+			or self.isTypeOf(Minus) or self.isTypeOf(Mult) or self.isTypeOf(Div)){
+		self.left.collectNatCallExpNames(acc, declared);
+		self.right.collectNatCallExpNames(acc, declared);
+		return;
+	}
+	if (self.isTypeOf(Not) or self.isTypeOf(ParExp)){
+		self.exp.collectNatCallExpNames(acc, declared);
+		return;
+	}
+}
+
+operation RC!CallExp callExpString(): String{
+	var args_string: String = "";
+	var callExp_string: String;
+	// FORK: guard zero-argument calls — archive version blew up here
+	if(self.args.size() == 0){
+		return self.funcName() + "()";
+	}
+	//to get the parameter on the right
+
+	if(self.args.at(0).isTypeOf(RefExp)){
+		args_string= self.args.at(0).ref.name;
+	}
+	else
+	//this branch is for callexp used in functions where we have the keyword result
+	if(self.args.at(0).isTypeOf(ResultExp)){
+		args_string= "result";
+	}
+	else
+	if(self.args.at(0).isTypeOf(Selection)){
+		args_string=self.args.at(0).member.name+"("+self.args.at(0).receiver.value.ref.name+"!"+self.args.at(0).receiver.parameters.at(0).ref.name+")";
+	}
+	else {
+		// FORK: archive only handled RefExp/ResultExp/Selection. Anything
+		// else (CallExp, IntegerExp, FloatExp, BinaryExpression, ...)
+		// silently produced empty arg-string and dropped the argument,
+		// e.g. odist(cstc()) became odist(). Render via the existing
+		// expression dispatcher so any leaf or nested expression works.
+		args_string = self.args.at(0).oneSideOfBianryString();
+	}
+
+	//for the case that there are more than 2 args, we need insert ',' between args
+	var j=1;
+	while(j<self.args.size()){
+
+		if(self.args.at(j).isTypeOf(RefExp)){
+			args_string=args_string+ ", "+ self.args.at(j).ref.name;
+		}
+		else
+		//this branch is for callexp used in functions where we have the keyword result
+		if(self.args.at(j).isTypeOf(ResultExp)){
+			args_string=args_string+ ", "+ "result";
+		}
+		else
+		if(self.args.at(j).isTypeOf(Selection)){
+			self.args.at(j).receiver.println();
+			args_string= args_string+ ", "+self.args.at(j).member.name+"("+self.args.at(j).receiver.value.ref.name+"!"+self.args.at(j).receiver.parameters.at(0).ref.name+")";
+		}
+		else {
+			// FORK: same fallback for second-and-subsequent args.
+			args_string = args_string + ", " + self.args.at(j).oneSideOfBianryString();
+		}
+		j++;
+	}
+	
+	callExp_string=self.funcName()+"("+args_string+")";
+	return callExp_string;
+	}
+  %]
+    
+[*to generate the Call expression string for the statement of Call type, i.e. operations*]
+[% 
+operation RC!Call callString(): String{
+	var args_string: String;
+	var call_string: String;
+	//to get the parameter on the right
+	if(self.args.size()=0){
+		args_string="";
+	}
+	else if(self.args.size()>0){
+		if(self.args.at(0).isTypeOf(RefExp)){
+			args_string= self.args.at(0).ref.name;
+		}
+		else if(self.args.at(0).isTypeOf(IntegerExp)){
+			args_string= self.args.at(0).value.toString();
+		}
+		else if(self.args.at(0).isTypeOf(EnumExp)){
+			args_string= self.args.at(0).literal.name;
+		}
+		else 
+		//this branch is for callexp used in functions where we have the keyword result
+		if(self.args.at(0).isTypeOf(ResultExp)){
+			args_string= "result";
+		}
+		else
+		if(self.args.at(0).isTypeOf(Selection)){
+			args_string=self.args.at(0).member.name+"("+self.args.at(0).receiver.value.ref.name+"!"+self.args.at(0).receiver.parameters.at(0).ref.name+")";
+		}
+		
+		//for the case that there are more than 2 args, we need insert ',' between args
+		var j=1;
+		while(j<self.args.size()){
+		//"self.args.at(j).type:".println();
+		//self.args.at(j).type.println();
+				
+		if(self.args.at(j).isTypeOf(RefExp)){
+			args_string=args_string+ ", "+ self.args.at(j).ref.name;
+		}
+		else if(self.args.at(j).isTypeOf(IntegerExp)){
+			args_string= args_string+ ", "+ self.args.at(j).value.toString();
+		}
+		else if(self.args.at(j).isTypeOf(EnumExp)){
+			args_string= args_string+ ", "+ self.args.at(j).literal.name;
+		}
+		else 
+		//this branch is for callexp used in functions where we have the keyword result
+		if(self.args.at(j).isTypeOf(ResultExp)){
+			args_string=args_string+ ", "+ "result";
+		}
+		else
+		if(self.args.at(j).isTypeOf(Selection)){
+			self.args.at(j).receiver.println();
+		args_string= args_string+ ", "+self.args.at(j).member.name+"("+self.args.at(j).receiver.value.ref.name+"!"+self.args.at(j).receiver.parameters.at(0).ref.name+")";
+		
+		}
+		
+		j++;
+		}
+	}
+	call_string=self.`operation`.name+"("+args_string+")";
+	return call_string;
+}
+  %]
+
+  
+[%
+operation RC!SeqExp sequenceString(): String{
+	
+	if(self.values.size()=0){
+		return  "[]";
+	} 
+	else if(self.values.size()>0) {
+		var m=1;
+		var sequence_string="["+self.values.at(0);
+		while (m<self.values.size()){
+			sequence_string=sequence_string+", "+self.values.at(m);
+			m++;
+		}
+		sequence_string=sequence_string+"]";
+		return sequence_string;
+	}
+}
+%]
+
+
+[%
+operation RC!ProductType productString(): String{
+	var strings: String;
+	strings= "("+self.types.at(0).zmType() + "\\<times>" + self.types.at(1).zmType()+")" ;
+	return strings;
+}
+%]
