@@ -1,0 +1,37 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 06-06-2026 17:17:15
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "CalcCDyn.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate OP_CalcCDyn
+P_OP_CalcCDyn = let
+	id__ = 0
+	
+	
+	
+	
+within
+	OP_CalcCDyn::O__(id__)
+assert P_OP_CalcCDyn :[deadlock-free]	
+assert P_OP_CalcCDyn;RUN({r__}) :[deadlock-free]
+assert P_OP_CalcCDyn :[deterministic]
+assert P_OP_CalcCDyn :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_OP_CalcCDyn[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_OP_CalcCDyn

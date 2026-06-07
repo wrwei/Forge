@@ -1,0 +1,75 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 07-06-2026 07:20:26
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "SRangerController_Module.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate SRangerController_Module
+P_SRangerController_Module = let
+	id__ = 0
+	
+	const_SRangerController_Module_SRangerController_Platform_obstacleThreshold = 1
+	const_SRangerController_Module_SRangerController_Platform_turnVel = 2
+	const_SRangerController_Module_SRangerController_Platform_turnDuration = 2
+	const_SRangerController_Module_SRangerController_Platform_moveVel = 1
+	
+	
+		
+	
+within
+	SRangerController_Module::O__(id__,
+			    const_SRangerController_Module_SRangerController_Platform_obstacleThreshold,
+			    const_SRangerController_Module_SRangerController_Platform_turnVel,
+			    const_SRangerController_Module_SRangerController_Platform_turnDuration,
+			    const_SRangerController_Module_SRangerController_Platform_moveVel)
+assert P_SRangerController_Module :[deadlock-free]	
+assert P_SRangerController_Module;RUN({r__}) :[deadlock-free]
+assert P_SRangerController_Module :[deterministic]
+assert P_SRangerController_Module :[divergence-free]
+
+-- generate SRangerController_Module_ctrl_ref0
+P_SRangerController_Module_ctrl_ref0 = let
+	id__ = 0
+	
+	const_SRangerController_Ctrl_obstacleThreshold = 1
+	const_SRangerController_Ctrl_turnVel = 2
+	const_SRangerController_Ctrl_turnDuration = 2
+	const_SRangerController_Ctrl_moveVel = 1
+	
+	
+		
+within
+	SRangerController_Module::ctrl_ref0::O__(id__,
+			    const_SRangerController_Ctrl_obstacleThreshold,
+			    const_SRangerController_Ctrl_turnVel,
+			    const_SRangerController_Ctrl_turnDuration,
+			    const_SRangerController_Ctrl_moveVel)
+
+assert P_SRangerController_Module_ctrl_ref0 :[deadlock-free]	
+assert P_SRangerController_Module_ctrl_ref0;RUN({r__}) :[deadlock-free]
+assert P_SRangerController_Module_ctrl_ref0 :[deterministic]
+assert P_SRangerController_Module_ctrl_ref0 :[divergence-free]
+
+-- timed deadlock free
+assert prioritise(P_SRangerController_Module_ctrl_ref0[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_SRangerController_Module_ctrl_ref0
+-- timed deadlock free
+assert prioritise(P_SRangerController_Module[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_SRangerController_Module

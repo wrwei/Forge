@@ -1,0 +1,50 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 06-06-2026 21:04:08
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "MovementController.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate MovementController
+P_MovementController = let
+	id__ = 0
+	
+	const_MovementController_thr = 1
+	const_MovementController_lv = 1
+	const_MovementController_evadetime = 2
+	const_MovementController_stuckperiod = 5
+	const_MovementController_stuckdist = 1
+	const_MovementController_outperiod = 3
+	
+	
+within
+	MovementController::O__(
+		id__,
+		const_MovementController_thr,
+		const_MovementController_lv,
+		const_MovementController_evadetime,
+		const_MovementController_stuckperiod,
+		const_MovementController_stuckdist,
+		const_MovementController_outperiod
+	)
+assert P_MovementController :[deadlock-free]	
+assert P_MovementController;RUN({r__}) :[deadlock-free]
+assert P_MovementController :[deterministic]
+assert P_MovementController :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_MovementController[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_MovementController

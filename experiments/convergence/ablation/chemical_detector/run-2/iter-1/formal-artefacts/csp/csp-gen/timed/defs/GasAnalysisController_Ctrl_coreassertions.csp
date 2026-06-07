@@ -1,0 +1,82 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 06-06-2026 21:04:08
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "GasAnalysisController_Ctrl.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate GasAnalysisController_Ctrl
+P_GasAnalysisController_Ctrl = let
+	id__ = 0
+	
+	const_GasAnalysisController_Ctrl_thr = 1
+	const_GasAnalysisController_Ctrl_lv = 1
+	const_GasAnalysisController_Ctrl_evadetime = 2
+	const_GasAnalysisController_Ctrl_stuckperiod = 5
+	const_GasAnalysisController_Ctrl_stuckdist = 1
+	const_GasAnalysisController_Ctrl_outperiod = 3
+	
+	
+		
+within
+	GasAnalysisController_Ctrl::O__(id__,
+			    const_GasAnalysisController_Ctrl_thr,
+			    const_GasAnalysisController_Ctrl_lv,
+			    const_GasAnalysisController_Ctrl_evadetime,
+			    const_GasAnalysisController_Ctrl_stuckperiod,
+			    const_GasAnalysisController_Ctrl_stuckdist,
+			    const_GasAnalysisController_Ctrl_outperiod)
+
+assert P_GasAnalysisController_Ctrl :[deadlock-free]	
+assert P_GasAnalysisController_Ctrl;RUN({r__}) :[deadlock-free]
+assert P_GasAnalysisController_Ctrl :[deterministic]
+assert P_GasAnalysisController_Ctrl :[divergence-free]
+
+-- generate GasAnalysisController_Ctrl_stm_ref0
+P_GasAnalysisController_Ctrl_stm_ref0 = let
+	id__ = 0
+	
+	const_GasAnalysisController_thr = 1
+	const_GasAnalysisController_lv = 1
+	const_GasAnalysisController_evadetime = 2
+	const_GasAnalysisController_stuckperiod = 5
+	const_GasAnalysisController_stuckdist = 1
+	const_GasAnalysisController_outperiod = 3
+	
+	
+within
+	GasAnalysisController_Ctrl::stm_ref0::O__(
+		id__,
+		const_GasAnalysisController_thr,
+		const_GasAnalysisController_lv,
+		const_GasAnalysisController_evadetime,
+		const_GasAnalysisController_stuckperiod,
+		const_GasAnalysisController_stuckdist,
+		const_GasAnalysisController_outperiod
+	)
+assert P_GasAnalysisController_Ctrl_stm_ref0 :[deadlock-free]	
+assert P_GasAnalysisController_Ctrl_stm_ref0;RUN({r__}) :[deadlock-free]
+assert P_GasAnalysisController_Ctrl_stm_ref0 :[deterministic]
+assert P_GasAnalysisController_Ctrl_stm_ref0 :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_GasAnalysisController_Ctrl_stm_ref0[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_GasAnalysisController_Ctrl_stm_ref0
+-- timed deadlock free
+assert prioritise(P_GasAnalysisController_Ctrl[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_GasAnalysisController_Ctrl

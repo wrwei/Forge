@@ -1,0 +1,61 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter 1, cold)",
+  "status": "uncertain",
+  "summary": "Cold codegen for sranger from canonical inputs. All 21 requirements traced. 4 issues flagged: 1 design choice on the terminal mode (no Final state per CLAUDE.md), 1 on the Move output encoding, 1 invented default (sensor no-reading value), 1 design choice combining SR-Beh2's event trigger with SR-GP1's guard.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Terminal mode realised as absorbing live mode 'Halted', not a Final state",
+      "raw": "SR-DM1/SR-FR3/SR-Beh3/SR-Beh6 specify a terminal 'Final' mode. CLAUDE.md mandates that the theory-generated (primary) controller must NOT contain a Final state (the forked Isabelle theory generator cannot designate a terminal state, leaving deadlock-freedom unprovable). Implemented instead as mode 'Halted': entry Move(0,0) on both endTask transitions, then an absorbing tick self-loop with no action; obstacle/endTask are ignored in Halted.",
+      "fix_directive": "If a literal Final state is required for spec fidelity, rename SRangerMode.Halted to Final and remove its tick self-loop — but expect the Isabelle deadlock-freedom proof to become unprovable per CLAUDE.md.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/mode/SRangerMode.java",
+          "element": "SRangerMode",
+          "requirement_ids": ["SR-DM1", "SR-FR3", "SR-Beh3", "SR-Beh6", "SR-DC1"]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move(lv, av) output encoded as a two-argument Actuator.move call (LOperations Call), not an event record",
+      "raw": "SR-DM4 describes a single output event Move carrying two reals. RoboChart events carry one payload; CLAUDE.md documents the multi-arg invocation route (LOperations interface + Call action). The controller therefore calls actuator.move(lv, av) directly in transition actions and no OutputEvent Java type exists.",
+      "fix_directive": "None needed unless the formal model must expose Move as a typed event channel; that would require a single-payload record encoding instead.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/actuator/Actuator.java",
+          "element": "move",
+          "requirement_ids": ["SR-DM4", "SR-DM6"]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading default fixed at 100.0 m",
+      "raw": "SR-DM5 requires 'a large default value' when no reading is available but does not specify it. Chose 100.0 m (>> obstacleThreshold 0.5 m).",
+      "fix_directive": "Adjust Sensor.NO_READING_DEFAULT if the framework defines a canonical sentinel.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/sensor/Sensor.java",
+          "element": "distance",
+          "requirement_ids": ["SR-DM5", "SR-SF1"]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Moving->Turning fires on obstacle event AND obstacleDetected guard",
+      "raw": "SR-Beh2 says the transition fires when the obstacle event is received; SR-GP1 says obstacleDetected (distance <= obstacleThreshold) is the guard on that transition. Implemented as the conjunction: event instanceof Obstacle && obstacleDetected. The guard is near-redundant (the IR framework only emits obstacle when the condition holds) but realises SR-GP1 verbatim as a named predicate.",
+      "fix_directive": "Drop the && obstacleDetected conjunct if the obstacle event alone should be authoritative.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "element": "step",
+          "requirement_ids": ["SR-Beh2", "SR-GP1"]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> t2m -> m2m -> m2t -> dafny_gen -> isabelle_gen) and iterate on visible feedback."
+}

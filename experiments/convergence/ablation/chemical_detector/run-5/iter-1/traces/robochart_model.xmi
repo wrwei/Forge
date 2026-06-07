@@ -1,0 +1,584 @@
+<?xml version="1.0" encoding="ASCII"?>
+<robochart:RCPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:robochart="http://www.robocalc.circus/RoboChart" name="extracted">
+  <interfaces name="Ctrl_State">
+    <variableList>
+      <vars name="gs">
+        <type xsi:type="robochart:SeqType">
+          <domain xsi:type="robochart:TypeRef" ref="//@types.5"/>
+        </type>
+      </vars>
+      <vars name="sts">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="ins">
+        <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+      </vars>
+      <vars name="anl">
+        <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+      </vars>
+      <vars name="a">
+        <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+      </vars>
+      <vars name="d0">
+        <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+      </vars>
+      <vars name="d1">
+        <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+      </vars>
+      <vars name="l">
+        <type xsi:type="robochart:TypeRef" ref="//@types.2"/>
+      </vars>
+    </variableList>
+  </interfaces>
+  <interfaces name="LOperations">
+    <operations name="move" terminates="true">
+      <parameters name="p0">
+        <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+      </parameters>
+      <parameters name="p1">
+        <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+      </parameters>
+    </operations>
+  </interfaces>
+  <interfaces name="Sensors">
+    <variableList>
+      <vars name="insAtOrAboveThr">
+        <type xsi:type="robochart:TypeRef" ref="//@types.6"/>
+      </vars>
+      <vars name="odometer">
+        <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+      </vars>
+    </variableList>
+  </interfaces>
+  <interfaces name="Actuators"/>
+  <interfaces name="Constants"/>
+  <types xsi:type="robochart:Enumeration" name="Angle">
+    <literals name="Left"/>
+    <literals name="Right"/>
+    <literals name="Back"/>
+    <literals name="Front"/>
+  </types>
+  <types xsi:type="robochart:Enumeration" name="Chem">
+    <literals name="chemA"/>
+    <literals name="chemB"/>
+  </types>
+  <types xsi:type="robochart:Enumeration" name="Loc">
+    <literals name="left"/>
+    <literals name="right"/>
+    <literals name="front"/>
+  </types>
+  <types xsi:type="robochart:Enumeration" name="Status">
+    <literals name="noGas"/>
+    <literals name="gasD"/>
+  </types>
+  <types xsi:type="robochart:PrimitiveType" name="real"/>
+  <types xsi:type="robochart:RecordType" name="GasSensor">
+    <fields name="c">
+      <type xsi:type="robochart:TypeRef" ref="//@types.1"/>
+    </fields>
+    <fields name="i">
+      <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+    </fields>
+  </types>
+  <types xsi:type="robochart:PrimitiveType" name="nat"/>
+  <machines name="GasAnalysisController">
+    <events name="gas">
+      <type xsi:type="robochart:SeqType">
+        <domain xsi:type="robochart:TypeRef" ref="//@types.5"/>
+      </type>
+    </events>
+    <events name="resume"/>
+    <events name="stop"/>
+    <events name="turn">
+      <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+    </events>
+    <nodes xsi:type="robochart:State" name="Reading"/>
+    <nodes xsi:type="robochart:State" name="Analysis"/>
+    <nodes xsi:type="robochart:State" name="NoGas"/>
+    <nodes xsi:type="robochart:State" name="GasDetected"/>
+    <nodes xsi:type="robochart:State" name="Stopped"/>
+    <nodes xsi:type="robochart:Initial" name="i0"/>
+    <transitions name="t_init" source="//@machines.0/@nodes.5" target="//@machines.0/@nodes.0"/>
+    <transitions name="t1" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.0"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="v"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.1"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="analysis"/>
+            <args xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="gs"/>
+            </args>
+          </right>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t2" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.2">
+      <condition xsi:type="robochart:Equals">
+        <left xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="sts"/>
+        </left>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="noGas"/>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t3" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.3">
+      <condition xsi:type="robochart:Equals">
+        <left xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="sts"/>
+        </left>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="gasD"/>
+        </right>
+      </condition>
+      <action xsi:type="robochart:Assignment">
+        <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.2"/>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="intensity"/>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="gs"/>
+          </args>
+        </right>
+      </action>
+    </transitions>
+    <transitions name="t4" source="//@machines.0/@nodes.2" target="//@machines.0/@nodes.0"/>
+    <transitions name="t5" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.4">
+      <condition xsi:type="robochart:CallExp">
+        <function xsi:type="robochart:StringExp" value="insAtOrAboveThr"/>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.2"/>
+      </action>
+    </transitions>
+    <transitions name="t6" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.0">
+      <condition xsi:type="robochart:Not">
+        <exp xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="insAtOrAboveThr"/>
+        </exp>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.3"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="location"/>
+            <args xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="gs"/>
+            </args>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="anl"/>
+            </value>
+          </communication>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t7" source="//@machines.0/@nodes.4" target="//@machines.0/@nodes.4">
+      <trigger event="//@machines.0/@events.0"/>
+    </transitions>
+  </machines>
+  <machines name="MovementController">
+    <events name="randomWalk"/>
+    <events name="stop"/>
+    <events name="flag"/>
+    <events name="turn">
+      <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+    </events>
+    <events name="resume"/>
+    <events name="obstacle">
+      <type xsi:type="robochart:TypeRef" ref="//@types.2"/>
+    </events>
+    <events name="changeDirection">
+      <type xsi:type="robochart:TypeRef" ref="//@types.2"/>
+    </events>
+    <events name="shortRandomWalk"/>
+    <clocks name="evasionStartMs"/>
+    <nodes xsi:type="robochart:State" name="Waiting">
+      <actions xsi:type="robochart:EntryAction">
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.0"/>
+        </action>
+      </actions>
+    </nodes>
+    <nodes xsi:type="robochart:State" name="Going"/>
+    <nodes xsi:type="robochart:State" name="Found"/>
+    <nodes xsi:type="robochart:State" name="Avoiding"/>
+    <nodes xsi:type="robochart:State" name="TryingAgain"/>
+    <nodes xsi:type="robochart:State" name="AvoidingAgain"/>
+    <nodes xsi:type="robochart:State" name="GettingOut"/>
+    <nodes xsi:type="robochart:Initial" name="i0"/>
+    <transitions name="t_init" source="//@machines.1/@nodes.7" target="//@machines.1/@nodes.0"/>
+    <transitions name="t1" source="//@machines.1/@nodes.0" target="//@machines.1/@nodes.2">
+      <trigger event="//@machines.1/@events.1"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:FloatExp"/>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="Front"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t2" source="//@machines.1/@nodes.0" target="//@machines.1/@nodes.1">
+      <trigger event="//@machines.1/@events.3"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.4"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="v"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="lv"/>
+          </args>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="a"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t3" source="//@machines.1/@nodes.0" target="//@machines.1/@nodes.0">
+      <trigger event="//@machines.1/@events.4"/>
+    </transitions>
+    <transitions name="t4" source="//@machines.1/@nodes.1" target="//@machines.1/@nodes.2">
+      <trigger event="//@machines.1/@events.1"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:FloatExp"/>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="Front"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t5" source="//@machines.1/@nodes.1" target="//@machines.1/@nodes.0">
+      <trigger event="//@machines.1/@events.4"/>
+    </transitions>
+    <transitions name="t6" source="//@machines.1/@nodes.1" target="//@machines.1/@nodes.1">
+      <trigger event="//@machines.1/@events.3"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.4"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="v"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="lv"/>
+          </args>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="a"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t7" source="//@machines.1/@nodes.1" target="//@machines.1/@nodes.3">
+      <trigger event="//@machines.1/@events.5"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.7"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="v"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.5"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="odometer"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.6" _type="OUTPUT">
+            <value xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="l"/>
+            </value>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:Wait">
+          <duration xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="evadetime"/>
+          </duration>
+        </statements>
+      </action>
+      <reset clock="//@machines.1/@clocks.0"/>
+    </transitions>
+    <transitions name="t8" source="//@machines.1/@nodes.3" target="//@machines.1/@nodes.2">
+      <trigger event="//@machines.1/@events.1"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:FloatExp"/>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="Front"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t9" source="//@machines.1/@nodes.3" target="//@machines.1/@nodes.0">
+      <trigger event="//@machines.1/@events.4"/>
+    </transitions>
+    <transitions name="t10" source="//@machines.1/@nodes.3" target="//@machines.1/@nodes.4">
+      <trigger event="//@machines.1/@events.3"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.4"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="v"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="lv"/>
+          </args>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="a"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t11" source="//@machines.1/@nodes.4" target="//@machines.1/@nodes.2">
+      <trigger event="//@machines.1/@events.1"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:FloatExp"/>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="Front"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t12" source="//@machines.1/@nodes.4" target="//@machines.1/@nodes.0">
+      <trigger event="//@machines.1/@events.4"/>
+    </transitions>
+    <transitions name="t13" source="//@machines.1/@nodes.4" target="//@machines.1/@nodes.4">
+      <trigger event="//@machines.1/@events.3"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.4"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="v"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="lv"/>
+          </args>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="a"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t14" source="//@machines.1/@nodes.4" target="//@machines.1/@nodes.5">
+      <trigger event="//@machines.1/@events.5"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.7"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="v"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.6"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="odometer"/>
+          </right>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t15" source="//@machines.1/@nodes.5" target="//@machines.1/@nodes.2">
+      <trigger event="//@machines.1/@events.1"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:FloatExp"/>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="Front"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t16" source="//@machines.1/@nodes.5" target="//@machines.1/@nodes.0">
+      <trigger event="//@machines.1/@events.4"/>
+    </transitions>
+    <transitions name="t17" source="//@machines.1/@nodes.5" target="//@machines.1/@nodes.3">
+      <condition xsi:type="robochart:Or">
+        <left xsi:type="robochart:LessThan">
+          <left xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="since"/>
+            <args xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="evasionStartMs"/>
+            </args>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="stuckperiod"/>
+          </right>
+        </left>
+        <right xsi:type="robochart:GreaterThan">
+          <left xsi:type="robochart:Minus">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="d1"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="d0"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="stuckdist"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.5"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="odometer"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.6" _type="OUTPUT">
+            <value xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="l"/>
+            </value>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:Wait">
+          <duration xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="evadetime"/>
+          </duration>
+        </statements>
+      </action>
+      <reset clock="//@machines.1/@clocks.0"/>
+    </transitions>
+    <transitions name="t18" source="//@machines.1/@nodes.5" target="//@machines.1/@nodes.6">
+      <condition xsi:type="robochart:Not">
+        <exp xsi:type="robochart:Or">
+          <left xsi:type="robochart:LessThan">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="since"/>
+              <args xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="evasionStartMs"/>
+              </args>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="stuckperiod"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:GreaterThan">
+            <left xsi:type="robochart:Minus">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="d1"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="d0"/>
+              </right>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="stuckdist"/>
+            </right>
+          </right>
+        </exp>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.7"/>
+        </statements>
+        <statements xsi:type="robochart:Wait">
+          <duration xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="outperiod"/>
+          </duration>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t19" source="//@machines.1/@nodes.6" target="//@machines.1/@nodes.2">
+      <trigger event="//@machines.1/@events.1"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.1/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:FloatExp"/>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="Front"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t20" source="//@machines.1/@nodes.6" target="//@machines.1/@nodes.0">
+      <trigger event="//@machines.1/@events.4"/>
+    </transitions>
+    <transitions name="t21" source="//@machines.1/@nodes.6" target="//@machines.1/@nodes.1">
+      <trigger event="//@machines.1/@events.3"/>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.4"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="v"/>
+          </right>
+        </statements>
+        <statements xsi:type="robochart:Call" operation="//@interfaces.1/@operations.0">
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="lv"/>
+          </args>
+          <args xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="a"/>
+          </args>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t22" source="//@machines.1/@nodes.2" target="//@machines.1/@nodes.2">
+      <trigger event="//@machines.1/@events.1"/>
+    </transitions>
+  </machines>
+  <functions name="analysis">
+    <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+    <parameters name="gs">
+      <type xsi:type="robochart:SeqType">
+        <domain xsi:type="robochart:TypeRef" ref="//@types.5"/>
+      </type>
+    </parameters>
+  </functions>
+  <functions name="intensity">
+    <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+    <parameters name="gs">
+      <type xsi:type="robochart:SeqType">
+        <domain xsi:type="robochart:TypeRef" ref="//@types.5"/>
+      </type>
+    </parameters>
+  </functions>
+  <functions name="location">
+    <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+    <parameters name="gs">
+      <type xsi:type="robochart:SeqType">
+        <domain xsi:type="robochart:TypeRef" ref="//@types.5"/>
+      </type>
+    </parameters>
+  </functions>
+</robochart:RCPackage>

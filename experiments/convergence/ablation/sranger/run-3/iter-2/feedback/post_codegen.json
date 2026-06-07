@@ -1,0 +1,63 @@
+{
+  "phase": "codegen",
+  "label": "sranger ablation run-3 iter-1 cold codegen",
+  "status": "complete",
+  "summary": "Full cold codegen of SRanger from canonical inputs: 9 Java files + result_codegen.json; all 22 requirements traced.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Terminal mode named Stopped, not Final",
+      "raw": "CLAUDE.md mandates no Final state on the theory-generated controller; terminal mode is Stopped with a tick self-loop (bare-precondition operation). Behaviour unchanged: EndTask -> Stopped issues Move(0,0) and never leaves.",
+      "fix_directive": "Review whether renaming the SR-DM1/SR-FR3 'Final' mode to 'Stopped' is acceptable.",
+      "java_trace": [
+        { "file": "src/main/java/sranger/mode/SRangerMode.java", "element": "SRangerMode", "requirement_ids": ["SR-DM1", "SR-FR3"] }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "No power-up actuator command in constructor",
+      "raw": "Initial Move(moveVel,0) entry action represented via entry-action lifting on transitions into Moving; constructor stays pure.",
+      "fix_directive": "Review whether a power-up Move command is required in Java.",
+      "java_trace": [
+        { "file": "src/main/java/sranger/controller/SRangerController.java", "element": "SRangerController", "requirement_ids": ["SR-FR1", "SR-Beh1"] }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Extra tick self-loop on Stopped",
+      "raw": "Not in SR-Beh1..7; added for deadlock-freedom (bare-precondition operation on the terminal mode).",
+      "fix_directive": "Review; only Stopped transition, SR-DC1 still satisfied.",
+      "java_trace": [
+        { "file": "src/main/java/sranger/controller/SRangerController.java", "element": "step", "requirement_ids": ["SR-DC1"] }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading default = 1000.0 m",
+      "raw": "Spec says 'a large default value'; 1000.0 chosen (>> obstacleThreshold 0.5).",
+      "fix_directive": "Confirm default magnitude.",
+      "java_trace": [
+        { "file": "src/main/java/sranger/sensor/Sensor.java", "element": "Sensor", "requirement_ids": ["SR-DM5"] }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Obstacle transition gated on event AND predicate",
+      "raw": "Moving->Turning fires on Obstacle event (SR-Beh2) conjoined with obstacleDetected guard (SR-GP1).",
+      "fix_directive": "Review conjunction vs event-only trigger.",
+      "java_trace": [
+        { "file": "src/main/java/sranger/controller/SRangerController.java", "element": "step", "requirement_ids": ["SR-Beh2", "SR-GP1"] }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Clock units in seconds",
+      "raw": "Clock.now() returns seconds; turnDurationElapsed compares against TURN_DURATION = 2.0 s.",
+      "fix_directive": "Confirm seconds-based clock.",
+      "java_trace": [
+        { "file": "src/main/java/sranger/sensor/Clock.java", "element": "Clock", "requirement_ids": ["SR-Var1", "SR-GP2"] }
+      ]
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile -> isabelle_gen) and check the eight visible phases."
+}

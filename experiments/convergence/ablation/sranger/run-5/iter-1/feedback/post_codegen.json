@@ -1,0 +1,38 @@
+{
+  "phase": "codegen",
+  "status": "complete",
+  "summary": "Iter-1 cold codegen for sranger from canonical inputs (system_description.txt, requirement_all.json, CLAUDE.md, codegen prompt files). 8 Java files + result_codegen.json. All 22 requirements implemented; 4 design choices to review.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Terminal mode named Stopped instead of Final, with a Tick self-loop",
+      "detail": "SR-DM1/SR-FR3 name the terminal mode 'Final'. CLAUDE.md mandates that the theory-generated controller must NOT contain a Final state (the Isabelle deadlock_free closer hangs on it). Encoding: third mode 'Stopped', behaviourally terminal (only outgoing transition is a Tick self-loop, which also provides the bare-precondition cover CLAUDE.md prefers as pattern (b)). Entry action move(0,0) preserved.",
+      "requirement_ids": ["SR-DM1", "SR-FR3", "SR-Beh3", "SR-Beh6"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move(lv, av) output encoded as multi-arg Actuator.move call, not an OutputEvent record",
+      "detail": "RoboChart events carry a single payload; the ETL's designed mapping for two-payload commands is a multi-arg method call extracted as an LOperations operation call. Actuator.move(lv, av) is therefore the Move output channel (SR-DM4); no OutputEvent sealed interface exists.",
+      "requirement_ids": ["SR-DM4", "SR-DM6"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Moving->Turning conjoins the Obstacle event trigger with the obstacleDetected guard",
+      "detail": "SR-Beh2 makes the transition event-triggered; SR-GP1 says obstacleDetected guards the same transition. Both honoured: branch condition is `event instanceof InputEvent.Obstacle && obstacleDetected`.",
+      "requirement_ids": ["SR-Beh2", "SR-GP1"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading default = 100.0 m",
+      "detail": "SR-DM5 requires 'a large default value' without specifying it; 100.0 m chosen (well above OBSTACLE_THRESHOLD 0.5 m).",
+      "requirement_ids": ["SR-DM5"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Power-up Moving entry action fired in the constructor",
+      "detail": "SR-FR1's entry action on initial entry to Moving is issued once in the controller constructor (constructors are not extracted into the model; the model's initial transition covers it there).",
+      "requirement_ids": ["SR-FR1", "SR-Beh1"]
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile -> isabelle_gen) and act on visible feedback."
+}

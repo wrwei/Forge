@@ -1,0 +1,42 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 07-06-2026 08:09:20
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "SRangerController.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate SRangerController
+P_SRangerController = let
+	id__ = 0
+	
+	const_SRangerController_obstacleThreshold = 1
+	const_SRangerController_turnDuration = 2
+	
+	
+within
+	SRangerController::O__(
+		id__,
+		const_SRangerController_obstacleThreshold,
+		const_SRangerController_turnDuration
+	)
+assert P_SRangerController :[deadlock-free]	
+assert P_SRangerController;RUN({r__}) :[deadlock-free]
+assert P_SRangerController :[deterministic]
+assert P_SRangerController :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_SRangerController[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_SRangerController

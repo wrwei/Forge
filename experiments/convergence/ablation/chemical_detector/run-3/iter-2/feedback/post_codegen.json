@@ -1,0 +1,57 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter-1, compile-only ablation run-3)",
+  "status": "complete",
+  "summary": "Cold codegen of the chemical_detector study from system_description.txt + requirement_all.json. Two controllers (GasAnalysisController, MovementController), Vehicle surface, sensor/event/domain layers. 4 invented defaults, 3 design choices.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Chem enum literals invented (Target, Other)",
+      "detail": "CD-DM4 defines Chem as an opaque type with equality only. Implemented as a two-literal enum; 'a reading indicates the target chemical' (CD-Fn1) is interpreted as c == Chem.Target && i > 0.0.",
+      "fix_directive": "Confirm the indication predicate; adjust GasSensors.analysis if a different rule is intended."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor-index to Angle mapping in location()",
+      "detail": "CD-Fn3 references angle(x) without defining it. Implemented 0->Left, 1->Right, 2->Back, otherwise Front (also the empty-reading safe default).",
+      "fix_directive": "Confirm the sensing-direction layout."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Constant values set to 1 / 1.0",
+      "detail": "CD-Const1..6 specify types but no values. All set to 1 (nat) or 1.0 (real) to stay inside the configured FDR4 type ranges [0..1].",
+      "fix_directive": "Replace with the deployment's configured values if known."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Initial values for state variables",
+      "detail": "gs=[], sts=noGas, ins=0.0, anl=Front (GA); a=Front, d0=d1=0.0, l=front, evasionTimer=0 (MV). Spec gives only 'gs initially empty'.",
+      "fix_directive": "Confirm if other initials matter."
+    },
+    {
+      "kind": "design_choice",
+      "title": "No Final state: GA source-found outcome reroutes to Reading",
+      "detail": "CD-GA-Beh6 says the subsystem 'concludes its search' after emitting stop. A Final mode breaks the Isabelle theory generator's deadlock-freedom proof (CLAUDE.md), so GasDetected --[ins >= thr]--> Reading while still emitting stop. Likewise Found (MV) stays live via a stop-triggered self-loop (CD-MV-Beh9 'stays halted').",
+      "fix_directive": "Accept as the documented no-Final workaround, or request a Final state and accept the Isabelle consequence."
+    },
+    {
+      "kind": "design_choice",
+      "title": "CD-OP1..4 implemented as Vehicle methods, not Operation classes",
+      "detail": "The chain-of-thought's types:[\"operation\"] -> compute() class rule does not fit platform operations 'provided by the Vehicle'. move/randomWalk/shortRandomWalk/changeDirection are Vehicle methods invoked from controller actions (move is a 2-arg LOperations Call; the others become events).",
+      "fix_directive": "None expected; flag if Operation classes were intended."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Autonomous-only modes use total guard cover, no self-loops",
+      "detail": "Analysis (sts==gasD / sts==noGas), GasDetected (ins>=thr / !(ins>=thr)), AvoidingAgain (makingProgress / !makingProgress) have jointly-exhaustive guard pairs per the CLAUDE.md total-guard-cover guidance; the M2M deadlock-lint may still advise self-loops on these (known to be too broad).",
+      "fix_directive": "Ignore deadlock-lint advisories for these three modes unless a phase actually fails."
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Obstacle events outside Going/TryingAgain are unhandled",
+      "detail": "CD-MV-Beh* defines obstacle transitions only from Going and TryingAgain. Obstacle arriving in other modes is ignored (no transition).",
+      "fix_directive": "Confirm ignoring is intended."
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile -> isabelle_gen) and iterate on visible feedback only (compile-only ablation)."
+}

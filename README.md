@@ -21,30 +21,33 @@ commands live in [`CLAUDE.md`](CLAUDE.md).
 
 ## Pipeline phases
 
-The pipeline runs twelve phases in order. Each writes a feedback pair
+The pipeline comprises twelve runtime phases, labelled as in the paper (Phases 2a–6d). Each writes a feedback pair
 `forge.assets/corrections/post_<phase>.{md,json}` (human-readable + structured)
 on every run — success or failure — and that feedback is what drives the next
 code-generation iteration.
 
-| # | Phase | Stage | What it does | Catches / produces |
-| - | ----- | ----- | ------------ | ------------------ |
-| 1 | `compile` | codegen check | `gradlew build` of the generated Java project | Java compile errors, before any model extraction |
-| 2 | `coverage` | codegen check | Bidirectional requirement ↔ Java trace (`requirement_all.json` ↔ `result_codegen.json` ↔ source) | requirements with no implementation; public Java elements no requirement claims |
-| 3 | `preflight` | codegen check | Structural lint of the Java against the M2M's extraction constraints | banned constructs and missing `@RoboChartType` annotations that would yield a wrong or uncompilable formal model |
-| 4 | `t2m` | extraction | Spoon discovery: Java source → EMF (Spoon) model | `discovered_model.xmi` |
-| 5 | `m2m` | extraction | ETL transformation: Spoon EMF → RoboChart EMF model | `robochart_model.xmi` (plus advisory deadlock-lint warnings) |
-| 6 | `m2t` | generation | EGL: RoboChart → textual `.rct`, then the RoboChart CSP generator → CSP-M | `robochart_controller.rct`, `csp-gen/` |
-| 7 | `dafny_gen` | generation | Generate Dafny from the extracted model | `<Stm>.dfy` |
-| 8 | `isabelle_gen` | generation | Generate the Isabelle/UTP Z-Machine theory | `<Stm>_Beh.thy` |
-| 9 | `fdr4` | **verifier** | FDR4 refinement check on the CSP-M | deadlock- and divergence-freedom (determinism is *not* checked — the `:[deterministic]` assertions are stripped before invoking FDR4) |
-| 10 | `dafny_verify` | **verifier** | Dafny deductive verification | design-by-contract: pre/postconditions on the controller's transition methods |
-| 11 | `isabelle_verify` | **verifier** | Isabelle/UTP proof (via WSL on Windows) | Z-Machine deadlock-freedom proof + per-operation structural invariants |
-| 12 | `vacuity` | audit | Pure-Python audit of the generated Dafny + Isabelle artefacts | the two "verifier proved something trivial" signals — **D1** (Dafny `Valid()` body is `true`) and **I1** (Isabelle store invariant is `"True"`) |
+| Phase | Manifest key | Stage | What it does | Catches / produces |
+| ----- | ------------ | ----- | ------------ | ------------------ |
+| 2a | `compile` | codegen check | `gradlew build` of the generated Java project | Java compile errors, before any model extraction |
+| 2b | `coverage` | codegen check | Bidirectional requirement ↔ Java trace (`requirement_all.json` ↔ `result_codegen.json` ↔ source) | requirements with no implementation; public Java elements with no requirement claim |
+| 2c | `preflight` | codegen check | Structural lint of the Java against the M2M's extraction constraints | banned constructs and missing `@RoboChartType` annotations that would yield a wrong or uncompilable formal model |
+| 3 | `t2m` | extraction | Spoon discovery: Java source → EMF (Spoon) model | `discovered_model.xmi` |
+| 4 | `m2m` | extraction | ETL transformation: Spoon EMF → RoboChart EMF model | `robochart_model.xmi` (plus advisory deadlock-lint warnings) |
+| 5a | `dafny_gen` | generation | EGL: extracted Java EMF model → Dafny specification | `<Stm>.dfy` |
+| 5b | `m2t` | generation | EGL: RoboChart → textual `.rct`, then the RoboChart CSP generator → CSP-M | `robochart_controller.rct`, `csp-gen/` |
+| 5c | `isabelle_gen` | generation | EGL: RoboChart EMF → Isabelle/UTP Z-Machine theory | `<Stm>_Beh.thy` |
+| 6a | `dafny_verify` | **verifier** | Dafny deductive verification | design-by-contract: pre/postconditions on the controller's transition methods |
+| 6b | `fdr4` | **verifier** | FDR4 refinement check on the CSP-M | deadlock- and divergence-freedom (determinism is *not* checked — the `:[deterministic]` assertions are stripped before invoking FDR4) |
+| 6c | `isabelle_verify` | **verifier** | Isabelle/UTP proof (via WSL on Windows) | Z-Machine deadlock-freedom proof + per-operation structural invariants |
+| 6d | `vacuity` | audit | Pure-Python audit of the generated Dafny + Isabelle artefacts | the two "verifier proved something trivial" signals — **D1** (Dafny `Valid()` body is `true`) and **I1** (Isabelle store invariant is `"True"`) |
 
-Phases 1–3 check the Java before it is transformed; 4–8 extract the formal model
-and emit each verifier's artefact; 9–11 are the three independent verifiers;
-12 guards against vacuous success. **Convergence** = every phase reports
-`passed`/`completed` **and** the vacuity audit returns zero findings.
+Phases 2a–2c check the Java before it is transformed; 3–5c extract the formal
+model and emit each verifier's artefact; 6a–6c are the three independent
+verifiers; 6d guards against vacuous success. (Within Phases 5 and 6 the
+manifest's execution order differs from the letter order — e.g. CSP generation
+`m2t` (5b) runs before Dafny generation `dafny_gen` (5a), and `fdr4` (6b) before
+`dafny_verify` (6a); the labels follow the paper.) **Convergence** = every phase
+reports `passed`/`completed` **and** the vacuity audit returns zero findings.
 
 ## Repository layout
 

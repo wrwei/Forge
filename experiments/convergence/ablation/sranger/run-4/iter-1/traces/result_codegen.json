@@ -1,0 +1,29 @@
+{
+  "study": "sranger",
+  "codegen_trace": [
+    {"requirement_gid": "SR-ARCH1", "java_element": "SRangerController", "java_file": "sranger/controller/SRangerController.java", "note": "Reactive single-controller system: IR-driven obstacle event in, advisory motor commands out, endTask shutdown."},
+    {"requirement_gid": "SR-ARCH2", "java_element": "SRangerController", "java_file": "sranger/controller/SRangerController.java", "note": "Controller composes Sensor, Actuator, Clock (clockResetTime state variable) and one mode-nested state machine in step()."},
+    {"requirement_gid": "SR-DM1", "java_element": "SRangerMode", "java_file": "sranger/mode/SRangerMode.java", "note": "Three modes; terminal mode named Halted instead of Final per CLAUDE.md rule that the theory-generated controller must not contain a Final state. Semantics preserved: absorbing, entered on endTask."},
+    {"requirement_gid": "SR-DM2", "java_element": "SRangerConstants", "java_file": "sranger/constants/SRangerConstants.java", "note": "MOVE_VEL=1.0, TURN_VEL=2.0, OBSTACLE_THRESHOLD=0.5, TURN_DURATION=2.0."},
+    {"requirement_gid": "SR-DM3", "java_element": "InputEvent", "java_file": "sranger/event/InputEvent.java", "note": "Sealed interface with signal records Obstacle, Tick, EndTask."},
+    {"requirement_gid": "SR-DM4", "java_element": "move", "java_file": "sranger/actuator/Actuator.java", "note": "Single output Move(lv, av) realised as the multi-arg Actuator.move(lv, av) invocation (RoboChart operation call)."},
+    {"requirement_gid": "SR-DM5", "java_element": "Sensor", "java_file": "sranger/sensor/Sensor.java", "note": "distance() returns latest IR reading; large default (1000.0) when no reading is available."},
+    {"requirement_gid": "SR-DM6", "java_element": "Actuator", "java_file": "sranger/actuator/Actuator.java", "note": "Stores last commanded lv/av, exposed via lastLinearVel()/lastAngularVel()."},
+    {"requirement_gid": "SR-SF1", "java_element": "distance", "java_file": "sranger/sensor/Sensor.java", "note": "Sole sensor measurement consumed by the controller."},
+    {"requirement_gid": "SR-Var1", "java_element": "clockResetTime", "java_file": "sranger/controller/SRangerController.java", "note": "Real field reset via timer.nowMs() on Moving -> Turning; compared against TURN_DURATION on Turning -> Moving."},
+    {"requirement_gid": "SR-Var1", "java_element": "Clock", "java_file": "sranger/time/Clock.java", "note": "Time source (nowMs) backing clockResetTime."},
+    {"requirement_gid": "SR-FR1", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Moving entry action Move(MOVE_VEL, 0): issued in the constructor on power-up and on the Turning -> Moving branch."},
+    {"requirement_gid": "SR-FR2", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Turning entry: clockResetTime = timer.nowMs(); actuator.move(0, TURN_VEL) on the Moving -> Turning branch."},
+    {"requirement_gid": "SR-FR3", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Halted entry: actuator.move(0, 0) on both endTask branches."},
+    {"requirement_gid": "SR-GP1", "java_element": "obstacleDetected", "java_file": "sranger/controller/SRangerController.java", "note": "Named predicate sensor.distance() <= OBSTACLE_THRESHOLD guarding Moving -> Turning."},
+    {"requirement_gid": "SR-GP2", "java_element": "turnDurationElapsed", "java_file": "sranger/controller/SRangerController.java", "note": "Named predicate timer.nowMs() - clockResetTime >= TURN_DURATION guarding Turning -> Moving."},
+    {"requirement_gid": "SR-Beh1", "java_element": "currentMode", "java_file": "sranger/controller/SRangerController.java", "note": "Field initialiser SRangerMode.Moving — initial state on power-up."},
+    {"requirement_gid": "SR-Beh2", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Moving block: obstacle event && obstacleDetected -> Turning with clock reset and Move(0, TURN_VEL)."},
+    {"requirement_gid": "SR-Beh3", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Moving block: endTask -> Halted with Move(0, 0)."},
+    {"requirement_gid": "SR-Beh4", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Moving block: tick self-loop, no action."},
+    {"requirement_gid": "SR-Beh5", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Turning block: autonomous turnDurationElapsed -> Moving with Move(MOVE_VEL, 0)."},
+    {"requirement_gid": "SR-Beh6", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Turning block: endTask -> Halted with Move(0, 0)."},
+    {"requirement_gid": "SR-Beh7", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Turning block: tick self-loop, no action."},
+    {"requirement_gid": "SR-DC1", "java_element": "step", "java_file": "sranger/controller/SRangerController.java", "note": "Each Beh requirement maps to exactly one inner branch; one extra tick self-loop on Halted (not in SR-Beh1..7) added for bare-precondition cover of the absorbing mode."}
+  ]
+}

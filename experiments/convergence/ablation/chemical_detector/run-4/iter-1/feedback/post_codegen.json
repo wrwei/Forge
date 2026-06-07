@@ -1,0 +1,73 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (chemical_detector, compile-only ablation run, iter-1)",
+  "status": "uncertain",
+  "summary": "Cold codegen of the chemical_detector study from requirement_all.json + system_description.txt. All 81 requirements implemented; 7 issues flagged: invented constant values, primitive realisations of opaque types, a live Concluded mode replacing the GA Final state, and invented classifier defaults.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Constant values not specified by CD-Const1..6",
+      "raw": "THR=1.0, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=1, STUCK_DIST=1.0, OUT_PERIOD=1 chosen arbitrarily (small values keep the FDR4 state space small; fractional values would be ceiled by CSP-gen anyway). TARGET_CHEM=1 invented entirely — no requirement names the target chemical's identity.",
+      "fix_directive": "Confirm or supply the configured startup values for thr, lv, evadeTime, stuckPeriod, stuckDist, outPeriod, and the target chemical id.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/data/CdConstants.java", "element": "CdConstants", "requirement_ids": ["CD-Const1", "CD-Const2", "CD-Const3", "CD-Const4", "CD-Const5", "CD-Const6"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Chem and Intensity realised as annotated primitives, not wrapper types",
+      "raw": "CD-DM4 (Chem, opaque, equality-only) is int @RoboChartType(\"nat\"); CD-DM5 (Intensity, totally ordered) is double @RoboChartType(\"real\"). Wrapper records were rejected because guard comparisons (ins >= thr) and the Constants interface only extract over primitives, and multi-arg functions (goreq(a,b)) are not extractable in guard positions — goreq exists as a static helper used inside intensity().",
+      "fix_directive": "If distinct formal types Chem/Intensity are required in the RoboChart model, the extraction pipeline needs given-type support first; otherwise accept the primitive realisation.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/data/GasSensor.java", "element": "GasSensor", "requirement_ids": ["CD-DM4", "CD-DM5"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "GA terminal state is a live Concluded mode, not a Final state",
+      "raw": "CD-GA-Beh6 says the gas-analysis subsystem 'concludes its search, processing no further readings'. A RoboChart Final state would make the generated Isabelle theory's deadlock-freedom goal unprovable (CLAUDE.md: theory-generated controller must not contain Final). Instead GasDetected --[ins >= thr]--> Concluded emits stop; Concluded consumes further gas events in a guard-free self-loop and discards them.",
+      "fix_directive": "Accept the live-sink encoding, or relax the no-Final constraint in the theory generator.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/controller/GasAnalysisController.java", "element": "step", "requirement_ids": ["CD-GA-Beh6", "CD-GA-FR4"]}
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Classifier semantics of analysis() invented",
+      "raw": "CD-Fn1 does not define 'a reading indicates the target chemical'. Implemented as: any sample with c == TARGET_CHEM and i > 0.0 yields gasD. Empty readings yield noGas; intensity() of an empty reading is 0.0 and location() of an empty reading is Front (safe defaults so the controller needs no sentinel checks).",
+      "fix_directive": "Confirm the detection predicate (strictly-positive intensity on the target chemical) and the empty-reading defaults.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/sensor/GasAnalyzer.java", "element": "analysis", "requirement_ids": ["CD-Fn1", "CD-Fn2", "CD-Fn3"]}
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensing-direction index to Angle mapping invented",
+      "raw": "CD-Fn3 references an angle(x) mapping from 1-based sensor position to direction but never defines it. Implemented 0-based as idx % 4 -> Front, Left, Back, Right.",
+      "fix_directive": "Supply the real sensor-array geometry if the cyclic Front/Left/Back/Right assignment is wrong.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/sensor/GasAnalyzer.java", "element": "location", "requirement_ids": ["CD-Fn3"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Waiting's during-action randomWalk() realised as top-of-mode statement",
+      "raw": "CD-MV-FR1 specifies randomWalk() as a during action. The extraction pipeline models top-of-mode statements as state entry actions and has no during-action support, so vehicle.randomWalk() sits at the head of the Waiting block (re-issued on every cycle spent in Waiting, which matches during semantics operationally). Found's entry (flag + halt) and the per-transition entry actions of Avoiding/TryingAgain/GettingOut/Going are duplicated inline on each incoming transition, including the full Avoiding entry (d0 sample, timer restart, changeDirection, evadeTime wait) on the AvoidingAgain->Avoiding return path per CD-MV-Beh17/CD-MV-Var2.",
+      "fix_directive": "Accept entry-action realisation of the during action, or extend the pipeline with during support.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/controller/MovementController.java", "element": "step", "requirement_ids": ["CD-MV-FR1", "CD-MV-FR3", "CD-MV-Beh17"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Liveness self-loops on terminal modes; relay realisation of shared events; changeDirection arity",
+      "raw": "(a) Found self-loops on stop (CD-MV-Beh9 'stays halted') and Concluded self-loops on gas — each terminal mode keeps one guard-free event-triggered transition so every state retains a bare-precondition operation without a tau-self-loop. (b) turn/stop/resume are MovementEvent records emitted by the gas-analysis controller through AnalysisRelay.apply(new MovementEvent.X(...)) and consumed by MovementController.step — the CD-ARCH2 'communicate only via turn, stop, resume' channel. (c) changeDirection takes (velocity, side) although CD-OP4 writes changeDirection(l): the linear-velocity constant is passed explicitly so the call extracts as a 2-arg operation call rather than collapsing into a single-payload event.",
+      "fix_directive": "Review the three encodings; all are formal-model-extraction-driven, none changes observable behaviour.",
+      "java_trace": [
+        {"file": "src/main/java/chemdetector/controller/MovementController.java", "element": "step", "requirement_ids": ["CD-MV-Beh9", "CD-ARCH2", "CD-OP4"]},
+        {"file": "src/main/java/chemdetector/actuator/AnalysisRelay.java", "element": "apply", "requirement_ids": ["CD-ARCH2"]}
+      ]
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile -> coverage -> preflight -> t2m -> m2m -> m2t -> dafny_gen -> isabelle_gen) and iterate on visible feedback."
+}

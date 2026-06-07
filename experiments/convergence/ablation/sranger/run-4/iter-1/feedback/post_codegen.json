@@ -1,0 +1,54 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation",
+  "status": "complete_with_notes",
+  "study": "sranger",
+  "run": "ablation-run-4",
+  "iter": 1,
+  "summary": "Cold codegen of SRanger: 8 files, 21/21 requirements traced in result_codegen.json.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Terminal mode named Halted, not Final",
+      "detail": "CLAUDE.md: the theory-generated controller must not contain a Final state. Semantics preserved (absorbing, entered on endTask, entry Move(0,0)).",
+      "java_trace": [{"file": "sranger/mode/SRangerMode.java", "element": "SRangerMode", "requirement_ids": ["SR-DM1", "SR-FR3"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Tick self-loop on Halted",
+      "detail": "Added beyond SR-Beh1..7 to give the absorbing mode a bare-precondition event-triggered transition (CLAUDE.md pattern (b)).",
+      "java_trace": [{"file": "sranger/controller/SRangerController.java", "element": "step", "requirement_ids": ["SR-DC1"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move(lv, av) as multi-arg operation call",
+      "detail": "actuator.move(lv, av) maps to an LOperations Call; no two-payload output event record emitted.",
+      "java_trace": [{"file": "sranger/actuator/Actuator.java", "element": "move", "requirement_ids": ["SR-DM4"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Clock units treated as abstract",
+      "detail": "Clock.nowMs() (convention name) compared directly against TURN_DURATION = 2.0 s; no ms/s conversion.",
+      "java_trace": [{"file": "sranger/time/Clock.java", "element": "Clock", "requirement_ids": ["SR-Var1", "SR-GP2"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Initial Moving entry action in constructor",
+      "detail": "Move(MOVE_VEL, 0) issued at power-up from the constructor; also on the Turning -> Moving branch.",
+      "java_trace": [{"file": "sranger/controller/SRangerController.java", "element": "SRangerController", "requirement_ids": ["SR-FR1", "SR-Beh1"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Obstacle transition combines trigger and guard",
+      "detail": "event instanceof Obstacle && obstacleDetected per SR-Beh2 + SR-GP1.",
+      "java_trace": [{"file": "sranger/controller/SRangerController.java", "element": "step", "requirement_ids": ["SR-Beh2", "SR-GP1"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading default = 1000.0 m",
+      "detail": "Spec says only 'a large default value'.",
+      "java_trace": [{"file": "sranger/sensor/Sensor.java", "element": "Sensor", "requirement_ids": ["SR-DM5"]}]
+    }
+  ],
+  "next_step": "Run experiments/scripts/run_experiment_iteration.py and act on visible compile/extraction feedback."
+}

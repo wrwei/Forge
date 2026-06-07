@@ -1,0 +1,197 @@
+{
+  "study": "sranger",
+  "codegen_trace": [
+    {
+      "requirement_gid": "SR-ARCH1",
+      "requirement_name": "SystemArchitecture",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "SRangerController",
+      "element_kind": "class",
+      "notes": "Reactive single-controller architecture: IR sensor input, differential-drive actuator output, endTask shutdown."
+    },
+    {
+      "requirement_gid": "SR-ARCH2",
+      "requirement_name": "ControllerArchitecture",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "SRangerController",
+      "element_kind": "class",
+      "notes": "Composed of Sensor, Actuator, clockResetTime state variable, and the single step() state machine."
+    },
+    {
+      "requirement_gid": "SR-DM1",
+      "requirement_name": "SRangerMode",
+      "java_file": "src/main/java/sranger/mode/SRangerMode.java",
+      "java_element": "SRangerMode",
+      "element_kind": "enum",
+      "notes": "Moving (initial), Turning, Halted. The spec's terminal mode 'Final' is named Halted because the pipeline's theory generator cannot prove deadlock-freedom for a state named Final (CLAUDE.md constraint); Halted is absorbing via a tick self-loop."
+    },
+    {
+      "requirement_gid": "SR-DM2",
+      "requirement_name": "SRangerConstants",
+      "java_file": "src/main/java/sranger/constants/SRangerConstants.java",
+      "java_element": "SRangerConstants",
+      "element_kind": "class",
+      "notes": "MOVE_VEL=1.0, TURN_VEL=2.0, OBSTACLE_THRESHOLD=0.5, TURN_DURATION=2.0."
+    },
+    {
+      "requirement_gid": "SR-DM3",
+      "requirement_name": "InputEvent",
+      "java_file": "src/main/java/sranger/event/InputEvent.java",
+      "java_element": "InputEvent",
+      "element_kind": "sealed interface",
+      "notes": "Records Obstacle, Tick, EndTask (signal events, no payload)."
+    },
+    {
+      "requirement_gid": "SR-DM4",
+      "requirement_name": "OutputEvent",
+      "java_file": "src/main/java/sranger/actuator/Actuator.java",
+      "java_element": "move",
+      "element_kind": "method",
+      "notes": "Move(lv, av) is encoded as the multi-arg actuator method move(lv, av); the extraction models multi-payload outputs as an LOperations operation call (RoboChart events carry a single payload)."
+    },
+    {
+      "requirement_gid": "SR-DM5",
+      "requirement_name": "SensorInterface",
+      "java_file": "src/main/java/sranger/sensor/Sensor.java",
+      "java_element": "Sensor",
+      "element_kind": "class",
+      "notes": "distance() returns latest IR reading; field default 1000.0 m until the first update() so obstacle detection is not falsely triggered."
+    },
+    {
+      "requirement_gid": "SR-DM6",
+      "requirement_name": "Actuator",
+      "java_file": "src/main/java/sranger/actuator/Actuator.java",
+      "java_element": "Actuator",
+      "element_kind": "class",
+      "notes": "Stores last issued command; exposed via lastLinearVel()/lastAngularVel()."
+    },
+    {
+      "requirement_gid": "SR-SF1",
+      "requirement_name": "Distance",
+      "java_file": "src/main/java/sranger/sensor/Sensor.java",
+      "java_element": "distance",
+      "element_kind": "method",
+      "notes": "Sole sensor measurement consumed by the controller."
+    },
+    {
+      "requirement_gid": "SR-Var1",
+      "requirement_name": "Variable_clockResetTime",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "clockResetTime",
+      "element_kind": "field",
+      "notes": "Set from timer.nowSeconds() on the Moving -> Turning transition; promoted to a RoboChart clock by the extraction. Clock.nowSeconds() (sranger/time/Clock.java) is the supporting time source."
+    },
+    {
+      "requirement_gid": "SR-Var1",
+      "requirement_name": "Variable_clockResetTime",
+      "java_file": "src/main/java/sranger/time/Clock.java",
+      "java_element": "nowSeconds",
+      "element_kind": "method",
+      "notes": "Time source backing clockResetTime and the turnDurationElapsed predicate."
+    },
+    {
+      "requirement_gid": "SR-FR1",
+      "requirement_name": "StateMoving",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "method",
+      "notes": "Moving entry action Move(MOVE_VEL, 0) issued on the Turning -> Moving transition and at construction (initial entry)."
+    },
+    {
+      "requirement_gid": "SR-FR2",
+      "requirement_name": "StateTurning",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "method",
+      "notes": "Turning entry: Move(0, TURN_VEL) and clockResetTime = now on the Moving -> Turning branch."
+    },
+    {
+      "requirement_gid": "SR-FR3",
+      "requirement_name": "StateFinal",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "method",
+      "notes": "Terminal mode implemented as Halted (see SR-DM1 note); entry action Move(0, 0) on both endTask branches; absorbing via tick self-loop."
+    },
+    {
+      "requirement_gid": "SR-GP1",
+      "requirement_name": "GuardPredicate_obstacleDetected",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "named predicate",
+      "notes": "boolean obstacleDetected = sensor.distance() <= SRangerConstants.OBSTACLE_THRESHOLD; guards the Moving -> Turning branch."
+    },
+    {
+      "requirement_gid": "SR-GP2",
+      "requirement_name": "GuardPredicate_turnDurationElapsed",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "named predicate",
+      "notes": "boolean turnDurationElapsed = timer.nowSeconds() - clockResetTime >= SRangerConstants.TURN_DURATION; guards the autonomous Turning -> Moving branch."
+    },
+    {
+      "requirement_gid": "SR-Beh1",
+      "requirement_name": "InitialState",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "currentMode",
+      "element_kind": "field",
+      "notes": "Initialised to SRangerMode.Moving."
+    },
+    {
+      "requirement_gid": "SR-Beh2",
+      "requirement_name": "Moving_to_Turning",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "transition branch",
+      "notes": "Moving block: event instanceof Obstacle && obstacleDetected -> Turning; resets clockResetTime and issues Move(0, TURN_VEL)."
+    },
+    {
+      "requirement_gid": "SR-Beh3",
+      "requirement_name": "Moving_to_Final",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "transition branch",
+      "notes": "Moving block: event instanceof EndTask -> Halted; issues Move(0, 0). Highest-priority branch."
+    },
+    {
+      "requirement_gid": "SR-Beh4",
+      "requirement_name": "Moving_to_Moving_tick",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "transition branch",
+      "notes": "Moving block: event instanceof Tick -> Moving, no action."
+    },
+    {
+      "requirement_gid": "SR-Beh5",
+      "requirement_name": "Turning_to_Moving",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "transition branch",
+      "notes": "Turning block: autonomous turnDurationElapsed -> Moving; issues Move(MOVE_VEL, 0)."
+    },
+    {
+      "requirement_gid": "SR-Beh6",
+      "requirement_name": "Turning_to_Final",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "transition branch",
+      "notes": "Turning block: event instanceof EndTask -> Halted; issues Move(0, 0). Highest-priority branch."
+    },
+    {
+      "requirement_gid": "SR-Beh7",
+      "requirement_name": "Turning_to_Turning_tick",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "transition branch",
+      "notes": "Turning block: event instanceof Tick -> Turning, no action."
+    },
+    {
+      "requirement_gid": "SR-DC1",
+      "requirement_name": "UniqueTransitions",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "element_kind": "constraint",
+      "notes": "Each (source mode, trigger) pair appears in exactly one branch. One extra transition beyond SR-Beh1..7 exists — the Halted tick self-loop — required by the pipeline's deadlock-freedom constraint (bare-precondition cover per CLAUDE.md); it introduces no duplicate (source, trigger) pair."
+    }
+  ]
+}

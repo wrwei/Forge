@@ -1,0 +1,50 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 06-06-2026 21:35:16
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "GasAnalysisController.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate GasAnalysisController
+P_GasAnalysisController = let
+	id__ = 0
+	
+	const_GasAnalysisController_thr = 1
+	const_GasAnalysisController_lv = 1
+	const_GasAnalysisController_evadeTime = 1
+	const_GasAnalysisController_stuckPeriod = 1
+	const_GasAnalysisController_stuckDist = 1
+	const_GasAnalysisController_outPeriod = 1
+	
+	
+within
+	GasAnalysisController::O__(
+		id__,
+		const_GasAnalysisController_thr,
+		const_GasAnalysisController_lv,
+		const_GasAnalysisController_evadeTime,
+		const_GasAnalysisController_stuckPeriod,
+		const_GasAnalysisController_stuckDist,
+		const_GasAnalysisController_outPeriod
+	)
+assert P_GasAnalysisController :[deadlock-free]	
+assert P_GasAnalysisController;RUN({r__}) :[deadlock-free]
+assert P_GasAnalysisController :[deterministic]
+assert P_GasAnalysisController :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_GasAnalysisController[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_GasAnalysisController

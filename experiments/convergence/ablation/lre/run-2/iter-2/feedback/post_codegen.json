@@ -1,0 +1,44 @@
+{
+  "phase": "codegen",
+  "label": "Post-Codegen Review — lre (compile-only ablation run, iter 1)",
+  "status": "uncertain",
+  "summary": "Cold codegen of the LRE controller. 15 Java files. All requirements traced. Five issues: two invented defaults, two ambiguous requirements, one design choice.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "NO_OBSTACLE_DISTANCE = 1000.0",
+      "raw": "LRE-DM5 requires a 'safe large distance' when no obstacle exists but gives no value. Used 1000.0.",
+      "fix_directive": "Confirm 1000.0 is acceptable; all guard thresholds are ~1.0 so any value >> 1 behaves identically.",
+      "java_trace": [{"file": "src/main/java/lre/sensor/Sensor.java", "element": "NO_OBSTACLE_DISTANCE", "requirement_ids": ["LRE-DM5"]}]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "DM5 vs OP5 no-obstacle accessor defaults conflict",
+      "raw": "LRE-DM5 says position/velocity accessors return zero when no obstacle exists; LRE-OP5 says the Sensor layer returns zero-velocity and large-distance defaults. Zero relative position would make cda=0 and spuriously trigger MOM->CAM. Resolved per OP5: nsRelDist/ewRelDist return 1000.0, obsNsVel/obsEwVel return 0.0.",
+      "fix_directive": "Confirm the OP5 reading; if DM5's literal zero is required, CalcCPA needs an explicit no-dynamic-obstacle branch.",
+      "java_trace": [{"file": "src/main/java/lre/sensor/Sensor.java", "element": "nsRelDist", "requirement_ids": ["LRE-DM5", "LRE-OP5"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "CalcCPA formula and separating-obstacle convention",
+      "raw": "LRE-OP5 gives no formulae. Used 2D CPA: tcpa = -(p.v)/(v.v); cda = |p + v*tcpa| when tcpa >= 0 else current horizontal distance; tcpa = -1.0 when relative speed is zero.",
+      "fix_directive": "Confirm the horizontal-plane CPA formulation and the tcpa=-1 no-approach convention.",
+      "java_trace": [{"file": "src/main/java/lre/operation/CalcCPA.java", "element": "compute", "requirement_ids": ["LRE-OP5"]}]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CAM entry action unspecified",
+      "raw": "LRE-FR4 specifies no advisory on entering CAM (unlike MOM advVel(1) and HCM advVel(0)). No entry action emitted.",
+      "fix_directive": "Confirm CAM has no entry advisory.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "step", "requirement_ids": ["LRE-FR4"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Transition priority order within MOM/HCM; Beh4 literal 1.0",
+      "raw": "No explicit priority given. Chose operator reqOCM/endTask first, then autonomous safety (inOpez, CAM, HCM Beh9/10/11), then reqHCM last. Beh4 'greater than 1' coded as literal 1.0.",
+      "fix_directive": "Confirm inner if-else ordering and the literal 1.0 in the OCM->MOM guard.",
+      "java_trace": [{"file": "src/main/java/lre/controller/LreController.java", "element": "step", "requirement_ids": ["LRE-Beh4", "LRE-Beh6", "LRE-Beh7", "LRE-Beh12"]}]
+    }
+  ],
+  "next_step": "Run the pipeline and iterate on the eight visible feedback files."
+}

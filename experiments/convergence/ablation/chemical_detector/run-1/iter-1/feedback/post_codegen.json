@@ -1,0 +1,49 @@
+{
+  "phase": "codegen",
+  "label": "Phase 2 — Interactive Code Generation (iter 1, cold)",
+  "status": "complete",
+  "summary": "Cold codegen for chemical_detector from canonical inputs: 18 Java files, 2 controllers (GasAnalysisController, MovementController), shared turn/stop/resume events via SignalBus emissions matched by name to MovementEvent triggers.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "No Final mode in either controller",
+      "detail": "CD-GA-Beh6 says the gas-analysis subsystem 'concludes its search' after emitting stop. Per CLAUDE.md (theory-generated controller must not contain a Final state), the terminal transition instead enters a live 'Finished' mode that self-loops on gas events without re-analysing. Similarly the movement subsystem's Found mode self-loops on stop (CD-MV-Beh9 'stays halted')."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Finished self-loop captures the gas payload",
+      "detail": "The Finished self-loop re-captures the gas reading into gs (required so the typed gas trigger keeps its payload binding) but performs no analysis. CD-GA-Beh6 says 'processing no further readings'; readings are consumed-and-ignored, not refused."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Chem enum values and the target chemical",
+      "detail": "CD-DM4 makes Chem opaque with equality only. Implemented as enum {chemA, chemB} with Sensor.target = chemA. Arbitrary; only equality is used."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor index-to-Angle mapping",
+      "detail": "CD-Fn3's angle(x) mapping is not specified. Implemented 0->Front, 1->Left, 2->Right, >=3->Back; empty reading returns Front (safe default per codegen rules)."
+    },
+    {
+      "kind": "invented_default",
+      "title": "Constant values",
+      "detail": "All constants are configured-at-startup with unspecified values. Chose THR=1.0, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=1, STUCK_DIST=1.0, OUT_PERIOD=1 to stay inside the FDR4 {0..1} type ranges."
+    },
+    {
+      "kind": "design_choice",
+      "title": "analysis() positive-intensity criterion",
+      "detail": "CD-Fn1 says noGas 'if no reading indicates the target chemical'. Implemented as: gasD iff some sample has c == target AND i > 0.0."
+    },
+    {
+      "kind": "design_choice",
+      "title": "changeDirection extracted as event, not operation",
+      "detail": "Single-arg vehicle calls become RoboChart Communications under the M2M conventions (only multi-arg calls become LOperations Calls). CD-OP4's changeDirection(l) therefore appears as a typed output event in the model; its steering semantics live in Vehicle.changeDirection."
+    },
+    {
+      "kind": "design_choice",
+      "title": "Autonomous modes use total guard cover",
+      "detail": "Analysis (sts==noGas / sts==gasD over the two-valued Status enum), GasDetected (insAtOrAboveThr / !insAtOrAboveThr) and AvoidingAgain's two autonomous outcomes (progress / stuck, complementary) are jointly-exhaustive guard pairs, per CLAUDE.md's preference over self-loops for autonomous-only modes."
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (run_experiment_iteration.py) and read the eight visible phase feedback files."
+}

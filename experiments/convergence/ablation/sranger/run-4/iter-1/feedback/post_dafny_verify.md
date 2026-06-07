@@ -1,0 +1,39 @@
+# 6a — Dafny Verification — FAILED
+
+## Summary
+Dafny: 1 file(s), 4 verified, 1 errors.
+
+## Run history
+- New this run: 1
+- Recurring from previous run: 0
+- Resolved since previous run: 0
+
+## Issues
+### Issue 1: dafny_postcondition — Postcondition could not be proved
+
+**Raw**
+```
+forge.transformations/output/SRangerController.dfy(70,?): Error: a postcondition could not be proved on this return path
+```
+
+**Java trace**
+  - RoboChart: TransitionMethod `Turning`
+  - Java: `SRangerController.java`:39-69 (Turning)
+  - Requirement(s): SR-ARCH1, SR-ARCH2, SR-Beh1, SR-Beh2, SR-Beh3, SR-Beh4, SR-Beh5, SR-Beh6, SR-Beh7, SR-DC1, SR-FR1, SR-FR2, SR-FR3, SR-GP1, SR-GP2, SR-Var1
+
+**Fix directive**
+The method body cannot be shown to satisfy its `ensures` clause(s). Inspect the Java method linked below: either the body is missing a case, or the postcondition is too strong given the body's actual behaviour.
+
+Related requirements:
+  - SR-ARCH1 (SystemArchitecture): The SRanger system is a small ground robot that travels in a straight line and turns in place when it detects an obstacle. The robot carries a single infrare...
+  - SR-ARCH2 (ControllerArchitecture): The SRanger controller is composed of: (1) a Sensor interface that exposes the latest IR distance reading, (2) an Actuator interface that records the last mo...
+  - SR-Beh1 (InitialState): On power-up, the SRanger controller begins in Moving.
+  - SR-Beh2 (Moving_to_Turning): The SRanger controller transitions from Moving to Turning when the obstacle event is received. On this transition, set clockResetTime to the current time and...
+  - ... (12 more)
+
+## Files to review
+- SRangerController.java
+- SRangerMode.java
+
+## Next step
+Read each issue above, follow the fix directive, edit the linked Java file, re-run Phase 5b (Dafny Generation), then Phase 6b (Dafny Verification).

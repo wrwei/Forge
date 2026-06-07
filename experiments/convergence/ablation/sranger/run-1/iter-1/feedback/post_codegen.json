@@ -1,0 +1,45 @@
+{
+  "phase": "codegen",
+  "label": "Phase 2 — Interactive code generation (sranger, ablation run-1, iter-1 cold codegen)",
+  "status": "complete",
+  "summary": "Full cold codegen of the SRanger controller from system_description.txt + requirement_all.json. 8 Java files, all 22 requirements traced in result_codegen.json. Two pipeline-driven design choices and one invented default documented below.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Terminal mode named 'Halted' instead of the spec's 'Final'",
+      "detail": "CLAUDE.md mandates that the theory-generated controller contain no Final state (the Isabelle deadlock_free closer hangs on it). The terminal mode of SR-DM1/SR-FR3 is therefore the ordinary mode 'Halted', kept absorbing via a tick-triggered self-loop (bare-precondition pattern (b) from CLAUDE.md). Semantics are unchanged: entry issues Move(0,0), no transition ever leaves Halted except the no-op tick self-loop.",
+      "requirement_ids": ["SR-DM1", "SR-FR3", "SR-Beh3", "SR-Beh6"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move(lv, av) encoded as multi-arg actuator call, not an OutputEvent record",
+      "detail": "RoboChart events carry a single payload; the ETL's documented encoding for multi-payload outputs is a multi-arg method call that becomes an LOperations OperationSig. The controller therefore calls actuator.move(lv, av) directly instead of constructing an OutputEvent.Move record (whose second payload the extraction would drop).",
+      "requirement_ids": ["SR-DM4", "SR-DM6"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Extra transition beyond SR-Beh1..7: Halted tick self-loop",
+      "detail": "Required so every mode has bare-precondition transition cover for the Isabelle deadlock_free proof (CLAUDE.md). It introduces no duplicate (source, trigger) pair, so SR-DC1 still holds.",
+      "requirement_ids": ["SR-DC1", "SR-FR3"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading default = 1000.0 m",
+      "detail": "SR-DM5 requires 'a large default value' without naming it; 1000.0 m (>> OBSTACLE_THRESHOLD 0.5 m) chosen as the field initialiser.",
+      "requirement_ids": ["SR-DM5"]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Initial Move(MOVE_VEL, 0) issued in the constructor",
+      "detail": "SR-FR1 says the controller issues Move(moveVel, 0) on entering Moving, and power-up enters Moving (SR-Beh1). The constructor issues the command so the Java behaviour matches; the formal model's initial transition may not carry this action (constructor statements are not extracted as transition actions).",
+      "requirement_ids": ["SR-FR1", "SR-Beh1"]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Event/record names capitalised relative to the spec",
+      "detail": "Spec events obstacle/tick/endTask are Java records Obstacle/Tick/EndTask; spec constants moveVel etc. are MOVE_VEL etc. Names pass into the model verbatim in their Java casing.",
+      "requirement_ids": ["SR-DM3", "SR-DM2"]
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile -> isabelle_gen) and act on visible feedback only (compile-only ablation)."
+}

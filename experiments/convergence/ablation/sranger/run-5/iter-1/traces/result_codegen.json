@@ -1,0 +1,149 @@
+{
+  "study": "sranger",
+  "codegen_trace": [
+    {
+      "requirement_gid": "SR-ARCH1",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "SRangerController",
+      "notes": "Single reactive controller; IR-driven obstacle event + endTask shutdown; advisory motor commands via Actuator.move."
+    },
+    {
+      "requirement_gid": "SR-ARCH2",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "SRangerController",
+      "notes": "Composition: Sensor, Actuator, Clock, clockResetTime state variable, single step() state machine."
+    },
+    {
+      "requirement_gid": "SR-DM1",
+      "java_file": "src/main/java/sranger/mode/SRangerMode.java",
+      "java_element": "SRangerMode",
+      "notes": "Three modes; terminal mode named Stopped instead of Final (pipeline constraint: theory-generated controller must not contain a Final state)."
+    },
+    {
+      "requirement_gid": "SR-DM2",
+      "java_file": "src/main/java/sranger/constants/SRangerConstants.java",
+      "java_element": "SRangerConstants",
+      "notes": "MOVE_VEL=1.0, TURN_VEL=2.0, OBSTACLE_THRESHOLD=0.5, TURN_DURATION=2.0."
+    },
+    {
+      "requirement_gid": "SR-DM3",
+      "java_file": "src/main/java/sranger/event/InputEvent.java",
+      "java_element": "InputEvent",
+      "notes": "Sealed interface with signal records Obstacle, Tick, EndTask."
+    },
+    {
+      "requirement_gid": "SR-DM4",
+      "java_file": "src/main/java/sranger/actuator/Actuator.java",
+      "java_element": "move",
+      "notes": "Two-payload Move(lv, av) output encoded as the multi-arg Actuator.move(lv, av) call (RoboChart events carry one payload; the ETL models multi-arg actuator calls as LOperations operation calls)."
+    },
+    {
+      "requirement_gid": "SR-DM5",
+      "java_file": "src/main/java/sranger/sensor/Sensor.java",
+      "java_element": "Sensor",
+      "notes": "distance() returns latest IR reading; large default 100.0 m when no reading available."
+    },
+    {
+      "requirement_gid": "SR-DM6",
+      "java_file": "src/main/java/sranger/actuator/Actuator.java",
+      "java_element": "Actuator",
+      "notes": "Stores last commanded lv/av, exposed via lastLv()/lastAv()."
+    },
+    {
+      "requirement_gid": "SR-SF1",
+      "java_file": "src/main/java/sranger/sensor/Sensor.java",
+      "java_element": "distance",
+      "notes": "Sole sensor measurement consumed by the controller."
+    },
+    {
+      "requirement_gid": "SR-Var1",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "clockResetTime",
+      "notes": "Set from Clock.now() on the Moving->Turning transition; drives the timed Turning->Moving transition. Clock dependency: src/main/java/sranger/time/Clock.java."
+    },
+    {
+      "requirement_gid": "SR-FR1",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Moving initial; entry action move(MOVE_VEL, 0) fired at power-up (constructor) and on Turning->Moving."
+    },
+    {
+      "requirement_gid": "SR-FR2",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "On entering Turning: move(0, TURN_VEL) and clockResetTime = now()."
+    },
+    {
+      "requirement_gid": "SR-FR3",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Terminal mode (named Stopped, see SR-DM1 note): entry action move(0, 0)."
+    },
+    {
+      "requirement_gid": "SR-GP1",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Named predicate obstacleDetected = sensor.distance() <= OBSTACLE_THRESHOLD, guard on Moving->Turning."
+    },
+    {
+      "requirement_gid": "SR-GP2",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Named predicate turnDurationElapsed = timer.now() - clockResetTime >= TURN_DURATION, guard on Turning->Moving."
+    },
+    {
+      "requirement_gid": "SR-Beh1",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "currentMode",
+      "notes": "Field initialised to SRangerMode.Moving."
+    },
+    {
+      "requirement_gid": "SR-Beh2",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Moving->Turning on Obstacle event with obstacleDetected guard; clock reset + move(0, TURN_VEL)."
+    },
+    {
+      "requirement_gid": "SR-Beh3",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Moving->Stopped on EndTask; move(0, 0)."
+    },
+    {
+      "requirement_gid": "SR-Beh4",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Moving->Moving self-loop on Tick, no action."
+    },
+    {
+      "requirement_gid": "SR-Beh5",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Autonomous Turning->Moving when turnDurationElapsed; move(MOVE_VEL, 0)."
+    },
+    {
+      "requirement_gid": "SR-Beh6",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Turning->Stopped on EndTask; move(0, 0)."
+    },
+    {
+      "requirement_gid": "SR-Beh7",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Turning->Turning self-loop on Tick, no action."
+    },
+    {
+      "requirement_gid": "SR-DC1",
+      "java_file": "src/main/java/sranger/controller/SRangerController.java",
+      "java_element": "step",
+      "notes": "Each mode block has at most one branch per trigger; one transition per behavioural requirement."
+    },
+    {
+      "requirement_gid": "SR-Var1",
+      "java_file": "src/main/java/sranger/time/Clock.java",
+      "java_element": "Clock",
+      "notes": "Monotonic time source (seconds) backing clockResetTime and the turnDurationElapsed predicate."
+    }
+  ]
+}

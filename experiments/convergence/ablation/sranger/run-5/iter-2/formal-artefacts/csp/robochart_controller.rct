@@ -1,0 +1,110 @@
+diagram SRangerController
+
+interface LOperations {
+	move ( p0 : real , p1 : real )
+}
+
+interface Inputs {
+	event endTask
+	event obstacle
+	event tick
+}
+
+interface Outputs {
+}
+
+interface Sensors {
+	var NO_READING_DEFAULT : real
+	var distance : real
+}
+
+interface Actuators {
+}
+
+interface SRangerController_State {
+}
+
+interface Constants {
+	const obstacleThreshold : real = 1
+	const turnVel : real = 2
+	const turnDuration : real = 2
+	const moveVel : real = 1
+}
+
+stm SRangerController {
+	uses Inputs uses Outputs requires SRangerController_State requires Constants requires Sensors requires LOperations
+	clock clockResetTime
+	state Turning {
+		entry move ( 0 , turnVel )
+	}
+	state Moving {
+		entry move ( moveVel , 0 )
+	}
+	state Stopped {
+		entry move ( 0 , 0 )
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to Moving
+	}
+	transition t1 {
+		from Moving
+		to Stopped
+		trigger endTask
+	}
+	transition t2 {
+		from Moving
+		to Turning
+		trigger obstacle
+		# clockResetTime
+		condition distance <= obstacleThreshold
+	}
+	transition t3 {
+		from Moving
+		to Moving
+		trigger tick
+	}
+	transition t4 {
+		from Turning
+		to Stopped
+		trigger endTask
+	}
+	transition t5 {
+		from Turning
+		to Moving
+		condition since ( clockResetTime ) >= turnDuration
+	}
+	transition t6 {
+		from Turning
+		to Turning
+		trigger tick
+	}
+	transition t7 {
+		from Stopped
+		to Stopped
+		trigger tick
+	}
+}
+
+controller SRangerController_Ctrl {
+	uses Inputs uses Outputs requires SRangerController_State requires Constants requires Sensors requires LOperations
+	sref stm_ref0 = SRangerController
+	connection SRangerController_Ctrl on endTask to stm_ref0 on endTask
+	connection SRangerController_Ctrl on obstacle to stm_ref0 on obstacle
+	connection SRangerController_Ctrl on tick to stm_ref0 on tick
+}
+
+module SRangerController_Module {
+	robotic platform SRangerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event endTask
+		event obstacle
+		event tick
+	}
+	cref ctrl_ref0 = SRangerController_Ctrl
+	connection SRangerController_Platform on endTask to ctrl_ref0 on endTask
+	connection SRangerController_Platform on obstacle to ctrl_ref0 on obstacle
+	connection SRangerController_Platform on tick to ctrl_ref0 on tick
+}
+

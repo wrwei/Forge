@@ -1,0 +1,65 @@
+{
+  "phase": "codegen",
+  "label": "2 — Interactive Code Generation (iter-1, cold)",
+  "status": "uncertain",
+  "summary": "All 60 requirements implemented across 16 Java files (2 controllers). 8 issues flagged: 3 invented defaults, 4 design choices, 1 ambiguous requirement.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "CD-GA-Beh6: GasDetected found-branch reroutes to Reading instead of a Final state",
+      "raw": "The requirement says the gas-analysis subsystem 'concludes its search, processing no further readings' after emitting stop. A RoboChart Final state on a theory-generated controller makes the Isabelle deadlock-freedom goal unprovable (CLAUDE.md 'Interpreting Isabelle Results'), so the stop branch emits the stop event and reroutes to Reading. The movement subsystem is in Found and ignores further turn/resume events, so the deviation is not observable at the system boundary.",
+      "fix_directive": "If a literal terminal state is required, re-introduce a Final mode on the gas-analysis controller and accept the Isabelle limitation, or confirm the reroute.",
+      "java_trace": [{"file": "src/main/java/chemdetector/controller/GasAnalysisController.java", "element": "step", "requirement_ids": ["CD-GA-Beh6"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "CD-MV-Beh9: Found state given an event-triggered stop self-loop",
+      "raw": "'Once in Found the movement subsystem stays halted' — implemented as an explicit self-loop on the stop event so the Found state has a bare-precondition operation (deadlock-freedom cover) without a tau-self-loop (divergence) or unconditional else (determinism).",
+      "fix_directive": "Confirm the stop self-loop is an acceptable encoding of 'remains stopped'.",
+      "java_trace": [{"file": "src/main/java/chemdetector/controller/MovementController.java", "element": "step", "requirement_ids": ["CD-MV-Beh9", "CD-MV-FR3"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "CD-OP4: changeDirection implemented on Vehicle rather than an operation class",
+      "raw": "CD-ARCH2 lists only move/randomWalk/shortRandomWalk as Vehicle operations. changeDirection(l) takes a parameter and commands motion, which the operation-class compute() pattern (no-arg, field-assignments-only) cannot express, so it lives on Vehicle next to move.",
+      "fix_directive": "Confirm placement, or specify the intended operation-class shape for parameterised operations.",
+      "java_trace": [{"file": "src/main/java/chemdetector/actuator/Vehicle.java", "element": "changeDirection", "requirement_ids": ["CD-OP4"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "CD-DM7/CD-Evt4..6: reading type and shared-event encoding",
+      "raw": "GasSensorReading is represented directly as List<GasSensor> (extracts to Seq(GasSensor)) instead of a wrapper record. The inter-controller events turn/stop/resume appear as records of the same simple name in both InputEvent (trigger side, movement) and OutputEvent (action side, gas-analysis) so the ETL can pair them into the Shared interface.",
+      "fix_directive": "Confirm the unwrapped Seq representation and the dual-record shared-event encoding.",
+      "java_trace": [{"file": "src/main/java/chemdetector/event/InputEvent.java", "element": "InputEvent", "requirement_ids": ["CD-DM7", "CD-Evt4", "CD-Evt5", "CD-Evt6"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Constant values invented (CD-Const1..6)",
+      "raw": "Requirements define names/types but no values: thr=1.0, lv=1.0, evadeTime=2, stuckPeriod=5, stuckDist=1.0, outPeriod=3. Small integers keep the CSP state space tractable.",
+      "fix_directive": "Replace with the real deployment values if known.",
+      "java_trace": [{"file": "src/main/java/chemdetector/controller/Constants.java", "element": "Constants", "requirement_ids": ["CD-Const1", "CD-Const2", "CD-Const3", "CD-Const4", "CD-Const5", "CD-Const6"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Chem species, target identity, and direction mapping invented",
+      "raw": "Chem is an enum {chemA, chemB} with chemA as the detection target (CD-DM4 calls it opaque). The 1-based sensing-direction mapping of CD-DM7/CD-Fn3 is realised as index 0->Front, 1->Left, 2->Right, 3->Back, >=4->Back.",
+      "fix_directive": "Supply the real species inventory, target selection mechanism, and sensor-direction layout if they matter.",
+      "java_trace": [{"file": "src/main/java/chemdetector/sensor/GasSensorArray.java", "element": "location", "requirement_ids": ["CD-DM4", "CD-Fn3"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Empty-reading and detection defaults",
+      "raw": "Safe defaults for the initially-empty reading (CD-GA-Var1): analysis -> noGas, intensity -> 0.0, location -> Front. 'Reading indicates the target chemical' (CD-Fn1) is realised as c == target && i > 0.0.",
+      "fix_directive": "Confirm the > 0.0 detection floor and the empty-reading defaults.",
+      "java_trace": [{"file": "src/main/java/chemdetector/sensor/GasSensorArray.java", "element": "analysis", "requirement_ids": ["CD-Fn1", "CD-Fn2", "CD-Fn3", "CD-GA-Var1"]}]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Transition priority within movement modes unspecified",
+      "raw": "CD-MV-FR/Beh requirements list outgoing transitions without relative priority. Implemented order in every mode block: stop > turn > obstacle > resume > autonomous guards. CD-DC1 (unique source-state/trigger pairs) holds either way.",
+      "fix_directive": "Specify the intended priority if a different order is required.",
+      "java_trace": [{"file": "src/main/java/chemdetector/controller/MovementController.java", "element": "step", "requirement_ids": ["CD-MV-FR1", "CD-MV-FR2", "CD-MV-FR4", "CD-MV-FR5", "CD-MV-FR6", "CD-MV-FR7", "CD-DC1"]}]
+    }
+  ],
+  "next_step": "Run the deterministic pipeline (compile -> coverage -> preflight -> t2m -> m2m -> m2t -> dafny_gen -> isabelle_gen) and iterate on the visible feedback."
+}
