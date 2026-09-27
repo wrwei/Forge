@@ -1,0 +1,40 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 28-08-2026 23:28:57
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "LreController.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate LreController
+P_LreController = let
+	id__ = 0
+	
+	const_LreController_minsafedist = 1
+	
+	
+within
+	LreController::O__(
+		id__,
+		const_LreController_minsafedist
+	)
+assert P_LreController :[deadlock-free]	
+assert P_LreController;RUN({r__}) :[deadlock-free]
+assert P_LreController :[deterministic]
+assert P_LreController :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_LreController[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_LreController

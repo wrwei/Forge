@@ -1,0 +1,125 @@
+diagram SRangerController
+
+interface Inputs {
+	event endTask
+	event obstacle
+	event tick
+}
+
+interface Outputs {
+	event move : real
+	event markReset
+}
+
+interface Sensors {
+	var lv : real
+	var av : real
+	var distance : real
+}
+
+interface Actuators {
+}
+
+interface SRangerController_State {
+	var turnDurationElapsed : boolean
+	var resetTime : real
+	var elapsed : boolean
+}
+
+interface Constants {
+	const obstaclethreshold : real = 1
+}
+
+operation TurnTimer ( ) {
+	requires SRangerController_State requires Sensors
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action resetTime = 0 ; elapsed = false
+	}
+}
+
+stm SRangerController {
+	uses Inputs uses Outputs requires SRangerController_State requires Constants requires Sensors
+	state Turning {
+		entry send markReset ; move ! 0
+	}
+	state Final {
+		entry move ! 0
+	}
+	state Moving {
+		entry move ! 1
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to Moving
+	}
+	transition t1 {
+		from Moving
+		to Final
+		trigger endTask
+	}
+	transition t2 {
+		from Moving
+		to Turning
+		trigger obstacle
+		condition distance <= obstaclethreshold
+	}
+	transition t3 {
+		from Moving
+		to Moving
+		trigger tick
+	}
+	transition t4 {
+		from Turning
+		to Final
+		trigger endTask
+	}
+	transition t5 {
+		from Turning
+		to Moving
+		condition turnDurationElapsed
+	}
+	transition t6 {
+		from Turning
+		to Turning
+		trigger tick
+	}
+	transition t7 {
+		from Final
+		to Final
+		trigger tick
+	}
+}
+
+controller SRangerController_Ctrl {
+	uses Inputs uses Outputs requires SRangerController_State requires Constants requires Sensors
+	sref stm_ref0 = SRangerController
+	opref op_ref0 = TurnTimer
+	connection SRangerController_Ctrl on endTask to stm_ref0 on endTask
+	connection SRangerController_Ctrl on obstacle to stm_ref0 on obstacle
+	connection SRangerController_Ctrl on tick to stm_ref0 on tick
+	connection stm_ref0 on move to SRangerController_Ctrl on move
+	connection stm_ref0 on markReset to SRangerController_Ctrl on markReset
+}
+
+module SRangerController_Module {
+	robotic platform SRangerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event endTask
+		event obstacle
+		event tick
+		event move : real
+		event markReset
+	}
+	cref ctrl_ref0 = SRangerController_Ctrl
+	connection SRangerController_Platform on endTask to ctrl_ref0 on endTask
+	connection SRangerController_Platform on obstacle to ctrl_ref0 on obstacle
+	connection SRangerController_Platform on tick to ctrl_ref0 on tick
+	connection ctrl_ref0 on move to SRangerController_Platform on move
+	connection ctrl_ref0 on markReset to SRangerController_Platform on markReset
+}
+

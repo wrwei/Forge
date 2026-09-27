@@ -1,0 +1,119 @@
+Discovering Java sources in: /Users/ranwei/Gitee/formal_method_guided_vibe_coding/reference-runs/chemical_detector/java
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Model saved to: /tmp/campaign/baseline/chemical_detector/discovered_model.xmi
+Summary: 21 types, 66 methods, 38 fields
+Extracting RoboChart state machine...
+[deadlock-lint] GasAnalysisController.Reading: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[deadlock-lint] GasAnalysisController.Analysis: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[deadlock-lint] GasAnalysisController.GasDetected: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[deadlock-lint] MovementController.Waiting: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[deadlock-lint] MovementController.Going: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[deadlock-lint] MovementController.Avoiding: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[deadlock-lint] MovementController.TryingAgain: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[deadlock-lint] MovementController.AvoidingAgain: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[deadlock-lint] MovementController.GettingOut: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+Canonicalized 6 duplicate PrimitiveType(s)
+RoboChart model saved to: /tmp/campaign/baseline/chemical_detector/robochart_model.xmi
+M2M trace written to: /tmp/campaign/baseline/chemical_detector/trace_m2m.json (64 entries)
+RoboChart: 13 states, 36 transitions, 14 events
+Generating Dafny verification code (EGL)...
+Dafny written to: /tmp/campaign/baseline/chemical_detector/ChemDetectorApp.dfy
+Dafny trace written to: /tmp/campaign/baseline/chemical_detector/trace_dafny.json (13 entries)
+Generating RoboChart textual notation...
+RCT written to: /tmp/campaign/baseline/chemical_detector/robochart_controller.rct
+RCT trace written to: /tmp/campaign/baseline/chemical_detector/trace_m2t_rct.json (64 entries)
+Generating Isabelle Z-Machine theory...
+Query the states
+print out the event names
+gas
+print out the event names
+tick
+print out the event names
+resume
+print out the event names
+stop
+print out the event names
+turn
+--------------------------------------------------------------
+Query the types
+--------------------------------------------------------------
+Enumeration
+e.name: Angle
+final enumtype_output: enumtype Angle = Left | Right | Back | Front
+Enumeration
+e.name: Loc
+final enumtype_output: enumtype Loc = left | right | front
+Enumeration
+e.name: Status
+final enumtype_output: enumtype Status = noGas | gasD
+PrimitiveType
+e.name: real
+PrimitiveType
+e.name: nat
+RecordType
+e.name: GasSensor
+RecordType
+e.name: Intensity
+query for record type
+query for constants definition
+this is a SeqType
+consts analysis :: " GasSensor list \<Rightarrow> Status"
+this is a SeqType
+consts peakIntensity :: " GasSensor list \<Rightarrow> real"
+this is a SeqType
+consts location :: " GasSensor list \<Rightarrow> Angle"
+variable query TO generate zstore
+transitions query TO generate zoperations
+START NEW TRANSITION QUERY
+tr.name: t_init
+InitialToReading
+pre "st= initial"
+START NEW TRANSITION QUERY
+tr.name: t1
+ReadingToAnalysis
+pre "st= Reading"
+START NEW TRANSITION QUERY
+tr.name: t2
+ReadingToReading
+pre "st= Reading"
+START NEW TRANSITION QUERY
+tr.name: t3
+AnalysisToNoGas
+tr.condition: org.eclipse.emf.ecore.impl.DynamicEObjectImpl@2ef913a4 (eClass: org.eclipse.emf.ecore.impl.EClassImpl@7856f41a (name: Equals) (instanceClassName: null) (abstract: false, interface: false))
+pre "st= Analysis \<and> sts= (noGas)"
+START NEW TRANSITION QUERY
+tr.name: t4
+AnalysisToGasDetected
+tr.condition: org.eclipse.emf.ecore.impl.DynamicEObjectImpl@3b347439 (eClass: org.eclipse.emf.ecore.impl.EClassImpl@7856f41a (name: Equals) (instanceClassName: null) (abstract: false, interface: false))
+pre "st= Analysis \<and> sts= (gasD)"
+START NEW TRANSITION QUERY
+tr.name: t5
+AnalysisToAnalysis
+pre "st= Analysis"
+START NEW TRANSITION QUERY
+tr.name: t6
+NoGasToReading
+pre "st= NoGas"
+START NEW TRANSITION QUERY
+tr.name: t7
+GasDetectedToFinal
+tr.condition: org.eclipse.emf.ecore.impl.DynamicEObjectImpl@5d3634c8 (eClass: org.eclipse.emf.ecore.impl.EClassImpl@67f591c2 (name: GreaterOrEqual) (instanceClassName: null) (abstract: false, interface: false))
+pre "st= GasDetected \<and> insVal\<ge>10.0"
+START NEW TRANSITION QUERY
+tr.name: t8
+GasDetectedToReading
+tr.condition: org.eclipse.emf.ecore.impl.DynamicEObjectImpl@5960f17 (eClass: org.eclipse.emf.ecore.impl.EClassImpl@2f9addd4 (name: Not) (instanceClassName: null) (abstract: false, interface: false))
+pre "st= GasDetected \<and> \<not>insVal\<ge>10.0"
+START NEW TRANSITION QUERY
+tr.name: t9
+GasDetectedToGasDetected
+pre "st= GasDetected"
+START NEW TRANSITION QUERY
+tr.name: t10
+FinalToFinal
+pre "st= Final"
+Isabelle theory written to: /tmp/campaign/baseline/chemical_detector/isabelle/GasAnalysisController_Beh.thy
+Isabelle trace written to: /tmp/campaign/baseline/chemical_detector/trace_isabelle.json (24 entries)
+CAMPAIGN_DRIVER_OK

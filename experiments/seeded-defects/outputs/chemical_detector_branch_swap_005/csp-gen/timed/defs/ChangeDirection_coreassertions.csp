@@ -1,0 +1,37 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 28-08-2026 23:29:45
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "ChangeDirection.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate OP_ChangeDirection
+P_OP_ChangeDirection = let
+	id__ = 0
+	
+	
+	
+	
+within
+	OP_ChangeDirection::O__(id__)
+assert P_OP_ChangeDirection :[deadlock-free]	
+assert P_OP_ChangeDirection;RUN({r__}) :[deadlock-free]
+assert P_OP_ChangeDirection :[deterministic]
+assert P_OP_ChangeDirection :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_OP_ChangeDirection[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_OP_ChangeDirection

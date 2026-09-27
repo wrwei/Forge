@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="ASCII"?>
+<robochart:RCPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:robochart="http://www.robocalc.circus/RoboChart" name="extracted">
+  <interfaces name="Ctrl_State">
+    <variableList>
+      <vars name="turnDurationElapsed">
+        <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+      </vars>
+    </variableList>
+  </interfaces>
+  <interfaces name="Sensors">
+    <variableList>
+      <vars name="lv">
+        <type xsi:type="robochart:TypeRef" ref="//@types.2"/>
+      </vars>
+      <vars name="av">
+        <type xsi:type="robochart:TypeRef" ref="//@types.2"/>
+      </vars>
+      <vars name="distance">
+        <type xsi:type="robochart:TypeRef" ref="//@types.2"/>
+      </vars>
+    </variableList>
+  </interfaces>
+  <interfaces name="Actuators"/>
+  <interfaces name="Constants"/>
+  <types xsi:type="robochart:PrimitiveType" name="boolean"/>
+  <types xsi:type="robochart:PrimitiveType" name="move_Type_lv_double_av_double"/>
+  <types xsi:type="robochart:PrimitiveType" name="real"/>
+  <machines name="SRangerController">
+    <events name="endTask"/>
+    <events name="move">
+      <type xsi:type="robochart:TypeRef" ref="//@types.1"/>
+    </events>
+    <events name="obstacle"/>
+    <events name="markReset"/>
+    <events name="tick"/>
+    <nodes xsi:type="robochart:State" name="Moving"/>
+    <nodes xsi:type="robochart:State" name="Turning"/>
+    <nodes xsi:type="robochart:State" name="Final"/>
+    <nodes xsi:type="robochart:Initial" name="i0"/>
+    <transitions name="t_init" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.0"/>
+    <transitions name="t1" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1" _type="OUTPUT">
+          <value xsi:type="robochart:FloatExp"/>
+        </communication>
+      </action>
+    </transitions>
+    <transitions name="t2" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.2"/>
+      <condition xsi:type="robochart:LessOrEqual">
+        <left xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="distance"/>
+        </left>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="obstaclethreshold"/>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp"/>
+          </communication>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t3" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.4"/>
+    </transitions>
+    <transitions name="t4" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.0">
+      <condition xsi:type="robochart:CallExp">
+        <function xsi:type="robochart:StringExp" value="turnDurationElapsed"/>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1" _type="OUTPUT">
+          <value xsi:type="robochart:FloatExp" value="1.0"/>
+        </communication>
+      </action>
+    </transitions>
+    <transitions name="t5" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1" _type="OUTPUT">
+          <value xsi:type="robochart:FloatExp"/>
+        </communication>
+      </action>
+    </transitions>
+    <transitions name="t6" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.4"/>
+    </transitions>
+    <transitions name="t7" source="//@machines.0/@nodes.2" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+    </transitions>
+  </machines>
+  <operations name="TurnTimer" terminates="true" rInterfaces="//@interfaces.0 //@interfaces.1">
+    <variableList>
+      <vars name="resetTime">
+        <type xsi:type="robochart:TypeRef" ref="//@types.2"/>
+      </vars>
+      <vars name="elapsed">
+        <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+      </vars>
+    </variableList>
+    <nodes xsi:type="robochart:Initial" name="i0"/>
+    <nodes xsi:type="robochart:Final" name="f0"/>
+    <transitions name="t0" source="//@operations.0/@nodes.0" target="//@operations.0/@nodes.1">
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@operations.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:IntegerExp"/>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@operations.0/@variableList.0/@vars.1"/>
+          <right xsi:type="robochart:BooleanExp" value="false"/>
+        </statements>
+      </action>
+    </transitions>
+  </operations>
+</robochart:RCPackage>

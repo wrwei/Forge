@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="spoon" nsURI="http://spoon.gforge.inria.fr/spoon" nsPrefix="spoon">
+  <eClassifiers xsi:type="ecore:EClass" name="CtConditional" eSuperTypes="#//CtExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="condition" eType="#//CtExpression"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="else" eType="#//CtExpression"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="then" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtProvidedService" eSuperTypes="#//CtModuleDirective">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="serviceType" eType="#//CtTypeReference"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="implementationType" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAbstractInvocation" abstract="true"
+      eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="executableRef" eType="#//CtExecutableReference"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="argument" upperBound="-1"
+        eType="#//CtExpression" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtParameter" eSuperTypes="#//CtShadowable #//CtVariable">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isVarargs" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isInferred" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAbstractSwitch" abstract="true" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="case" upperBound="-1" eType="#//CtCase"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtLoop" abstract="true" eSuperTypes="#//CtStatement #//CtBodyHolder"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtWhile" eSuperTypes="#//CtLoop">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypeReference" eSuperTypes="#//CtShadowable #//CtTypeInformation #//CtReference #//CtActualTypeContainer">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="packageRef" eType="#//CtPackageReference"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="declaringType" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCatchVariableReference" eSuperTypes="#//CtVariableReference"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtContinue" eSuperTypes="#//CtLabelledFlowBreak"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtInterface" eSuperTypes="#//CtStatement #//CtSealable #//CtType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAssignment" eSuperTypes="#//CtExpression #//CtStatement #//CtRHSReceiver">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="assigned" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtBinaryOperator" eSuperTypes="#//CtExpression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operatorKind" eType="#//BinaryOperatorKind"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="leftOperand" eType="#//CtExpression"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rightOperand" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" upperBound="-1"
+        eType="#//CtAnnotation" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isImplicit" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="comment" upperBound="-1"
+        eType="#//CtComment" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="position" eType="#//CtElement"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtEnumValue" eSuperTypes="#//CtField"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtRecordPattern" eSuperTypes="#//CtExpression #//CtPattern">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pattern" upperBound="-1"
+        eType="#//CtPattern" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typeRef" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtModuleRequirement" eSuperTypes="#//CtModuleDirective">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="moduleRef" eType="#//CtModuleReference"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="modifier" upperBound="-1"
+        eType="#//CtModuleRequirement$RequiresModifier"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtForEach" eSuperTypes="#//CtLoop">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="foreachVariable" eType="#//CtLocalVariable"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtConstructor" eSuperTypes="#//CtShadowable #//CtFormalTypeDeclarer #//CtExecutable">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="compactConstructor" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtRHSReceiver" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="assignment" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtSuperAccess" eSuperTypes="#//CtTargetedExpression #//CtVariableRead"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTargetedExpression" abstract="true"
+      eSuperTypes="#//CtExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtModifiable" abstract="true" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="modifier" upperBound="-1"
+        eType="#//ModifierKind"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtPackageDeclaration" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="packageRef" eType="#//CtPackageReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtNamedElement" abstract="true" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAnonymousExecutable" eSuperTypes="#//CtTypeMember #//CtExecutable"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtSealable" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="permittedType" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtComment" eSuperTypes="#//CtStatement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="commentContent" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="commentType" eType="#//CtElement"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtFieldAccess" abstract="true" eSuperTypes="#//CtTargetedExpression #//CtVariableAccess"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtWildcardReference" eSuperTypes="#//CtTypeParameterReference">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isUpper" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="boundingType" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtThisAccess" eSuperTypes="#//CtTargetedExpression"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtRecordComponent" eSuperTypes="#//CtShadowable #//CtNamedElement #//CtTypedElement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypeInformation" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtArrayWrite" eSuperTypes="#//CtArrayAccess"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtPackageReference" eSuperTypes="#//CtReference"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtJavaDoc" eSuperTypes="#//CtComment">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="commentTag" upperBound="-1"
+        eType="#//CtJavaDocTag" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtArrayRead" eSuperTypes="#//CtArrayAccess"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtStatementList" eSuperTypes="#//CtCodeElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="statement" upperBound="-1"
+        eType="#//CtStatement" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtVariableWrite" eSuperTypes="#//CtVariableAccess"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCompilationUnit" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="declaredImport" upperBound="-1"
+        eType="#//CtImport" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="declaredModuleRef" eType="#//CtModuleReference"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="packageDeclaration" eType="#//CtPackageDeclaration"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="declaredTypeRef" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtParameterReference" eSuperTypes="#//CtVariableReference"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtReceiverParameter" eSuperTypes="#//CtShadowable #//CtElement #//CtTypedElement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtOperatorAssignment" eSuperTypes="#//CtAssignment">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operatorKind" eType="#//BinaryOperatorKind"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAnnotationFieldAccess" eSuperTypes="#//CtTargetedExpression #//CtVariableRead"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtUnboundVariableReference" eSuperTypes="#//CtVariableReference"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAnnotationMethod" eSuperTypes="#//CtMethod">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="defaultExpression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtLabelledFlowBreak" abstract="true"
+      eSuperTypes="#//CtCFlowBreak">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="targetLabel" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtClass" eSuperTypes="#//CtStatement #//CtSealable #//CtType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtBlock" eSuperTypes="#//CtStatement #//CtStatementList"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtArrayAccess" abstract="true" eSuperTypes="#//CtTargetedExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCFlowBreak" abstract="true" eSuperTypes="#//CtStatement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtActualTypeContainer" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typeArgument" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCodeSnippet" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="snippet" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtPackage" eSuperTypes="#//CtShadowable #//CtNamedElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subPackage" upperBound="-1"
+        eType="#//CtPackage" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="containedType" upperBound="-1"
+        eType="#//CtType" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTryWithResource" eSuperTypes="#//CtTry">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tryResource" upperBound="-1"
+        eType="#//CtResource" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtResource" abstract="true" eSuperTypes="#//CtElement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAssert" eSuperTypes="#//CtStatement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="condition" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtVariableReference" abstract="true"
+      eSuperTypes="#//CtReference">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtSwitch" eSuperTypes="#//CtStatement #//CtAbstractSwitch"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTry" eSuperTypes="#//CtStatement #//CtBodyHolder">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="catch" upperBound="-1"
+        eType="#//CtCatch" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="finalizer" eType="#//CtBlock"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtYieldStatement" eSuperTypes="#//CtCFlowBreak">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtSynchronized" eSuperTypes="#//CtStatement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="body" eType="#//CtBlock"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypeParameterReference" eSuperTypes="#//CtTypeReference"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtImport" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="importReference" eType="#//CtReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtInvocation" eSuperTypes="#//CtStatement #//CtTargetedExpression #//CtAbstractInvocation #//CtActualTypeContainer"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtStatement" abstract="true" eSuperTypes="#//CtCodeElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="label" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCodeSnippetExpression" eSuperTypes="#//CtExpression #//CtCodeSnippet"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtFieldWrite" eSuperTypes="#//CtFieldAccess #//CtVariableWrite"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtUnaryOperator" eSuperTypes="#//CtExpression #//CtStatement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operatorKind" eType="#//UnaryOperatorKind"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtExecutableReference" eSuperTypes="#//CtReference #//CtActualTypeContainer">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isStatic" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" eType="#//CtTypeReference"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="argumentType" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="declaringType" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypedElement" abstract="true" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtFor" eSuperTypes="#//CtLoop">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="forInit" upperBound="-1"
+        eType="#//CtStatement" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="forUpdate" upperBound="-1"
+        eType="#//CtStatement" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtVariableRead" eSuperTypes="#//CtVariableAccess #//CtResource"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypeParameter" eSuperTypes="#//CtType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtFormalTypeDeclarer" abstract="true"
+      eSuperTypes="#//CtTypeMember">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typeParameter" upperBound="-1"
+        eType="#//CtTypeParameter" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtLocalVariable" eSuperTypes="#//CtStatement #//CtVariable #//CtResource #//CtRHSReceiver">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isInferred" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtMultiTypedElement" abstract="true"
+      eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="multiType" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtExecutable" abstract="true" eSuperTypes="#//CtBodyHolder #//CtNamedElement #//CtTypedElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameter" upperBound="-1"
+        eType="#//CtParameter" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="thrown" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="receiverParameter" eType="#//CtReceiverParameter"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtIf" eSuperTypes="#//CtStatement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="else" eType="#//CtStatement"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="condition" eType="#//CtExpression"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="then" eType="#//CtStatement"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtRecord" eSuperTypes="#//CtClass">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="recordComponent" upperBound="-1"
+        eType="#//CtRecordComponent" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtModule" eSuperTypes="#//CtNamedElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subPackage" eType="#//CtPackage"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="moduleDirective" upperBound="-1"
+        eType="#//CtModuleDirective" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="modifier" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtSwitchExpression" eSuperTypes="#//CtExpression #//CtAbstractSwitch"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtPackageExport" eSuperTypes="#//CtModuleDirective">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="moduleRef" upperBound="-1"
+        eType="#//CtModuleReference" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="openedPackage" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="packageRef" eType="#//CtPackageReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtType" abstract="true" eSuperTypes="#//CtTypeMember #//CtShadowable #//CtTypeInformation #//CtFormalTypeDeclarer #//CtNamedElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="interface" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typeMember" upperBound="-1"
+        eType="#//CtTypeMember" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="superType" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtConstructorCall" eSuperTypes="#//CtStatement #//CtTargetedExpression #//CtAbstractInvocation #//CtActualTypeContainer"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCase" eSuperTypes="#//CtStatement #//CtStatementList">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="condition" eType="#//CtExpression"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" upperBound="-1"
+        eType="#//CtExpression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="defaultExpression" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="caseKind" eType="#//CaseKind"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtModuleReference" eSuperTypes="#//CtReference"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtVariable" abstract="true" eSuperTypes="#//CtNamedElement #//CtTypedElement #//CtModifiable">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="defaultExpression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCatch" eSuperTypes="#//CtCodeElement #//CtBodyHolder">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameter" eType="#//CtCatchVariable"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtArrayTypeReference" eSuperTypes="#//CtTypeReference">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtPattern" abstract="true" eSuperTypes="#//CtElement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtMethod" eSuperTypes="#//CtShadowable #//CtFormalTypeDeclarer #//CtExecutable">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isDefault" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtLambda" eSuperTypes="#//CtExpression #//CtExecutable">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypePattern" eSuperTypes="#//CtExpression #//CtPattern">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="variable" eType="#//CtLocalVariable"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtShadowable" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isShadow" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtNewArray" eSuperTypes="#//CtExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" upperBound="-1"
+        eType="#//CtExpression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dimension" upperBound="-1"
+        eType="#//CtExpression" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtIntersectionTypeReference" eSuperTypes="#//CtTypeReference">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bound" upperBound="-1"
+        eType="#//CtTypeReference" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtUsedService" eSuperTypes="#//CtModuleDirective">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="serviceType" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTextBlock" eSuperTypes="#//CtLiteral">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtThrow" eSuperTypes="#//CtCFlowBreak">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCodeElement" abstract="true" eSuperTypes="#//CtElement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtLiteral" eSuperTypes="#//CtExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="literalBase" eType="#//CtElement"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtReference" abstract="true" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtReturn" eSuperTypes="#//CtCFlowBreak">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtField" eSuperTypes="#//CtTypeMember #//CtShadowable #//CtVariable #//CtRHSReceiver"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtJavaDocTag" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="documentationType" eType="#//CtElement"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="documentationTypeRealname"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="commentContent" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="javadocTagValue" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypeAccess" eSuperTypes="#//CtExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="accessedType" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCodeSnippetStatement" eSuperTypes="#//CtCodeSnippet #//CtStatement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtDo" eSuperTypes="#//CtLoop">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expression" eType="#//CtExpression"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypeMemberWildcardImportReference"
+      eSuperTypes="#//CtReference">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typeRef" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtVariableAccess" abstract="true" eSuperTypes="#//CtExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="variable" eType="#//CtVariableReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAnnotation" eSuperTypes="#//CtExpression #//CtShadowable">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" upperBound="-1"
+        eType="#//CtExpression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="annotationType" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtFieldRead" eSuperTypes="#//CtVariableRead #//CtFieldAccess"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtExpression" abstract="true" eSuperTypes="#//CtCodeElement #//CtTypedElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="cast" upperBound="-1" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtBreak" eSuperTypes="#//CtLabelledFlowBreak"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtFieldReference" eSuperTypes="#//CtVariableReference">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isFinal" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isStatic" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="declaringType" eType="#//CtTypeReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtEnum" eSuperTypes="#//CtClass">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" upperBound="-1"
+        eType="#//CtEnumValue" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtModuleDirective" abstract="true" eSuperTypes="#//CtElement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCasePattern" eSuperTypes="#//CtExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pattern" eType="#//CtPattern"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtBodyHolder" abstract="true" eSuperTypes="#//CtElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="body" eType="#//CtStatement"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtUnnamedPattern" eSuperTypes="#//CtExpression #//CtPattern"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtTypeMember" abstract="true" eSuperTypes="#//CtNamedElement #//CtModifiable"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtNewClass" eSuperTypes="#//CtConstructorCall">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nestedType" eType="#//CtClass"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CtLocalVariableReference" eSuperTypes="#//CtVariableReference"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtAnnotationType" eSuperTypes="#//CtType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtCatchVariable" eSuperTypes="#//CtCodeElement #//CtVariable #//CtMultiTypedElement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CtExecutableReferenceExpression" eSuperTypes="#//CtTargetedExpression">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="executableRef" eType="#//CtExecutableReference"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="ModifierKind">
+    <eLiterals name="PUBLIC" literal="PUBLIC"/>
+    <eLiterals name="PROTECTED" value="1" literal="PROTECTED"/>
+    <eLiterals name="PRIVATE" value="2" literal="PRIVATE"/>
+    <eLiterals name="ABSTRACT" value="3" literal="ABSTRACT"/>
+    <eLiterals name="STATIC" value="4" literal="STATIC"/>
+    <eLiterals name="FINAL" value="5" literal="FINAL"/>
+    <eLiterals name="TRANSIENT" value="6" literal="TRANSIENT"/>
+    <eLiterals name="VOLATILE" value="7" literal="VOLATILE"/>
+    <eLiterals name="SYNCHRONIZED" value="8" literal="SYNCHRONIZED"/>
+    <eLiterals name="NATIVE" value="9" literal="NATIVE"/>
+    <eLiterals name="STRICTFP" value="10" literal="STRICTFP"/>
+    <eLiterals name="NON_SEALED" value="11" literal="NON_SEALED"/>
+    <eLiterals name="SEALED" value="12" literal="SEALED"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="BinaryOperatorKind">
+    <eLiterals name="OR" literal="OR"/>
+    <eLiterals name="AND" value="1" literal="AND"/>
+    <eLiterals name="BITOR" value="2" literal="BITOR"/>
+    <eLiterals name="BITXOR" value="3" literal="BITXOR"/>
+    <eLiterals name="BITAND" value="4" literal="BITAND"/>
+    <eLiterals name="EQ" value="5" literal="EQ"/>
+    <eLiterals name="NE" value="6" literal="NE"/>
+    <eLiterals name="LT" value="7" literal="LT"/>
+    <eLiterals name="GT" value="8" literal="GT"/>
+    <eLiterals name="LE" value="9" literal="LE"/>
+    <eLiterals name="GE" value="10" literal="GE"/>
+    <eLiterals name="SL" value="11" literal="SL"/>
+    <eLiterals name="SR" value="12" literal="SR"/>
+    <eLiterals name="USR" value="13" literal="USR"/>
+    <eLiterals name="PLUS" value="14" literal="PLUS"/>
+    <eLiterals name="MINUS" value="15" literal="MINUS"/>
+    <eLiterals name="MUL" value="16" literal="MUL"/>
+    <eLiterals name="DIV" value="17" literal="DIV"/>
+    <eLiterals name="MOD" value="18" literal="MOD"/>
+    <eLiterals name="INSTANCEOF" value="19" literal="INSTANCEOF"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="CtModuleRequirement$RequiresModifier">
+    <eLiterals name="STATIC" literal="STATIC"/>
+    <eLiterals name="TRANSITIVE" value="1" literal="TRANSITIVE"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="UnaryOperatorKind">
+    <eLiterals name="POS" literal="POS"/>
+    <eLiterals name="NEG" value="1" literal="NEG"/>
+    <eLiterals name="NOT" value="2" literal="NOT"/>
+    <eLiterals name="COMPL" value="3" literal="COMPL"/>
+    <eLiterals name="PREINC" value="4" literal="PREINC"/>
+    <eLiterals name="PREDEC" value="5" literal="PREDEC"/>
+    <eLiterals name="POSTINC" value="6" literal="POSTINC"/>
+    <eLiterals name="POSTDEC" value="7" literal="POSTDEC"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="CaseKind">
+    <eLiterals name="COLON" literal="COLON"/>
+    <eLiterals name="ARROW" value="1" literal="ARROW"/>
+  </eClassifiers>
+</ecore:EPackage>

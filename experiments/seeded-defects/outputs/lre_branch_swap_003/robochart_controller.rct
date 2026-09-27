@@ -1,0 +1,258 @@
+diagram LreController
+
+datatype Obstacle {
+	ns_rel_dist : real
+	ew_rel_dist : real
+	obs_depth : real
+	obs_ns_vel : real
+	obs_ew_vel : real
+	obs_roc : real
+}
+
+function odist ( index : nat ) : real { }
+function sqrt ( x : real ) : real { }
+function nsRelDist ( x : real ) : real { }
+function obsNsVel ( x : real ) : real { }
+function ewRelDist ( x : real ) : real { }
+function obsEwVel ( x : real ) : real { }
+
+interface Inputs {
+	event reqVel : real
+	event reqHdng : real
+	event reqMOM
+	event reqOCM
+	event endTask
+	event reqHCM
+}
+
+interface Outputs {
+	event advVel : real
+	event advHdng : real
+}
+
+interface Sensors {
+	var depth : real
+	var ns_vel : real
+	var ew_vel : real
+	var rate_of_climb : real
+	var closestDynamicIndex : nat
+	var closestStaticIndex : nat
+}
+
+interface Actuators {
+}
+
+interface LreController_State {
+	var inOpez : boolean
+	var vel : real
+	var cstc : nat
+	var cdyn : nat
+	var cda : real
+	var camActive : boolean
+	var hcmActive : boolean
+	var momReturn : boolean
+	var hvel : real
+	var vvel : real
+	var tcpa : real
+}
+
+interface Constants {
+	const minsafedist : real = 1
+}
+
+operation CalcCDyn ( ) {
+	requires LreController_State requires Sensors
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action cdyn = closestDynamicIndex
+	}
+}
+
+operation CalcCPA ( ) {
+	requires LreController_State requires Sensors requires Constants
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action cda = sqrt ( nsRelDist ( cdyn ) + obsNsVel ( cdyn ) - ns_vel * tcpa * nsRelDist ( cdyn ) + obsNsVel ( cdyn ) - ns_vel * tcpa + ewRelDist ( cdyn ) + obsEwVel ( cdyn ) - ew_vel * tcpa * ewRelDist ( cdyn ) + obsEwVel ( cdyn ) - ew_vel * tcpa ) ; tcpa = -nsRelDist ( cdyn ) * obsNsVel ( cdyn ) - ns_vel + ewRelDist ( cdyn ) * obsEwVel ( cdyn ) - ew_vel / obsNsVel ( cdyn ) - ns_vel * obsNsVel ( cdyn ) - ns_vel + obsEwVel ( cdyn ) - ew_vel * obsEwVel ( cdyn ) - ew_vel
+	}
+}
+
+operation CalcCStc ( ) {
+	requires LreController_State requires Sensors
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action cstc = closestStaticIndex
+	}
+}
+
+operation CalcVel ( ) {
+	requires LreController_State requires Sensors
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action hvel = sqrt ( ns_vel * ns_vel + ew_vel * ew_vel ) ; vvel = rate_of_climb ; vel = sqrt ( hvel * hvel + vvel * vvel )
+	}
+}
+
+operation CheckOPEZ ( ) {
+	requires LreController_State requires Sensors requires Constants
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action inOpez = ( odist ( cstc ) <= minsafedist \/ depth <= 0 )
+	}
+}
+
+stm LreController {
+	uses Inputs uses Outputs requires LreController_State requires Constants
+	var v : real
+	state CAM {
+	}
+	state MOM {
+		entry advVel ! 1
+	}
+	state OCM {
+	}
+	state HCM {
+		entry advVel ! 0
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to OCM
+	}
+	transition t1 {
+		from OCM
+		to OCM
+		trigger reqVel ? v
+		action advVel ! v
+	}
+	transition t2 {
+		from OCM
+		to OCM
+		trigger reqHdng ? v
+		action advHdng ! v
+	}
+	transition t3 {
+		from OCM
+		to MOM
+		trigger reqMOM
+		condition vel <= 1 /\ not ( inOpez ) /\ odist ( cdyn ) > 1 /\ odist ( cstc ) > 1
+	}
+	transition t4 {
+		from MOM
+		to CAM
+		condition camActive
+	}
+	transition t5 {
+		from MOM
+		to HCM
+		condition hcmActive /\ not ( camActive )
+	}
+	transition t6 {
+		from MOM
+		to OCM
+		condition inOpez /\ not ( camActive ) /\ not ( hcmActive )
+	}
+	transition t7 {
+		from MOM
+		to OCM
+		trigger reqOCM
+	}
+	transition t8 {
+		from MOM
+		to OCM
+		trigger endTask
+		action advVel ! 0
+	}
+	transition t9 {
+		from MOM
+		to HCM
+		trigger reqHCM
+	}
+	transition t10 {
+		from CAM
+		to OCM
+		trigger reqOCM
+	}
+	transition t11 {
+		from CAM
+		to OCM
+		condition cda >= minsafedist
+		action advVel ! 0
+	}
+	transition t12 {
+		from HCM
+		to CAM
+		condition camActive
+	}
+	transition t13 {
+		from HCM
+		to OCM
+		condition inOpez /\ not ( camActive )
+	}
+	transition t14 {
+		from HCM
+		to MOM
+		condition momReturn /\ not ( camActive ) /\ not ( inOpez )
+	}
+	transition t15 {
+		from HCM
+		to OCM
+		trigger reqOCM
+	}
+}
+
+controller LreController_Ctrl {
+	uses Inputs uses Outputs requires LreController_State requires Constants requires Sensors
+	sref stm_ref0 = LreController
+	opref op_ref0 = CalcCDyn
+	opref op_ref1 = CalcCPA
+	opref op_ref2 = CalcCStc
+	opref op_ref3 = CalcVel
+	opref op_ref4 = CheckOPEZ
+	connection LreController_Ctrl on reqVel to stm_ref0 on reqVel
+	connection LreController_Ctrl on reqHdng to stm_ref0 on reqHdng
+	connection LreController_Ctrl on reqMOM to stm_ref0 on reqMOM
+	connection LreController_Ctrl on reqOCM to stm_ref0 on reqOCM
+	connection LreController_Ctrl on endTask to stm_ref0 on endTask
+	connection LreController_Ctrl on reqHCM to stm_ref0 on reqHCM
+	connection stm_ref0 on advVel to LreController_Ctrl on advVel
+	connection stm_ref0 on advHdng to LreController_Ctrl on advHdng
+}
+
+module LreController_Module {
+	robotic platform LreController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event reqVel : real
+		event reqHdng : real
+		event reqMOM
+		event reqOCM
+		event endTask
+		event reqHCM
+		event advVel : real
+		event advHdng : real
+	}
+	cref ctrl_ref0 = LreController_Ctrl
+	connection LreController_Platform on reqVel to ctrl_ref0 on reqVel
+	connection LreController_Platform on reqHdng to ctrl_ref0 on reqHdng
+	connection LreController_Platform on reqMOM to ctrl_ref0 on reqMOM
+	connection LreController_Platform on reqOCM to ctrl_ref0 on reqOCM
+	connection LreController_Platform on endTask to ctrl_ref0 on endTask
+	connection LreController_Platform on reqHCM to ctrl_ref0 on reqHCM
+	connection ctrl_ref0 on advVel to LreController_Platform on advVel
+	connection ctrl_ref0 on advHdng to LreController_Platform on advHdng
+}
+
