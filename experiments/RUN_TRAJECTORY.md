@@ -174,7 +174,6 @@ Do not open any of these during the run:
 - `experiments/convergence/<study>/run-*/` and `.../iter-*/` and `.../prev-trajectory/`
 - `experiments/convergence/` for any **other** study (cross-study format peeking is still leakage)
 - `experiments/cold-baseline/`
-- `experiments/convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md` ← the aggregated findings sink. **Never** read it, in *any* condition; it is the consolidated answer key. You DO **append** your own run's findings to it at archive time (§6) — append-only, without reading it.
 - `.remember/` (`now.md`, `today-*.md`, `recent.md`, `archive.md`,
   `remember.md`, `core-memories.md`) — prior-session handoffs and daily
   logs; they narrate past runs' fixes
@@ -213,9 +212,6 @@ format; do not read another study's `trajectory.md` to copy it.
    `summary.json`) + converged), iter-by-iter narrative, caveats (spec
    compromises / tooling workarounds), **a run-level Claude token total**
    (see step 2a), **a run-level end-to-end execution time** (see step 2b),
-   **findings (durable lessons surfaced
-   during this run that aren't obvious from `CLAUDE.md`, the codegen rules,
-   or this runbook, and that should help future runs of any case study)**,
    reproducibility. State the actor (`me-as-developer`), independence
    (which inputs iter-1 read), and condition.
    2a. **Record the run-level Claude token total** in `trajectory.md` (the
@@ -242,22 +238,10 @@ format; do not read another study's `trajectory.md` to copy it.
      **not** pure codegen; the trajectory write-up is part of it).
    This is the time analogue of the token total (2a): a whole-run figure
    recovered once at session end, not per-iter.
-3. **Append this run's durable findings** to
-   `experiments/convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md` as a new
-   dated, provenance-tagged subsection (`study + run-<N> + commit`). This is the
-   one forbidden-read file you *write* to: **append only — do NOT open or read
-   its existing contents** (use a shell append, e.g. a heredoc `>>`), so this
-   run never pulls prior answers into context and the next run's independence is
-   preserved. Append only the findings you yourself surfaced this run.
-   *If you are running in a scrubbed worktree (Appendix), this file was removed
-   and won't exist here — that is correct. Do NOT recreate it in the worktree;
-   record your findings in `run-<N>/trajectory.md` only, and the KB append then
-   happens during copy-back to the main checkout (Appendix, copy-back step).*
-4. Commit ONLY `experiments/convergence/<study>/run-<N>/` and your appended
-   block in `CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md`. Do **not** commit
+3. Commit ONLY `experiments/convergence/<study>/run-<N>/`. Do **not** commit
    machine-specific `pipeline.yaml` tool-path edits or the
    `java.generated.project` workspace.
-5. Report to the human: converged iter count, the per-iter fix summary, and any
+4. Report to the human: converged iter count, the per-iter fix summary, and any
    spec deviations invoked.
 
 ---
@@ -324,10 +308,6 @@ Before opening the fresh session:
            experiments/convergence/<study>/run-<N>     # overwrites the slot if re-running
      ```
      Then, in the main checkout:
-     - **append** this run's findings (from its `run-<N>/trajectory.md`) to
-       `experiments/convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md` — the §6
-       step-3 append happens *here*, because the KB was scrubbed out of the
-       worktree (append-only; still don't let the worktree session read it);
      - commit, then `git worktree remove ../fmgvc-run`.
 
   **Same machine/account caveat:** even with the above, a true cold run is

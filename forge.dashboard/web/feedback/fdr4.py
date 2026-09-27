@@ -196,12 +196,12 @@ def _prescriptive_deadlock(counterexamples: list,
     last = trace[-1]
     handlers = _transitions_on_event(last, trace_data)
     if not handlers:
+        # ABLATION (condition D, diagnosis-only feedback). The counterexample
+        # trace and the unhandled event are retained; the prescribed Java
+        # construct is removed.
         body = (
             f"The counterexample ends with event `{last}`. "
-            f"No transition in the RoboChart model handles `{last}` — "
-            f"some mode reaches a state where this event occurs without "
-            f"a matching branch. Add an `instanceof` check for the "
-            f"event type in the corresponding mode block of step()."
+            f"No transition in the RoboChart model handles `{last}`."
         )
         return (story + "\n\n" + body) if story else body
     states = sorted({h.get("source_state", "?") for h in handlers})
@@ -209,10 +209,8 @@ def _prescriptive_deadlock(counterexamples: list,
         f"The counterexample ends with event `{last}`. Transitions "
         f"handling `{last}` exist (from state(s): {', '.join(states)}), "
         f"but the counterexample reaches a state where none of them "
-        f"fire. Check whether the reached state is one of these "
-        f"source states and, if so, whether the guards block every "
-        f"branch; otherwise add a branch for `{last}` in the reached "
-        f"state."
+        # ABLATION (condition D): the diagnosis stops at the trace.
+        f"fire. The reached state is shown in the trace above."
     )
     return (story + "\n\n" + body) if story else body
 
@@ -422,11 +420,10 @@ def _analyse_csp_structure(csp_file: Path | None) -> list[Issue]:
             kind="structure_empty_channels",
             title="Generated state machine declares no events",
             raw="channel declaration in CSP-M is empty",
+            # ABLATION (condition D, diagnosis-only feedback).
             fix_directive=(
-                "The controller defines no event types that trigger mode "
-                "transitions. Add a sealed InputEvent hierarchy with at "
-                "least one record per triggering event, and use "
-                "instanceof checks in step()."
+                "The generated CSP-M declares no channels: the controller "
+                "defines no event types that trigger mode transitions."
             ),
         ))
     if stop_states:

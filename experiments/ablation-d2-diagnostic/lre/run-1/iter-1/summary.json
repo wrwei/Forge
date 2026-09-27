@@ -1,0 +1,75 @@
+{
+ "study": "lre",
+ "run": 1,
+ "iteration": 1,
+ "recorded_utc": "2026-09-22 14:40:41",
+ "infrastructure_sha": "35f6d5570fb857c94cda4bdf58a9b5a08a4264da",
+ "worktree": "/Users/ranwei/Gitee/forge-d2-run3-lre",
+ "actor": "claude-code",
+ "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+ "codex_thread": null,
+ "actor_session_label": "CLAUDE-lre-run3",
+ "files": {
+  "java": 15,
+  "java_test": 0,
+  "formal_artefacts": 74,
+  "codegen_trace": 1,
+  "agent_summary": 1,
+  "feedback": 13,
+  "feedback_json": 13
+ },
+ "java_loc": 650,
+ "phase_status": {
+  "compile": "passed",
+  "coverage": "passed",
+  "preflight": "failed",
+  "t2m": "passed",
+  "m2m": "passed",
+  "m2t": "passed",
+  "dafny_gen": "passed",
+  "isabelle_gen": "passed",
+  "fdr4": "passed",
+  "dafny_verify": "failed",
+  "isabelle_verify": "passed",
+  "vacuity": "failed"
+ },
+ "phases_without_verdict": [],
+ "codegen_cost": {
+  "kind": "unavailable",
+  "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+  "total_tokens": null,
+  "turns": null,
+  "schema": "unavailable",
+  "tokens_in": null,
+  "tokens_out": null,
+  "scope": "per_turn_sum",
+  "notes": "full per-turn split available"
+ },
+ "converged": false,
+ "failure_summary": "dafny_verify, preflight, vacuity",
+ "actor_codegen_summary": "# Iteration 1 \u2014 LRE, run 3 (cold codegen)\n\n## What I did\n\nWrote the LRE controller from scratch: 15 Java files under\n`java.generated.project/src/main/java/lre/`, in the packages CLAUDE.md\nprescribes. Nothing pre-existing was deleted \u2014 the tree was empty, as the\npreflight confirmed. `./gradlew build` passes. `result_codegen.json` has 109\nentries covering all 51 requirement ids, every source file cited at least once.\n\nShape: one `step(InputEvent)` that invokes the five operations, refreshes the\neight LRE-Var state fields from them, declares ten named boolean predicates,\nthen a two-level `currentMode == X` if-else carrying the 18 transitions of\nLRE-Beh2..18. Entry actions inline: `advVel(1)` on every transition into MOM\n(FR2), `advVel(0)` into HCM (FR3). Every mode has an unguarded event-triggered\nexit (reqVel in OCM, reqOCM in MOM/HCM/CAM), so no mode relies solely on\nguarded transitions for progress.\n\n## Decisions the requirements did not settle\n\n1. **DM5 vs OP5 conflict.** DM5 says the relative-position accessors return\n   zero with no obstacle; OP5 says \"large-distance defaults\". Literally, DM5\n   puts the phantom obstacle on the AUV, giving `cda = 0`, firing MOM\u2192CAM\n   whenever no dynamic obstacle exists. I kept DM5 literal and changed the CPA\n   formula instead: `cda = sqrt(hdist(cdyn)\u00b2 \u2212 (r\u00b7v)\u00b2/|v|\u00b2)`, which reduces to\n   the safe large distance when absent because DM5 defines `hdist` that way.\n   Flagged for human review, not a spec edit.\n2. **Obstacle velocity read as absolute**, so relative velocity subtracts the\n   AUV's own. DM2 says \"obstacle velocity\"; OP5 says \"relative\".\n3. **`SAFE_LARGE_DIST = 1000.0`** and **`EPSILON = 1.0E-9`** invented \u2014 DM5\n   gives no magnitude, and `compute()` may not contain a zero test.\n4. **CAM emits no entry action.** FR4 wants evasive manoeuvres; DM7 permits\n   only advVel/advHdng and no requirement gives a value.\n\n## Unresolved\n\nWhether `cstc`/`cdyn`, which Var5/6 define with a \u22121 sentinel but which the\nextractor maps to `nat`, survive extraction. No `-1` literal reaches extracted\ncode. All items are also in `post_codegen.{md,json}`.",
+ "iter": 1,
+ "convergence_criterion": "TIGHTENED 2026-09-22 by author decision: the three OBLIGATION VERIFIERS succeed -- Dafny zero errors, every FDR4 assertion passes, Isabelle proves the deadlock-freedom lemma and every invariant -- AND the vacuity audit (Phase 6d) reports nothing AND the structural preflight passes. Five phases. Rationale: preflight is the gate that catches an extracted model which is WRONG BUT STILL VERIFIABLE (non-exclusive preconditions, triggerless branches, unannotated doubles), so a run whose linter rejected the model must not count as converged. The paper as submitted defined convergence over the four verifier phases only; this is a deliberate tightening, disclosed in the response letter, and it moves five runs by one iteration while leaving every reported median unchanged. Here dafny_verify, preflight, vacuity did not pass.",
+ "structural_inventory": {
+  "scope": "csp-gen/defs plus csp-gen root -- the fdr4 phase's output_dir; csp-gen/timed/ excluded (never read by the phase)",
+  "coreassertions_files": 10,
+  "total_assertions": 83,
+  "state_vars": 5,
+  "transitions": 18,
+  "java_loc": 801,
+  "basis": "computed from this record's own staged artefacts (Amendment 3)"
+ },
+ "adjudication": {
+  "by": "promote_staged_run.py, from the authoritative post_<phase>.json files",
+  "verifier_evidence": {
+   "vacuity": "failed, 1 blocking vacuity signal(s) detected (plus 4 advisory). The corresponding verifier passes discharge `True` obligations and do not establish behaviour",
+   "dafny_verify": "failed, Dafny: 1 file(s), 0 verified, 0 errors.",
+   "fdr4": "passed, FDR4: 3 assertion(s) checked, 3 passed.",
+   "isabelle_verify": "passed, Isabelle: 1 theory, 39 lemma(s) verified, elapsed 0:02:54, peak 28 MB.",
+   "preflight": "failed, 2c \u2014 Preflight (Structural Lint): 2 structural error(s) found. Downstream phases would produce a wrong formal model."
+  },
+  "note": "converged was RECOMPUTED from the verifier outputs, not taken from the staged summary (which carries converged=None).",
+  "starved_phases": null
+ },
+ "original_run": 3
+}

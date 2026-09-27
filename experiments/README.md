@@ -38,9 +38,7 @@ FDR4 + Isabelle all pass with a non-vacuous (D1/I1) result.
 | SRanger           |   2   |   2   |   2   |   2   |   2   | **2**  |
 
 (Cell = iterations to convergence.) Per-run trajectories are under
-[`convergence/<study>/run-N/`](convergence/); the deduplicated findings/caveats
-across all runs are in
-[`convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md`](convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md).
+[`convergence/<study>/run-N/`](convergence/).
 
 ### Cold baseline — feedback loop is necessary
 
@@ -66,7 +64,6 @@ experiments/
   HOWTO_RUN_COLD_BASELINE_EXPERIMENT.md   ← cold-baseline (K=10) run guide
   convergence/
     README.md                            ← convergence results + per-run index
-    CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md ← deduplicated findings/caveats (original run numbering)
     <study>/run-1 ... run-5/             ← per run: trajectory.md + iter-*/ (summary.json, feedback, formal-artefacts, traces, java)
   cold-baseline/
     README.md
@@ -76,4 +73,4 @@ experiments/
 
 ## License
 
-MIT.
+Reviewer evaluation only; see [`../LICENSE`](../LICENSE).

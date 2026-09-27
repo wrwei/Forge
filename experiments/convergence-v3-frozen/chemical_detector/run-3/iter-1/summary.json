@@ -1,0 +1,74 @@
+{
+ "study": "chemical_detector",
+ "run": 3,
+ "iteration": 1,
+ "recorded_utc": "2026-09-26 05:13:39",
+ "infrastructure_sha": "b808424c7c1b51157f4f14eac6e76e00d5beed90",
+ "worktree": "/Users/ranwei/Gitee/forge-frozen-run3-chemical_detector",
+ "actor": "claude-code",
+ "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+ "codex_thread": null,
+ "actor_session_label": "CLAUDE-chemical_detector-run3",
+ "files": {
+  "java": 19,
+  "java_test": 0,
+  "formal_artefacts": 62,
+  "codegen_trace": 1,
+  "agent_summary": 1,
+  "feedback": 13,
+  "feedback_json": 13
+ },
+ "java_loc": 672,
+ "phase_status": {
+  "compile": "passed",
+  "coverage": "passed",
+  "preflight": "passed",
+  "t2m": "passed",
+  "m2m": "passed",
+  "m2t": "passed",
+  "dafny_gen": "passed",
+  "isabelle_gen": "passed",
+  "fdr4": "passed",
+  "dafny_verify": "passed",
+  "isabelle_verify": "passed",
+  "vacuity": "passed"
+ },
+ "phases_without_verdict": [],
+ "codegen_cost": {
+  "kind": "unavailable",
+  "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+  "total_tokens": null,
+  "turns": null,
+  "schema": "unavailable",
+  "tokens_in": null,
+  "tokens_out": null,
+  "scope": "per_turn_sum",
+  "notes": "full per-turn split available"
+ },
+ "converged": true,
+ "failure_summary": null,
+ "actor_codegen_summary": "# ITER_SUMMARY \u2014 chemical_detector run 3, iteration 1 (cold codegen)\n\n**What changed.** `java.generated.project/src/main/java/` started empty, so nothing was deleted. I wrote 19 Java files under `chemical_detector/` (annotation, constants, domain, event, mode, sensor, actuator, operation, controller), plus `result_codegen.json`, which traces all 81 requirements and names every file. There are two mode-nested controllers:\n\n- `GasAnalysisController`: READING, ANALYSIS, NO_GAS, GAS_DETECTED, SOURCE_FOUND, CONCLUDED.\n- `MovementController`: WAITING, GOING, AVOIDING, TRYING_AGAIN, AVOIDING_AGAIN, GETTING_OUT, FOUND, HALTED.\n\nThey communicate only through `MovementBus.turn/stop/resume`, whose calls extract to the same `turn`/`stop`/`resume` events that the movement controller triggers on. A small `ChemicalDetector` driver composes the two.\n\n**Decisions the requirements did not settle.**\n- **No `Final` mode.** Per CLAUDE.md, the controller whose theory is generated must not have one, and every mode needs an outgoing transition. The spec's terminal steps therefore become an emitting state followed by an idle sink: SOURCE_FOUND\u2192CONCLUDED absorbs later gas readings, and FOUND\u2192HALTED has a stop self-loop. A self-loop on the emitting state itself would re-run its entry action and re-send `stop`/`flag`.\n- **Analysis and AvoidingAgain.** The second outgoing branch of each is an `else`, so the pair of guards is an explicit P / \u00acP total cover. This is equivalent to the spec because Status has two values and \"stuck\" is exactly \u00acprogress.\n- **Threshold guard.** It is written `ins >= THR` rather than as a `goreq(...)` call, so the guard stays transparent in the model. `goreq` is still implemented and used by `intensity`/`location`.\n- **Invented defaults.** Constant values; \"indicates target\" means target chem id with intensity > 0; the sensor-position\u2192Angle mapping; empty-reading defaults.\n\n**Unresolved or ambiguous.** `intensity()` takes the peak over all sensors, as the spec states, not only the target chemical. A `turn` delivered while in AvoidingAgain is dropped in Java. Details are in `post_codegen.md` (12 items).",
+ "iter": 1,
+ "convergence_criterion": "TIGHTENED 2026-09-22 by author decision: the three OBLIGATION VERIFIERS succeed -- Dafny zero errors, every FDR4 assertion passes, Isabelle proves the deadlock-freedom lemma and every invariant -- AND the vacuity audit (Phase 6d) reports nothing AND the structural preflight passes. Five phases. Rationale: preflight is the gate that catches an extracted model which is WRONG BUT STILL VERIFIABLE (non-exclusive preconditions, triggerless branches, unannotated doubles), so a run whose linter rejected the model must not count as converged. The paper as submitted defined convergence over the four verifier phases only; this is a deliberate tightening, disclosed in the response letter, and it moves five runs by one iteration while leaving every reported median unchanged. Here all 12 phases passed.",
+ "structural_inventory": {
+  "scope": "csp-gen/defs plus csp-gen root -- the fdr4 phase's output_dir; csp-gen/timed/ excluded (never read by the phase)",
+  "coreassertions_files": 7,
+  "total_assertions": 81,
+  "state_vars": 7,
+  "transitions": 9,
+  "java_loc": 800,
+  "basis": "computed from this record's own staged artefacts (Amendment 3)"
+ },
+ "adjudication": {
+  "by": "promote_staged_run.py, from the authoritative post_<phase>.json files",
+  "verifier_evidence": {
+   "vacuity": "passed, No blocking vacuity signals detected (syntactic D1/I1 and semantic satisfiability/reachability/constant-consistency checks). Any `0 errors` from Dafny",
+   "dafny_verify": "passed, Dafny: 1 file(s), 10 verified, 0 errors.",
+   "fdr4": "passed, FDR4: 9 assertion(s) checked, 9 passed.",
+   "isabelle_verify": "passed, Isabelle: 1 theory, 21 lemma(s) verified, elapsed 0:01:09, peak 26 MB.",
+   "preflight": "passed, 2c \u2014 Preflight (Structural Lint): no structural errors."
+  },
+  "note": "converged was RECOMPUTED from the verifier outputs, not taken from the staged summary (which carries converged=None).",
+  "starved_phases": null
+ }
+}

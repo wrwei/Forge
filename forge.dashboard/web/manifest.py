@@ -128,6 +128,28 @@ class Manifest:
                     raise ValueError(
                         f"Phase '{phase.id}' depends on unknown phase '{dep}'")
 
+        # Reject dependency cycles at load time. ordered() below marks a
+        # node visited before recursing into its deps, so on a cyclic
+        # manifest it silently returns a wrong order instead of failing.
+        WHITE, GREY, BLACK = 0, 1, 2
+        colour: dict[str, int] = {}
+
+        def _check(pid: str) -> None:
+            colour[pid] = GREY
+            for dep in phases[pid].depends_on:
+                c = colour.get(dep, WHITE)
+                if c == GREY:
+                    raise ValueError(
+                        f"Dependency cycle involving phase '{dep}' "
+                        f"(reached again from '{pid}')")
+                if c == WHITE:
+                    _check(dep)
+            colour[pid] = BLACK
+
+        for pid in phases:
+            if colour.get(pid, WHITE) == WHITE:
+                _check(pid)
+
         return cls(output_dir, phases, raw)
 
     def dump(self, path: Path) -> None:

@@ -88,6 +88,22 @@ public class SpoonDiscoverer {
         // Extract record component metadata for per-event type declarations
         this.recordMetadata = RecordMetadataResolver.resolve(model);
 
+        // T2M-4 fix: mapped-vs-visited integrity summary. A clean discovery has
+        // zero drops and zero feature failures; anything else means the persisted
+        // model is structurally incomplete and downstream verification would run
+        // on a model missing source elements.
+        int mapped = mapper.getMapped().size();
+        if (mapper.getDroppedNoEClass() > 0 || mapper.getFeatureFailures() > 0) {
+            log.warn("T2M integrity: visited={}, mapped={}, droppedSubtrees={}, "
+                    + "featureFailures={} — discovered model is INCOMPLETE; "
+                    + "see warnings above for locations",
+                    mapper.getVisited(), mapped,
+                    mapper.getDroppedNoEClass(), mapper.getFeatureFailures());
+        } else {
+            log.info("T2M integrity: visited={}, mapped={}, no drops", 
+                    mapper.getVisited(), mapped);
+        }
+
         return resource;
     }
 
@@ -320,13 +336,32 @@ public class SpoonDiscoverer {
             return Collections.unmodifiableMap(mapped);
         }
 
+        /** Elements visited (mapped or attempted). Compared against mapped.size()
+         *  at the end of discovery to make silent drops observable (T2M-4 fix). */
+        private int visited = 0;
+        private int droppedNoEClass = 0;
+        private int featureFailures = 0;
+
+        int getVisited() { return visited; }
+        int getDroppedNoEClass() { return droppedNoEClass; }
+        int getFeatureFailures() { return featureFailures; }
+
         EObject map(CtElement element) {
             if (element == null) return null;
             if (mapped.containsKey(element)) return mapped.get(element);
+            visited++;
 
             String className = spoonClassName(element);
             EClass eClass = findEClass(className);
-            if (eClass == null) return null;
+            if (eClass == null) {
+                // T2M-4 fix: a missing EClass silently dropped this element AND its
+                // whole subtree. Surface it at warn level and count it.
+                droppedNoEClass++;
+                log.warn("No EClass for Spoon type '{}' — element and its subtree "
+                        + "will be ABSENT from the discovered model (at {})",
+                        className, safePosition(element));
+                return null;
+            }
 
             EObject obj = EcoreUtil.create(eClass);
             mapped.put(element, obj);
@@ -336,12 +371,35 @@ public class SpoonDiscoverer {
                 try {
                     setFeature(obj, feature, element);
                 } catch (Exception e) {
-                    log.debug("Failed to map feature {}.{}: {}",
+                    // T2M-4 fix: was debug-level, invisible at default log level.
+                    featureFailures++;
+                    log.warn("Failed to map feature {}.{}: {}",
                             eClass.getName(), feature.getName(), e.getMessage());
                 }
             }
 
+            // T2M-1 fix: valueKind has no CtRole, so the generic feature walk
+            // cannot populate it. Record the literal's Java type name so XMI
+            // consumers can reconstruct a typed value from the string.
+            if (element instanceof spoon.reflect.code.CtLiteral<?> lit
+                    && lit.getValue() != null) {
+                EStructuralFeature kindFeat = eClass.getEStructuralFeature("valueKind");
+                if (kindFeat != null) {
+                    obj.eSet(kindFeat, lit.getValue().getClass().getSimpleName());
+                }
+            }
+
             return obj;
+        }
+
+        private String safePosition(CtElement element) {
+            try {
+                SourcePosition p = element.getPosition();
+                if (p != null && p.isValidPosition() && p.getFile() != null) {
+                    return p.getFile().getName() + ":" + p.getLine();
+                }
+            } catch (Exception ignored) { }
+            return "unknown position";
         }
 
         private void setFeature(EObject obj, EStructuralFeature feature, CtElement element) {
@@ -411,6 +469,11 @@ public class SpoonDiscoverer {
                         } else {
                             obj.eSet(attr, lit.getInstance());
                         }
+                    } else {
+                        // T2M-4 fix: was a silent unset.
+                        log.warn("EEnum {} has no literal '{}' — attribute {}.{} left unset",
+                                eEnum.getName(), literalName,
+                                obj.eClass().getName(), attr.getName());
                     }
                 }
             } else {
@@ -449,7 +512,31 @@ public class SpoonDiscoverer {
                     if (value instanceof Number n) yield n.longValue();
                     yield null;
                 }
-                default -> null;
+                // T2M-4 fix: previously unhandled numeric targets fell through to
+                // null and the attribute was silently unset.
+                case "EDouble" -> {
+                    if (value instanceof Number n) yield n.doubleValue();
+                    yield null;
+                }
+                case "EFloat" -> {
+                    if (value instanceof Number n) yield n.floatValue();
+                    yield null;
+                }
+                case "EChar" -> {
+                    if (value instanceof Character c) yield c;
+                    String s = value.toString();
+                    yield s.length() == 1 ? s.charAt(0) : null;
+                }
+                case "EShort" -> {
+                    if (value instanceof Number n) yield n.shortValue();
+                    yield null;
+                }
+                default -> {
+                    log.warn("convertPrimitive: no conversion for target type {} "
+                            + "(value class {}) — attribute left unset",
+                            typeName, value.getClass().getSimpleName());
+                    yield null;
+                }
             };
         }
 
@@ -461,7 +548,7 @@ public class SpoonDiscoverer {
                     for (Object item : coll) {
                         if (item instanceof CtElement child) {
                             EObject childObj = map(child);
-                            if (childObj != null) {
+                            if (childObj != null && guardContainment(obj, ref, childObj)) {
                                 list.add(childObj);
                             }
                         }
@@ -470,11 +557,33 @@ public class SpoonDiscoverer {
             } else {
                 if (value instanceof CtElement child) {
                     EObject childObj = map(child);
-                    if (childObj != null) {
+                    if (childObj != null && guardContainment(obj, ref, childObj)) {
                         obj.eSet(ref, childObj);
                     }
                 }
             }
+        }
+
+        /**
+         * T2M-5 fix: every generated EReference is containment, on the assumption
+         * that Spoon's AST is a strict tree. If a memoised EObject is reachable via
+         * a second containment role, EMF would silently MOVE it, leaving the first
+         * parent missing a child. Detect that case, keep the first containment, and
+         * warn — so a Spoon upgrade that breaks the tree assumption is visible
+         * instead of manifesting as unexplained model incompleteness.
+         *
+         * @return true if it is safe to add/set the child under this reference
+         */
+        private boolean guardContainment(EObject parent, EReference ref, EObject child) {
+            if (!ref.isContainment()) return true;
+            EObject currentContainer = child.eContainer();
+            if (currentContainer == null || currentContainer == parent) return true;
+            log.warn("Containment conflict: {} already contained by {}; NOT re-parenting "
+                    + "under {}.{} (Spoon tree assumption violated — model may be "
+                    + "incomplete at the second site)",
+                    child.eClass().getName(), currentContainer.eClass().getName(),
+                    parent.eClass().getName(), ref.getName());
+            return false;
         }
 
         private String spoonClassName(CtElement element) {

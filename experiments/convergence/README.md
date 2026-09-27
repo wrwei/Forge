@@ -36,10 +36,6 @@ own [`<study>/run-N/trajectory.md`](.); the mechanical per-iter data (phase
 wall-clocks, `phase_results`, `converged`) is in each
 `<study>/run-N/iter-*/summary.json`.
 
-The deduplicated, provenance-attributed aggregation of every durable
-finding/caveat mined across all runs is in
-[`CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md`](CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md).
-
 > ⚠️ **Run-numbering note.** The knowledge base uses the **original experiment
 > run numbering** — its per-run blocks and cross-references span the full run
 > history (including re-runs/redos). In this artifact the published `run-1..5`

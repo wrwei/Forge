@@ -143,55 +143,6 @@ All 12 phases passed; vacuity audit clean. Converged.
 - CAM has no entry action: "evasive manoeuvres" (LRE-FR4) has no defined
   advVel/advHdng output in the requirements.
 
-## Findings (durable, generalisable)
-
-**F1 — Dafny's autonomous `ensures` premises are emitted verbatim from the
-branch guard; make every guard self-contained at codegen time.** The Dafny
-generator turns each guarded branch into `ensures <guard> ==> mode' == X`
-with no event conjunct and no negation of higher-priority branches, so any
-preempting branch violates lower branches' implications (iter-1: 6 errors in
-MOM/HCM, e.g. the `endTask` return path with `cda<1 ∧ tcpa≥0` true).
-**How to apply:** in any future run, write autonomous transitions gated on a
-dedicated `Tick` input event AND conjoin negations of every higher-priority
-same-event guard whose target mode differs (composite named predicates keep
-this within the predicate rules). Branches sharing a target mode need no
-mutual exclusion — identical conclusions cannot conflict. Doing this in
-iter 1 would likely have saved the iteration.
-
-**F2 — Preflight rule4 wants `@RoboChartType("real")` on *every* double
-field and parameter, not just model-relevant ones.** It flagged Actuator
-latch fields, a private static sensor default (`SAFE_LARGE_DISTANCE`),
-`updateVehicle` parameters, record components, and constants-class fields —
-none of which CLAUDE.md's "annotate fields whose Java type does not directly
-convey the RoboChart type" phrasing obviously demands. **How to apply:**
-annotate all doubles (fields, params, record components) uniformly at cold
-codegen; it is cheap and removes a whole failure class. (Method *return*
-types were not flagged.)
-
-**F3 — When an operation's spec says "uses the index computed by
-OperationX", read the equivalent sensor selector directly instead of the
-other operation's getter.** The compute() RHS whitelist (sensor calls,
-Math.sqrt, arithmetic, own fields) excludes cross-operation getters.
-`CheckOPEZ`/`CalcCPA` call `sensor.closestStaticIndex()`/`closestDynamicIndex()`
-themselves — same value by construction, and the pipeline accepted it
-end-to-end (Dafny abstracts the sensor functions as uninterpreted).
-
-**F4 — A 'closest distance' quantity computed from zero-default accessors is
-a safety trap; route its magnitude through a large-default distance
-function.** LRE-DM5 makes field accessors return 0 when no obstacle exists;
-a CPA formula built only on accessors then yields `cda = 0` ⇒ spurious
-CAM entry whenever no dynamic obstacle exists. Using `hdist(cdyn)²` (default
-10¹²) as the separation term makes the no-obstacle case safe purely through
-the sensor-layer defaults, with no sentinel checks in the operation. Check
-every derived quantity's missing-data limit against the guards it feeds.
-
-**F5 — Environment verification before iter 1 should include executing the
-verifier binaries, not just reading the config.** Both `dafny_path.win32`
-and `wsl_isabelle_bin` were syntactically plausible but pointed at another
-user's home; the cost was a full discarded pipeline invocation. A 2-second
-`Test-Path` + `wsl ls` of the two configured binaries during §2 setup would
-have caught it before any run.
-
 ## Reproducibility
 
 1. Stage iter-N source: copy `run-2/iter-N/java/` over

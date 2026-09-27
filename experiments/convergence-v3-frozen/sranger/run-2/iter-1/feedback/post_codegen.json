@@ -1,0 +1,76 @@
+{
+  "status": "uncertain",
+  "summary": "23/23 SRanger requirements implemented in 8 Java files; javac clean. Four review points: SR-DM4 output shape, endTask vs timed-transition priority in Turning, tick self-loop ordering, and two invented defaults.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "SR-DM4 realised as a two-argument actuator call, not an event record",
+      "raw": "A RoboChart event carries a single payload; an OutputEvent.Move record would lose the angular velocity in extraction. Actuator.move(lv, av) extracts as an LOperations call carrying both.",
+      "fix_directive": "If SR-DM4 must be a sealed-interface event record, accept that the extracted model carries only the linear velocity.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/actuator/Actuator.java",
+          "java_element": "move",
+          "requirement_ids": [
+            "SR-DM4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Shutdown priority vs. the timed transition in Turning",
+      "raw": "SR-Beh5 (autonomous, timed) and SR-Beh6 (endTask) both leave Turning with no stated priority. endTask is placed first per the project's operator-override rule; preflight rule8 will warn.",
+      "fix_directive": "Confirm endTask should pre-empt the timed Turning->Moving transition, or reorder.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "java_element": "step",
+          "requirement_ids": [
+            "SR-Beh5",
+            "SR-Beh6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Turning tick self-loop ordered after the timed transition",
+      "raw": "SR-Beh7's tick self-loop follows SR-Beh5 and carries && !turnDurationElapsed; tick arrives every cycle, so the reverse order would starve SR-Beh5.",
+      "fix_directive": "None required unless the requirements intend tick to pre-empt the timed transition.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "java_element": "step",
+          "requirement_ids": [
+            "SR-Beh5",
+            "SR-Beh7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Clock unit (seconds) and the sensor's large default reading (1000.0 m)",
+      "raw": "SR-Var1 does not fix a time unit; seconds keeps TURN_DURATION at 2.0 exactly. SR-DM5 asks for 'a large default value' without a number.",
+      "fix_directive": "Confirm 1000.0 m is an acceptable no-reading default and that seconds is the intended clock unit.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/clock/Clock.java",
+          "java_element": "now",
+          "requirement_ids": [
+            "SR-Var1"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/sensor/IrSensor.java",
+          "java_element": "latestDistance",
+          "requirement_ids": [
+            "SR-DM5"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

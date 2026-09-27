@@ -358,6 +358,109 @@ def apply_csp_corrections(config_path: str = None,
         logger.info("Loaded %d domain-specific overrides from %s",
                      len(overrides) - len(DEFAULT_TYPE_RANGES), overrides_file)
 
+    # 3. WELL-FORMEDNESS WIDENING (2026-09-14). The narrowed
+    # ranges above are a tractability decision, but they carry a
+    # well-formedness condition the defaults cannot see: the domain must
+    # include every constant the MODEL ITSELF binds into a process
+    # instantiation. When a codegen's action shape lifts a constant into an
+    # operation argument (e.g. `entry move(0, turnvel)` with turnvel = 2),
+    # the coreassertions file binds `const_..._turnvel = 2` and passes it to
+    # the process — and a {0..1} domain then cannot compile the process at
+    # all: every assertion returns "inconclusive" in seconds, with no error
+    # the feedback layer can attribute. Observed live: sranger v3 run-3
+    # cold-failed FDR4 this way while runs 1-2 passed, purely because THEIR
+    # codegens' shapes never surfaced the velocity constants into the model
+    # (semantically identical Java, byte-distinct text). Same class as the
+    # Steam Boiler's pump-id widening, now handled where it belongs.
+    #
+    # Rule: scan the .rct's typed constants; for each narrowed numeric range,
+    # widen just enough to include every constant of that type that the
+    # coreassertions files actually BIND. Constants that appear only in
+    # guards (compared, never communicated) do not force widening — e.g.
+    # turnduration = 2 sits outside {0..1} in every sranger run and is
+    # harmless — so binding-site presence, not mere existence, is the test.
+    # Every widening is logged loudly: a silent domain change would be a
+    # tuning knob pretending to be a constant of the experiment.
+    widened: dict[str, tuple[int, int, list[str]]] = {}
+    try:
+        out_dir = inst_path.parent.parent  # csp-gen/.. = output/
+        rct = next(out_dir.glob("*.rct"), None)
+        rct_consts: dict[str, tuple[str, float]] = {}
+        if rct is not None:
+            for m in re.finditer(
+                    r"^\s*const\s+(\w+)\s*:\s*(nat|int|real)\s*=\s*(-?\d+(?:\.\d+)?)",
+                    rct.read_text(encoding="utf-8"), re.M):
+                rct_consts[m.group(1).lower()] = (m.group(2), float(m.group(3)))
+        # A constant forces widening only when it is COMMUNICATED — named in
+        # an action line (entry/exit/during/action), where it becomes an
+        # event payload the narrowed nametype must contain. A constant that
+        # appears only in `condition` lines is compared, never communicated,
+        # and is harmless outside the domain: turnduration = 2 is bound as a
+        # process parameter in EVERY sranger run's coreassertions and passed
+        # at {0..1} in runs 1-2 — the first version of this scan keyed on
+        # binding and spuriously widened those passing runs (caught by the
+        # negative control). Note the parenthesis trap: `condition since (
+        # clockResetTime ) >= turnduration` puts a CALL in a guard, so
+        # "appears inside parens" is also the wrong test; line kind is the
+        # discriminator.
+        communicated: dict[str, float] = {}
+        if rct is not None:
+            for line in rct.read_text(encoding="utf-8").splitlines():
+                if not re.match(r"\s*(entry|exit|during|action)\b", line):
+                    continue
+                # FIX (2026-09-19). `wait ( X )` is a timed delay, not a
+                # communication: its argument never becomes an event payload, so it
+                # must not force widening. MEASURED, not argued — the autonomous
+                # arm's chemical_detector run-1 has `const outPeriod : real = 2`
+                # inside `entry send shortRandomWalk ; wait ( outPeriod )` and its
+                # fdr4 phase PASSED 9/9 at real = {0..1}. Without this exclusion the
+                # A case-insensitive fix would widen that passing run's domain {0..1} -> {0..2},
+                # enlarging the state space of a run that demonstrably did not need it.
+                scan_line = re.sub(r"\bwait\s*\([^)]*\)", " ", line)
+                for nm, (typ, v) in rct_consts.items():
+                    # FIX (2026-09-19). rct_consts is keyed LOWER-CASED (see the
+                    # scan above), but the action line carries the constant's original
+                    # spelling. A camelCase constant -- `entry move ( 0 , turnVel )` --
+                    # therefore never matched, nothing registered as communicated, and
+                    # the widening never fired: FDR aborted with
+                    # "moveCall.0.2 ... not a member of {0,1}" and every assertion came
+                    # back inconclusive. Found by the autonomous arm's sranger run-2,
+                    # which worked around it by renaming its Java constants to single
+                    # words rather than editing the instrument (correct conduct: the
+                    # prompt forbids instrument edits). Case-insensitive here because
+                    # the key is normalised and the line is not.
+                    if re.search(rf"\b{re.escape(nm)}\b", scan_line, re.I):
+                        communicated[nm] = v
+        need: dict[str, tuple[float, float]] = {}   # csp type -> (min, max) required
+        for nm, v in communicated.items():
+            typ = rct_consts[nm][0]
+            lo, hi = need.get(typ, (0.0, 0.0))
+            need[typ] = (min(lo, v), max(hi, v))
+            widened.setdefault(typ, (0, 0, []))[2].append(f"{nm}={v:g}")
+        for typ, (lo, hi) in need.items():
+            if typ not in csp_names:
+                continue
+            cur = overrides.get(typ, [DEFAULT_TYPE_RANGES.get(typ, "")])[0]
+            mm = re.search(r"\{(-?\d+)\.\.(-?\d+)\}", cur)
+            if not mm:
+                continue
+            clo, chi = int(mm.group(1)), int(mm.group(2))
+            nlo, nhi = min(clo, int(lo)), max(chi, int(hi))
+            if (nlo, nhi) != (clo, chi):
+                overrides[typ] = [_build_nametype(csp_names[typ], nlo, nhi)]
+                consts = widened.get(typ, (0, 0, []))[2]
+                widened[typ] = (nlo, nhi, consts)
+                logger.warning(
+                    "WIDENED %s: {%d..%d} -> {%d..%d} to cover model-bound "
+                    "constant(s) %s — the model communicates these values; a "
+                    "domain excluding them cannot compile (every assertion "
+                    "inconclusive).", csp_names[typ], clo, chi, nlo, nhi,
+                    ", ".join(consts))
+    except Exception as e:  # never let the widening scan break the phase
+        logger.warning("communicated-constants scan failed (%s); ranges "
+                       "left as configured — a load failure downstream may "
+                       "be this", e)
+
     # The RoboChart CSP generator emits TWO instantiations.csp files when
     # any controller has a clock field:
     #   csp-gen/instantiations.csp        — untimed module

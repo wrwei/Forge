@@ -131,51 +131,6 @@ unaffected (`old(e) == e` on an unchanged heap). Validated standalone (`dafny ve
     experiment (~80 s) and a direct Dafny validation, + write-up + idle).
   - Add to `experiments/convergence/execution_times.md` at copy-back (file scrubbed from this worktree).
 
-## Findings (durable, generalizable)
-
-**F1 — Annotate *every* `double` at cold-codegen time, not just model-relevant state.** Preflight
-`rule4_double_missing_real_annotation` fires on constants-class fields, record components, setter
-parameters, and even private static finals (`Sensor.NO_OBSTACLE_DIST`). The codegen-rules text reads as
-if `@RoboChartType("real")` matters for model-mapped state only; the lint is stricter. Apply: blanket-
-annotate all double fields/params in every class the discoverer sees; it costs nothing and removes one
-guaranteed iter.
-
-**F2 — The Isabelle deadlock_free closer must be picked by payload *kind*, not payload *presence*.**
-A machine with scalar payload domains (TypeRef → `OpVel = UNIV [simp]`) **and** real-arithmetic guards
-hangs `auto` (>600 s) but closes under `by (metis St.exhaust_disc)` in ~68 s — the scalar-UNIV
-existential does not trip metis the way list-payload (`SeqGs`) does. Any controller with a
-payload-carrying pass-through event (a very common shape) plus numeric guards hits this. Apply: the
-template now discriminates on `hasSeqPayloadDomain`; if a future machine still hangs, hand-test closers
-first (see F3's method).
-
-**F3 — Test Isabelle closers on a scratch copy before burning a pipeline iter.** Copy
-`forge.transformations/output/isabelle/` to a scratch dir, hand-patch the one tactic line, and run
-`isabelle build -D . -o timeout=300` directly in WSL. A closer experiment costs ~1–2 min against ~10+
-min for a pipeline run whose isabelle phase will hang to the 600 s timeout; the result is also *direct*
-evidence for a template fix. Same applies to Dafny: `Dafny.exe verify <file>.dfy` directly gives the
-"related location" per failing return path, which the parsed `post_dafny_verify.md` discards — that
-detail is what distinguished "missing negations" (Java fix) from "post-state premises" (generator fix).
-
-**F4 — Dafny transition contracts need `old(...)` premises; guard negation chaining alone cannot fix
-them.** The generated transition methods abstract sensors as bodyless `reads this` functions, so after
-any real `mode` write every function value is unconstrained in the post-state: a clause
-`guard ==> mode == target` with post-state `guard` is unprovable on *every* sibling return path that
-writes a different target, regardless of how exclusive the Java guards are. The correct contract for
-priority-encoded if-else transitions is `old(guard) ==> mode == target`, *combined with* explicit
-negation chaining in the Java so pre-state premises are mutually exclusive. Both halves are needed:
-iter-2 (negations only) still had 7 errors; old() without negations would fail on overlapping guards.
-
-**F5 — Naming events records verbatim after the RoboChart event names works end-to-end.** Lowercase
-record names (`reqVel`, `advVel`…) inside the sealed event interfaces survive Spoon/ETL/EGL/CSP-gen/
-Isabelle and keep every generated artefact's event names identical to the requirement vocabulary —
-worth doing for traceability despite being unconventional Java style.
-
-**F6 — Bridge failures are not verdicts.** Both verifier "failures" on the first iter-1 run were
-wrong per-machine tool paths in `pipeline.yaml` (`dafny_path.win32`, `wsl_isabelle_bin` pointing at
-another user's home). Symptoms: dafny "executable not found", isabelle exit 127 with
-`bash: ... No such file or directory`. Fix the environment and re-run the same iter; do not snapshot
-the broken run or spend a Java iteration on it.
-
 ## Reproducibility
 
 1. Stage iter-N: `rm -rf java.generated.project/src/main/java/lre && cp -r

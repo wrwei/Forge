@@ -55,26 +55,6 @@ Summed from the driving session's transcript JSONL (`2d0cc4e5-…jsonl`, 190 ass
 
 Whole-run figures (both iters + setup + archive); not splittable per iter. Per-iter `codegen_cost` fields are `null`/`estimated` per protocol.
 
-## Findings (durable lessons for future runs, any study)
-
-**F1 — Read the transformation sources before cold codegen; they are the encoding contract.** CLAUDE.md describes *what* the M2M emits but not the exact Java shapes it pattern-matches. Spending iter-1 prep reading `java2robochart.etl` + `robochart2rct.egl` (≈1 hour of context) surfaced every encoding rule below and produced a model that was spec-faithful on the first extraction — the run converged in 2 iters with zero model-level failures. The runbook explicitly allows this ("the tool, not the answer key"); treat it as a standing step of iter-1, not an optional extra.
-
-**F2 — M2M function-signature inference is first-parameter-only.** A multi-arg Java method referenced from a controller guard or action (e.g. the spec's `goreq(a, b)`) is emitted as a 1-param RoboChart function — arity mismatch downstream. Keep multi-arg helpers out of guards/actions: inline binary comparisons (`ins >= thr`) in named predicates, and reserve method calls in guards for single-parameter functions (`analysis(gs)`, `intensity(gs)`, `location(gs)`).
-
-**F3 — Never give a controller constructor-dependency class a bare record-typed method/constructor parameter.** Phase-5 sensor detection walks the (last-discovered) controller's ctor-dependency classes and promotes the *first record found in any method parameter* to "the sensor record", hijacking the `Sensors` interface and deleting that record's `datatype`. Type such parameters as the sealed *interface* (`changeDirection(VehicleEvent cmd)`, `send(MovementEvent e)`), and instantiate emission ports inline (`= new SignalPort()`) rather than via constructor params.
-
-**F4 — Use the single-field-record constructor pattern for every typed event emission.** `recv.method(new Events.Evt(arg))` names the event from the record and types it from the record's field via `recordMetadata` — correct in both transition and lifted-entry contexts. A bare single-arg call (`vehicle.changeDirection(this.l)`) in an entry context types the event from the *trigger* context (empty in entries) and synthesises a junk `<evt>_Type_value_int` primitive type.
-
-**F5 — Every typed trigger branch must capture the payload into a matching state var as its FIRST statement.** The M2T rewrites `trigger evt ? v ; sv = v` into `trigger evt ? sv`; without the capture, the trigger binds to the stm-local `var v : real` and the CSP generator rejects non-real payloads (Angle/Loc/Seq). This includes consume-and-ignore self-loops (e.g. `Found` on `turn`).
-
-**F6 — Prefer p/¬p (same predicate, negated) over two-enum-literal guards for total cover.** `stsIsNoGas` / `!stsIsNoGas` makes the autonomous pair's exhaustiveness propositional, so the Isabelle deadlock-freedom disjunction closes from `St.exhaust_disc` alone — no dependence on the payload enum's exhaustion lemma. Semantically identical on a 2-literal enum; document the deviation.
-
-**F7 — Spec "entry" actions = identical action duplicated on every non-self incoming transition.** The EGL synthesises `entry` only when *all* non-self, non-initial incoming transitions carry the byte-identical action sequence (self-loops are excluded from the check, but re-entry still fires the lifted entry). Top-of-mode statements are the other (authoritative) entry source — but note multi-arg calls at top-of-mode are NOT routed through the operation-call builder, so `move(lv,a)`-style entries must come via the duplication route, never top-of-mode.
-
-**F8 — Distinguish environment verdicts from code verdicts before burning an iter.** Exit-127 / exe-not-found in `dafny_verify`/`isabelle_verify` (tool paths from another machine in `pipeline.yaml`) look like phase failures in the SUMMARY but are not feedback about the Java. Fix the paths and re-run the same iter; snapshot only the honest verdict. Check `dafny_path.win32` and `wsl_isabelle_bin` against the local user homes during §2 setup, not after the first failure.
-
-**F9 — The no-Final rerouting composes with inter-controller liveness.** Once the emitting controller (GA) no longer terminates, the receiving controller's terminal mode (`Found`) must keep accepting *every* event the emitter can still produce (`stop`, `turn`, `resume` self-loops) or the synchronous inter-controller connections can block. The reroute is therefore a pair of changes, not one: emitter terminal → live state, AND receiver terminal mode → consume-and-ignore self-loops on all shared events.
-
 ## Independence
 
 - **Iter-1 inputs read:** `forge.assets/case-studies/chemical_detector/system/system_description.txt`, `forge.assets/case-studies/chemical_detector/requirements/requirement_all.json`, `CLAUDE.md`, `forge.assets/prompts/{java_codegen_rules,chain_of_thought_codegen,few_shot_codegen}.txt`, `experiments/HOWTO_RUN_CONVERGENCE_EXPERIMENT.md`, `experiments/RUN_TRAJECTORY.md`; plus pipeline tool sources under `forge.transformations/src/main/resources/transformations/` and `forge.dashboard/web/` (sanctioned tool reads), and the workspace artefacts my own iters produced (`output/robochart_controller.rct`, `.dfy`, `.thy`, `post_*` feedback).

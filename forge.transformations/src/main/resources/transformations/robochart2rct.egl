@@ -372,11 +372,32 @@ if (not sharedEventNames.isEmpty()) {
 }
 
 // --- Interfaces: Sensors, Actuators (from model) ---
+// FORK (steam boiler held-out): de-duplicate against Ctrl_State. A
+// name declared in BOTH Ctrl_State (a controller guard field) and Sensors
+// (the ETL promotes every sensor batch-record field) reaches operations
+// that `requires` both interfaces, and the vendored CSP generator then
+// emits the memory-channel block (get_/set_/setL_/setR_/set_EXT_) TWICE —
+// "multiple definitions" load failure in FDR4 (witness: unitsReady,
+// CalcLevelEstimate.csp:51 vs :61). The state declaration wins: guards
+// and actions resolve to the state variable; the shadowed Sensors entry
+// (the raw record field) is dropped with a generation-time notice.
+var f7StateNames = new OrderedSet;
+var f7CtrlIface = pkg.interfaces.selectOne(i | i.name == "Ctrl_State");
+if (f7CtrlIface.isDefined()) {
+    for (vl in f7CtrlIface.variableList) {
+        for (v in vl.vars) { f7StateNames.add(v.name); }
+    }
+}
 for (iface in pkg.interfaces) {
     if (iface.name == "Sensors" or iface.name == "Actuators") {
         out.println("interface " + iface.name + " {");
         for (vl in iface.variableList) {
             for (v in vl.vars) {
+                if (f7StateNames.includes(v.name)) {
+                    ("[rct] dedup: dropping " + iface.name + "." + v.name
+                        + " (shadowed by Ctrl_State declaration)").println();
+                    continue;
+                }
                 var vTypeName = formatVariableType(v);
                 out.println("\tvar " + v.name + " : " + vTypeName);
             }
@@ -435,6 +456,34 @@ if (ctrlStateIfaceModel.isDefined()) {
             var ce = new Map;
             ce.put("name", v.name);
             ce.put("type", vTypeName);
+            // Initial-value rendering (C-gap: the archived .rct declared
+            // `cstc : nat` with NO initialiser, so the CSP memory process
+            // started from the type default instead of the Java's value).
+            // RoboChart textual syntax supports `var x : T = e` (the
+            // metamodel's Variable.initial containment; same shape as the
+            // `const lv : real = 1` entries already emitted). Render it
+            // when the M2M has populated `initial`. FloatExp caveat: the
+            // standalone CSP generator v3.0.0 crashes on FloatExp (see the
+            // Constants emission), so integral reals are emitted in integer
+            // form and genuinely fractional initials are skipped LOUDLY.
+            if (v.initial.isDefined()) {
+                var initStr = formatRctExpr(v.initial);
+                if (initStr.matches("-?\\d+\\.\\d+")) {
+                    if (initStr.matches("-?\\d+\\.0+")) {
+                        initStr = initStr.substring(0, initStr.indexOf("."));
+                    } else {
+                        // U4 fix: this site was already logged, but only as a
+                        // bare println(). It now shares the structured warning
+                        // channel with the constant site.
+                        addRctWarning("U4_FRACTIONAL_INITIAL_SKIPPED",
+                            "WARN robochart2rct: skipping fractional initial value '"
+                            + initStr + "' for var " + v.name
+                            + " (CSP generator v3.0.0 cannot compile FloatExp)");
+                        initStr = "";
+                    }
+                }
+                if (initStr <> "") { ce.put("init", initStr); }
+            }
             ctrlStateEntries.add(ce);
             ctrlStateEmittedNames.add(v.name);
         }
@@ -534,7 +583,9 @@ if (pkg.machines.size() == 1) {
 if (hasSharedState) {
     out.println("interface " + sharedStateIfaceName + " {");
     for (ce in sharedStateEntries) {
-        out.println("\tvar " + ce.get("name") + " : " + ce.get("type"));
+        var vline = "\tvar " + ce.get("name") + " : " + ce.get("type");
+        if (ce.get("init").isDefined()) { vline = vline + " = " + ce.get("init"); }
+        out.println(vline);
     }
     out.println("}");
     out.println("");
@@ -545,7 +596,9 @@ if (hasSharedState) {
 for (sm in pkg.machines) {
     out.println("interface " + sm.name + "_State {");
     for (ce in perMachineStateEntries.get(sm.name)) {
-        out.println("\tvar " + ce.get("name") + " : " + ce.get("type"));
+        var vline = "\tvar " + ce.get("name") + " : " + ce.get("type");
+        if (ce.get("init").isDefined()) { vline = vline + " = " + ce.get("init"); }
+        out.println(vline);
     }
     out.println("}");
     out.println("");
@@ -563,21 +616,66 @@ for (entry in constantEntries) {
     if (clockNames.includes(entry.get("name"))) { continue; }
     var constLine = "\tconst " + entry.get("name") + " : " + entry.get("type");
     // Specification-level default: use injected value if available, else 1.
-    // Fractional values (e.g. 0.5) are ceiled to the nearest integer
-    // because the standalone CSP generator v3.0.0 cannot emit FloatExp
-    // constants — it crashes with "Case not treated by expression
-    // compiler: FloatExpImpl".
+    //
+    // DEFECT U4 (fixed 2026-09-01). Fractional constants used to be ceiled
+    // here SILENTLY: SRangerConstants.java has obstacleThreshold = 0.5,
+    // constant_defaults.json correctly carries "0.5", and the .rct emitted
+    // `const obstaclethreshold : real = 1`, so guard t2
+    // (`distance <= obstaclethreshold`) DOUBLED the obstacle-detection
+    // threshold with no diagnostic of any kind. The identical ceiling on
+    // variable INITIALS was already logged (see the initial-value site
+    // above); only the constant path was silent.
+    //
+    // The stated cause was verified against the generator itself rather than
+    // trusted: feeding `const obstaclethreshold : real = 0.5` to
+    // circus.robocalc.robochart.generator.csp 3.0.0 makes it abort with
+    // "Case not treated by expression compiler: class
+    // circus.robocalc.robochart.impl.FloatExpImpl" (exit 255) from
+    // InstantiationGenerator.calculateDefaultRealInterval, and it emits only
+    // the library *_defs.csp — no controller CSP at all. Disassembling
+    // ExpressionGenerator confirms the dispatcher has no FloatExp overload
+    // (48 expression classes, FloatExp absent). So the workaround is
+    // genuinely required for the CSP target and cannot be lifted.
+    //
+    // It is therefore GATED on the target instead of applied unconditionally.
+    // `rctFloatConstants` is injected by RctPhase: "ceil" (the CSP-safe
+    // default) or "exact". Isabelle and Dafny do not read this file — they
+    // are generated straight from robochart_model.xmi, which carries the true
+    // 0.5 — so the gate exists for a future .rct consumer that can accept
+    // FloatExp, and to make the workaround an explicit, inspectable choice
+    // rather than an invisible one.
+    //
+    // Every application of the ceiling now records a first-class pipeline
+    // warning (rctWarnings -> warnings_m2t_rct.json, echoed to stderr by
+    // RctPhase), with the same wording as the initial-value site.
+    var floatConstMode = "ceil";
+    if (rctFloatConstants.isDefined() and rctFloatConstants <> "") {
+        floatConstMode = rctFloatConstants;
+    }
     if (constantDefaults.isDefined() and constantDefaults.containsKey(entry.get("name"))) {
         // constantDefaults values are strings (SpoonDiscoverer encodes
-        // doubles either as their integer form or as "0.5"-style
-        // decimals). For fractional decimals, ceil to the nearest
-        // integer because the standalone CSP generator v3.0.0 can't
-        // emit FloatExp constants.
+        // doubles either as their integer form or as "0.5"-style decimals).
         var rawStr = constantDefaults.get(entry.get("name")).asString();
         var renderedVal = rawStr;
         if (rawStr.contains(".")) {
             var asReal = rawStr.asReal();
-            renderedVal = asReal.ceiling().asInteger().asString();
+            if (asReal = asReal.floor()) {
+                // Integral real (5.0): emitting "5" is exact, not a
+                // workaround, and needs no warning.
+                renderedVal = asReal.asInteger().asString();
+            } else if (floatConstMode = "exact") {
+                renderedVal = rawStr;
+            } else {
+                renderedVal = asReal.ceiling().asInteger().asString();
+                addRctWarning("U4_FRACTIONAL_CONSTANT_CEILED",
+                    "WARN robochart2rct: ceiling fractional constant '"
+                    + rawStr + "' to '" + renderedVal + "' for const "
+                    + entry.get("name")
+                    + " (CSP generator v3.0.0 cannot compile FloatExp)"
+                    + " — the emitted .rct constant DIFFERS from the Java value;"
+                    + " any threshold-dependent property is checked against "
+                    + renderedVal + ", not " + rawStr);
+            }
         }
         constLine = constLine + " = " + renderedVal;
     } else {
@@ -1505,8 +1603,12 @@ operation classifyGuardVar(name : String, transitions : Any) : Map {
         result.put("type", "boolean");
         result.put("kind", "var");
     } else if (usage.get("funcArg") and not usage.get("cmpLeft") and not usage.get("cmpRight") and not usage.get("boolean")) {
-        // Used only as function argument (e.g. odist(cstc)) -> nat (obstacle index)
-        result.put("type", "nat");
+        // Used only as function argument (e.g. odist(cstc)) -> integer index.
+        // Coordinated with the M2M fix that maps Java int/long to RoboChart
+        // `int` (was `nat`): a declared `cstc : int` field must agree with
+        // the classifier-derived type of the same name, otherwise the CSP
+        // memory process and the function domain clash (int arg vs nat param).
+        result.put("type", "int");
         result.put("kind", "var");
     } else if (usage.get("cmpLeft")) {
         result.put("type", "real");
@@ -1571,7 +1673,10 @@ operation formatVariableType(v : Any) : String {
     if (not v.type.isDefined()) { return "real"; }
     var t = v.type;
     if (t.isKindOf(RoboChart!FunctionType)) {
-        var domName = "nat";
+        // Coordinated with the M2M int fix: function domains for
+        // index-taking abstractions (odist : index -> real) default to
+        // `int`, matching the Java int-typed index fields.
+        var domName = "int";
         if (t.domain.isDefined()) {
             if (t.domain.isKindOf(RoboChart!TypeRef) and t.domain.ref.isDefined()) {
                 domName = t.domain.ref.name;
@@ -1594,6 +1699,26 @@ operation formatVariableType(v : Any) : String {
     return "real";
 }
 
+// --- Pipeline warnings ---
+
+// Record a first-class pipeline warning. `rctWarnings` is a mutable
+// java.util.List injected by RctPhase, which serialises it to
+// warnings_m2t_rct.json and echoes every entry to stderr after generation.
+// Added with the U4 fix: the fractional-constant ceiling used to be
+// completely silent, and the fractional-initial skip used only a bare
+// println() that vanished into the phase log. Both now go through here, so a
+// value-changing workaround is a structured artefact a downstream consumer or
+// a reviewer can see, not a line of prose in a log file.
+operation addRctWarning(code : String, message : String) {
+    message.println();
+    if (rctWarnings.isDefined()) {
+        var w = new Native("java.util.HashMap");
+        w.put("code", code);
+        w.put("message", message);
+        rctWarnings.add(w);
+    }
+}
+
 // --- Expression formatting ---
 
 // Format a RoboChart expression as RCT text (top-level, no outer parens)
@@ -1602,34 +1727,85 @@ operation formatRctExpr(expr : Any) : String {
 }
 
 // Format with precedence tracking to minimise parentheses.
-// Precedence levels (higher = tighter binding):
-//   0 = top-level (no wrapping needed)
-//   1 = inside \/ (wrap \/ if parent is /\)
-//   2 = inside /\ (wrap /\ if parent is not — but not() uses 0 since its parens group)
-//   4 = operand of comparison (atomic)
+//
+// DEFECT U2 (fixed 2026-09-01). The previous implementation handled only the
+// two boolean levels (/\ and \/) and rendered EVERY other BinaryExpression as
+// bare `left op right`, so arithmetic lost ALL grouping: the correctly nested
+// XMI tree for LRE `CalcCPA` statement 1 was emitted flat, and because the
+// standalone CSP generator RE-PARSES this text the wrong tree was encoded
+// downstream (a rendering bug became a wrong model). The flat text is
+// syntactically valid RoboChart, so nothing detected it.
+//
+// The levels below are read off the RoboChart Xtext grammar
+// (circus.robocalc.robochart.textual 3.1.0, RoboChart.xtext) expression rule
+// chain, outermost (loosest) first:
+//
+//   Iff        : Implies ({Iff.left=current} 'iff' right=Implies)*        -> 1
+//   Implies    : Or ({Implies.left=current} '=>' right=Or)*               -> 2
+//   Or         : And ({Or.left=current} '\/' right=And)*                  -> 3
+//   And        : Not ({And.left=current} '/\' right=Not)*                 -> 4
+//   Not        : {Not} 'not' exp=Not | Comp                               -> 5
+//   Comp       : ... '==' '!=' '>' '>=' '<' '<=' 'in' ...                 -> 6
+//   PlusMinus  : MultDivMod (('+'|'-') right=MultDivMod)*                 -> 7
+//   MultDivMod : CatExp (('*'|'/'|'%') right=CatExp)*                     -> 8
+//   CatExp     : Neg (('cat'|'^') right=Neg)*                             -> 9
+//   Neg        : {Neg} '-' exp=Neg | Selection                            -> 10
+//   Atomic / CallExp / literals                                           -> 11
+//
+// `prec` is the MINIMUM level the enclosing context can accept. A node is
+// parenthesised exactly when its own level is below that minimum. Because
+// every rule in the chain is LEFT-recursive with the right operand drawn from
+// the next-tighter rule, the left operand is rendered at the node's own level
+// and the right operand one level tighter. That single asymmetry is what makes
+// the non-associative positions (right operand of `-`, `/`, `%`, `^`) come out
+// parenthesised, and it also parenthesises the right operand of `+` and `*`.
+// The latter is redundant for exact arithmetic but is retained deliberately:
+// it guarantees the emitted text re-parses to a tree IDENTICAL to the input
+// tree, which is the property the CSP generator depends on, and for floating
+// point re-association is not value-preserving anyway.
+//
+// Unrecognised expression classes fall through to level 0, i.e. they are
+// always parenthesised — the fail-safe direction.
 operation formatRctExprPrec(expr : Any, prec : Integer) : String {
     if (expr.isKindOf(RoboChart!And)) {
+        // /\ is associative, so flattening is value-preserving. Operands of
+        // And in the grammar are at Not level (5).
         var parts = flattenAnd(expr);
-        var result = parts.collect(p | formatRctExprPrec(p, 2)).concat(" /\\ ");
-        if (prec > 2) { return "(" + result + ")"; }
+        var result = parts.collect(p | formatRctExprPrec(p, 5)).concat(" /\\ ");
+        if (4 < prec) { return "(" + result + ")"; }
         return result;
     }
     if (expr.isKindOf(RoboChart!Or)) {
+        // \/ is associative; operands of Or in the grammar are at And level (4).
         var parts = flattenOr(expr);
-        var result = parts.collect(p | formatRctExprPrec(p, 1)).concat(" \\/ ");
-        if (prec > 1) { return "(" + result + ")"; }
+        var result = parts.collect(p | formatRctExprPrec(p, 4)).concat(" \\/ ");
+        if (3 < prec) { return "(" + result + ")"; }
         return result;
     }
     if (expr.isKindOf(RoboChart!Not)) {
-        // not ( ... ) provides its own grouping, so inner uses prec=0
-        return "not ( " + formatRctExprPrec(expr.exp, 0) + " )";
+        // not ( ... ) supplies its own grouping for the operand, so the inner
+        // expression is rendered at prec=0. The RESULT still sits at Not level
+        // (5) for the enclosing context — `not ( a ) /\ b` is fine, but
+        // `x == not ( a )` needs parentheses because Comp binds tighter.
+        var result = "not ( " + formatRctExprPrec(expr.exp, 0) + " )";
+        if (5 < prec) { return "(" + result + ")"; }
+        return result;
     }
     if (expr.isKindOf(RoboChart!Neg)) {
-        return "-" + formatRctExprPrec(expr.exp, 4);
+        // Grammar: Neg : '-' exp=Neg | Selection. The operand must therefore
+        // be at Neg level (10) or tighter: `-(a * b)` needs the parentheses,
+        // `- -x` and `-f(x)` do not.
+        var result = "-" + formatRctExprPrec(expr.exp, 10);
+        if (10 < prec) { return "(" + result + ")"; }
+        return result;
     }
     if (expr.isKindOf(RoboChart!BinaryExpression)) {
         var op = getRctOperator(expr);
-        return formatRctExprPrec(expr.left, 4) + " " + op + " " + formatRctExprPrec(expr.right, 4);
+        var lvl = rctBinaryLevel(expr);
+        var result = formatRctExprPrec(expr.left, lvl) + " " + op + " "
+                   + formatRctExprPrec(expr.right, lvl + 1);
+        if (lvl < prec) { return "(" + result + ")"; }
+        return result;
     }
     if (expr.isKindOf(RoboChart!CallExp)) {
         return formatRctCallExp(expr);
@@ -1692,6 +1868,39 @@ operation formatRctFloat(val : Real) : String {
     return val.ceiling().asInteger().asString();
 }
 
+// Grammar precedence level of a BinaryExpression subclass (see the table in
+// formatRctExprPrec). Every concrete BinaryExpression subclass in
+// robochart.ecore is covered: Iff, Implies, Or, And, Equals, Different,
+// GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Plus, Minus, Modulus,
+// Mult, Div, Cat. Or/And never reach here (they are handled by the flattening
+// branches above) but are listed so the table is total.
+//
+// An unrecognised class returns 0, which makes formatRctExprPrec parenthesise
+// it unconditionally and render its operands at level 1 — over-parenthesised
+// but never mis-grouped. A new metamodel operator therefore degrades to
+// redundant brackets rather than to a silently wrong tree, which is the
+// failure mode U2 was.
+operation rctBinaryLevel(expr : Any) : Integer {
+    var className = expr.eClass().getName();
+    if (className = "Iff")            { return 1;  }
+    if (className = "Implies")        { return 2;  }
+    if (className = "Or")             { return 3;  }
+    if (className = "And")            { return 4;  }
+    if (className = "Equals")         { return 6;  }
+    if (className = "Different")      { return 6;  }
+    if (className = "GreaterThan")    { return 6;  }
+    if (className = "GreaterOrEqual") { return 6;  }
+    if (className = "LessThan")       { return 6;  }
+    if (className = "LessOrEqual")    { return 6;  }
+    if (className = "Plus")           { return 7;  }
+    if (className = "Minus")          { return 7;  }
+    if (className = "Mult")           { return 8;  }
+    if (className = "Div")            { return 8;  }
+    if (className = "Modulus")        { return 8;  }
+    if (className = "Cat")            { return 9;  }
+    return 0;
+}
+
 // Map RoboChart expression class to textual operator symbol
 operation getRctOperator(expr : Any) : String {
     var className = expr.eClass().getName();
@@ -1705,6 +1914,14 @@ operation getRctOperator(expr : Any) : String {
     if (className = "Minus") { return "-"; }
     if (className = "Mult") { return "*"; }
     if (className = "Div") { return "/"; }
+    // Completed with the U2 fix so the operator map and the precedence table
+    // cover the same set of classes. None of these three occur in the three
+    // case studies' models; without them getRctOperator would emit the bare
+    // EClass name ("Modulus") as if it were an operator symbol.
+    if (className = "Modulus") { return "%"; }
+    if (className = "Cat") { return "^"; }
+    if (className = "Implies") { return "=>"; }
+    if (className = "Iff") { return "iff"; }
     return className;
 }
 

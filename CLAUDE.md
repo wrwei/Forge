@@ -6,9 +6,20 @@ This project implements a formal-methods pipeline for safety controllers. Java s
 
 ## Active case study
 
-The active case study is **lre**. Substitute `lre` for `<study>` in any path that uses the placeholder, unless the user names a different one. The system description, modes, sensors, and actuators live under `forge.assets/case-studies/lre/system/system_description.txt` — do **not** assume those domain details from this file; read the case-study description when the user points you at it (e.g., during Layer 1 of `forge.assets/vibe-coding-prompts/`).
+The active case study is whatever `pipeline.yaml` `agent.active_case_study`
+says — **read it, do not assume**. That key is the single authority: the
+dashboard and its Requirements tab both read it, and this file previously
+restated a value that drifted out of sync with it. Substitute that name for
+`<study>` in any path that uses the placeholder, unless the user names a
+different one. The three studies present are `sranger`, `lre` and
+`chemical_detector`. The system description, modes, sensors, and actuators
+live under `forge.assets/case-studies/<study>/system/system_description.txt`
+— do **not** assume those domain details from this file; read the case-study
+description when the user points you at it (e.g., during Layer 1 of
+`forge.assets/vibe-coding-prompts/`).
 
-To switch case studies, change the name in the line above to a different `<study>` directory.
+To switch case studies, change `agent.active_case_study` in `pipeline.yaml`
+(or use the dashboard's Requirements-tab dropdown, which writes that key).
 
 ### Pipeline Architecture
 
@@ -33,7 +44,9 @@ implementation class or function, dependencies, output files, and any
 runtime tuning (timeouts, tool paths). Both the Python dashboard
 ([forge.dashboard/web/bridge.py](forge.dashboard/web/bridge.py))
 and the Java CLI ([forge.transformations/.../App.java](forge.transformations/src/main/java/forge/transformations/core/App.java))
-read this file directly.
+read this file directly. See
+[docs/superpowers/specs/2026-05-11-pipeline-manifest-design.md](docs/superpowers/specs/2026-05-11-pipeline-manifest-design.md)
+for the design rationale.
 
 ### Key Directories
 
@@ -42,6 +55,8 @@ read this file directly.
 - `forge.assets/prompts/` — Codegen rules, chain-of-thought, few-shot examples
 - `forge.assets/corrections/` — Verification feedback files
 - `forge.assets/case-studies/<study>/` — Per-case-study assets. Each has its own `system_description.txt` and `requirements/` directory. The active study is named in the "Active case study" section above.
+- `docs/corpus/` — **Vendored Isabelle theory references** (the Z-machine RAG corpus): `zmachine-framework/` (5 files — `Z_Machine.thy`, `Z_Operations.thy`, `Z_Testing.thy`, `Z_Animator.thy`, `Show_Record.thy`) and `zmachine-examples/` (19 canonical Z-method textbook examples: BirthdayBook, BoxOffice, DwarfSignal, FileSystem, Incubator, TelephoneExchange, Ring_Buffer, Dining_Philosophers, etc.). Consult these when diagnosing an Isabelle proof failure or looking up the canonical pattern for a Z-machine construct. See [docs/corpus/README.md](docs/corpus/README.md) for the full inventory and provenance.
+- `docs/archive/` — Additional vendored references: ICECCS2023 paper supplements (`theory generation for GasAnalysis/`, `theory generation for LRE/`) and the `RoboChart_project4Z-Machine-transformation` archive. Same RAG-corpus status as `docs/corpus/` — read-only reference material the agents may consult.
 - `forge.dashboard/` — Web dashboard for running deterministic pipeline phases
 - `java.codegen.pipeline/` — *removed in May 2026*. Was the legacy AutoGen + DeepSeek codegen pipeline. Recover via `git checkout v1.0-autogen-pipeline -- java.codegen.pipeline/` if needed.
 - `forge.transformations/` — Spoon discovery + ETL/EGL transformations + Dafny generation
@@ -99,7 +114,13 @@ The controller MUST use a **single-method, mode-nested if-else** pattern:
 - Records for immutable value types
 - Sealed interfaces for algebraic data types (events)
 - `var` for local variable type inference
-- `Optional` / `OptionalInt` for nullable return values
+- **Do NOT use `Optional` / `OptionalInt`** on any sensor or operation method
+  the controller's guards or actions reference. The ETL has no mapping for
+  them and silently degrades the type to `real`
+  (`java2robochart.etl` `mapJavaTypeToRcTypeRef`, fallback branch). Return a
+  primitive safe default instead — which is what the "no sentinel checks"
+  rule above already requires. `Optional` is acceptable only on methods the
+  formal model never touches.
 
 ### `@RoboChartType` Annotation
 
@@ -112,8 +133,27 @@ public @interface RoboChartType { String value(); }
 
 Apply on field declarations, method parameters, and return types:
 - `int` representing natural numbers/indices/counts: `@RoboChartType("nat")`
-- `double` fields: `@RoboChartType("real")`
+- `double` fields: `@RoboChartType("real")` — **mandatory**; preflight
+  reports a missing one as an `error` (`rule4_double_missing_real_annotation`)
 - Never on local variables or generic type arguments
+
+**What the annotation actually does.** It is consumed by the *preflight
+structural linter* (`StructuralLinter.java`, Phase 2c) and by `coverage.py`.
+It is **not** read by the ETL or any EGL template — grep the transformation
+sources and it does not appear. It documents intent and keeps preflight
+green; it does not influence the extracted RoboChart type.
+
+**How types are actually mapped** (`mapJavaTypeToRcTypeRef`), which matters
+for what the formal model can express:
+- `int` / `Integer` / `long` / `Long` → **`nat`, unconditionally**. There is
+  no code path producing RoboChart `int`. Do not rely on a Java `int` to
+  model a signed quantity or a negative sentinel: the extracted model treats
+  it as a natural number regardless of annotation.
+- `double` / `float` → `real`; `boolean` → `boolean`
+- declared enums and records → their own types; `List`/`Set`/`Collection` →
+  `Seq(...)`
+- **anything else** (including `String`, `Optional`) → silently falls back to
+  `real`, losing semantic precision.
 
 ### Package Structure
 
@@ -164,39 +204,61 @@ See @forge.assets/prompts/few_shot_codegen.txt for a complete worked example (tr
 
 ## Requirements
 
-Requirements are provided incrementally by the user in each conversation. The default source of truth is `forge.assets/case-studies/<study>/requirements/requirement_all.json` — read it as the canonical input. The tier files (`tier1.md`...`tier7.md`) are documentation of how the requirements decompose by dependency; they are **not** consumed as codegen drivers in the current top-down workflow. If the user names a specific tier file or other subset, treat that as a focus narrowing rather than a hard isolation: still consult `requirement_all.json` for context (so you don't paint into a corner with names that conflict with later tiers), but only **implement** the items in the named subset.
+Requirements are provided incrementally by the user in each conversation. The
+canonical — and only — source of truth is
+`forge.assets/case-studies/<study>/requirements/requirement_all.json`. Read it
+as the input; each study's directory contains just that file, its `.txt`
+rendering, and a `README.md` describing the ID-prefix conventions.
+
+**No tier files exist.** Earlier revisions of this document referred to
+`tier1.md`…`tier7.md` as a dependency decomposition; no such files are
+present under any case study. The unrelated `docs/requirements/tier1-3.md`
+are quarantined historical LRE material whose requirement IDs **conflict with
+the canonical ones** — do not read them for requirement content. If the user
+names a subset, treat it as a focus narrowing, not a hard isolation: still
+consult `requirement_all.json` for context, but only **implement** the named
+items.
 
 Each requirement has the schema: `kind`, `name`, `id`, `description`, `priority`, `types`. ID prefix conventions are case-study-specific — see `forge.assets/case-studies/<study>/requirements/README.md` for the active study's ID pattern.
 
 ---
 
-## Pipeline Commands (Windows)
+## Pipeline Commands
 
-All transformation commands run from `forge.transformations/`. `<Stm>`
+All transformation commands run from `forge.transformations/`. Use
+`./gradlew` on macOS/Linux and `./gradlew.bat` on Windows. `<Stm>`
 is the state-machine name the pipeline derives from the controller
 class — it's resolved automatically by the runners and appears in
 `output/robochart_model.xmi`. Substitute it in the verifier filenames
 below if you're invoking them outside the dashboard.
 
+The first argument must be a phase id from [pipeline.yaml](pipeline.yaml)
+and every other argument must be `key=value` — `App.java` silently drops
+bare tokens and rejects unknown phase ids. Only `kind: java` phases can be
+run this way; `sequence`, `gradle` and `python` phases are expanded by the
+dashboard, not by `App.java`.
+
 ```bash
 # Phase 2c — Preflight (Structural Lint)
-cd forge.transformations && ./gradlew.bat run --args="lint source=../java.generated.project/src/main/java output=output"
+cd forge.transformations && ./gradlew run --args="preflight source=../java.generated.project/src/main/java output=output"
 
 # Phase 3 — T2M: Spoon Discovery (Java → EMF model)
-cd forge.transformations && ./gradlew.bat run --args="t2m source=../java.generated.project/src/main/java output=output"
+cd forge.transformations && ./gradlew run --args="t2m source=../java.generated.project/src/main/java output=output"
 
 # Phase 4 — M2M: ETL Transformation (Java EMF → RoboChart EMF)
-cd forge.transformations && ./gradlew.bat run --args="m2m source=../java.generated.project/src/main/java output=output"
+cd forge.transformations && ./gradlew run --args="m2m source=../java.generated.project/src/main/java output=output"
 
-# Phase 5b — M2T: RCT + CSP Generation (sequence: RctPhase then roboChartCspGen)
-cd forge.transformations && ./gradlew.bat run --args="m2t output=output"
-# (The sequence step runs RctPhase then the gradle roboChartCspGen task internally.)
+# Phase 5b — M2T: RCT + CSP Generation
+# `m2t` is a SEQUENCE phase — App.java refuses it. Run the two steps directly,
+# or run the m2t phase from the dashboard, which expands the sequence.
+cd forge.transformations && ./gradlew run --args="forge.transformations.m2t.RctPhase output=output"
+cd forge.transformations && ./gradlew roboChartCspGen -ProboChartProject=output
 
 # Phase 5a — Dafny Generation (Java EMF → Dafny)
-cd forge.transformations && ./gradlew.bat run --args="dafny_gen source=../java.generated.project/src/main/java output=output"
+cd forge.transformations && ./gradlew run --args="dafny_gen source=../java.generated.project/src/main/java output=output"
 
 # Phase 5c — Isabelle Theory Generation
-cd forge.transformations && ./gradlew.bat run --args="isabelle_gen output=output"
+cd forge.transformations && ./gradlew run --args="isabelle_gen output=output"
 
 # Phase 6b — FDR4 Verification
 "<FDR4_PATH>/refines.exe" forge.transformations/output/csp-gen/defs/<Stm>_coreassertions.csp
@@ -211,13 +273,16 @@ dafny verify forge.transformations/output/<Stm>.dfy
   -v -o timeout=600
 
 # Build the generated Java project (Phase 2a — Compile)
-cd java.generated.project && ./gradlew.bat build
+cd java.generated.project && ./gradlew build
 ```
 
-`<FDR4_PATH>` defaults to `C:\Program Files\fdr\bin\` on Windows or
-`/Applications/FDR4.app/Contents/MacOS/` on macOS — see
-`forge.dashboard/config.yaml` `phases.fdr4.fdr4_path` for the
-configured location.
+`<FDR4_PATH>` is configured in [pipeline.yaml](pipeline.yaml) under
+`phases.fdr4.fdr4_path`, per OS. The macOS default is the bare name
+`refines` (resolved via `PATH`), not an `/Applications` path.
+(`forge.dashboard/config.yaml` no longer exists — its contents were folded
+into `pipeline.yaml` during the May 2026 manifest migration.)
+
+See [docs/design/isabelle_wsl_setup.md](docs/design/isabelle_wsl_setup.md) for the WSL setup procedure and [docs/fixes/I1_deadlock_free_proof.md](docs/fixes/I1_deadlock_free_proof.md) for the proof tactic used in the deadlock-freedom lemma.
 
 ---
 
@@ -249,10 +314,16 @@ Java source — items below are emitted only when applicable.
 - `interface Sensors { var <method> : <Ret> }` — zero-arg sensor
   methods referenced from actions. `interface Actuators { }` always
   emitted (empty by default).
-- `interface Ctrl_State { var <field> : <Type> }` — controller
-  state variables. Type is inferred from the Java field type;
-  classifier-derived predicates that don't correspond to declared
-  fields are added as `var <name> : boolean`.
+- `interface <Machine>_State { var <field> : <Type> }` — controller
+  state variables, **one interface per state machine**. Type is inferred
+  from the Java field type; classifier-derived predicates that don't
+  correspond to declared fields are added as `var <name> : boolean`.
+  A multi-machine package additionally gets `Ctrl_State_Shared` for
+  variables more than one machine reads. (The old single union interface
+  literally named `Ctrl_State` was removed — per-machine interfaces let
+  each machine's CSP process range only over its own variables, which was
+  the dominant FDR4 cost lever. `Ctrl_State` survives only as an
+  intermediate ETL model name and never appears in emitted `.rct`.)
 - `interface Constants { const <name> : <Type> = <N> }` — values
   resolved from a constants class. Fractional values are ceiled to
   the nearest integer (CSP-gen v3.0.0 limitation).
@@ -263,7 +334,7 @@ Java source — items below are emitted only when applicable.
 
 **Per state machine**:
 - `stm <ControllerName> { uses Inputs uses Outputs [uses Shared]
-  requires Ctrl_State requires Constants [requires Sensors]
+  requires <Machine>_State requires Constants [requires Sensors]
   [requires LOperations] var v : real [clock <name> ...] ... }`.
 - `var v : real` — typed-trigger local. When a transition's first
   action is `<sv> = v` (capturing the payload into a state var of
@@ -293,7 +364,7 @@ Java source — items below are emitted only when applicable.
   inter-controller events.
 
 **Action statements** in transitions / state entries:
-- `<sv> = <expr>` — Assignment to a Ctrl_State variable.
+- `<sv> = <expr>` — Assignment to a `<Machine>_State` variable.
 - `<event> ! <expr>` — Communication on a typed event.
 - `send <event>` — Communication on an untyped event.
 - `<op>(arg1, arg2, ...)` — operation `Call` (multi-arg).
@@ -304,25 +375,14 @@ Java source — items below are emitted only when applicable.
 
 **Linter output**:
 - The M2M phase emits `[deadlock-lint] <stm>.<state>: ...` to
-  stdout when a non-Final state has no bare-precondition outgoing
-  transition (one whose only Isabelle precondition is
-  `st = <SourceMode>`, no extra guards conjoined). The dashboard
-  surfaces these in `post_m2m.json` as advisory Issues (status
-  remains "passed").
+  stdout for states it flags. The dashboard surfaces these in
+  `post_m2m.json` as advisory Issues (status remains "passed").
 
-  **Both** `else { mode = <SameMode>; }` fallbacks AND
-  event-triggered branches without extra guards (e.g.,
-  `if (event instanceof InputEvent.Reset) { mode = Idle; }` —
-  becomes a zoperation with precondition just `st = <SourceMode>`) qualify
-  as bare-precondition. **Prefer the event-triggered form when
-  applicable.** The unconditional `else` fallback becomes a
-  τ-transition in tock-CSP that competes with every enabled
-  guarded autonomous transition, producing FDR4 `:[deterministic]`
-  failures.
-  Add `else { mode = <SameMode>; }` only when no event-triggered
-  branch in that mode block already provides bare-precondition
-  cover — the M2M lint is currently too broad and may advise
-  self-loops on states that already have them.
+  ABLATION (condition D2). The text that stood here defined which
+  Java shapes satisfy the check, ranked two of them, explained the
+  CSP consequence of the weaker one, and stated when to add the
+  fallback. All of that is removed: it prescribes the construct to
+  write and the shape the prover requires.
 
   `/lint` runs M2M and filters for these lines only.
 
@@ -356,11 +416,24 @@ Key points:
 
 - Isabelle/UTP Z-Machine verifies deadlock-freedom and structural invariants of the controller as a Z-machine
 - Failures show up as `*** Failed to apply proof method ...` in the `isabelle build` output, with the residual goal printed
-- The deadlock-freedom proof tactic is **`apply deadlock_free` then `by (metis St.exhaust_disc)`**. Do NOT replace it with `cases st; simp_all` (fails) or `auto` (10-min timeout)
-- The proof relies on every state having at least one bare-precondition operation — a zoperation whose precondition is just `st = <SourceMode>`, with no extra guards conjoined. Three patterns satisfy this: (a) an unconditional `else { mode = <SameMode>; }` fallback; (b) any event-triggered branch with no extra guard, e.g., `if (event instanceof InputEvent.Reset) { mode = Idle; }`; (c) any autonomous branch whose only condition is the source mode. **Prefer (b) when applicable** — pattern (a) introduces a τ-self-loop that breaks FDR4 determinism (see the "Linter output" note under "Generated RoboChart structure" above for the trade-off)
-- **Best of all, where the mode is "autonomous-only" (consumes no input event — its outgoing transitions are all guard-only), prefer a TOTAL GUARD COVER over any self-loop.** If a mode's autonomous guards are jointly exhaustive (e.g. a mode whose two outgoing guards split on a two-valued enum — `s == valA` and `s == valB` where the enum declares exactly those two literals), then one outgoing transition is *always* enabled — the mode is deadlock-free with NO self-loop, and stays deterministic and divergence-free. This is how a well-formed RoboChart model with such a mode passes `:[deterministic]`. If codegen instead adds a `Tick`-event self-loop to such a mode (pattern (b)) to get a bare precondition, that self-loop then *competes* with the autonomous transitions and is the sole cause of a determinism failure (FDR witness event `tick`). The trilemma for autonomous-only modes: τ-self-loop breaks divergence; deleting the self-loop breaks deadlock; `Tick`-self-loop breaks determinism — **a total guard cover satisfies all three at once and needs no self-loop.** Determinism is not currently verified by the pipeline (stripped in `run_fdr4`), so this is a quality/fidelity improvement, not a convergence blocker.
-- **The primary controller — the one whose Isabelle theory is generated — must NOT contain a `Final` state.** This refines the bare-precondition rule above: a `Final` mode cannot be given a bare-precondition operation, and (critically) the current FORKed theory generator emits the **weak** store invariant `where inv: "tr ≠ []"` instead of the reference's `wf_rcstore tr st (Some final)`, so it never *designates* a terminal state. `deadlock_free` then treats `Final` as an ordinary state that needs an enabled operation — it has none — and the residual goal lacks a `st = Final` disjunct, leaving it **unprovable**. The symptom is deceptive: every closing tactic (`by (metis St.exhaust_disc)`, `auto`, `metis`, `blast`) **hangs** (indistinguishable from a hard proof) rather than failing fast; and adding an operation *on* `Final` instead makes `apply deadlock_free` itself fail. **Fix:** give the theory-generated controller no `Final` mode — reroute its terminal transition back to a live state while still emitting the terminating event (in a multi-controller study only the primary/last-discovered controller gets a theory, so a `Final` on the *secondary* controller is harmless). *Diagnostic, no source access needed:* set the proof to `apply deadlock_free` then `done` and read the printed residual goal — a missing disjunct for some `st` means that state has no enabled op; `apply deadlock_free; sorry` (under `-o quick_and_dirty`) finishing in seconds confirms it is the *closer*, not the reduction, that hangs.
-- The EGL template for theory generation is at [forge.transformations/src/main/resources/transformations/thy_generation_rule.egl](forge.transformations/src/main/resources/transformations/thy_generation_rule.egl) (loaded from the runtime classpath, like the other Epsilon templates).
+- The deadlock-freedom proof is `apply deadlock_free` followed by a closer the
+  generator **selects automatically** from `hasPayloadDomain`
+  (`thy_generation_rule.egl` ~:1367). Both branches are needed; neither works
+  everywhere:
+  - machine emits a typed-payload domain set (e.g. chemical_detector's
+    gas-analysis `Reading`, whose only transition consumes `gs_input ∈ SeqGs`)
+    → **`using St.exhaust_disc by auto`**. `metis` *hangs* (>10 min) here,
+    because the enabledness disjunct is an existential over the payload set.
+  - no payload domain (e.g. LRE) → **`by (metis St.exhaust_disc)`**. `auto`
+    times out (>6 min) on LRE's real-arithmetic guards.
+
+  So do not hard-code either closer, and do not "fix" a hang by swapping
+  tactics — check which branch the machine should be taking. `cases st;
+  simp_all` fails in both cases. See
+  [docs/fixes/I1_deadlock_free_proof.md](docs/fixes/I1_deadlock_free_proof.md),
+  which still documents only the `metis` branch.
+- ABLATION (condition D2). Three bullets stood here. The first enumerated the Java patterns that give a state a bare-precondition operation and ranked them; the second prescribed a total guard cover for autonomous-only modes and laid out the divergence/deadlock/determinism trilemma with the construct that resolves each; the third instructed that the theory-generated controller must carry no `Final` mode and how to reroute its terminal transition. All three are removed: each states the Java shape the prover requires, which is the answer rather than the requirement. The proof-tactic selection above is retained -- that is generator-internal documentation, not codegen guidance.
+- The EGL template for theory generation is at [forge.transformations/src/main/resources/transformations/thy_generation_rule.egl](forge.transformations/src/main/resources/transformations/thy_generation_rule.egl) (loaded from the runtime classpath, like the other Epsilon templates). Forked from the ICECCS2023 archive vendored under [docs/archive/ICECCS2023/](docs/archive/ICECCS2023/); see [docs/fixes/I2_template_fork.md](docs/fixes/I2_template_fork.md) for the patch audit.
 
 ### Traceability
 
@@ -458,8 +531,8 @@ directory.
 - **CSP-M**: Use `{ -1..1}` (space after `{`) for negative ranges — `{-` opens a multiline comment
 - **RoboChart CSP generator**: `.rct` textual format does NOT support function bodies (must be empty `{ }`)
 - **RoboChart CSP generator**: Does NOT support function-typed variable application (crashes with "Other types of callees not yet supported")
-- **Isabelle/UTP Z-Machine `deadlock_free` proof**: must be closed with `by (metis St.exhaust_disc)` — `cases st; simp_all` fails on the mixed bare/guarded disjunction; `(deadlock_free; cases st; auto)` chains incorrectly and times out. This closer only succeeds when the theory-generated controller has **no `Final` state** — a `Final` mode leaves an unprovable residual (no `st = Final` disjunct) and makes every closing tactic *hang*; see "Interpreting Isabelle Results".
-- **Isabelle build is cross-OS on Windows**: theory generation runs in Gradle on Windows (`gradlew.bat run --args="isabelle output"`); `isabelle build` runs in WSL (`isabelle` distribution is Linux-only). The dashboard's `isabelle_verify` phase bridges this via `wsl.exe`.
+- **Isabelle/UTP Z-Machine `deadlock_free` proof**: closed by one of two tactics the generator picks via `hasPayloadDomain` — `using St.exhaust_disc by auto` for payload-domain machines, `by (metis St.exhaust_disc)` otherwise. Each *hangs or times out* in the other's case, so the choice is not cosmetic. `cases st; simp_all` fails on the mixed bare/guarded disjunction in both. Either closer only succeeds when the theory-generated controller has **no `Final` state** — a `Final` mode leaves an unprovable residual (no `st = Final` disjunct) and makes every closing tactic *hang*; see "Interpreting Isabelle Results". See [docs/fixes/I1_deadlock_free_proof.md](docs/fixes/I1_deadlock_free_proof.md) (documents only the `metis` branch) and [.claude/memory/isabelle-zmachine-proofs.md](.claude/memory/isabelle-zmachine-proofs.md)
+- **Isabelle build is cross-OS on Windows**: theory generation runs in Gradle on Windows (`gradlew.bat run --args="isabelle_gen output=output"` — note the phase id is `isabelle_gen`, and bare arguments without `=` are silently dropped); `isabelle build` runs in WSL (`isabelle` distribution is Linux-only). The dashboard's `isabelle_verify` phase bridges this via `wsl.exe`. See [docs/design/isabelle_wsl_setup.md](docs/design/isabelle_wsl_setup.md)
 
 ---
 

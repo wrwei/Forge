@@ -1,0 +1,98 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Cold codegen of the LRE controller: 15 Java files under java.generated.project/src/main/java/lre/, gradlew build clean, all 50 requirements traced. Five items need human review.",
+  "issues": [
+    {
+      "kind": "ambiguous_requirement",
+      "title": "HCM entry velocity: 0 m/s (LRE-FR3) vs 0.1 m/s (system description)",
+      "raw": "system_description.txt says HCM is 'Reduced speed (0.1 m/s)'; LRE-FR3 says 'advises a velocity of 0 m/s'. Implemented 0.0.",
+      "fix_directive": "If 0.1 is intended, change every advVel(0.0) on a MOM->HCM branch in LreController.step() to advVel(0.1).",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "java_element": "step",
+          "requirement_ids": [
+            "LRE-FR3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "No-dynamic-obstacle defaults for nsRelDist/ewRelDist conflict between LRE-DM5 and LRE-OP5",
+      "raw": "LRE-DM5 says the four field accessors return zero when no obstacle exists; LRE-OP5 says the Sensor returns 'zero-velocity and large-distance defaults'. DM5 taken literally yields cda=0 and a spurious permanent CAM. Implemented OP5's reading.",
+      "fix_directive": "Reconcile LRE-DM5 with LRE-OP5. If DM5 is authoritative, CalcCPA needs a separate no-obstacle path.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/sensor/Sensor.java",
+          "java_element": "nsRelDist",
+          "requirement_ids": [
+            "LRE-DM5",
+            "LRE-OP5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "SAFE_LARGE_DISTANCE = 1000.0 and MIN_CLOSING_SPEED_SQ = 1e-9",
+      "raw": "No requirement fixes the 'safe large distance' returned when no obstacle exists, nor the degenerate zero-relative-velocity case in CalcCPA.",
+      "fix_directive": "Confirm 1000.0 exceeds every operational distance, and that perturbing the CPA denominator by 1e-9 is acceptable.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/sensor/Sensor.java",
+          "java_element": "SAFE_LARGE_DISTANCE",
+          "requirement_ids": [
+            "LRE-DM5"
+          ]
+        },
+        {
+          "java_file": "src/main/java/lre/operation/CalcCPA.java",
+          "java_element": "MIN_CLOSING_SPEED_SQ",
+          "requirement_ids": [
+            "LRE-OP5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Transition priority within each mode block",
+      "raw": "The requirements assign no relative priority to transitions leaving the same mode. Chose autonomous safety guards first (inOpez -> OCM, then CAM), remaining autonomous guards next, event-triggered branches last.",
+      "fix_directive": "If operator requests must pre-empt autonomous guards, move the event-triggered branches to the head of each mode block (this trades preflight rule6 warnings for rule8 ones).",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "java_element": "step",
+          "requirement_ids": [
+            "LRE-Beh5",
+            "LRE-Beh6",
+            "LRE-Beh7",
+            "LRE-Beh8",
+            "LRE-Beh9",
+            "LRE-Beh10",
+            "LRE-Beh11",
+            "LRE-Beh12"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "ObstacleRegister modelled as a dense immutable List, not a partial map",
+      "raw": "LRE-DM3 specifies a partial function nat -> Obstacle. A List maps to RoboChart Seq(...) whereas a Map degrades to real, so a dense list with has(index) was chosen. Index gaps are not representable.",
+      "fix_directive": "If sparse indices matter, add a parallel presence array rather than a Map.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/sensor/ObstacleRegister.java",
+          "java_element": "ObstacleRegister",
+          "requirement_ids": [
+            "LRE-DM3"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

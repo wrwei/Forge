@@ -163,54 +163,6 @@ part of this write-up):
 - **agent** (end-to-end − pipeline; codegen + diagnosis + 3 scratch Isabelle
   builds of ~90 s each + write-up + idle): **≈ 1,852 s ≈ 30.9 min**
 
-## Findings (durable, generalizable — KB append source)
-
-**F1 — Annotate every `double` everywhere at cold-codegen time.** The
-preflight `rule4_double_missing_real_annotation` lint requires
-`@RoboChartType("real")` on *every* double field and parameter in *every*
-class — constants classes, record components, actuator state, sensor raw
-fields, even private statics and plain setter parameters — not just the
-controller/operation fields that CLAUDE.md's examples show. 21 of iter-1's
-findings were this one mechanical rule. Apply it exhaustively during cold
-codegen; it costs nothing and removes a whole iteration's worth of lint noise.
-
-**F2 — The Dafny generator's autonomous-branch contracts need event-gating
-plus cross-target exclusions.** It emits `ensures <bare-guard> ==> mode' ==
-<target>` for each autonomous branch, with no event context and no negation
-of preceding branches. Two-part recipe: (a) gate every autonomous branch on a
-`Tick` input event so every event-triggered return path falsifies the premise;
-(b) conjoin negations of earlier same-mode branches **only when they target a
-different mode** (same-target branches have compatible ensures and need no
-exclusions — this keeps guards much shorter than full mutual exclusion).
-Verify per return path: each premise must be false or its target reached.
-
-**F3 — Isabelle deadlock_free closer: scalar payload domains want `metis`,
-not `auto`.** The generated `[simp] "= UNIV"` payload-set definitions mean
-`apply deadlock_free` internally discharges the `∃x∈Set.` enabledness
-existentials, so the residual is param-free and `by (metis St.exhaust_disc)`
-closes it (~88 s here) — while `using St.exhaust_disc by auto` dies (>600 s)
-on real-arithmetic guard disjuncts. The template's closer selection keyed on
-*any* payload domain; machines combining scalar payload captures (e.g.
-reqVel/reqHdng pass-through) with real-arithmetic guards hit the gap. Fixed by
-keying `auto` on Seq-typed payload domains only.
-
-**F4 — Diagnose Isabelle timeouts in a scratch session, not through the
-pipeline.** Copy `output/isabelle/{ROOT,*.thy}` to a temp dir and run
-`isabelle build -D .` in WSL directly: replacing the suspect closer with
-`sorry` under `-o quick_and_dirty` separates "reduction hangs" from "closer
-hangs" in one ~76 s build, and each candidate closer costs ~90 s to test —
-versus ~12 min per full-pipeline attempt. The failed `apply simp` attempt also
-printed the residual goal for free, confirming its shape before choosing the
-closer.
-
-**F5 — Tool-path failures have unmistakable signatures; fix env, re-run the
-same iter.** `dafny_verify` failing in 0.0 s with "executable not found", or
-`isabelle_verify` exiting 127 with "`…/bin/isabelle`: No such file or
-directory", means `pipeline.yaml`'s per-machine paths (`dafny_path.win32`,
-`wsl_isabelle_bin`) point at another machine's user dirs. Patch locally, rerun
-the pipeline on unchanged code, and treat the second run's verdicts as the
-iter's verdicts; don't snapshot the env-broken run or count it as an iter.
-
 ## Reproducibility
 
 1. Stage iter-N source: copy `run-4/iter-<N>/java/` over

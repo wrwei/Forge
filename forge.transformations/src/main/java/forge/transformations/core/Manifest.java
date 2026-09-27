@@ -90,6 +90,35 @@ public final class Manifest {
                 }
             }
         }
+        // Reject dependency cycles: a cycle would make any topological
+        // ordering of the phases (dashboard-side Manifest.ordered(), or a
+        // human following depends_on) silently wrong rather than failing
+        // fast at load time. Iterative DFS with three colours.
+        Map<String, Integer> colour = new HashMap<>();  // 0/absent=white, 1=grey, 2=black
+        for (String start : phases.keySet()) {
+            if (colour.getOrDefault(start, 0) != 0) continue;
+            Deque<String> stack = new ArrayDeque<>();
+            stack.push(start);
+            while (!stack.isEmpty()) {
+                String id = stack.peek();
+                int c = colour.getOrDefault(id, 0);
+                if (c == 0) {
+                    colour.put(id, 1);
+                    for (String dep : phases.get(id).dependsOn()) {
+                        int dc = colour.getOrDefault(dep, 0);
+                        if (dc == 1) {
+                            throw new IllegalArgumentException(
+                                "Dependency cycle involving phase '" + dep
+                                + "' (reached again from '" + id + "')");
+                        }
+                        if (dc == 0) stack.push(dep);
+                    }
+                } else {
+                    colour.put(id, 2);
+                    stack.pop();
+                }
+            }
+        }
     }
 
     public Path outputDir() { return outputDir; }

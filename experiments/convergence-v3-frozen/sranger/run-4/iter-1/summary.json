@@ -1,0 +1,72 @@
+{
+ "study": "sranger",
+ "run": 4,
+ "iteration": 1,
+ "recorded_utc": "2026-09-20 07:36:37",
+ "infrastructure_sha": "b808424c7c1b51157f4f14eac6e76e00d5beed90",
+ "worktree": "/Users/ranwei/Gitee/forge-frozen-run4-sranger",
+ "actor": "claude-code",
+ "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+ "codex_thread": null,
+ "actor_session_label": "CLAUDE-sranger-run4",
+ "files": {
+  "java": 9,
+  "java_test": 0,
+  "formal_artefacts": 54,
+  "codegen_trace": 1,
+  "agent_summary": 1,
+  "feedback": 12,
+  "feedback_json": 12
+ },
+ "java_loc": 194,
+ "phase_status": {
+  "compile": "passed",
+  "coverage": "passed",
+  "preflight": "passed",
+  "t2m": "passed",
+  "m2m": "passed",
+  "m2t": "passed",
+  "dafny_gen": "passed",
+  "isabelle_gen": "passed",
+  "fdr4": "passed",
+  "dafny_verify": "passed",
+  "isabelle_verify": "passed",
+  "vacuity": "passed"
+ },
+ "phases_without_verdict": [],
+ "codegen_cost": {
+  "kind": "unavailable",
+  "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+  "total_tokens": null,
+  "turns": null,
+  "schema": "unavailable",
+  "tokens_in": null,
+  "tokens_out": null,
+  "scope": "per_turn_sum",
+  "notes": "full per-turn split available"
+ },
+ "converged": true,
+ "failure_summary": null,
+ "actor_codegen_summary": "# sranger run 4 \u2014 iteration 1 (cold codegen)\n\n## What I wrote\n\n`java.generated.project/src/main/java/` was empty \u2014 nothing to delete. I created\nnine files under `sranger/`: `annotation/RoboChartType`, `mode/SRangerMode`\n(MOVING/TURNING/FINAL), `event/InputEvent` (Obstacle, Tick, EndTask signals) and\n`event/OutputEvent` (Move(lv, av)), `constants/SRangerConstants`,\n`sensor/Sensor` (distance(), large default 1000.0), `actuator/Actuator`,\n`controller/Clock` (nowMs()), and `controller/SRangerController`. Plus\n`result_codegen.json` \u2014 53 entries, all 23 requirements and all 9 files covered.\n`javac --release 17` is clean.\n\nThe controller is a single-method, mode-nested if-else with two named\npredicates (`obstacleDetected`, `turnDurationElapsed`) declared before the\nchain. Priority in each mode: endTask first, then the mode's own transitions.\n\n## Decisions the requirements did not settle\n\n1. **Clock unit.** CLAUDE.md recognises clock promotion only from\n   `clock.nowMs()`, i.e. milliseconds, but SR-DM2 states turnDuration in\n   seconds. I kept `TURN_DURATION = 2.0` (the spec constant) and added a\n   derived `TURN_DURATION_MS = 2000.0`, which is what the guard compares\n   against. The integer value also survives the CSP-gen constant ceiling.\n2. **Moving \u2192 Turning trigger vs guard.** SR-Beh2 says the transition fires on\n   the `obstacle` event; SR-GP1 says `obstacleDetected` guards the same\n   transition. I conjoined both (`instanceof Obstacle && obstacleDetected`),\n   which satisfies both texts literally. If the framework can emit `obstacle`\n   without a matching `distance()` update, this is stricter than SR-Beh2 alone.\n3. **FINAL liveness.** `java_codegen_rules.txt` requires every mode to have an\n   outgoing transition and mandates a *tick-triggered* self-loop on the\n   terminal mode; CLAUDE.md instead advises removing `Final` entirely from the\n   theory-generated controller. Those conflict, and dropping FINAL would\n   contradict SR-DM1/SR-FR3/SR-Beh3/SR-Beh6, which are immutable input. I\n   followed the rules file: FINAL keeps a `Tick` self-loop. Flagging for human\n   review \u2014 if Isabelle `deadlock_free` fails here, the conflict is real.\n4. **Initial entry action.** SR-FR1's Move(moveVel, 0) on entering Moving is\n   issued from the constructor, since Moving is the power-up mode (SR-Beh1).\n\nNothing unresolved.",
+ "iter": 1,
+ "convergence_criterion": "TIGHTENED 2026-09-22 by author decision: the three obligation verifiers (Dafny zero errors, every FDR4 assertion passes, Isabelle proves deadlock-freedom and every invariant) AND the vacuity audit reports nothing AND the structural preflight passes. Five phases. Preflight is the gate that catches an extracted model which is WRONG BUT STILL VERIFIABLE, so a run whose linter rejected the model must not count as converged. The paper as submitted defined convergence over the four verifier phases only; this tightening is disclosed in the response letter. It moves five runs by one iteration and leaves every reported median unchanged.",
+ "structural_inventory": {
+  "scope": "csp-gen/defs plus csp-gen root -- the fdr4 phase's output_dir; csp-gen/timed/ excluded (never read by the phase)",
+  "coreassertions_files": 5,
+  "total_assertions": 43,
+  "state_vars": 4,
+  "transitions": 8,
+  "java_loc": 251,
+  "basis": "computed from this record's own staged artefacts (Amendment 3)"
+ },
+ "adjudication": {
+  "by": "promote_staged_run.py, from the authoritative post_<phase>.json files",
+  "verifier_evidence": {
+   "vacuity": "passed, No blocking vacuity signals detected (syntactic D1/I1 and semantic satisfiability/reachability/constant-consistency checks). Any `0 errors` from Dafny",
+   "dafny_verify": "passed, Dafny: 1 file(s), 7 verified, 0 errors.",
+   "fdr4": "passed, FDR4: 3 assertion(s) checked, 3 passed.",
+   "isabelle_verify": "passed, Isabelle: 1 theory, 19 lemma(s) verified, elapsed 0:00:38, peak 27 MB."
+  },
+  "note": "converged was RECOMPUTED from the verifier outputs, not taken from the staged summary (which carries converged=None)."
+ }
+}

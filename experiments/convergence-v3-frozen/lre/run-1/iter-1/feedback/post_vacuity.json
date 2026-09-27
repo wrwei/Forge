@@ -1,0 +1,30 @@
+{
+  "phase": "vacuity",
+  "label": "6d — Vacuity Audit (Dafny + Isabelle)",
+  "status": "failed",
+  "summary": "1 blocking vacuity signal(s) detected (plus 1 advisory). The corresponding verifier passes discharge `True` obligations and do not establish behavioural content.",
+  "new_count": 2,
+  "recurring_count": 0,
+  "resolved_count": 0,
+  "resolved_issue_titles": [],
+  "issues": [
+    {
+      "kind": "dead_state_no_offer",
+      "title": "[ADVISORY] 1 reachable state(s) from which no operation can fire when the environment offers nothing",
+      "raw": "(OCM, {})",
+      "fix_directive": "ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.",
+      "java_trace": [],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "constant_divergence",
+      "title": "[BLOCKING] Constant `minclosingspeedsq` diverges between the Java source and generated artefact(s)",
+      "raw": "Java (forge.transformations/output/constant_defaults.json): 1e-09; forge.transformations/output/LreController.dfy: 1",
+      "fix_directive": "At least one backend verified a system with a different constant than the Java implements, and the divergence is not the declared CSP float ceiling. Fix the constant emission.",
+      "java_trace": [],
+      "seen_in_runs": 1
+    }
+  ],
+  "files_to_review": [],
+  "next_step": "Strengthen the flagged template(s) so the verifier discharges behavioural obligations rather than `True`. Until that is done, do not count the corresponding verifier pass as evidence of behavioural correctness in the experiment write-up."
+}

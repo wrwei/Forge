@@ -1,0 +1,331 @@
+diagram GasAnalysisController
+
+enumeration Angle { Left Right Back Front }
+enumeration Loc { left right front }
+enumeration Status { noGas gasD }
+
+datatype Chem {
+	id : int
+}
+
+datatype GasSensor {
+	c : Chem
+	i : real
+}
+
+function analysis ( readings : Seq(GasSensor) ) : Status { }
+function intensity ( readings : Seq(GasSensor) ) : real { }
+function location ( readings : Seq(GasSensor) ) : Angle { }
+
+interface LOperations {
+	move ( p0 : real , p1 : Angle )
+}
+
+interface Inputs {
+	event gas : Seq(GasSensor)
+	event obstacle : Loc
+}
+
+interface Outputs {
+	event randomWalk
+	event flag
+	event changeDirection : Loc
+	event shortRandomWalk
+}
+
+interface Shared {
+	event stop
+	event resume
+	event turn : Angle
+}
+
+interface Sensors {
+	var odometer : real
+}
+
+interface Actuators {
+}
+
+interface GasAnalysisController_State {
+	var gs : Seq(GasSensor)
+	var sts : Status
+	var ins : real = 0
+	var anl : Angle
+}
+
+interface MovementController_State {
+	var a : Angle
+	var l : Loc
+	var d0 : real = 0
+	var d1 : real = 0
+}
+
+interface Constants {
+	const thr : real = 3
+	const lv : real = 1
+	const evadeTime : real = 1
+	const stuckPeriod : real = 3
+	const stuckDist : real = 1
+	const outPeriod : real = 2
+}
+
+stm GasAnalysisController {
+	uses Inputs uses Outputs uses Shared requires GasAnalysisController_State requires Constants
+	var v : real
+	state ANALYSIS {
+		entry sts = analysis ( gs )
+	}
+	state READING {
+	}
+	state CONCLUDED {
+	}
+	state SOURCE_FOUND {
+		entry send stop
+	}
+	state NO_GAS {
+		entry send resume
+	}
+	state GAS_DETECTED {
+		entry ins = intensity ( gs )
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to READING
+	}
+	transition t1 {
+		from READING
+		to ANALYSIS
+		trigger gas ? gs
+	}
+	transition t2 {
+		from ANALYSIS
+		to NO_GAS
+		condition sts == noGas
+	}
+	transition t3 {
+		from ANALYSIS
+		to GAS_DETECTED
+		condition not ( sts == noGas )
+	}
+	transition t4 {
+		from NO_GAS
+		to READING
+	}
+	transition t5 {
+		from GAS_DETECTED
+		to SOURCE_FOUND
+		condition ins >= thr
+	}
+	transition t6 {
+		from GAS_DETECTED
+		to READING
+		condition not ( ins >= thr )
+		action anl = location ( gs ) ; turn ! anl
+	}
+	transition t7 {
+		from SOURCE_FOUND
+		to CONCLUDED
+	}
+	transition t8 {
+		from CONCLUDED
+		to CONCLUDED
+		trigger gas ? gs
+	}
+}
+
+controller GasAnalysisController_Ctrl {
+	uses Inputs uses Outputs uses Shared requires GasAnalysisController_State requires Constants
+	sref stm_ref0 = GasAnalysisController
+	connection GasAnalysisController_Ctrl on gas to stm_ref0 on gas
+	connection stm_ref0 on resume to GasAnalysisController_Ctrl on resume
+	connection stm_ref0 on stop to GasAnalysisController_Ctrl on stop
+	connection stm_ref0 on turn to GasAnalysisController_Ctrl on turn
+}
+
+stm MovementController {
+	uses Inputs uses Outputs uses Shared requires MovementController_State requires Constants requires Sensors requires LOperations
+	var v : real
+	clock evasionStart
+	state WAITING {
+		entry send randomWalk
+	}
+	state GETTING_OUT {
+		entry send shortRandomWalk ; wait ( outPeriod )
+	}
+	state AVOIDING {
+		entry d0 = odometer ; changeDirection ! l ; wait ( evadeTime )
+	}
+	state AVOIDING_AGAIN {
+		entry d1 = odometer
+	}
+	state TRYING_AGAIN {
+		entry move ( lv , a )
+	}
+	state FOUND {
+		entry send flag ; move ( 0 , Front )
+	}
+	state HALTED {
+	}
+	state GOING {
+		entry move ( lv , a )
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to WAITING
+	}
+	transition t1 {
+		from WAITING
+		to FOUND
+		trigger stop
+	}
+	transition t2 {
+		from WAITING
+		to WAITING
+		trigger resume
+	}
+	transition t3 {
+		from WAITING
+		to GOING
+		trigger turn ? a
+	}
+	transition t4 {
+		from GOING
+		to FOUND
+		trigger stop
+	}
+	transition t5 {
+		from GOING
+		to WAITING
+		trigger resume
+	}
+	transition t6 {
+		from GOING
+		to GOING
+		trigger turn ? a
+	}
+	transition t7 {
+		from GOING
+		to AVOIDING
+		trigger obstacle ? l
+		# evasionStart
+	}
+	transition t8 {
+		from AVOIDING
+		to FOUND
+		trigger stop
+	}
+	transition t9 {
+		from AVOIDING
+		to WAITING
+		trigger resume
+	}
+	transition t10 {
+		from AVOIDING
+		to TRYING_AGAIN
+		trigger turn ? a
+	}
+	transition t11 {
+		from TRYING_AGAIN
+		to FOUND
+		trigger stop
+	}
+	transition t12 {
+		from TRYING_AGAIN
+		to WAITING
+		trigger resume
+	}
+	transition t13 {
+		from TRYING_AGAIN
+		to TRYING_AGAIN
+		trigger turn ? a
+	}
+	transition t14 {
+		from TRYING_AGAIN
+		to AVOIDING_AGAIN
+		trigger obstacle ? l
+	}
+	transition t15 {
+		from AVOIDING_AGAIN
+		to FOUND
+		trigger stop
+	}
+	transition t16 {
+		from AVOIDING_AGAIN
+		to WAITING
+		trigger resume
+	}
+	transition t17 {
+		from AVOIDING_AGAIN
+		to AVOIDING
+		# evasionStart
+		condition since ( evasionStart ) < stuckPeriod \/ d1 - d0 > stuckDist
+	}
+	transition t18 {
+		from AVOIDING_AGAIN
+		to GETTING_OUT
+		condition not ( since ( evasionStart ) < stuckPeriod \/ d1 - d0 > stuckDist )
+	}
+	transition t19 {
+		from GETTING_OUT
+		to FOUND
+		trigger stop
+	}
+	transition t20 {
+		from GETTING_OUT
+		to WAITING
+		trigger resume
+	}
+	transition t21 {
+		from GETTING_OUT
+		to GOING
+		trigger turn ? a
+	}
+	transition t22 {
+		from FOUND
+		to HALTED
+	}
+	transition t23 {
+		from HALTED
+		to HALTED
+		trigger stop
+	}
+}
+
+controller MovementController_Ctrl {
+	uses Inputs uses Outputs uses Shared requires MovementController_State requires Constants requires Sensors requires LOperations
+	sref stm_ref0 = MovementController
+	connection MovementController_Ctrl on stop to stm_ref0 on stop
+	connection MovementController_Ctrl on resume to stm_ref0 on resume
+	connection MovementController_Ctrl on turn to stm_ref0 on turn
+	connection MovementController_Ctrl on obstacle to stm_ref0 on obstacle
+	connection stm_ref0 on randomWalk to MovementController_Ctrl on randomWalk
+	connection stm_ref0 on flag to MovementController_Ctrl on flag
+	connection stm_ref0 on changeDirection to MovementController_Ctrl on changeDirection
+	connection stm_ref0 on shortRandomWalk to MovementController_Ctrl on shortRandomWalk
+}
+
+module GasAnalysisController_System_Module {
+	robotic platform GasAnalysisController_System_Platform {
+		provides Sensors provides Actuators provides Constants
+		event gas : Seq(GasSensor)
+		event obstacle : Loc
+		event randomWalk
+		event flag
+		event changeDirection : Loc
+		event shortRandomWalk
+	}
+	cref ctrl_ref0 = GasAnalysisController_Ctrl
+	cref ctrl_ref1 = MovementController_Ctrl
+	connection GasAnalysisController_System_Platform on gas to ctrl_ref0 on gas
+	connection GasAnalysisController_System_Platform on obstacle to ctrl_ref1 on obstacle
+	connection ctrl_ref1 on randomWalk to GasAnalysisController_System_Platform on randomWalk
+	connection ctrl_ref1 on flag to GasAnalysisController_System_Platform on flag
+	connection ctrl_ref1 on changeDirection to GasAnalysisController_System_Platform on changeDirection
+	connection ctrl_ref1 on shortRandomWalk to GasAnalysisController_System_Platform on shortRandomWalk
+	connection ctrl_ref0 on stop to ctrl_ref1 on stop
+	connection ctrl_ref0 on resume to ctrl_ref1 on resume
+	connection ctrl_ref0 on turn to ctrl_ref1 on turn
+}
+

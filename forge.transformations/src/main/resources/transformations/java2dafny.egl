@@ -27,7 +27,11 @@ var stepMethodName = "step";
 // Pick the controller class first so findModeEnum() can read its
 // mode-field type to find the paired mode enum (multi-controller
 // case studies, e.g. chemical_detector).
-var controllerClass = findControllerClass();
+// MULTI-CONTROLLER (2026-09-25). DafnyPhase now runs this template once per
+// controller class and injects `targetController` (the class name). When it
+// is set, that class is used; when it is absent the old first-match choice
+// is kept, so single-controller studies and existing callers are unchanged.
+var controllerClass = findControllerClassFor();
 if (controllerClass.isUndefined()) {
     throw "No controller class found in Spoon model";
 }
@@ -338,9 +342,27 @@ class [%=controllerName%] {
         ensures Valid()
     {
         mode := [%=initialMode%];
-[% for (f in stateVars) { %]
+[% for (f in stateVars) {
+    // T2M-2 companion fix: prefer the Java field's actual declared initialiser
+    // (captured in extractStateFields via resolvedValues) over the type default.
+    var initV = f.get("initValue");
+    if (initV.isDefined() and initV <> "") {
+        // Dafny real literals need a decimal point: coerce `0` -> `0.0` for real fields.
+        if (f.get("dafnyType") = "real" and initV.indexOf(".") < 0) {
+            initV = initV + ".0";
+        } %]
+        [%=f.get("name")%] := [%=initV%];
+[%  } else if (f.get("initUnresolved").isDefined()) {
+        // Loud substitution marker: the Java source HAS an initialiser for
+        // this field but it did not fold to a literal/constant, so the type
+        // default below is NOT the Java value. Silent substitution was the
+        // failure mode behind the cstc := 0 divergence.
+%]
+        [%=f.get("name")%] := [%=defaultValue(f.get("dafnyType"))%];  // SUBSTITUTED: Java initialiser did not resolve to a literal; type default emitted
+[%  } else { %]
         [%=f.get("name")%] := [%=defaultValue(f.get("dafnyType"))%];
-[% } %]
+[%  }
+} %]
     }
 [% for (mt in modeTransitions) {
     var modeName = mt.get("modeName");
@@ -351,18 +373,94 @@ class [%=controllerName%] {
         requires mode == [%=modeName%]
         requires Valid()
         modifies this
-[%  for (t in transitions) {
+[%  // D3 fix (branch priority in derived contracts). Each ensures used to be
+    // derived from its branch's own condition alone, so a guarded branch
+    // sitting BELOW an event branch in the if/else chain got a contract the
+    // body cannot satisfy: "elapsed ==> Moving" is false on the EndTask path.
+    // All three v2 cold codegens of SRanger hit exactly this (byte-distinct
+    // Java, same unprovable obligation at the same line) — the defect class
+    // is systematic, the same one C1 fixed for the RoboChart chain.
+    //
+    // The antecedent now carries the negated conjunction of ALL prior
+    // branches' full conditions, in source order — mirroring the if/else
+    // chain's own semantics, exactly as prependNegatedGuards does in
+    // java2robochart.etl. Note the priors include branches that emit no
+    // ensures of their own (an event-only branch has an empty guard and is
+    // skipped by the emission filter below, but its negation is still what
+    // makes every later branch's contract true).
+    var priors = new Sequence;
+    for (t in transitions) {
+        var fullCond = "";
+        if (t.get("eventType").isDefined() and t.get("eventType") <> "" and
+            t.get("guard").isDefined() and t.get("guard") <> "") {
+            fullCond = "event == " + t.get("eventType") + " && " + wrapOr(t.get("guard"));
+        } else if (t.get("eventType").isDefined() and t.get("eventType") <> "") {
+            fullCond = "event == " + t.get("eventType");
+        } else if (t.get("guard").isDefined() and t.get("guard") <> "") {
+            fullCond = wrapOr(t.get("guard"));
+        }
         if (t.get("guard").isDefined() and t.get("guard") <> "" and t.get("targetMode").isDefined()) {
-            var condition = "";
-            if (t.get("eventType").isDefined() and t.get("eventType") <> "") {
-                condition = "event == " + t.get("eventType") + " && " + t.get("guard");
-            } else {
-                condition = t.get("guard");
+            var condition = fullCond;
+            for (p in priors) {
+                // Exact-match dedup only: when the branch's own guard IS the
+                // negation of its predecessor (an explicit `else if (!(p))`
+                // in the Java), prepending !(p) again yields `!(p) && !(p)`.
+                // Sound but noisy in a referee-visible artefact. Anything
+                // short of exact equality is NOT skipped: omitting a conjunct
+                // can only strengthen the obligation (weaker antecedent), so
+                // a missed dedup is cosmetic while an over-eager one costs a
+                // provable contract — this is deliberately the narrow rule.
+                if (fullCond <> ("!(" + p + ")")) {
+                    condition = "!(" + p + ") && " + condition;
+                }
             }
 %]
+[%
+                // FIX (2026-09-14). The antecedent is the JAVA BRANCH GUARD,
+                // which the Java evaluates BEFORE the mode assignment — i.e. in
+                // the method's PRE-state. Emitting it bare makes Dafny evaluate
+                // it in the POST-state, where any heap-dependent function
+                // (reads this) is unconstrained once `modifies this` fires:
+                // chem run-1 v2's GAS_DETECTED splits on goreq(ins, thr()) vs
+                // its negation — both heap-dependent — and the READING
+                // postcondition was unprovable for exactly this reason.
+                // sranger/lre never hit it because their branches are
+                // distinguished by the immutable `event` PARAMETER, for which
+                // old(e) = e. Wrap in old() ONLY when the antecedent can
+                // dereference the heap — on parameter-only/literal antecedents
+                // (`event == X` chains, `true`) Dafny warns that old() has no
+                // effect, and the pipeline runs warnings-as-errors. The
+                // discriminator: strip event-comparisons, negation/parens/
+                // logical operators, and bare literals; wrap iff any
+                // identifier survives (a state field or function call).
+                var probe = condition
+                    .replaceAll("event\\s*==\\s*\\w+", "")
+                    .replaceAll("true|false", "")
+                    .replaceAll("[!()&|\\s]+", "")
+                    .replaceAll("[0-9.]+", "");
+                var needsOld = probe.matches(".*[A-Za-z_].*");
+                if (needsOld) {
+%]
+        ensures old([%=condition%]) ==> mode == [%=t.get("targetMode")%]
+[%              } else { %]
         ensures [%=condition%] ==> mode == [%=t.get("targetMode")%]
+[%              } %]
 [%      }
+        if (fullCond <> "") {
+            priors.add(fullCond);
+        }
     }
+    // Silent-drop fix companion: a mode whose ONLY transition is the
+    // unconditional autonomous one gets an unconditional postcondition.
+    // (When guarded branches precede it, the else-branch postcondition
+    // would need the negated conjunction of all prior guards — left to
+    // the body's if/else chain, which encodes it natively.)
+    if (transitions.size() = 1 and transitions.first().get("unconditional").isDefined()
+            and transitions.first().get("targetMode").isDefined()
+            and transitions.first().get("targetMode") <> "") {
+%]
+        ensures mode == [%=transitions.first().get("targetMode")%]
+[%  }
 %]
         ensures Valid()
     {
@@ -376,6 +474,29 @@ class [%=controllerName%] {
             condition = "event == " + t.get("eventType");
         } else if (t.get("guard").isDefined() and t.get("guard") <> "") {
             condition = t.get("guard");
+        } else if (t.get("unconditional").isDefined()) {
+            // Silent-drop fix companion: unconditional autonomous transition
+            // (direct mode assignment with no inner if — e.g. NoGas -> Reading).
+            // Emit as `else { ... }` when guarded branches precede it (Java
+            // else-if priority preserved), or as a bare assignment when it is
+            // the mode's only transition.
+            if (first) {
+%]
+        mode := [%=t.get("targetMode")%];
+[%          if (t.get("action").isDefined() and t.get("action") <> "") { %]
+        // action: [%=t.get("action")%]
+[%          }
+            } else {
+%]
+        else {
+            mode := [%=t.get("targetMode")%];
+[%          if (t.get("action").isDefined() and t.get("action") <> "") { %]
+            // action: [%=t.get("action")%]
+[%          } %]
+        }
+[%          }
+            first = false;
+            continue;
         } else {
             continue;
         }
@@ -496,6 +617,38 @@ operation findModeEnum() : Any {
     return;
 }
 
+// FIX (2026-09-25). A guard is spliced between `&&` conjuncts; one containing a
+// top-level `||` then loses its grouping -- `!(a) && b || c` parses as
+// `(!(a) && b) || c`. Dafny refuses the mixed form outright ("Ambiguous use of
+// && and ||"), which is how MovementController exposed it; under ordinary
+// precedence it would have been a silently wrong contract. Parenthesise ONLY
+// when a `||` occurs at bracket depth 0, so every guard without one emits
+// byte-for-byte as before.
+operation wrapOr(g : String) : String {
+    var depth = 0;
+    var i = 0;
+    while (i < g.length() - 1) {
+        var ch = g.substring(i, i + 1);
+        if (ch = "(") { depth = depth + 1; }
+        else if (ch = ")") { depth = depth - 1; }
+        else if (depth = 0 and ch = "|" and g.substring(i + 1, i + 2) = "|") { return "(" + g + ")"; }
+        i = i + 1;
+    }
+    return g;
+}
+
+operation findControllerClassFor() : Any {
+    // Java2DafnyEglTransformer always injects targetController ("" = unset).
+    var want = targetController;
+    if (want <> "") {
+        for (obj in Spoon!CtClass.all) {
+            if (getFeature(obj, "name") = want) { return obj; }
+        }
+        throw "targetController '" + want + "' is not a class in the Spoon model";
+    }
+    return findControllerClass();
+}
+
 operation findControllerClass() : Any {
     // Prefer a class that has BOTH step() AND an enum-typed mode field.
     // Without this guard, the chemical_detector dispatcher
@@ -576,6 +729,52 @@ operation discoverAbstractedTargets(classDecl : Any) : OrderedSet {
 operation extractStateFields(classDecl : Any) : Sequence {
     var fields = new Sequence;
     var modeFieldName = findModeFieldName(classDecl);
+    // initValue follow-on fix: fields initialised in the CONSTRUCTOR BODY
+    // (`this.cstc = -1;` — the LRE pattern) rather than at the declaration
+    // were missed by the declaration-only capture below, silently falling
+    // back to type defaults. Walk every constructor's top-level statements
+    // and collect `this.<field> = <resolvable literal/constant>` assignments.
+    // Java semantics: declaration initialisers run first, constructor-body
+    // assignments overwrite them — so ctorInits WINS on collision.
+    var ctorInits = new Map;
+    var ctorUnresolved = new OrderedSet;
+    for (tm in getChildren(classDecl, "typeMember")) {
+        if (tm.eClass().getName() = "CtConstructor") {
+            var cbody = getFeature(tm, "body");
+            if (cbody.isDefined()) {
+                var cstmts = getFeature(cbody, "statement");
+                if (cstmts.isDefined()) {
+                    for (cstmt in cstmts) {
+                        if (cstmt.eClass().getName() = "CtAssignment") {
+                            var lhs = getFeature(cstmt, "assigned");
+                            if (lhs.isDefined() and lhs.eClass().getName() = "CtFieldWrite") {
+                                var lhsVar = getFeature(lhs, "variable");
+                                var lhsName = "";
+                                if (lhsVar.isDefined()) { lhsName = getFeature(lhsVar, "name"); }
+                                if (lhsName = "") { continue; }
+                                var rhs = getFeature(cstmt, "assignment");
+                                if (rhs.isDefined() and resolvedValues.isDefined()
+                                        and resolvedValues.containsKey(rhs)) {
+                                    ctorInits.put(lhsName, resolvedValues.get(rhs) + "");
+                                } else if (rhs.isDefined()
+                                        and rhs.eClass().getName() <> "CtVariableRead") {
+                                    // Non-parameter RHS we could not fold (e.g.
+                                    // Double.MAX_VALUE, method call): remember so the
+                                    // constructor emission can flag the substituted
+                                    // type default instead of staying silent.
+                                    // (CtVariableRead = ctor-parameter passthrough
+                                    // like `this.sensor = sensor` — those fields are
+                                    // dependency objects, not state, and are excluded
+                                    // by the final-modifier check below anyway.)
+                                    ctorUnresolved.add(lhsName);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     for (tm in getChildren(classDecl, "typeMember")) {
         if (tm.eClass().getName() = "CtField") {
             var name = getFeature(tm, "name");
@@ -586,6 +785,50 @@ operation extractStateFields(classDecl : Any) : Sequence {
                 var entry = new Map;
                 entry.put("name", name);
                 entry.put("dafnyType", mapDafnyType(javaType));
+                // T2M-2 companion fix: capture the field's declared initialiser via
+                // resolvedValues (which now folds negated literals), so the Dafny
+                // constructor can emit the Java's actual initial value instead of a
+                // type default (the second independent cause of the cstc := 0
+                // divergence documented in the paper's trust-boundary discussion).
+                var init = getFeature(tm, "assignment");
+                if (init.isUndefined()) { init = getFeature(tm, "defaultExpression"); }
+                if (init.isDefined() and resolvedValues.isDefined()
+                        and resolvedValues.containsKey(init)) {
+                    entry.put("initValue", resolvedValues.get(init) + "");
+                } else if (init.isDefined()) {
+                    // Enum-literal initialiser (`private Angle anl = Angle.Front;`):
+                    // ValueResolver only folds literals/constants, so enum reads
+                    // fall through. Extract the literal name and validate it
+                    // against the field's enum datatype — previously this
+                    // silently emitted the enum's FIRST literal (anl := Left
+                    // where Java says Front).
+                    var enumLit = extractEnumLiteralName(init);
+                    var enumMatched = false;
+                    if (enumLit <> "") {
+                        for (e in Spoon!CtEnum.all) {
+                            if (getFeature(e, "name") = entry.get("dafnyType")) {
+                                if (extractEnumValues(e).includes(enumLit)) {
+                                    entry.put("initValue", enumLit);
+                                    enumMatched = true;
+                                }
+                            }
+                        }
+                    }
+                    if (not enumMatched) {
+                        // Declared initialiser exists but did not resolve to a
+                        // literal/constant — the type default the constructor will
+                        // emit is a SUBSTITUTION, not the Java value. Flag it.
+                        entry.put("initUnresolved", "true");
+                    }
+                }
+                // Constructor-body assignment overrides the declaration value
+                // (Java execution order).
+                if (ctorInits.containsKey(name)) {
+                    entry.put("initValue", ctorInits.get(name));
+                    entry.remove("initUnresolved");
+                } else if (ctorUnresolved.includes(name)) {
+                    entry.put("initUnresolved", "true");
+                }
                 fields.add(entry);
             }
         }
@@ -711,6 +954,27 @@ operation extractTransitions(thenBlock : Any, predicateDefs : Map,
     if (thenBlock.isUndefined()) { return transitions; }
 
     var ifStmt = findFirstCtIf(thenBlock);
+    // Silent-drop fix: a mode branch whose body is a DIRECT mode assignment
+    // with no inner if (Java `else if (currentMode == NoGas) { currentMode =
+    // Reading; }` — the chem-detector CD-GA-Beh3 autonomous transition) has
+    // no CtIf to walk, so the loop below never ran and the transition was
+    // silently dropped (archived transitionFromNoGas emitted an EMPTY body:
+    // the Dafny machine could never leave NoGas). Harvest the direct
+    // assignment as an unconditional transition (guard "", eventType "").
+    if (ifStmt.isUndefined()) {
+        var directTarget = findTargetMode(thenBlock);
+        if (directTarget.isDefined() and directTarget <> "") {
+            var dt = new Map;
+            dt.put("eventType", "");
+            dt.put("guard", "");
+            dt.put("targetMode", directTarget);
+            dt.put("action", findAction(thenBlock, abstractedMethods, abstractedTargets,
+                abstractedArgTypes, abstractedReturnTypes, realNames));
+            dt.put("unconditional", "true");
+            transitions.add(dt);
+        }
+        return transitions;
+    }
     while (ifStmt.isDefined() and ifStmt.eClass().getName() = "CtIf") {
         var cond = getFeature(ifStmt, "condition");
         var thenBody = getFeature(ifStmt, "then");
@@ -872,6 +1136,27 @@ operation findAction(block : Any, abstractedMethods : Map, abstractedTargets : O
                             var argType = getFeature(argExecRef, "type");
                             var eventName = "?";
                             if (argType.isDefined()) { eventName = getFeature(argType, "name"); }
+                            // Fallbacks: the T2M mapper's containment re-parenting
+                            // guard can leave executableRef.type unmapped (an EMF
+                            // object has ONE container; Spoon shares type refs).
+                            // Try the exec-ref's declaringType, then the
+                            // expression's own typed-element type, before giving
+                            // up — the archived sranger run rendered `Move(0.0)`
+                            // here and `?` is a silent regression of it.
+                            if (eventName = "?" or eventName.isUndefined()) {
+                                var declT = getFeature(argExecRef, "declaringType");
+                                if (declT.isDefined()) {
+                                    var dtn = getFeature(declT, "name");
+                                    if (dtn.isDefined() and dtn <> "") { eventName = dtn; }
+                                }
+                            }
+                            if (eventName = "?" or eventName.isUndefined()) {
+                                var exprT = getFeature(arg, "type");
+                                if (exprT.isDefined()) {
+                                    var etn = getFeature(exprT, "name");
+                                    if (etn.isDefined() and etn <> "") { eventName = etn; }
+                                }
+                            }
                             var innerArgs = getChildren(arg, "argument");
                             if (innerArgs.size() > 0) {
                                 var val = formatSpoonExpr(innerArgs.first(), abstractedMethods,
@@ -957,15 +1242,35 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
 
     if (typeName = "CtBinaryOperator") {
         var op = getFeature(expr, "operatorKind").toString();
+        // D2b fix: `event instanceof InputEvent.EndTask` must become
+        // `event == EndTask`, NOT `event is EndTask`. Dafny's `is` takes a
+        // TYPE, but the events are CONSTRUCTORS of a single datatype
+        // (`datatype InputEvent = NoEvent | EndTask | Obstacle | Tick`), so
+        // `is` is a resolution error: "Type or type parameter is not declared
+        // in this scope: EndTask". The same generator already emits the
+        // correct `event == EndTask` form for the if/else chain body; only
+        // this expression path (reached for a NEGATED instanceof inside a
+        // guard, which recurses past the skipInstanceof check) was wrong.
+        // Reuse extractInstanceofType so the simple-name stripping of
+        // `InputEvent.EndTask` -> `EndTask` matches the datatype's own
+        // constructor names.
+        if (op = "INSTANCEOF") {
+            var ctorName = extractInstanceofType(expr);
+            var lhs = formatSpoonExpr(getFeature(expr, "leftOperand"), abstractedMethods,
+                abstractedTargets, abstractedArgTypes, abstractedReturnTypes, realNames);
+            if (ctorName.isDefined() and ctorName <> "") {
+                return lhs + " == " + ctorName;
+            }
+        }
         var left = formatSpoonExpr(getFeature(expr, "leftOperand"), abstractedMethods,
             abstractedTargets, abstractedArgTypes, abstractedReturnTypes, realNames);
         var right = formatSpoonExpr(getFeature(expr, "rightOperand"), abstractedMethods,
             abstractedTargets, abstractedArgTypes, abstractedReturnTypes, realNames);
         // Coerce int literals to real when compared against real-typed expressions
         if (isComparisonOp(op)) {
-            if (isRealExpr(left, realNames, abstractedMethods) and isIntLiteral(right)) {
+            if (isRealExprTyped(left, realNames, abstractedMethods, abstractedReturnTypes) and isIntLiteral(right)) {
                 right = right + ".0";
-            } else if (isRealExpr(right, realNames, abstractedMethods) and isIntLiteral(left)) {
+            } else if (isRealExprTyped(right, realNames, abstractedMethods, abstractedReturnTypes) and isIntLiteral(left)) {
                 left = left + ".0";
             }
         }
@@ -1001,13 +1306,15 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
             var resolved = resolvedValues.get(expr);
             return formatResolvedValue(resolved);
         }
-        // Fallback: check type name
+        // Fallback: check type name. These are SUBSTITUTIONS (the literal's
+        // actual value was not resolved by ValueResolver) — mark them loudly
+        // so a grep for SUBSTITUTED finds every silent-default emission.
         var litType = getFeature(expr, "type");
         var litTypeName = "";
         if (litType.isDefined()) { litTypeName = getFeature(litType, "name"); }
-        if (litTypeName = "boolean") { return "false"; }
-        if (litTypeName = "int" or litTypeName = "long") { return "0"; }
-        return "0.0";
+        if (litTypeName = "boolean") { return "false /* SUBSTITUTED: unresolved boolean literal */"; }
+        if (litTypeName = "int" or litTypeName = "long") { return "0 /* SUBSTITUTED: unresolved int literal */"; }
+        return "0.0 /* SUBSTITUTED: unresolved literal */";
     }
 
     if (typeName = "CtInvocation") {
@@ -1022,6 +1329,63 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
         if (targetVarName.isDefined() and abstractedTargets.includes(targetVarName)) {
             if (args.size() > 0) {
                 abstractedMethods.put(methodName, "args");
+                // FIX (2026-09-14). This instance-call path registered the
+                // method but never populated abstractedArgCount /
+                // abstractedArgTypesList / abstractedReturnTypes — unlike the
+                // static-call (CtTypeAccess) path below, which reads all three
+                // from the executable signature. The decl loop then fell back
+                // to arity 1 / return `real`, so chem run-1 v2's
+                // `sensor.goreq(ins, thr())` (boolean, 2 args in the Java) was
+                // declared `function goreq(p0: real): real` while every call
+                // site passed 2 args in a boolean position — 10 resolution
+                // errors. sranger/lre dependency calls are all 1-arg
+                // real-returning, so the fallback happened to be correct there.
+                // Mirror the static path: signature from execRef, per-arg.
+                abstractedArgCount.put(methodName, args.size());
+                if (not abstractedArgTypesList.containsKey(methodName)) {
+                    var ats = new Sequence;
+                    if (execRef.isDefined()) {
+                        var argTypeRefs = getChildren(execRef, "argumentType");
+                        for (atr in argTypeRefs) {
+                            var atn = getFeature(atr, "name");
+                            ats.add(atn.isDefined() ? mapDafnyType(atn) : "real");
+                        }
+                    }
+                    while (ats.size() < args.size()) { ats.add("real"); }
+                    abstractedArgTypesList.put(methodName, ats);
+                }
+                if (not abstractedReturnTypes.containsKey(methodName)) {
+                    if (execRef.isDefined()) {
+                        var retTypeRef = getFeature(execRef, "type");
+                        if (retTypeRef.isDefined()) {
+                            var rtn = getFeature(retTypeRef, "name");
+                            if (rtn.isDefined()) {
+                                abstractedReturnTypes.put(methodName, mapDafnyType(rtn));
+                            }
+                        }
+                    }
+                    // FIX (cont.): Spoon's persisted executableRef often has NO
+                    // return-type child (verified: all 125 executableRef instances,
+                    // 38 distinct names, in the chem model lack one), but the DECLARED CtMethod node
+                    // carries <type name="..."/> after its body. Resolve the
+                    // declaration by name when the reference is untyped —
+                    // goreq's decl says boolean, so its uses in ==> / if()
+                    // positions type-check.
+                    if (not abstractedReturnTypes.containsKey(methodName)) {
+                        for (mdecl in Spoon!CtMethod.all) {
+                            if (getFeature(mdecl, "name") = methodName) {
+                                var dtr = getFeature(mdecl, "type");
+                                if (dtr.isDefined()) {
+                                    var dtn = getFeature(dtr, "name");
+                                    if (dtn.isDefined()) {
+                                        abstractedReturnTypes.put(methodName, mapDafnyType(dtn));
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
                 // Infer argument type
                 if (not abstractedArgTypes.containsKey(methodName)) {
                     var argType = inferArgDafnyType(args.first(), abstractedReturnTypes, stateFieldTypes);
@@ -1035,6 +1399,42 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
                 return methodName + "(" + argStrs.concat(", ") + ")";
             } else {
                 abstractedMethods.put(methodName, "noargs");
+                // FIX (2026-09-19). The zero-argument branch registered the
+                // method but recorded NO return type, so emission fell to its
+                // "real" default (line ~280). A Java `int cstc()` called NESTED --
+                // `sensor.odist(calcCStc.cstc())` -- therefore emitted
+                // `function cstc(): real` and Dafny rejected the call with
+                // "incorrect argument type for function parameter 'p0' (expected
+                // int, found real)". Hoisting the call into an `int` local made it
+                // type correctly, which is how the autonomous arm's lre run-3
+                // worked around it -- a code-shape workaround for an instrument
+                // gap. The args branch above already resolves the DECLARED CtMethod
+                // when the executableRef is untyped; the same resolution is
+                // applied here, since Spoon's persisted references usually lack a
+                // return-type child.
+                if (not abstractedReturnTypes.containsKey(methodName)) {
+                    var rt0 = "";
+                    if (execRef.isDefined()) {
+                        var rtr0 = getFeature(execRef, "type");
+                        if (rtr0.isDefined()) {
+                            var rtn0 = getFeature(rtr0, "name");
+                            if (rtn0.isDefined()) { rt0 = mapDafnyType(rtn0); }
+                        }
+                    }
+                    if (rt0 = "") {
+                        for (mdecl0 in Spoon!CtMethod.all) {
+                            if (getFeature(mdecl0, "name") = methodName) {
+                                var dtr0 = getFeature(mdecl0, "type");
+                                if (dtr0.isDefined()) {
+                                    var dtn0 = getFeature(dtr0, "name");
+                                    if (dtn0.isDefined()) { rt0 = mapDafnyType(dtn0); }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (rt0 <> "") { abstractedReturnTypes.put(methodName, rt0); }
+                }
                 return methodName + "()";
             }
         }
@@ -1116,10 +1516,10 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
             return formatSpoonExpr(ctorArgs.first(), abstractedMethods, abstractedTargets,
                 abstractedArgTypes, abstractedReturnTypes, realNames);
         }
-        return "0.0  /* unhandled constructor call */";
+        return "0.0  /* SUBSTITUTED: unhandled multi-arg constructor call */";
     }
 
-    return "/* " + typeName + " */";
+    return "/* SUBSTITUTED: unhandled expression type " + typeName + " */";
 }
 
 operation formatResolvedValue(resolved : Any) : String {
@@ -1189,7 +1589,14 @@ operation mapOperator(op : String) : String {
     if (op = "MINUS") { return "-"; }
     if (op = "MUL") { return "*"; }
     if (op = "DIV") { return "/"; }
-    if (op = "INSTANCEOF") { return "is"; }
+    // D2b fix: `is` was WRONG for this target. Dafny's `is` expects a type;
+    // the generated events are constructors of one datatype, so `event is
+    // EndTask` fails to resolve. INSTANCEOF is now handled structurally in
+    // formatSpoonExpr (emitting `event == EndTask`) and must never reach
+    // here. Return a syntactically invalid marker rather than a plausible
+    // operator, so a future regression fails loudly at the verifier instead
+    // of silently producing an unprovable-looking contract.
+    if (op = "INSTANCEOF") { return "/*UNMAPPED_INSTANCEOF*/"; }
     return op;
 }
 
@@ -1201,6 +1608,27 @@ operation mapUnaryOp(op : String) : String {
 
 operation isComparisonOp(op : String) : Boolean {
     return op = "EQ" or op = "NE" or op = "LT" or op = "GT" or op = "LE" or op = "GE";
+}
+
+// FIX (2026-09-25). isRealExpr treats EVERY abstracted call as real-valued, so
+// `nowMs() - T < 5` (nowMs(): int, T: int) had its literal coerced to `5.0` and
+// Dafny rejected the int/real comparison -- first exposed by MovementController.
+// When the call's return type IS recorded, trust it; when it is not, keep the old
+// answer, so every expression whose type was unknown emits exactly as before.
+operation isRealExprTyped(expr : String, realNames : OrderedSet, abstractedMethods : Map,
+                          abstractedReturnTypes : Map) : Boolean {
+    if (expr.isUndefined()) { return false; }
+    if (realNames.includes(expr)) { return true; }
+    if (expr.indexOf("(") >= 0) {
+        var funcName = expr.substring(0, expr.indexOf("("));
+        if (abstractedMethods.containsKey(funcName)) {
+            if (abstractedReturnTypes.isDefined() and abstractedReturnTypes.containsKey(funcName)) {
+                return abstractedReturnTypes.get(funcName) = "real";
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 operation isRealExpr(expr : String, realNames : OrderedSet, abstractedMethods : Map) : Boolean {

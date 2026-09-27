@@ -327,13 +327,14 @@ def build_gradle_phase_feedback(
                 kind="deadlock_lint_warning",
                 title=f"State without unconditional fallback: {state_loc}",
                 raw=raw,
+                # ABLATION (condition D, diagnosis-only feedback). The original
+                # text spelled the remedy out as code. The structural fact --
+                # which state lacks an unconditional outgoing transition -- is
+                # retained in the title and the raw lint line.
                 fix_directive=(
-                    "Add an `else { mode = <SameMode>; }` clause to the inner "
-                    "if-else chain of this mode block so the state has at "
-                    "least one bare-precondition outgoing transition. "
-                    "Without it, the Isabelle deadlock_free proof will fail "
-                    "(see CLAUDE.md \"Isabelle/UTP Z-Machine `deadlock_free` "
-                    "proof\" gotcha)."
+                    "The structural lint reports that this state has no "
+                    "unconditional outgoing transition. See the raw lint "
+                    "line above for the state and its source location."
                 ),
             ))
         next_step_by_phase = {

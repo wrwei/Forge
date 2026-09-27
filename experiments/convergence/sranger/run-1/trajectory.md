@@ -138,60 +138,6 @@ Result: all 12 phases pass, vacuity audit 0 findings. **Converged.**
   `memory_limit_mb` 4096→88659 (page-file MB) per RUN_TRAJECTORY §2.3; Dafny and
   WSL-Isabelle paths corrected from the stale `willr` home to this machine.
 
-## Findings (durable, generalisable)
-
-- **F1 — A `{0,1}`-range run cannot communicate any constant > 1 on a channel;
-  the symptom is FDR4 "inconclusive", not a deadlock/divergence verdict.** The
-  out-of-range value surfaces as `<channel>.….N is not a member of {0,1}` and
-  makes *every* assertion inconclusive (0 passed) — easy to misread as a state-
-  space/timeout problem. *Why:* the type-range correction pins channel value sets
-  to `{0,1}` but constants keep their (ceiled) source value, so a payload of 2 is
-  simply not in the channel's set. *How to apply:* when FDR4 reports all-
-  inconclusive, run `refines.exe --format framed_json` on the discovered
-  `*_coreassertions.csp` and read the `errors` field — if it names a channel
-  value out of `{0,1}`, the fix is to abstract the *communicated* constant down
-  to ≤1 (magnitudes don't affect the checked properties), **not** to widen the
-  range (RUN_TRAJECTORY §2 pins `{0,1}`). Constants used only in guard comparisons
-  do not trigger this — only channel payloads do.
-
-- **F2 — A bare Tick self-loop on the terminal state is the surgical fix for the
-  `deadlock_free` "Final" hang, when the machine has no typed-payload domain.**
-  CLAUDE.md warns that "adding an operation on Final makes `apply deadlock_free`
-  fail"; that warning is scoped to the *payload-domain* closer
-  (`using St.exhaust_disc by auto`, the chemical_detector case). For an all-signal
-  controller (SRanger), the generated theory uses `by (metis St.exhaust_disc)`,
-  whose residual goal needs a **bare** `st = X` disjunct for every state. The
-  terminal mode hangs only because it has *no* enabled operation; a bare Tick
-  self-loop (no extra guard) gives it the missing disjunct exactly like the other
-  modes' self-loops, and `metis` closes in seconds. *How to apply:* before
-  reaching for CLAUDE.md's heavier "remove Final / reroute the terminal
-  transition" fix, check the generated `.thy` for the closer in use — if it is
-  `by (metis St.exhaust_disc)` (i.e. no typed-payload domain set), prefer adding a
-  bare-precondition self-loop to the terminal state; it keeps all three spec modes
-  and the terminal semantics (absorbing, `Move(0,0)` on entry) intact.
-
-- **F3 — Read the generated `.thy`/`.dfy` to diagnose; the enum-state vs
-  RoboChart-`Final`-type distinction matters.** The ETL turns *every* mode-enum
-  value into a regular `RoboChart!State` (a state merely *named* `Final` is not a
-  RoboChart `Final` node), and the EGL's `Final` handling keys on `isTypeOf(Final)`,
-  not the name. Reading `SRangerController_Beh.thy` (the operations list and the
-  `deadlock_free` lemma + its FORK comment) and `SRangerController.dfy` (the exact
-  `ensures` clause and method body) turned three opaque verifier failures into
-  three one-line root causes, and told me the surgical fix would work *before*
-  paying a 10-min Isabelle run. *How to apply:* when a verifier fails, open its
-  generated artefact and read the actual obligation/operation set rather than
-  reasoning only from the Java.
-
-- **F4 — Gating a flattened autonomous transition on its cycle event fixes the
-  Dafny "preempted postcondition".** When an else-if chain has a higher-priority
-  event branch (e.g. `endTask`) above an autonomous guard branch, the ETL extracts
-  the autonomous transition with its guard as a stand-alone postcondition
-  (`guard ==> mode == target`) and loses the "not the higher-priority branch"
-  context, so the event branch falsifies it. Gating the autonomous branch on the
-  per-cycle Tick event (`event instanceof Tick && guard`) makes the generated
-  premise event-specific and disjoint from the higher-priority event, discharging
-  the contract. (This is the documented HOWTO §3.2 pattern; confirmed here.)
-
 ## Reproducibility
 
 1. Stage iter-N source: copy `run-1/iter-2/java/` into

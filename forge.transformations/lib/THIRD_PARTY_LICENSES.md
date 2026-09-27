@@ -3,7 +3,7 @@
 The JARs in this directory are **third-party binaries**, redistributed
 here so the M2T / CSP-generation phase (`roboChartCspGen` in
 `build.gradle`) runs without a separate RoboTool installation. They are
-**not** covered by this repository's MIT `LICENSE`, which applies only to
+**not** covered by this repository's `LICENSE`, which applies only to
 the project's own source. Each dependency is governed by its own license,
 as recorded in the `LICENSE` / `about.html` / `NOTICE` files inside the
 respective JAR. This file summarises their provenance and license; consult

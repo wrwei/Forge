@@ -90,32 +90,6 @@ feedback.
   (single-arg vehicle calls become Communications; only multi-arg calls
   become LOperations operation Calls).
 
-## Findings
-
-- **F1 — Reading the M2M/EGL/linter sources up front substitutes for
-  iteration.** This run reached the compile-only stop point in one shot
-  by deriving the extraction conventions (event camelCasing from record
-  names, `@SensorService` vs the "sensor" name-hint and its collision with
-  a `GasSensor` record, the `result_codegen.json` schema from
-  `coverage.py`, lint rule 4's "every double field/param needs
-  `@RoboChartType(\"real\")`" including record components) from the
-  pipeline sources *before* writing any Java. The visible-phase feedback
-  loop never had to fire. Future runs of any study should treat
-  `java2robochart.etl`'s "Configurable conventions" header,
-  `StructuralLinter.java`, and `feedback/coverage.py` as required
-  pre-codegen reading.
-- **F2 — One trace entry per Java file is the cheap way to keep coverage
-  green.** `coverage.py` suppresses member-level over-implementation for
-  any file that contributes at least one traced element (basename match),
-  so getters/accessors never need individual requirement mappings.
-- **F3 — The runner's stdout is itself a feedback channel.** For
-  restricted-feedback (ablation) runs, "don't open the four `post_*`
-  files" is not sufficient isolation: `run_experiment_iteration.py`
-  prints each phase's errors to the console as it runs. A future ablation
-  harness should redirect per-phase console output to files, or the
-  driver should only inspect the run via `check_visible_phases.py` after
-  completion (and never tail the live log past the eighth phase).
-
 ## Reproducibility
 
 Stage `run-1/iter-1/java/` into

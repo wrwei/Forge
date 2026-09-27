@@ -52,6 +52,12 @@ public final class RctPhase implements Phase {
             rctTransformer.setConstantDefaults(defaults);
         }
 
+        // Defect U4: how fractional constants are rendered. Defaults to the
+        // CSP-safe "ceil" workaround because the standalone CSP generator
+        // 3.0.0 aborts on FloatExp constants; override with
+        // float_constants=exact for a consumer that accepts them.
+        rctTransformer.setFloatConstantMode(ctx.argString("float_constants", "ceil"));
+
         // ── Transform ────────────────────────────────────────────────────────
         Path rctOutputPath = outputDir.resolve("robochart_controller.rct");
         rctTransformer.transform(rcResource, rctOutputPath);
@@ -59,6 +65,42 @@ public final class RctPhase implements Phase {
 
         // ── Write trace ──────────────────────────────────────────────────────
         writeRctTrace(rctTransformer.getTraceEntries(), outputDir);
+
+        // ── Write warnings (defect U4) ───────────────────────────────────────
+        // A warning here means the emitted .rct differs from the Java in a way
+        // that changes what it denotes, so it is a first-class artefact rather
+        // than a line in a log: warnings_m2t_rct.json, plus a stderr banner.
+        writeRctWarnings(rctTransformer.getWarnings(), outputDir);
+    }
+
+    private static void writeRctWarnings(List<Map<String, String>> warnings, Path outputDir) {
+        Path outPath = outputDir.resolve("warnings_m2t_rct.json");
+        List<Map<String, String>> ws = warnings == null ? List.of() : warnings;
+        try (Writer w = Files.newBufferedWriter(outPath)) {
+            w.write("{\n  \"warnings\": [\n");
+            for (int i = 0; i < ws.size(); i++) {
+                Map<String, String> entry = ws.get(i);
+                w.write("    {\"code\": \"" + escapeJson(String.valueOf(entry.get("code")))
+                        + "\", \"message\": \"" + escapeJson(String.valueOf(entry.get("message")))
+                        + "\"}");
+                if (i < ws.size() - 1) w.write(",");
+                w.write("\n");
+            }
+            w.write("  ]\n}\n");
+        } catch (IOException ex) {
+            System.err.println("Warning: Failed to write RCT warnings: " + ex.getMessage());
+        }
+        if (!ws.isEmpty()) {
+            System.err.println("=========================================================");
+            System.err.println("RCT GENERATION EMITTED " + ws.size()
+                    + " SEMANTICS-CHANGING WARNING(S):");
+            for (Map<String, String> entry : ws) {
+                System.err.println("  [" + entry.get("code") + "] " + entry.get("message"));
+            }
+            System.err.println("The generated .rct does NOT denote the same values as the");
+            System.err.println("Java source. See " + outPath.toAbsolutePath());
+            System.err.println("=========================================================");
+        }
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

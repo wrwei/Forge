@@ -1,0 +1,89 @@
+{
+  "status": "uncertain",
+  "summary": "15 Java files implementing all 51 LRE requirements; build clean; result_codegen.json covers every requirement and cites every file. Five review items: one requirement conflict, two invented defaults, two design choices.",
+  "issues": [
+    {
+      "kind": "ambiguous_requirement",
+      "title": "LRE-DM5 and LRE-OP5 disagree on the no-obstacle default for relative position accessors",
+      "raw": "LRE-DM5 makes nsRelDist/ewRelDist return zero when no obstacle exists; LRE-OP5 says the Sensor returns 'zero-velocity and large-distance defaults'. A CPA built from zero relative position gives cda=0 and would spuriously fire MOM->CAM whenever no dynamic obstacle exists.",
+      "fix_directive": "Confirm the intended no-obstacle default for nsRelDist/ewRelDist, or state that cda must be derived from hdist. Resolved here by keeping DM5 literal and computing cda = sqrt(hdist^2 - (r.v)^2/|v|^2), which yields the safe large distance when the obstacle is absent.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/operation/CalcCPA.java",
+          "java_element": "compute",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-DM5",
+            "LRE-Beh8",
+            "LRE-Beh14"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Magnitude of the 'safe large distance' is unspecified",
+      "raw": "LRE-DM5 requires odist/hdist/vdist to return 'a safe large distance' when no obstacle exists but gives no value.",
+      "fix_directive": "Replace Sensor.SAFE_LARGE_DIST (currently 1000.0 m) with the operational sensor range if one is defined.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/sensor/Sensor.java",
+          "java_element": "SAFE_LARGE_DIST",
+          "requirement_ids": [
+            "LRE-DM5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Division guard in the CPA computation",
+      "raw": "CalcCPA.EPSILON = 1.0E-9 keeps the relative-speed denominator positive; the codegen rules forbid locals, ternaries and conditionals in compute(), so no explicit zero test was available.",
+      "fix_directive": "Confirm the degenerate-case semantics: with zero relative velocity the implementation gives tcpa = 0 and cda = hdist(cdyn).",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/operation/CalcCPA.java",
+          "java_element": "EPSILON",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-Var7",
+            "LRE-Var8"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Relative velocity subtracts the AUV's own velocity",
+      "raw": "LRE-DM2 defines obs_ns_vel/obs_ew_vel as the obstacle's velocity while LRE-OP5 speaks of 'relative position and velocity'. CalcCPA uses obsNsVel(cdyn) - nsVel().",
+      "fix_directive": "State whether the obstacle velocity fields are absolute or already AUV-relative; if relative, drop the subtraction.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/operation/CalcCPA.java",
+          "java_element": "compute",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-DM2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "CAM has no entry action",
+      "raw": "LRE-FR4 says CAM performs evasive manoeuvres but LRE-DM7 limits outputs to advVel/advHdng and no requirement gives a concrete evasive value.",
+      "fix_directive": "Supply the advised velocity and/or heading for CAM, or confirm that CAM issues no output. MOM and HCM do carry the entry actions LRE-FR2 and LRE-FR3 specify.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "java_element": "step",
+          "requirement_ids": [
+            "LRE-FR4",
+            "LRE-DM7"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

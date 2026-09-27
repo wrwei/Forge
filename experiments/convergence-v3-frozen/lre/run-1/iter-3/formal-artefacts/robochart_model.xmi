@@ -1,0 +1,1775 @@
+<?xml version="1.0" encoding="ASCII"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:robochart="http://www.robocalc.circus/RoboChart">
+  <robochart:RCPackage name="extracted">
+    <interfaces name="Ctrl_State">
+      <variableList>
+        <vars name="inOpez">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.0"/>
+        </vars>
+        <vars name="hvel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="vvel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="vel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="cstc">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+        </vars>
+        <vars name="cdyn">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+        </vars>
+        <vars name="cda">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="tcpa">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+      </variableList>
+    </interfaces>
+    <interfaces name="Sensors">
+      <variableList>
+        <vars name="SAFE_LARGE_DISTANCE">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="depth">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="ns_vel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="ew_vel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="rate_of_climb">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="closestDynamicIndex">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+        </vars>
+        <vars name="nsVel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="ewVel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="closestStaticIndex">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+        </vars>
+        <vars name="rateOfClimb">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+      </variableList>
+    </interfaces>
+    <interfaces name="Actuators"/>
+    <interfaces name="Constants"/>
+    <types xsi:type="robochart:PrimitiveType" name="boolean"/>
+    <types xsi:type="robochart:PrimitiveType" name="real"/>
+    <types xsi:type="robochart:PrimitiveType" name="int"/>
+    <types xsi:type="robochart:RecordType" name="Obstacle">
+      <fields name="ns_rel_dist">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </fields>
+      <fields name="ew_rel_dist">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </fields>
+      <fields name="obs_depth">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </fields>
+      <fields name="obs_ns_vel">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </fields>
+      <fields name="obs_ew_vel">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </fields>
+      <fields name="obs_roc">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </fields>
+    </types>
+    <machines name="LreController">
+      <events name="reqVel">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </events>
+      <events name="advVel">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </events>
+      <events name="reqHdng">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </events>
+      <events name="advHdng">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </events>
+      <events name="reqMOM"/>
+      <events name="reqOCM"/>
+      <events name="endTask"/>
+      <events name="reqHCM"/>
+      <nodes xsi:type="robochart:State" name="OCM"/>
+      <nodes xsi:type="robochart:State" name="MOM"/>
+      <nodes xsi:type="robochart:State" name="HCM"/>
+      <nodes xsi:type="robochart:State" name="CAM"/>
+      <nodes xsi:type="robochart:Initial" name="i0"/>
+      <transitions name="t_init" source="/0/@machines.0/@nodes.4" target="/0/@machines.0/@nodes.0"/>
+      <transitions name="t1" source="/0/@machines.0/@nodes.0" target="/0/@machines.0/@nodes.0">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="v"/>
+            </value>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t2" source="/0/@machines.0/@nodes.0" target="/0/@machines.0/@nodes.0">
+        <trigger event="/0/@machines.0/@events.2"/>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="v"/>
+            </value>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t3" source="/0/@machines.0/@nodes.0" target="/0/@machines.0/@nodes.1">
+        <trigger event="/0/@machines.0/@events.4"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="vel"/>
+                </left>
+                <right xsi:type="robochart:FloatExp" value="1.0"/>
+              </left>
+              <right xsi:type="robochart:Not">
+                <exp xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="inOpez"/>
+                </exp>
+              </right>
+            </left>
+            <right xsi:type="robochart:GreaterThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="odist"/>
+                <args xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="cdyn"/>
+                </args>
+              </left>
+              <right xsi:type="robochart:FloatExp" value="1.0"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:GreaterThan">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="odist"/>
+              <args xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="cstc"/>
+              </args>
+            </left>
+            <right xsi:type="robochart:FloatExp" value="1.0"/>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp" value="1.0"/>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t4" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.0">
+        <condition xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="inOpez"/>
+        </condition>
+      </transitions>
+      <transitions name="t5" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.3">
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:LessThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="cda"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="minsafedist"/>
+              </right>
+            </left>
+            <right xsi:type="robochart:GreaterOrEqual">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="tcpa"/>
+              </left>
+              <right xsi:type="robochart:FloatExp"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="inOpez"/>
+            </exp>
+          </right>
+        </condition>
+      </transitions>
+      <transitions name="t6" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.2">
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="hvel"/>
+                </left>
+                <right xsi:type="robochart:FloatExp" value="1.0"/>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="hdist"/>
+                  <args xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="cstc"/>
+                  </args>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="inOpez"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:LessThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="cda"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="minsafedist"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="tcpa"/>
+                </left>
+                <right xsi:type="robochart:FloatExp"/>
+              </right>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp"/>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t7" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.2">
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="vdist"/>
+                  <args xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="cstc"/>
+                  </args>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="staticobsdfltvertdist"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:Not">
+                <exp xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="inOpez"/>
+                </exp>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:And">
+                <left xsi:type="robochart:LessThan">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="cda"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="tcpa"/>
+                  </left>
+                  <right xsi:type="robochart:FloatExp"/>
+                </right>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="hvel"/>
+                </left>
+                <right xsi:type="robochart:FloatExp" value="1.0"/>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="hdist"/>
+                  <args xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="cstc"/>
+                  </args>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+                </right>
+              </right>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp"/>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t8" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.2">
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:And">
+                <left xsi:type="robochart:And">
+                  <left xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="vvel"/>
+                    </left>
+                    <right xsi:type="robochart:FloatExp" value="1.0"/>
+                  </left>
+                  <right xsi:type="robochart:LessOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="vdist"/>
+                      <args xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="cstc"/>
+                      </args>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="inOpez"/>
+                  </exp>
+                </right>
+              </left>
+              <right xsi:type="robochart:Not">
+                <exp xsi:type="robochart:And">
+                  <left xsi:type="robochart:LessThan">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="cda"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="minsafedist"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="tcpa"/>
+                    </left>
+                    <right xsi:type="robochart:FloatExp"/>
+                  </right>
+                </exp>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:And">
+                <left xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="hvel"/>
+                  </left>
+                  <right xsi:type="robochart:FloatExp" value="1.0"/>
+                </left>
+                <right xsi:type="robochart:LessOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="hdist"/>
+                    <args xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="cstc"/>
+                    </args>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+                  </right>
+                </right>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:LessOrEqual">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="vdist"/>
+                <args xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="cstc"/>
+                </args>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="staticobsdfltvertdist"/>
+              </right>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp"/>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t9" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.0">
+        <trigger event="/0/@machines.0/@events.5"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="inOpez"/>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:LessThan">
+                      <left xsi:type="robochart:CallExp" href="#/44"/>
+                      <right xsi:type="robochart:CallExp" href="#/45"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterOrEqual">
+                      <left xsi:type="robochart:CallExp" href="#/46"/>
+                      <right xsi:type="robochart:FloatExp" href="#/47"/>
+                    </right>
+                  </exp>
+                </right>
+              </left>
+              <right xsi:type="robochart:Not">
+                <exp xsi:type="robochart:And">
+                  <left xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp" href="#/48"/>
+                    <right xsi:type="robochart:FloatExp" href="#/49"/>
+                  </left>
+                  <right xsi:type="robochart:LessOrEqual">
+                    <left xsi:type="robochart:CallExp" href="#/50"/>
+                    <right xsi:type="robochart:CallExp" href="#/51"/>
+                  </right>
+                </exp>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/52"/>
+                <right xsi:type="robochart:CallExp" href="#/53"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/54"/>
+                <right xsi:type="robochart:FloatExp" href="#/55"/>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/56"/>
+                <right xsi:type="robochart:CallExp" href="#/57"/>
+              </right>
+            </exp>
+          </right>
+        </condition>
+      </transitions>
+      <transitions name="t10" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.0">
+        <trigger event="/0/@machines.0/@events.6"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="inOpez"/>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:LessThan">
+                      <left xsi:type="robochart:CallExp" href="#/76"/>
+                      <right xsi:type="robochart:CallExp" href="#/77"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterOrEqual">
+                      <left xsi:type="robochart:CallExp" href="#/78"/>
+                      <right xsi:type="robochart:FloatExp" href="#/79"/>
+                    </right>
+                  </exp>
+                </right>
+              </left>
+              <right xsi:type="robochart:Not">
+                <exp xsi:type="robochart:And">
+                  <left xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp" href="#/80"/>
+                    <right xsi:type="robochart:FloatExp" href="#/81"/>
+                  </left>
+                  <right xsi:type="robochart:LessOrEqual">
+                    <left xsi:type="robochart:CallExp" href="#/82"/>
+                    <right xsi:type="robochart:CallExp" href="#/83"/>
+                  </right>
+                </exp>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/84"/>
+                <right xsi:type="robochart:CallExp" href="#/85"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/86"/>
+                <right xsi:type="robochart:FloatExp" href="#/87"/>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/88"/>
+                <right xsi:type="robochart:CallExp" href="#/89"/>
+              </right>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp"/>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t11" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.2">
+        <trigger event="/0/@machines.0/@events.7"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="inOpez"/>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:LessThan">
+                      <left xsi:type="robochart:CallExp" href="#/108"/>
+                      <right xsi:type="robochart:CallExp" href="#/109"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterOrEqual">
+                      <left xsi:type="robochart:CallExp" href="#/110"/>
+                      <right xsi:type="robochart:FloatExp" href="#/111"/>
+                    </right>
+                  </exp>
+                </right>
+              </left>
+              <right xsi:type="robochart:Not">
+                <exp xsi:type="robochart:And">
+                  <left xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp" href="#/112"/>
+                    <right xsi:type="robochart:FloatExp" href="#/113"/>
+                  </left>
+                  <right xsi:type="robochart:LessOrEqual">
+                    <left xsi:type="robochart:CallExp" href="#/114"/>
+                    <right xsi:type="robochart:CallExp" href="#/115"/>
+                  </right>
+                </exp>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/116"/>
+                <right xsi:type="robochart:CallExp" href="#/117"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/118"/>
+                <right xsi:type="robochart:FloatExp" href="#/119"/>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp" href="#/120"/>
+                <right xsi:type="robochart:CallExp" href="#/121"/>
+              </right>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp"/>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t12" source="/0/@machines.0/@nodes.2" target="/0/@machines.0/@nodes.0">
+        <condition xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="inOpez"/>
+        </condition>
+      </transitions>
+      <transitions name="t13" source="/0/@machines.0/@nodes.2" target="/0/@machines.0/@nodes.3">
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:LessThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="cda"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="minsafedist"/>
+              </right>
+            </left>
+            <right xsi:type="robochart:GreaterOrEqual">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="tcpa"/>
+              </left>
+              <right xsi:type="robochart:FloatExp"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="inOpez"/>
+            </exp>
+          </right>
+        </condition>
+      </transitions>
+      <transitions name="t14" source="/0/@machines.0/@nodes.2" target="/0/@machines.0/@nodes.1">
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:LessOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="hdist"/>
+                    <args xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="cstc"/>
+                    </args>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Not">
+                <exp xsi:type="robochart:LessOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="vdist"/>
+                    <args xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="cstc"/>
+                    </args>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+                  </right>
+                </exp>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="inOpez"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:LessThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="cda"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="minsafedist"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="tcpa"/>
+                </left>
+                <right xsi:type="robochart:FloatExp"/>
+              </right>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp" value="1.0"/>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t15" source="/0/@machines.0/@nodes.2" target="/0/@machines.0/@nodes.0">
+        <trigger event="/0/@machines.0/@events.5"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="inOpez"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:And">
+                <left xsi:type="robochart:LessThan">
+                  <left xsi:type="robochart:CallExp" href="#/138"/>
+                  <right xsi:type="robochart:CallExp" href="#/139"/>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp" href="#/140"/>
+                  <right xsi:type="robochart:FloatExp" href="#/141"/>
+                </right>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:Not" href="#/142"/>
+              <right xsi:type="robochart:Not" href="#/145"/>
+            </exp>
+          </right>
+        </condition>
+      </transitions>
+      <transitions name="t16" source="/0/@machines.0/@nodes.3" target="/0/@machines.0/@nodes.0">
+        <condition xsi:type="robochart:Not">
+          <exp xsi:type="robochart:LessThan">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="cda"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="minsafedist"/>
+            </right>
+          </exp>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1" _type="OUTPUT">
+            <value xsi:type="robochart:FloatExp"/>
+          </communication>
+        </action>
+      </transitions>
+      <transitions name="t17" source="/0/@machines.0/@nodes.3" target="/0/@machines.0/@nodes.0">
+        <trigger event="/0/@machines.0/@events.5"/>
+        <condition xsi:type="robochart:LessThan">
+          <left xsi:type="robochart:CallExp" href="#/151"/>
+          <right xsi:type="robochart:CallExp" href="#/152"/>
+        </condition>
+      </transitions>
+    </machines>
+    <operations name="CalcCDyn" terminates="true" rInterfaces="/0/@interfaces.0 /0/@interfaces.1">
+      <variableList>
+        <vars name="cdyn">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+        </vars>
+      </variableList>
+      <nodes xsi:type="robochart:Initial" name="i0"/>
+      <nodes xsi:type="robochart:Final" name="f0"/>
+      <transitions name="t0" source="/0/@operations.0/@nodes.0" target="/0/@operations.0/@nodes.1">
+        <action xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="/0/@operations.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="closestDynamicIndex"/>
+          </right>
+        </action>
+      </transitions>
+    </operations>
+    <operations name="CalcCPA" terminates="true" rInterfaces="/0/@interfaces.0 /0/@interfaces.1">
+      <variableList>
+        <vars name="cdyn">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+        </vars>
+        <vars name="relNs">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="relEw">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="relNsVel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="relEwVel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="closingSpeedSq">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="tcpa">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="cda">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+      </variableList>
+      <nodes xsi:type="robochart:Initial" name="i0"/>
+      <nodes xsi:type="robochart:Final" name="f0"/>
+      <transitions name="t0" source="/0/@operations.1/@nodes.0" target="/0/@operations.1/@nodes.1">
+        <action xsi:type="robochart:SeqStatement">
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.1/@variableList.0/@vars.0"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="cdyn"/>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.1/@variableList.0/@vars.1"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="nsRelDist"/>
+              <args xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="cdyn"/>
+              </args>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.1/@variableList.0/@vars.2"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="ewRelDist"/>
+              <args xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="cdyn"/>
+              </args>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.1/@variableList.0/@vars.3"/>
+            <right xsi:type="robochart:Minus">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="obsNsVel"/>
+                <args xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="cdyn"/>
+                </args>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="nsVel"/>
+              </right>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.1/@variableList.0/@vars.4"/>
+            <right xsi:type="robochart:Minus">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="obsEwVel"/>
+                <args xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="cdyn"/>
+                </args>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="ewVel"/>
+              </right>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.1/@variableList.0/@vars.5"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="safeClosingSpeedSq"/>
+              <args xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="cdyn"/>
+              </args>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.1/@variableList.0/@vars.6"/>
+            <right xsi:type="robochart:Div">
+              <left xsi:type="robochart:Neg">
+                <exp xsi:type="robochart:Plus">
+                  <left xsi:type="robochart:Mult">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="relNs"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="relNsVel"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Mult">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="relEw"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="relEwVel"/>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="closingSpeedSq"/>
+              </right>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.1/@variableList.0/@vars.7"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="sqrt"/>
+              <args xsi:type="robochart:Plus">
+                <left xsi:type="robochart:Mult">
+                  <left xsi:type="robochart:Plus">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="relNs"/>
+                    </left>
+                    <right xsi:type="robochart:Mult">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="relNsVel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="tcpa"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Plus">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="relNs"/>
+                    </left>
+                    <right xsi:type="robochart:Mult">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="relNsVel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="tcpa"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:Mult">
+                  <left xsi:type="robochart:Plus">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="relEw"/>
+                    </left>
+                    <right xsi:type="robochart:Mult">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="relEwVel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="tcpa"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Plus">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="relEw"/>
+                    </left>
+                    <right xsi:type="robochart:Mult">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="relEwVel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="tcpa"/>
+                      </right>
+                    </right>
+                  </right>
+                </right>
+              </args>
+            </right>
+          </statements>
+        </action>
+      </transitions>
+    </operations>
+    <operations name="CalcCStc" terminates="true" rInterfaces="/0/@interfaces.0 /0/@interfaces.1">
+      <variableList>
+        <vars name="cstc">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+        </vars>
+      </variableList>
+      <nodes xsi:type="robochart:Initial" name="i0"/>
+      <nodes xsi:type="robochart:Final" name="f0"/>
+      <transitions name="t0" source="/0/@operations.2/@nodes.0" target="/0/@operations.2/@nodes.1">
+        <action xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="/0/@operations.2/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="closestStaticIndex"/>
+          </right>
+        </action>
+      </transitions>
+    </operations>
+    <operations name="CalcVel" terminates="true" rInterfaces="/0/@interfaces.0 /0/@interfaces.1">
+      <variableList>
+        <vars name="hvel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="vvel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+        <vars name="vel">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+        </vars>
+      </variableList>
+      <nodes xsi:type="robochart:Initial" name="i0"/>
+      <nodes xsi:type="robochart:Final" name="f0"/>
+      <transitions name="t0" source="/0/@operations.3/@nodes.0" target="/0/@operations.3/@nodes.1">
+        <action xsi:type="robochart:SeqStatement">
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.3/@variableList.0/@vars.0"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="sqrt"/>
+              <args xsi:type="robochart:Plus">
+                <left xsi:type="robochart:Mult">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="nsVel"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="nsVel"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:Mult">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="ewVel"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="ewVel"/>
+                  </right>
+                </right>
+              </args>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.3/@variableList.0/@vars.1"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="rateOfClimb"/>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.3/@variableList.0/@vars.2"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="sqrt"/>
+              <args xsi:type="robochart:Plus">
+                <left xsi:type="robochart:Mult">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="hvel"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="hvel"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:Mult">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="vvel"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="vvel"/>
+                  </right>
+                </right>
+              </args>
+            </right>
+          </statements>
+        </action>
+      </transitions>
+    </operations>
+    <operations name="CheckOPEZ" terminates="true" rInterfaces="/0/@interfaces.0 /0/@interfaces.1">
+      <variableList>
+        <vars name="cstc">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+        </vars>
+        <vars name="inOpez">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.0"/>
+        </vars>
+      </variableList>
+      <nodes xsi:type="robochart:Initial" name="i0"/>
+      <nodes xsi:type="robochart:Final" name="f0"/>
+      <transitions name="t0" source="/0/@operations.4/@nodes.0" target="/0/@operations.4/@nodes.1">
+        <action xsi:type="robochart:SeqStatement">
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.4/@variableList.0/@vars.0"/>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="cstc"/>
+            </right>
+          </statements>
+          <statements xsi:type="robochart:Assignment">
+            <left xsi:type="robochart:VarRef" name="/0/@operations.4/@variableList.0/@vars.1"/>
+            <right xsi:type="robochart:Or">
+              <left xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="odist"/>
+                  <args xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="cstc"/>
+                  </args>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="minsafedist"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="depth"/>
+                </left>
+                <right xsi:type="robochart:FloatExp"/>
+              </right>
+            </right>
+          </statements>
+        </action>
+      </transitions>
+    </operations>
+    <functions name="odist">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="index">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+      </parameters>
+    </functions>
+    <functions name="hdist">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="index">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+      </parameters>
+    </functions>
+    <functions name="vdist">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="index">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+      </parameters>
+    </functions>
+    <functions name="nsRelDist">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="index">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+      </parameters>
+    </functions>
+    <functions name="ewRelDist">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="index">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+      </parameters>
+    </functions>
+    <functions name="obsNsVel">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="index">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+      </parameters>
+    </functions>
+    <functions name="obsEwVel">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="index">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+      </parameters>
+    </functions>
+    <functions name="safeClosingSpeedSq">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="index">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.2"/>
+      </parameters>
+    </functions>
+    <functions name="sqrt">
+      <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      <parameters name="x">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </parameters>
+    </functions>
+  </robochart:RCPackage>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:And>
+    <left xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/1"/>
+      <right xsi:type="robochart:CallExp" href="#/2"/>
+    </left>
+    <right xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/3"/>
+      <right xsi:type="robochart:FloatExp" href="#/4"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:And>
+    <left xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/6"/>
+      <right xsi:type="robochart:CallExp" href="#/7"/>
+    </left>
+    <right xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/8"/>
+      <right xsi:type="robochart:FloatExp" href="#/9"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/11"/>
+      <right xsi:type="robochart:FloatExp" href="#/12"/>
+    </left>
+    <right xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/13"/>
+      <right xsi:type="robochart:CallExp" href="#/14"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:And>
+    <left xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/16"/>
+      <right xsi:type="robochart:CallExp" href="#/17"/>
+    </left>
+    <right xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/18"/>
+      <right xsi:type="robochart:FloatExp" href="#/19"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/21"/>
+      <right xsi:type="robochart:FloatExp" href="#/22"/>
+    </left>
+    <right xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/23"/>
+      <right xsi:type="robochart:CallExp" href="#/24"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="inOpez"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:And>
+    <left xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/27"/>
+      <right xsi:type="robochart:CallExp" href="#/28"/>
+    </left>
+    <right xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/29"/>
+      <right xsi:type="robochart:FloatExp" href="#/30"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/32"/>
+      <right xsi:type="robochart:FloatExp" href="#/33"/>
+    </left>
+    <right xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/34"/>
+      <right xsi:type="robochart:CallExp" href="#/35"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsdfltvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/39"/>
+      <right xsi:type="robochart:FloatExp" href="#/40"/>
+    </left>
+    <right xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/41"/>
+      <right xsi:type="robochart:CallExp" href="#/42"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsdfltvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="inOpez"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:And>
+    <left xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/59"/>
+      <right xsi:type="robochart:CallExp" href="#/60"/>
+    </left>
+    <right xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/61"/>
+      <right xsi:type="robochart:FloatExp" href="#/62"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/64"/>
+      <right xsi:type="robochart:FloatExp" href="#/65"/>
+    </left>
+    <right xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/66"/>
+      <right xsi:type="robochart:CallExp" href="#/67"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsdfltvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/71"/>
+      <right xsi:type="robochart:FloatExp" href="#/72"/>
+    </left>
+    <right xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/73"/>
+      <right xsi:type="robochart:CallExp" href="#/74"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsdfltvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="inOpez"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:And>
+    <left xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/91"/>
+      <right xsi:type="robochart:CallExp" href="#/92"/>
+    </left>
+    <right xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/93"/>
+      <right xsi:type="robochart:FloatExp" href="#/94"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/96"/>
+      <right xsi:type="robochart:FloatExp" href="#/97"/>
+    </left>
+    <right xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/98"/>
+      <right xsi:type="robochart:CallExp" href="#/99"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsdfltvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/103"/>
+      <right xsi:type="robochart:FloatExp" href="#/104"/>
+    </left>
+    <right xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/105"/>
+      <right xsi:type="robochart:CallExp" href="#/106"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsdfltvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vvel"/>
+  </robochart:CallExp>
+  <robochart:FloatExp value="1.0"/>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:And>
+    <left xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/122"/>
+      <right xsi:type="robochart:CallExp" href="#/123"/>
+    </left>
+    <right xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/124"/>
+      <right xsi:type="robochart:FloatExp" href="#/125"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="inOpez"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:And>
+    <left xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/128"/>
+      <right xsi:type="robochart:CallExp" href="#/129"/>
+    </left>
+    <right xsi:type="robochart:GreaterOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/130"/>
+      <right xsi:type="robochart:FloatExp" href="#/131"/>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+  </robochart:CallExp>
+  <robochart:And>
+    <left xsi:type="robochart:Not">
+      <exp xsi:type="robochart:LessOrEqual">
+        <left xsi:type="robochart:CallExp" href="#/133"/>
+        <right xsi:type="robochart:CallExp" href="#/134"/>
+      </exp>
+    </left>
+    <right xsi:type="robochart:Not">
+      <exp xsi:type="robochart:LessOrEqual">
+        <left xsi:type="robochart:CallExp" href="#/135"/>
+        <right xsi:type="robochart:CallExp" href="#/136"/>
+      </exp>
+    </right>
+  </robochart:And>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:FloatExp/>
+  <robochart:Not>
+    <exp xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/143"/>
+      <right xsi:type="robochart:CallExp" href="#/144"/>
+    </exp>
+  </robochart:Not>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobshorizdist"/>
+  </robochart:CallExp>
+  <robochart:Not>
+    <exp xsi:type="robochart:LessOrEqual">
+      <left xsi:type="robochart:CallExp" href="#/146"/>
+      <right xsi:type="robochart:CallExp" href="#/147"/>
+    </exp>
+  </robochart:Not>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vdist"/>
+    <args xsi:type="robochart:CallExp">
+      <function xsi:type="robochart:StringExp" value="cstc"/>
+    </args>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="staticobsvertdist"/>
+  </robochart:CallExp>
+  <robochart:Not>
+    <exp xsi:type="robochart:LessThan">
+      <left xsi:type="robochart:CallExp" href="#/149"/>
+      <right xsi:type="robochart:CallExp" href="#/150"/>
+    </exp>
+  </robochart:Not>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="minsafedist"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="hvel"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vvel"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="vel"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cstc"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cdyn"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="cda"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="tcpa"/>
+  </robochart:CallExp>
+  <robochart:CallExp>
+    <function xsi:type="robochart:StringExp" value="inOpez"/>
+  </robochart:CallExp>
+</xmi:XMI>

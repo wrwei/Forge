@@ -2,9 +2,7 @@
 
 This document is the per-case-study playbook used for the LRE, Chemical
 Detector, and SRanger experiments (see the five independent runs per
-study under [`convergence/<study>/run-1..run-5/`](convergence/) and the
-synthesis in
-[CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md](convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md)).
+study under [`convergence/<study>/run-1..run-5/`](convergence/)).
 
 The protocol measures **how many iterations of single-shot LLM codegen +
 deterministic-pipeline feedback are needed before all three formal
@@ -228,22 +226,6 @@ After the iteration that satisfies the convergence criterion:
      SRanger hiding the wall-clock semantics behind the
      `TurnTimer` Operation)
 
-3. **Fold the run into the cross-run synthesis**
-   in [CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md](convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md),
-   keeping a paper-ready framing:
-   - Setup (case study + protocol pointer)
-   - Iteration trajectory table — *no* "problems / fixes" framing,
-     just "Feedback received / LLM-driven change / Verifier outcome"
-   - Convergence summary — the sequence of design decisions
-   - Cost table (tokens / tool calls / LLM wall-clock / pipeline
-     wall-clock per iteration where measured)
-   - Final state — the post-convergence verification table
-   - Comparison row against the other case studies
-
-   The paper-ready synthesis must not mention bugs, workarounds, or
-   infrastructure fixes — those are recorded in the per-run
-   trajectory, not the synthesis.
-
 ---
 
 ## Methodological guard rails (the things that have bitten us)
@@ -348,8 +330,6 @@ Two practical consequences for the protocol:
    read the trajectory's prior-iter sections if the same failure
    shape recurs. The harder SRanger prompts did this and worked.
 
-See [CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md](convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md)
-on "iteration count does not track case-study size" for the worked example.
 
 ---
 
@@ -360,9 +340,7 @@ on "iteration count does not track case-study size" for the worked example.
    addresses the "cherry-picked case studies" reviewer concern.
 2. Run the one-time setup (above).
 3. Run iterations until convergence or the documented stop criterion.
-4. Record the run under `convergence/<study>/run-<N>/trajectory.md` and
-   update the synthesis in
-   `convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md`.
+4. Record the run under `convergence/<study>/run-<N>/trajectory.md`.
 
 ---
 
@@ -387,9 +365,7 @@ cold using the same protocol — same case-study spec, same prompts, same
 infrastructure version, different LLM samples. All five runs per study
 converged (15/15), with a median of 2 iterations and a range of 1-3.
 The per-run trajectories live under
-`convergence/<study>/run-1..run-5/trajectory.md`; the distribution is
-synthesised in
-[CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md](convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md).
+`convergence/<study>/run-1..run-5/trajectory.md`.
 This converts the iteration counts from single observations into a
 small per-study sample.
 
@@ -550,8 +526,6 @@ reference theories).
 - **As-executed records (what actually happened, including failures and
   caveats):** the per-run trajectories under
   [`convergence/<study>/run-1..run-5/trajectory.md`](convergence/).
-- **Synthesis across the five runs per study (15 runs total):**
-  [CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md](convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md).
 - **Pipeline reference:** [CLAUDE.md](../CLAUDE.md) (snapshot kept in sync with repo-root `../CLAUDE.md`).
 - **Vacuity audit:** [../forge.dashboard/web/vacuity.py](../forge.dashboard/web/vacuity.py) (pipeline phase 6d).
 - **Iteration driver:**

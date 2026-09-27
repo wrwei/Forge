@@ -109,18 +109,6 @@ verifiers.
   not a convergence claim — whether the run "converged" in the 12-phase
   sense is exactly the withheld measurement.
 
-## Findings
-
-- **F1 — Preflight lint rule4 applies to private compile-time constants
-  too.** The structural lint demands `@RoboChartType("real")` on *every*
-  double field, including a `private static final` sentinel that never
-  reaches the formal model as a state variable (`Sensor.NO_READING_DEFAULT`).
-  The codegen rules text only calls out fields/parameters that "map to
-  RoboChart real", which reads as model-relevant fields; the lint is
-  stricter. *How to apply:* annotate every `double` declaration in
-  generated code, even private constants inside sensor/actuator helpers,
-  at cold-codegen time.
-
 ## Reproducibility
 
 - Stage `iter-2/java/` into `java.generated.project/src/main/java/sranger/`,

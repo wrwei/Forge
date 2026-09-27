@@ -1,0 +1,72 @@
+{
+ "study": "lre",
+ "run": 1,
+ "iteration": 3,
+ "recorded_utc": "2026-09-20 09:06:13",
+ "infrastructure_sha": "b808424c7c1b51157f4f14eac6e76e00d5beed90",
+ "worktree": "/Users/ranwei/Gitee/forge-frozen-run1-lre",
+ "actor": "claude-code",
+ "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+ "codex_thread": null,
+ "actor_session_label": "CLAUDE-lre-run1",
+ "files": {
+  "java": 15,
+  "java_test": 0,
+  "formal_artefacts": 74,
+  "codegen_trace": 1,
+  "agent_summary": 1,
+  "feedback": 13,
+  "feedback_json": 13
+ },
+ "java_loc": 591,
+ "phase_status": {
+  "compile": "passed",
+  "coverage": "passed",
+  "preflight": "passed",
+  "t2m": "passed",
+  "m2m": "passed",
+  "m2t": "passed",
+  "dafny_gen": "passed",
+  "isabelle_gen": "passed",
+  "fdr4": "passed",
+  "dafny_verify": "passed",
+  "isabelle_verify": "failed",
+  "vacuity": "passed"
+ },
+ "phases_without_verdict": [],
+ "codegen_cost": {
+  "kind": "unavailable",
+  "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+  "total_tokens": null,
+  "turns": null,
+  "schema": "unavailable",
+  "tokens_in": null,
+  "tokens_out": null,
+  "scope": "per_turn_sum",
+  "notes": "full per-turn split available"
+ },
+ "converged": false,
+ "failure_summary": "isabelle_verify",
+ "actor_codegen_summary": "# LRE run 1 \u2014 iteration 3\n\n## What changed and why\nIteration 2 fixed the Dafny/vacuity failures (the `1e-9` constant is gone) but\nintroduced two new ones, **m2t** and **isabelle_verify**, both from a single\nname collision created by iteration 2's fix.\n\nThe extractor lifts operation `compute()` bodies into the Z-machine's update\nblock, so `CalcCPA`'s fields become state variables and the sensor calls become\nRoboChart functions. Iteration 2 named the new Sensor helper\n`closingSpeedSq(index)` \u2014 the same name as the `CalcCPA` field it feeds. The\ngenerated `.rct` therefore contains both\n\n    function closingSpeedSq ( index : int ) : real { }\n    var closingSpeedSq : real\n    action ... closingSpeedSq = closingSpeedSq ( cdyn ) ...\n\nThe state variable shadows the function, which is the documented \"function-typed\nvariable application\" crash in the RoboChart CSP generator (m2t produced no CSP\nfiles), and in Isabelle the same line becomes\n`LreController.closingSpeedSq<s> :: \u211d` applied to `cdyn<s> :: \u2124` \u2014\n\"operator not of function type\" at `LreController_Beh.thy:106`.\n\nFix: renamed the Sensor method to `safeClosingSpeedSq(index)`. The `CalcCPA`\nfield keeps its name. One line in `Sensor.java`, one in `CalcCPA.java`, and the\nmatching `result_codegen.json` entry. `./gradlew build` clean.\n\n**Lesson worth keeping:** a sensor method referenced from an operation's\n`compute()` must not share a name with any operation field, because the two land\nin the same RoboChart namespace.\n\n## Decisions not settled by the requirements\nUnchanged and recorded in `post_codegen.{md,json}`: HCM entry velocity 0 vs\n0.1 m/s (LRE-FR3 vs the system description); the `nsRelDist`/`ewRelDist`\nno-obstacle default (LRE-DM5 says zero, LRE-OP5 says large-distance \u2014 followed\nOP5, since zero forces a spurious permanent CAM); `SAFE_LARGE_DISTANCE = 1000.0`;\ntransition priority within each mode; `ObstacleRegister` as a dense list.\n\n## Unresolved\nThe vacuity advisory `dead_state_no_offer (OCM, {})` is marked ADVISORY by the\naudit itself \u2014 it follows from the CSP domain narrowing, not the Java.",
+ "iter": 3,
+ "convergence_criterion": "TIGHTENED 2026-09-22 by author decision: the three obligation verifiers (Dafny zero errors, every FDR4 assertion passes, Isabelle proves deadlock-freedom and every invariant) AND the vacuity audit reports nothing AND the structural preflight passes. Five phases. Preflight is the gate that catches an extracted model which is WRONG BUT STILL VERIFIABLE, so a run whose linter rejected the model must not count as converged. The paper as submitted defined convergence over the four verifier phases only; this tightening is disclosed in the response letter. It moves five runs by one iteration and leaves every reported median unchanged.",
+ "structural_inventory": {
+  "scope": "csp-gen/defs plus csp-gen root -- the fdr4 phase's output_dir; csp-gen/timed/ excluded (never read by the phase)",
+  "coreassertions_files": 10,
+  "total_assertions": 83,
+  "state_vars": 5,
+  "transitions": 18,
+  "java_loc": 743,
+  "basis": "computed from this record's own staged artefacts (Amendment 3)"
+ },
+ "adjudication": {
+  "by": "promote_staged_run.py, from the authoritative post_<phase>.json files",
+  "verifier_evidence": {
+   "vacuity": "passed, No blocking vacuity signals detected (syntactic D1/I1 and semantic satisfiability/reachability/constant-consistency checks). Any `0 errors` from Dafny",
+   "dafny_verify": "passed, Dafny: 1 file(s), 12 verified, 0 errors.",
+   "fdr4": "passed, FDR4: 3 assertion(s) checked, 3 passed.",
+   "isabelle_verify": "failed, Isabelle: exit 142, 1 theory marker(s) seen before failure."
+  },
+  "note": "converged was RECOMPUTED from the verifier outputs, not taken from the staged summary (which carries converged=None)."
+ }
+}

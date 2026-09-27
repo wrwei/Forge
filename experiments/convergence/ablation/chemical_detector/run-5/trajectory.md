@@ -110,29 +110,6 @@ Loop ended with zero feedback-driven fixes.
   is not exposed as a tool); the human can recover it from `/cost` or the
   session transcript JSONL per RUN_TRAJECTORY §6.2a.
 
-## Findings
-
-- **F1 — Compile-and-extraction phases are a weak filter for this study's
-  shape.** A single careful cold codegen pass (controllers shaped by
-  CLAUDE.md's inline structural guidance: no Final states, total guard
-  covers, named predicates, annotation discipline) cleared all eight
-  visible phases at iter-1. Whatever the withheld verifiers report (see
-  `ablation_result.json`), none of it was surfaced by the visible
-  pipeline — i.e. for this study the extraction phases validate *shape*,
-  not *behaviour*. How to apply: do not treat "extraction green" as
-  evidence of verifier-readiness.
-- **F2 — Reading the feedback *generators* up front prevents whole
-  iterations.** Two tooling reads (the coverage feedback module for the
-  `result_codegen.json` schema; the structural linter for its four
-  rules) let iter-1 pass coverage and preflight cold. These are
-  tool-not-answer-key reads permitted by RUN_TRAJECTORY §1, and they are
-  cheap insurance against burning an iter on a schema guess.
-- **F3 — The runner's stdout leaks withheld verdicts in an ablation run.**
-  `run_experiment_iteration.py` prints each phase's error excerpts to the
-  console, including the withheld verifier phases. An ablation session
-  monitoring progress must filter the log to phase-boundary lines
-  (`grep -E '^====='`) instead of reading the raw tail.
-
 ## Reproducibility
 
 Stage `run-5/iter-1/java/` into

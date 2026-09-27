@@ -1,0 +1,75 @@
+{
+ "study": "sranger",
+ "run": 3,
+ "iteration": 1,
+ "recorded_utc": "2026-09-23 10:43:18",
+ "infrastructure_sha": "35f6d5570fb857c94cda4bdf58a9b5a08a4264da",
+ "worktree": "/Users/ranwei/Gitee/forge-d2-run4-sranger",
+ "actor": "claude-code",
+ "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+ "codex_thread": null,
+ "actor_session_label": "CLAUDE-sranger-run4",
+ "files": {
+  "java": 9,
+  "java_test": 0,
+  "formal_artefacts": 54,
+  "codegen_trace": 1,
+  "agent_summary": 1,
+  "feedback": 13,
+  "feedback_json": 13
+ },
+ "java_loc": 229,
+ "phase_status": {
+  "compile": "passed",
+  "coverage": "passed",
+  "preflight": "passed",
+  "t2m": "passed",
+  "m2m": "passed",
+  "m2t": "passed",
+  "dafny_gen": "passed",
+  "isabelle_gen": "passed",
+  "fdr4": "passed",
+  "dafny_verify": "passed",
+  "isabelle_verify": "passed",
+  "vacuity": "passed"
+ },
+ "phases_without_verdict": [],
+ "codegen_cost": {
+  "kind": "unavailable",
+  "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+  "total_tokens": null,
+  "turns": null,
+  "schema": "unavailable",
+  "tokens_in": null,
+  "tokens_out": null,
+  "scope": "per_turn_sum",
+  "notes": "full per-turn split available"
+ },
+ "converged": true,
+ "failure_summary": null,
+ "actor_codegen_summary": "# sranger run 4 \u2014 iteration 1 (cold codegen)\n\n**Changed.** Wrote a fresh tree under `java.generated.project/src/main/java/sranger/`. There was no pre-existing Java, so nothing was deleted. The 9 files are: `annotation/RoboChartType`, `constants/SRangerConstants`, `mode/SRangerMode` (MOVING, TURNING, FINAL), `event/InputEvent` (Obstacle, Tick, EndTask), `event/OutputEvent` (Move(lv, av)), `sensor/Sensor` (distance()), `actuator/Actuator` (apply), `time/Clock` (nowMs()) and `controller/SRangerController` (single mode-nested `step()`). No requirement has the type `operation`, so there is no operation package. I also wrote `result_codegen.json`, which traces all 23 requirements and every file, and `post_codegen.{md,json}`. `gradlew build` is clean.\n\n**Decisions the requirements did not settle:**\n- **Final gets a no-action self-loop on tick.** The codegen rules require every mode to have an outgoing transition. SR-FR3 (\"terminal\") and SR-DC1 (only SR-Beh1..7) don't provide one, so this is an extra transition with no requirement.\n- **Moving\u2192Turning needs both the obstacle event and the obstacleDetected guard.** SR-Beh2 gives the trigger and SR-GP1 gives the guard, so I combined them.\n- **The clock is in milliseconds.** The time source is `Clock.nowMs()` (the convention CLAUDE.md documents). So clockResetTime is stored in ms and compared with TURN_DURATION_MS = 2000.0. SR-Var1 says seconds. If this makes the model's clock bound too large, the fallback is a seconds time base.\n- **Priority order.** endTask comes first in every mode. In Turning, the timed transition outranks tick.\n- **Invented defaults and startup.** The sensor returns 1000 m when it has no reading. The constructor issues the initial Move(moveVel, 0).\n\n**Unresolved.** Final's behaviour needs human review: the spec calls Final terminal, but the rules forbid a mode with nothing enabled.",
+ "iter": 1,
+ "convergence_criterion": "TIGHTENED 2026-09-22 by author decision: the three OBLIGATION VERIFIERS succeed -- Dafny zero errors, every FDR4 assertion passes, Isabelle proves the deadlock-freedom lemma and every invariant -- AND the vacuity audit (Phase 6d) reports nothing AND the structural preflight passes. Five phases. Rationale: preflight is the gate that catches an extracted model which is WRONG BUT STILL VERIFIABLE (non-exclusive preconditions, triggerless branches, unannotated doubles), so a run whose linter rejected the model must not count as converged. The paper as submitted defined convergence over the four verifier phases only; this is a deliberate tightening, disclosed in the response letter, and it moves five runs by one iteration while leaving every reported median unchanged. Here all 12 phases passed.",
+ "structural_inventory": {
+  "scope": "csp-gen/defs plus csp-gen root -- the fdr4 phase's output_dir; csp-gen/timed/ excluded (never read by the phase)",
+  "coreassertions_files": 5,
+  "total_assertions": 43,
+  "state_vars": 4,
+  "transitions": 8,
+  "java_loc": 284,
+  "basis": "computed from this record's own staged artefacts (Amendment 3)"
+ },
+ "adjudication": {
+  "by": "promote_staged_run.py, from the authoritative post_<phase>.json files",
+  "verifier_evidence": {
+   "vacuity": "passed, No blocking vacuity signals detected (syntactic D1/I1 and semantic satisfiability/reachability/constant-consistency checks). Any `0 errors` from Dafny",
+   "dafny_verify": "passed, Dafny: 1 file(s), 7 verified, 0 errors.",
+   "fdr4": "passed, FDR4: 3 assertion(s) checked, 3 passed.",
+   "isabelle_verify": "passed, Isabelle: 1 theory, 19 lemma(s) verified, elapsed 0:00:45, peak 26 MB.",
+   "preflight": "passed, 2c \u2014 Preflight (Structural Lint): no structural errors."
+  },
+  "note": "converged was RECOMPUTED from the verifier outputs, not taken from the staged summary (which carries converged=None).",
+  "starved_phases": null
+ },
+ "original_run": 4
+}

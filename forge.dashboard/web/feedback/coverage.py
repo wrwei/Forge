@@ -178,6 +178,25 @@ def build_coverage_issues(
             ),
         )]
 
+    # False-pass audit 2026-08: an absent (or .java-free) source root used
+    # to pass silently — _scan_public_elements returned [] so no
+    # over-implementation was possible, and missing_implementation only
+    # looks at the trace. A complete trace over nonexistent Java then
+    # produced a clean "coverage passed".
+    if not java_source_root.exists() or not any(java_source_root.rglob("*.java")):
+        return [Issue(
+            kind="coverage_input_missing",
+            title="Java source root missing or contains no .java files",
+            raw=f"Expected Java sources under: {java_source_root}",
+            fix_directive=(
+                "The coverage check scans the generated Java project for "
+                "public elements, but the source root is absent or empty. "
+                "Run code generation (Phase 2) first, or fix the source "
+                "path. Passing coverage over zero Java files would be "
+                "vacuous."
+            ),
+        )]
+
     trace = _load_codegen_trace(codegen_trace_path)
 
     # Index trace by requirement id, and collect the set of element
@@ -194,11 +213,52 @@ def build_coverage_issues(
         elem = entry.get("java_element", "")
         if elem:
             traced_element_names.add(elem)
+            # Qualified forms: a trace entry may record the element as
+            # `Controller.step`, `Controller#step`, or `step(...)`. The
+            # scanner produces simple names, so index the last segment
+            # too — otherwise a qualified trace entry never matches and
+            # the element is wrongly flagged as over-implementation.
+            simple = re.split(r"[.#]", elem)[-1]
+            simple = simple.split("(")[0].strip()
+            if simple:
+                traced_element_names.add(simple)
         java_file = entry.get("java_file", "")
         if java_file:
             traced_file_basenames.add(Path(java_file).name)
 
     issues: list[Issue] = []
+
+    # 0) stale_trace_entry — a trace row whose java_file does not exist.
+    # False-pass audit 2026-08: such a row still counted its requirement
+    # as implemented, so a stale result_codegen.json (e.g. after a case-
+    # study switch or a file rename) satisfied missing_implementation
+    # while pointing at nothing.
+    seen_missing_files: set[str] = set()
+    for entry in trace:
+        java_file = entry.get("java_file", "")
+        if not java_file or java_file in seen_missing_files:
+            continue
+        candidate = java_source_root / Path(java_file).name if "/" not in java_file \
+            else java_source_root / java_file
+        # Tolerate trace paths recorded relative to the project root
+        # (src/main/java/...) rather than the java source root.
+        exists = candidate.exists() \
+            or any(java_source_root.rglob(Path(java_file).name))
+        if not exists:
+            seen_missing_files.add(java_file)
+            issues.append(Issue(
+                kind="stale_trace_entry",
+                title=f"Trace references nonexistent Java file '{java_file}'",
+                raw=f"result_codegen.json entry: {json.dumps(entry, ensure_ascii=False)}",
+                fix_directive=(
+                    f"result_codegen.json maps requirement(s) to "
+                    f"'{java_file}', but no such file exists under "
+                    f"{java_source_root}. The trace is stale — re-run "
+                    f"/gen-trace after code generation. Requirements "
+                    f"traced only to this file are NOT actually "
+                    f"implemented."
+                ),
+            ))
 
     # 1) missing_implementation
     for rid, req in requirements.items():
@@ -281,6 +341,7 @@ def build_coverage_feedback(
 
     missing = sum(1 for i in issues if i.kind == "missing_implementation")
     over = sum(1 for i in issues if i.kind == "over_implementation")
+    stale = sum(1 for i in issues if i.kind == "stale_trace_entry")
     blockers = sum(
         1 for i in issues
         if i.kind in ("coverage_input_missing", "missing_codegen_trace",
@@ -301,7 +362,9 @@ def build_coverage_feedback(
             parts.append(f"{missing} missing implementation(s)")
         if over:
             parts.append(f"{over} over-implementation(s)")
-        summary = "; ".join(parts)
+        if stale:
+            parts.append(f"{stale} stale trace entr(y/ies)")
+        summary = "; ".join(parts) or f"{len(issues)} coverage issue(s)"
         next_step = (
             "Address each missing_implementation by implementing or "
             "tracing the requirement. For each over_implementation, "

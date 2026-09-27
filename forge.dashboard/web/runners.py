@@ -195,6 +195,33 @@ def _get_assertion_stats(assertion: dict, stderr_stats: dict) -> dict:
     return {"states": None, "transitions": None, "plys": None}
 
 
+def _start_watchdog(proc: "subprocess.Popen", timeout_s: float) -> tuple[threading.Timer, threading.Event]:
+    """Wall-clock timeout enforcement for streaming subprocesses.
+
+    The runners read ``proc.stdout`` to EOF before calling
+    ``proc.wait(timeout=...)`` — by that point the process has already
+    exited, so the wait timeout can never fire and a hung verifier
+    (producing no output) blocks the phase forever. This watchdog kills
+    the process after ``timeout_s`` seconds of wall time regardless of
+    output activity; callers check the returned Event after the read
+    loop and translate a fired watchdog into their existing
+    ``subprocess.TimeoutExpired`` handling.
+    """
+    fired = threading.Event()
+
+    def _kill() -> None:
+        fired.set()
+        try:
+            proc.kill()
+        except OSError:
+            pass
+
+    timer = threading.Timer(timeout_s, _kill)
+    timer.daemon = True
+    timer.start()
+    return timer, fired
+
+
 def _get_process_memory_mb(pid: int) -> float:
     """Get total RSS memory usage of a process tree in MB."""
     try:
@@ -550,7 +577,77 @@ def _stream_line(ctx: RunnerContext, text: str, phase: str = "") -> None:
     })
 
 
-_LEMMA_DECL_RE_RUNNER = re.compile(r"^\s*(?:lemma|theorem)\b\s+(\w+)")
+# Named obligations: `lemma foo: "..."`. NOTE the companion pattern below —
+# the Z-machine generator also emits ANONYMOUS obligations (`lemma "P preserves
+# R1 under inv"`), which this regex cannot match because there is no name to
+# capture. Counting only named declarations under-reported every run's
+# obligation total: chemical_detector has 17 obligations but only 9 named, so
+# the success-path message claimed "9 lemmas verified" for a session that
+# discharged 17. Both patterns are now used for COUNTS; names come from the
+# named pattern alone.
+_LEMMA_DECL_RE_RUNNER = re.compile(
+    r"^\s*(?:lemma|theorem|corollary)\b\s+(\w+)\s*(?:\[[^\]]*\]\s*)?:")
+_LEMMA_ANON_RE_RUNNER = re.compile(
+    r"^\s*(?:lemma|theorem|corollary)\b\s+[\"\u201c]")
+
+
+def _isabelle_obligation_context(session_dir: Path, full_output: str) -> str:
+    """Build the per-obligation context block for an isabelle_verify FAILURE.
+
+    A bare "exit 142, 1 theory marker(s) seen" tells a reader nothing about how
+    much of the theory was proven. Isabelle aborts at the first failing proof,
+    so the run itself cannot establish the status of the obligations after it —
+    but it CAN name the inventory and the obligation that failed, and point at
+    the measurement that settles the rest.
+
+    Measured on chemical_detector run-1 (2026-09-16): of 17 obligations, the 16
+    non-deadlock ones build clean in 55s, while the single
+    GasAnalysisController_deadlock_free obligation resists both generated
+    tactics (auto OOM-killed at 978s, metis timed out at 1825s). The binary
+    verdict had been hiding 16 successful proofs.
+
+    Deliberately does NOT claim the un-reached obligations discharged: that
+    requires the arm-C build (scripts/isabelle_tactic_probe.sh), and asserting
+    it from a failed run would be the kind of accounting a referee should catch.
+    """
+    stats = _scan_isabelle_lemmas(session_dir)
+    total = stats.get("total_lemmas", 0)
+    if not total:
+        return ""
+    # the failing obligation: Isabelle names the theory, and our .thy line
+    # references let us narrow to the lemma when the message carries one
+    named = sorted(set(re.findall(r"\b(\w*deadlock_free\w*)\b", full_output)))
+    suspect = named[0] if named else (stats.get("deadlock_free_names") or [""])[0]
+    lines = [
+        "",
+        "## Obligation inventory",
+        "",
+        f"- Obligations in the session: **{total}** across "
+        f"{stats.get('theory_count', 0)} theor"
+        f"{'y' if stats.get('theory_count', 0) == 1 else 'ies'}",
+    ]
+    for t in stats.get("by_theory", []):
+        lines.append(
+            f"- `{t['theory']}`: {t.get('obligation_count', len(t['lemmas']))} "
+            f"obligations ({t.get('invariant_count', 0)} invariant-preservation, "
+            f"{t.get('anonymous', 0)} requirement-preservation (anonymous), "
+            f"{len(t.get('deadlock_free', []))} deadlock-freedom)"
+        )
+    if suspect:
+        lines += [
+            "",
+            f"Isabelle aborts at the first failing proof, and the failure is in "
+            f"`{suspect}`. **The obligations after it were not reached — they are "
+            f"unverified in this run, not disproven.**",
+        ]
+    lines += [
+        "",
+        "To measure them separately, build the session with the failing lemma "
+        "removed (`scripts/isabelle_tactic_probe.sh`, arm C). That is a "
+        "measurement of what already discharges — never a substitute for "
+        "closing the obligation.",
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def _scan_isabelle_lemmas(session_dir: Path) -> dict:
@@ -576,6 +673,7 @@ def _scan_isabelle_lemmas(session_dir: Path) -> dict:
     out = {
         "theory_count": 0,
         "total_lemmas": 0,
+        "anonymous_count": 0,
         "deadlock_free_names": [],
         "by_theory": [],
     }
@@ -594,16 +692,28 @@ def _scan_isabelle_lemmas(session_dir: Path) -> dict:
             for m in [_LEMMA_DECL_RE_RUNNER.match(line)]
             if m
         ]
-        if not names:
+        # anonymous obligations carry no name but are real proof obligations;
+        # count them so totals match the theory rather than the named subset
+        anon = sum(
+            1 for line in text.splitlines()
+            if _LEMMA_ANON_RE_RUNNER.match(line)
+        )
+        if not names and not anon:
             continue
         deadlock_free = [n for n in names if n.endswith("_deadlock_free")]
         invariants = [n for n in names if n.endswith("_inv")]
         out["theory_count"] += 1
-        out["total_lemmas"] += len(names)
+        # total = named + anonymous. Reporting only the named subset understated
+        # every run (chem: 9 of 17). `lemmas` keeps the NAMES for display;
+        # `obligation_count` is the honest total.
+        out["total_lemmas"] += len(names) + anon
+        out["anonymous_count"] += anon
         out["deadlock_free_names"].extend(deadlock_free)
         out["by_theory"].append({
             "theory": thy.stem,
             "lemmas": names,
+            "anonymous": anon,
+            "obligation_count": len(names) + anon,
             "deadlock_free": deadlock_free,
             "invariant_count": len(invariants),
         })
@@ -620,6 +730,55 @@ def _classify_fdr4_stderr(stderr_text: str, memory_limit_mb: int) -> dict:
     present it bypasses the default parse_error builder.
     """
     low = stderr_text.lower()
+
+    # Timeout is NOT a parse error: the CSP loaded and FDR4 was still
+    # exploring the state space when the subprocess budget expired.
+    # Labelling it parse_error (the old fallthrough) sends a repair
+    # iteration hunting for a template bug that does not exist — observed
+    # on chem run-1 v2, whose seq-typed payload (LSeq(GasSensor,2))
+    # genuinely needs more than the default budget.
+    # Python-side memory-monitor kill — same reporting rule as the timeout:
+    # the CSP loaded and FDR4 was mid-exploration when the RSS monitor
+    # killed it. Not a parse error, not a code defect.
+    if "memory usage exceeded" in low:
+        return {
+            "headline": "FDR4 killed by the memory monitor (state space exceeded the RSS budget).",
+            "summary": (
+                "FDR4 loaded the CSP and was exploring when its RSS crossed "
+                "the configured memory_limit_mb. This is a state-space "
+                "measurement limit, not a code or template defect."
+            ),
+            "kind": "fdr4_memory_kill",
+            "title": "FDR4 memory kill — verdict unmeasured",
+            "fix_directive": (
+                "Do NOT edit Java or templates for this issue. Either raise "
+                "phases.fdr4.memory_limit_mb in pipeline.yaml (machine "
+                "permitting) and re-run, or record the assertion set as "
+                "unmeasured under the memory budget. Sequence- or "
+                "record-typed channel domains are the usual driver."
+            ),
+            "error": stderr_text[:2000],
+        }
+
+    if "timed out after" in low:
+        return {
+            "headline": "FDR4 timed out (state-space exploration, not a defect).",
+            "summary": (
+                "FDR4 loaded the CSP and was still checking when the time "
+                "budget expired. This is a measurement limit, not a code or "
+                "template defect."
+            ),
+            "kind": "fdr4_timeout",
+            "title": "FDR4 timeout — verdict unmeasured",
+            "fix_directive": (
+                "Do NOT edit Java or templates for this issue. Either raise "
+                "phases.fdr4.timeout in pipeline.yaml and re-run, or record "
+                "the assertion set as unmeasured under the time budget. If "
+                "the model has sequence- or record-typed channels, their "
+                "instantiated domains are the usual state-space driver."
+            ),
+            "error": stderr_text[:2000],
+        }
 
     # Windows page-file exhaustion: GHC RTS tries to commit address
     # space up-front and fails when the page file can't grow.
@@ -849,6 +1008,9 @@ def run_fdr4(ctx: RunnerContext) -> RunnerResult:
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, encoding="utf-8", errors="replace", env=env,
         )
+        # Wall-clock timeout: proc.wait(timeout=...) below only runs after
+        # stdout EOF (process exit), so it alone cannot stop a hung FDR4.
+        watchdog, watchdog_fired = _start_watchdog(proc, timeout)
 
         # Memory monitoring thread
         peak_memory_mb = [0]
@@ -899,6 +1061,11 @@ def run_fdr4(ctx: RunnerContext) -> RunnerResult:
             output_lines.append(stripped)
 
         proc.wait(timeout=timeout)
+        watchdog.cancel()
+        if watchdog_fired.is_set() and not killed_for_memory.is_set():
+            # Killed by the wall-clock watchdog: route through the same
+            # handling as a wait() timeout.
+            raise subprocess.TimeoutExpired(cmd, timeout)
         stderr_thread.join(timeout=5)
         stderr_text = "".join(stderr_chunks)
 
@@ -913,12 +1080,30 @@ def run_fdr4(ctx: RunnerContext) -> RunnerResult:
         if killed_for_memory.is_set():
             msg = (f"FDR4 killed: memory usage exceeded {memory_limit_mb} MB limit "
                    f"(peak: {peak_memory_mb[0]:.0f} MB)")
+            # SALVAGE: same rule as the timeout path — verdicts FDR4
+            # completed before the RSS kill are real and already in
+            # output_lines; report them rather than discarding.
+            partial = []
+            try:
+                partial = _parse_framed_json("\n".join(output_lines))
+            except Exception:
+                partial = []
+            n_done = sum(len(r.get("results", [])) for r in partial)
+            if n_done:
+                msg += f" — {n_done} assertion verdict(s) completed before the kill (salvaged)"
             ctx.sys_msg(msg)
             trace_data = feedback.load_trace(_T2M_OUTPUT)
+            # Route through the classifier (kind=fdr4_memory_kill) — a bare
+            # {"error": msg} fell through to the parse_error builder,
+            # mislabelling a state-space memory kill as a template defect
+            # (observed on chem run-1 v2 at the 3600s re-measure).
+            classified = _classify_fdr4_stderr(msg, memory_limit_mb)
+            if n_done:
+                classified["salvaged_results"] = partial
             fb = feedback.build_fdr4_feedback(
                 label=label, status="failed", summary=msg,
                 failed_assertions=[],
-                errors=[{"error": msg}],
+                errors=[classified],
                 csp_file=csp_path,
                 trace_data=trace_data,
                 expected_failures=[],
@@ -956,6 +1141,16 @@ def run_fdr4(ctx: RunnerContext) -> RunnerResult:
 
         assertions = []
         errors = []
+        # Inverse of the exit-status-vs-verdict conflation: the verdict
+        # below is computed purely from parsed frames, so a refines crash
+        # AFTER emitting some passing frames (nonzero exit, partial
+        # results) would otherwise report "completed". Surface the crash
+        # as an error so has_issues flips the phase to failed.
+        if proc.returncode not in (0, None):
+            errors.append({
+                "error": (f"FDR4 exited with code {proc.returncode}; "
+                          "parsed results may be partial."),
+            })
         for frame in raw_results:
             if "errors" in frame and isinstance(frame["errors"], list):
                 for err_msg in frame["errors"]:
@@ -1091,12 +1286,38 @@ def run_fdr4(ctx: RunnerContext) -> RunnerResult:
     except subprocess.TimeoutExpired:
         proc.kill()
         msg = f"FDR4 timed out after {timeout}s"
+        # SALVAGE (2026-09-14). FDR4 emits framed-JSON verdicts PER
+        # ASSERTION as it completes them, and the read loop above has
+        # already banked them in output_lines — discarding them threw
+        # away every cheap verdict each time the composed-module
+        # assertion blew the budget (chem run-1 v2: three attempts,
+        # zero verdicts reported, while the per-controller assertions
+        # had almost certainly finished). Parse what completed and
+        # report it; only the assertions FDR4 never reached are
+        # unmeasured.
+        partial = []
+        try:
+            # output_lines may be unbound if the kill hit before the read
+            # loop started (e.g. Popen failure routed here).
+            partial = _parse_framed_json("\n".join(locals().get("output_lines") or []))
+        except Exception:
+            partial = []
+        n_done = sum(len(r.get("results", [])) for r in partial)
+        if n_done:
+            msg += f" — {n_done} assertion verdict(s) completed before the kill (salvaged)"
         ctx.sys_msg(msg)
         trace_data = feedback.load_trace(_T2M_OUTPUT)
+        # Route through the classifier so the issue carries kind
+        # "fdr4_timeout" — a bare {"error": msg} fell through to the
+        # default parse_error builder, mislabelling a state-space
+        # timeout as a template defect (observed on chem run-1 v2).
+        classified = _classify_fdr4_stderr(msg, memory_limit_mb=0)
+        if n_done:
+            classified["salvaged_results"] = partial
         fb = feedback.build_fdr4_feedback(
             label=label, status="failed", summary=msg,
             failed_assertions=[],
-            errors=[{"error": msg}],
+            errors=[classified],
             csp_file=csp_path,
             trace_data=trace_data,
             expected_failures=[],
@@ -1148,6 +1369,9 @@ def run_dafny_verify(ctx: RunnerContext) -> RunnerResult:
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 text=True, encoding="utf-8", errors="replace",
             )
+            # Wall-clock timeout: the read loop below blocks until stdout
+            # EOF, so wait(timeout=...) alone cannot stop a hung dafny.
+            watchdog, watchdog_fired = _start_watchdog(proc, timeout)
 
             file_output_lines = []
             for line in proc.stdout:
@@ -1159,6 +1383,9 @@ def run_dafny_verify(ctx: RunnerContext) -> RunnerResult:
                 _stream_line(ctx, stripped)
 
             proc.wait(timeout=timeout)
+            watchdog.cancel()
+            if watchdog_fired.is_set():
+                raise subprocess.TimeoutExpired(cmd, timeout)
             file_output = "\n".join(file_output_lines)
             combined_raw_output_parts.append(file_output)
 
@@ -1374,6 +1601,9 @@ def run_isabelle_verify(ctx: RunnerContext) -> RunnerResult:
 
     peak_memory_mb = [0]
     killed_for_memory = threading.Event()
+    # Wall-clock timeout: the stdout read loop below blocks until EOF, so
+    # proc.wait(timeout=...) alone cannot stop a hung isabelle build.
+    watchdog, watchdog_fired = _start_watchdog(proc, timeout)
 
     def monitor_memory():
         while proc.poll() is None and not ctx.stop_requested():
@@ -1401,13 +1631,21 @@ def run_isabelle_verify(ctx: RunnerContext) -> RunnerResult:
             if stripped.strip():
                 _stream_line(ctx, stripped)
         proc.wait(timeout=timeout)
+        if watchdog_fired.is_set() and not killed_for_memory.is_set():
+            raise subprocess.TimeoutExpired(cmd, timeout)
     except subprocess.TimeoutExpired:
         proc.kill()
         msg = f"Isabelle timed out after {timeout}s"
         ctx.sys_msg(msg)
-        _emit_isabelle_feedback(ctx, "failed", msg, "\n".join(output_lines))
+        # Append the obligation inventory: a bare timeout message gave the
+        # reader no idea how much of the theory was proven.
+        _out = "\n".join(output_lines)
+        _emit_isabelle_feedback(
+            ctx, "failed", msg,
+            _out + _isabelle_obligation_context(session_dir, _out))
         return "failed", msg
     finally:
+        watchdog.cancel()
         mem_thread.join(timeout=2)
 
     full_output = "\n".join(output_lines)
@@ -1416,7 +1654,9 @@ def run_isabelle_verify(ctx: RunnerContext) -> RunnerResult:
         msg = (f"Isabelle killed: memory exceeded {memory_limit_mb} MB "
                f"(peak {peak_memory_mb[0]:.0f} MB)")
         ctx.sys_msg(msg)
-        _emit_isabelle_feedback(ctx, "failed", msg, full_output)
+        _emit_isabelle_feedback(
+            ctx, "failed", msg,
+            full_output + _isabelle_obligation_context(session_dir, full_output))
         return "failed", msg
 
     # Isabelle 2023 `build -v` emits per-theory markers as
@@ -1437,7 +1677,9 @@ def run_isabelle_verify(ctx: RunnerContext) -> RunnerResult:
         # Scan the .thy files in session_dir for lemma counts + names so
         # both the chat message and the feedback body can be specific
         # about what was actually proven (not just "all proofs closed").
-        session_dir = (_T2M_OUTPUT / "isabelle").resolve()
+        # NOTE: reuse the session_dir resolved from phase config above —
+        # recomputing the default here silently ignored a configured
+        # session_dir and scanned the wrong directory.
         lemma_stats = _scan_isabelle_lemmas(session_dir)
         # Compact chat message: theory count + total lemmas + named
         # deadlock-freedom result (the user-facing safety property).
@@ -1478,7 +1720,13 @@ def run_isabelle_verify(ctx: RunnerContext) -> RunnerResult:
         summary_parts.append(f"session {failed_session.group(1)} FAILED")
     summary = ", ".join(summary_parts) + "."
     ctx.sys_msg(f"{label} failed — see Feedback tab.")
-    _emit_isabelle_feedback(ctx, "failed", summary, full_output)
+    # This is the path chem run-1 took (exit 142, tactic timeout). The summary
+    # alone — "1 theory marker(s) seen before failure" — says nothing about how
+    # many obligations the session carries or which one aborted it, so the
+    # feedback body now carries the inventory and names the failing obligation.
+    _emit_isabelle_feedback(
+        ctx, "failed", summary,
+        full_output + _isabelle_obligation_context(session_dir, full_output))
     return "failed", full_output[:2000]
 
 
@@ -1546,6 +1794,14 @@ def run_compile(ctx: RunnerContext) -> RunnerResult:
         _emit_compile_feedback(ctx, "failed", msg, "\n".join(output_lines))
         return "failed", msg
 
+    # A user stop terminates gradle mid-build; the non-zero exit code that
+    # produces is not a compile verdict. Return "stopped" without emitting
+    # failure feedback (the same exit-status-vs-verdict distinction the
+    # verifier runners make).
+    if ctx.stop_requested():
+        ctx.sys_msg(f"{label} stopped by user.")
+        return "stopped", ""
+
     full_output = "\n".join(output_lines)
     if proc.returncode == 0:
         summary = "Java project compiled successfully."
@@ -1608,19 +1864,26 @@ def run_coverage(ctx: RunnerContext) -> RunnerResult:
 
 
 def run_vacuity(ctx: RunnerContext) -> RunnerResult:
-    """Vacuity audit on generated Dafny + Isabelle artefacts.
+    """Vacuity audit on generated Dafny + Isabelle + CSP artefacts.
 
-    Runs after ``dafny_gen`` / ``isabelle_gen``. Flags two specific
-    "verifier passes nothing because the obligation was True"
-    patterns — see :mod:`web.vacuity` for the D1 / I1 signal
-    definitions. Writes ``post_vacuity.{md,json}`` like every other
-    phase; ``passed`` iff neither signal fires.
+    Runs after ``dafny_gen`` / ``isabelle_gen`` / ``m2t``. Two layers:
+    the syntactic D1 / I1 signals ("verifier passes nothing because the
+    obligation was True") and the semantic S1/A1/E1/N1/R1/R2/T1/T2/P1/K1
+    checks (precondition satisfiability, mode/transition reachability —
+    symbolic AND under the checked CSP instantiation — antecedent
+    vacuity, empty domains, Init-vs-invariant consistency, cross-backend
+    constant consistency). See :mod:`web.vacuity` and
+    :mod:`web.vacuity_sat`. Writes ``post_vacuity.{md,json}`` like every
+    other phase; ``passed`` iff no signal fires.
     """
     label = ctx.phase.label if ctx.phase else "Vacuity audit"
     ctx.sys_msg(f"{label}: scanning {_T2M_OUTPUT}...")
 
     try:
-        report = vacuity.audit(_T2M_OUTPUT, _REPO_ROOT)
+        report = vacuity.audit(
+            _T2M_OUTPUT, _REPO_ROOT,
+            java_root=_GENERATED_PROJECT / "src" / "main" / "java",
+        )
     except Exception as exc:
         logger.exception("Vacuity audit raised an exception")
         msg = f"Vacuity audit failed with exception: {exc}"
@@ -1633,25 +1896,45 @@ def run_vacuity(ctx: RunnerContext) -> RunnerResult:
 
     issues = [
         feedback.Issue(
+            # severity is prefixed into the title so it survives into
+            # post_vacuity.{md,json} without changing the Issue schema:
+            # an advisory finding must never read as an actionable defect.
             kind=f.kind,
-            title=f.title,
+            title=f"[{f.severity.upper()}] {f.title}",
             raw=f.raw,
-            fix_directive=f.fix_directive,
+            fix_directive=(
+                f.fix_directive if f.severity == "blocking" else
+                "ADVISORY — no action for the codegen agent. This follows from "
+                "the deliberate CSP domain narrowing (FDR4 finiteness), not from "
+                "the Java. Record it with any verdict drawn from the CSP checks."
+            ),
         )
         for f in report.findings
     ]
 
+    adv = report.advisory
     if report.status == "passed":
         summary = (
-            "No vacuity signals detected. Any `0 errors` from Dafny / "
-            "Isabelle is at least potentially load-bearing (only the "
-            "two specific signals D1, I1 are checked)."
+            "No blocking vacuity signals detected (syntactic D1/I1 and semantic "
+            "satisfiability/reachability/constant-consistency checks). "
+            "Any `0 errors` from Dafny / Isabelle / FDR is at least "
+            "potentially load-bearing for the checked signals."
         )
+        if adv:
+            summary += (
+                f" {len(adv)} ADVISORY finding(s) recorded and NOT blocking: "
+                + ", ".join(sorted({f"{f.signal}/{f.kind}" for f in adv}))
+                + ". These follow from the deliberate narrowing of the CSP data "
+                "domains that FDR4's finiteness requirement imposes, not from the "
+                "Java under test; they bound what the passing FDR4 assertions are "
+                "evidence about and must be reported with any verdict drawn from them."
+            )
         next_step = "Nothing to do. Re-run after each iteration to catch regressions."
     else:
         summary = (
-            f"{len(report.findings)} vacuity signal(s) detected. The "
-            "corresponding verifier passes discharge `True` obligations "
+            f"{len(report.blocking)} blocking vacuity signal(s) detected"
+            + (f" (plus {len(adv)} advisory)" if adv else "")
+            + ". The corresponding verifier passes discharge `True` obligations "
             "and do not establish behavioural content."
         )
         next_step = (
@@ -1672,7 +1955,8 @@ def run_vacuity(ctx: RunnerContext) -> RunnerResult:
     _do_emit_feedback(ctx, fb)
 
     ctx.sys_msg(
-        f"{label}: {report.status} ({len(report.findings)} finding(s))"
+        f"{label}: {report.status} "
+        f"({len(report.blocking)} blocking, {len(adv)} advisory)"
     )
     if report.status == "passed":
         return "completed", ""

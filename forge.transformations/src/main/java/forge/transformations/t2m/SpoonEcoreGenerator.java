@@ -85,6 +85,27 @@ public class SpoonEcoreGenerator {
             }
         }
 
+        // Pass 3b (T2M-1 fix): CtLiteral.getValue() is generically typed (T), so the
+        // property walk above cannot map it and the literal's VALUE is otherwise
+        // absent from the metamodel — leaving every literal in the persisted XMI
+        // valueless and forcing values through the in-memory resolvedValues
+        // side-channel. Add an explicit string-typed `value` attribute (plus a
+        // `valueKind` discriminator naming the Java type) so the XMI is
+        // self-contained. The mapper populates them via CtRole.VALUE.
+        EClass literalEc = classMap.get("CtLiteral");
+        if (literalEc != null
+                && literalEc.getEStructuralFeature("value") == null) {
+            EAttribute valueAttr = ef.createEAttribute();
+            valueAttr.setName("value");
+            valueAttr.setEType(ep.getEString());
+            literalEc.getEStructuralFeatures().add(valueAttr);
+
+            EAttribute kindAttr = ef.createEAttribute();
+            kindAttr.setName("valueKind");
+            kindAttr.setEType(ep.getEString());
+            literalEc.getEStructuralFeatures().add(kindAttr);
+        }
+
         // Pass 4: remove duplicate features (same name defined on a class and its supertype)
         // This handles order-dependency from Pass 3 where supertypes might not have
         // their features yet when subtype features are being added.

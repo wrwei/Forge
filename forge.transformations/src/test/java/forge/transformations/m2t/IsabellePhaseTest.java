@@ -17,7 +17,7 @@ import forge.transformations.t2m.T2mPhase;
 class IsabellePhaseTest {
 
     @Test
-    void emitsIsabelleTheoryAndRoot(@TempDir Path tmp) throws Exception {
+    void emitsIsabelleTheoryRootAndTrace(@TempDir Path tmp) throws Exception {
         Path src = tmp.resolve("src");
         Files.createDirectories(src.resolve("sm"));
 
@@ -64,5 +64,13 @@ class IsabellePhaseTest {
                 "isabelle/MyController_Beh.thy should exist");
         assertTrue(Files.exists(output.resolve("isabelle/ROOT")),
                 "isabelle/ROOT should exist");
+
+        Path tracePath = output.resolve("trace_isabelle.json");
+        assertTrue(Files.exists(tracePath), "trace_isabelle.json should exist");
+        String trace = Files.readString(tracePath);
+        assertTrue(trace.contains("\"isabelle_type\""),
+                "trace should contain at least one Z-Machine construct entry");
+        assertTrue(trace.contains("\"thy_line_start\""),
+                "trace entries should carry a .thy line number");
     }
 }

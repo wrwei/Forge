@@ -141,63 +141,6 @@ All 12 phases pass; vacuity = 0. Converged.
    action** (fires on every mid-run entry to `Moving` via `Turning→Moving`); this
    is faithful to SR-FR1.
 
-## Findings (durable, generalisable — not obvious from CLAUDE.md / codegen rules / runbook)
-
-**F1 — Advisory multi-real outputs collide with the `{0,1}` FDR type domain;
-prefer the single-payload `OutputEvent` entry-action encoding over multi-arg
-operation calls.** A 2-arg actuator call (`setMove(lv,av)`) is extracted by the
-M2M as an `LOperations` **operation Call** that pushes *both* argument *values*
-through a CSP channel typed by `type_ranges.json` (`{0,1}`). Any output constant
-> 1 (here `turnVel=2.0`) then makes FDR4 abort with
-`... not a member of the set {0, 1}`, reported as `0 passed, N inconclusive` with
-**no Issues** — easy to misread as a verifier hang rather than a value-range
-type error. *Why it matters:* the runbook mandates `{0,1}` for all types, so the
-fix is not to widen the range but to keep out-of-range advisory values *out of
-channels*. *How to apply:* model outputs as `actuator.apply(new OutputEvent.X(v))`
-(single-payload; the extractor `extractOutputEventInfo` reads only constructor
-arg 0) placed at the **top of the mode block** (lifted to a State entry action).
-When an output is genuinely multi-real, keep the first/primary component as the
-modelled payload and let the rest live only in the Java source. Diagnose
-"`0 passed, N inconclusive`, Issues: none" by running `refines.exe` directly on
-the `*_coreassertions.csp` — the channel-value error names the offending value.
-
-**F2 — A terminal `Final` mode breaks Isabelle `deadlock_free` but NOT FDR4.**
-Contrary to the common intuition ("a state with no outgoing transition = CSP
-deadlock"), in tock-CSP a mode with an entry action and no outgoing transition
-still passes FDR4 deadlock-free because time can always pass (`tock`). The same
-mode makes `SRangerController_deadlock_free` **time out** (not fail fast) on
-`by (metis St.exhaust_disc)`, because the FORKed theory generator's weak
-`tr ≠ []` store invariant never *designates* a terminal state, so the residual
-goal lacks a `st = <terminal>` disjunct. *How to apply:* for a single-controller
-study, give the terminal mode a non-`Final` name and a bare-precondition `Tick`
-self-loop (still emit the stop command on entry); this satisfies `deadlock_free`
-identically to any ordinary mode and keeps divergence/determinism clean (the
-self-loop is event-triggered, not τ). Budget for it: the failure presents as a
-~10-min `isabelle_verify` (per-goal `proof_timeout=600`), not an instant error.
-
-**F3 — The autonomous-transition postcondition is preempted by any
-higher-priority event branch in the same mode; gate it on the cycle event.**
-The Dafny generator emits, per mode, a postcondition of the form
-`<autonomous-guard> ==> mode == <target>` taken from the guard-only transition.
-If a higher-priority *event* branch (e.g. `EndTask`) sits above the autonomous
-branch in the Java `else-if` chain, then when the event and the guard are both
-true the event branch wins and the postcondition fails. *How to apply:* conjoin
-the cycle/`Tick` trigger onto the autonomous guard
-(`event instanceof Tick && <guard>`) so the generated premise is event-specific
-and the higher-priority non-`Tick` branch can't falsify it. (This generalises the
-HOWTO's SRanger-iter-2 note to *any* mode that mixes a high-priority event exit
-with a guard-only exit.)
-
-**F4 — Coverage `over_implementation` is suppressed per *file*, but framework
-exemptions are per *element name*.** The coverage check exempts the framework
-*class* names (`Clock`, `RoboChartType`, `SensorService`, `RoboChartWait`) but
-**not their methods**: a `Clock` class with a public `now()` method whose file has
-no trace entry flags `now` as over-implementation. *How to apply:* ensure every
-`.java` file containing a public type/method has **at least one** `result_codegen.json`
-entry (any requirement mapped to that file's path suppresses all its members,
-since suppression keys on the file basename) — e.g. map a timing requirement to
-`Clock.java`.
-
 ## Reproducibility
 
 Stage iter-N's source and re-run the deterministic pipeline:

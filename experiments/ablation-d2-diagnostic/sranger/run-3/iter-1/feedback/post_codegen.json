@@ -1,0 +1,120 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Cold iteration-1 codegen for sranger: 9 Java files, all 23 requirements traced; 6 judgement calls surfaced for review.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Final has a tick self-loop not named by any requirement",
+      "raw": "SR-FR3 calls Final terminal; SR-DC1 says SR-Beh1..7 are the only transitions. The codegen rules require every mode to have an outgoing transition.",
+      "fix_directive": "Confirm Final should accept tick as a no-action self-transition (an 8th transition with no requirement), or specify Final's intended behaviour.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 76,
+          "line_end": 80,
+          "element": "step",
+          "requirement_ids": [
+            "SR-FR3",
+            "SR-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Moving -> Turning: event trigger vs guard",
+      "raw": "SR-Beh2 fires on the obstacle event; SR-GP1 says obstacleDetected (distance <= obstacleThreshold) guards the same transition.",
+      "fix_directive": "Implemented as obstacle event AND obstacleDetected. Confirm the conjunction is intended.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 52,
+          "line_end": 62,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Clock time base is milliseconds",
+      "raw": "SR-Var1 states clockResetTime in seconds; the Clock dependency exposes nowMs().",
+      "fix_directive": "clockResetTime is stored in ms and compared with TURN_DURATION_MS = 2000.0 (= turnDuration 2.0 s). Confirm or require a seconds time base.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 53,
+          "line_end": 61,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-GP2",
+            "SR-DM2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "No-reading distance default = 1000 m",
+      "raw": "SR-DM5 asks for 'a large default value' without a number.",
+      "fix_directive": "NO_READING_DISTANCE = 1000.0 in SRangerConstants; negative readings clamp to 0.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_start": 9,
+          "line_end": 32,
+          "element": "Sensor",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Transition priority",
+      "raw": "Requirements give no priority between endTask, obstacle, the timed transition and tick.",
+      "fix_directive": "endTask first in every mode; in Turning the timed transition outranks the tick self-loop.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 55,
+          "line_end": 80,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-Beh3",
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Initial Moving entry command issued in the constructor",
+      "raw": "SR-FR1 requires Move(moveVel, 0) on entering Moving, including at power-up (SR-Beh1).",
+      "fix_directive": "The constructor issues Move(MOVE_VEL, 0.0). Confirm.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 29,
+          "line_end": 35,
+          "element": "SRangerController",
+          "requirement_ids": [
+            "SR-FR1",
+            "SR-Beh1"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

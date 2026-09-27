@@ -33,6 +33,39 @@ public class RoboChart2RctTransformer {
     /** Specification-level elements (datatypes, functions, sensors, actuators). */
     private Map<String, Object> specElements = new HashMap<>();
 
+    /**
+     * How fractional constant defaults are rendered (defect U4).
+     *
+     * <p>{@code "ceil"} (default) applies the CSP-target workaround: a value
+     * like {@code 0.5} is emitted as {@code 1}, because the standalone CSP
+     * generator 3.0.0 aborts with
+     * {@code Case not treated by expression compiler: FloatExpImpl} on any
+     * {@code FloatExp} constant. {@code "exact"} emits the true value, for a
+     * consumer that can accept it.
+     *
+     * <p>Every ceiling is reported through {@link #getWarnings()}; before the
+     * U4 fix it happened silently.
+     */
+    private String floatConstantMode = "ceil";
+
+    /** Structured warnings collected during the most recent EGL execution. */
+    private List<Map<String, String>> warnings = List.of();
+
+    /** Set how fractional constants are rendered: {@code "ceil"} or {@code "exact"}. */
+    public void setFloatConstantMode(String mode) {
+        this.floatConstantMode = (mode == null || mode.isBlank()) ? "ceil" : mode;
+    }
+
+    /**
+     * Returns the structured warnings from the most recent transformation.
+     * Each entry has a {@code code} and a {@code message}. A non-empty list
+     * means the emitted {@code .rct} differs from the Java in a way that
+     * changes what it denotes.
+     */
+    public List<Map<String, String>> getWarnings() {
+        return warnings;
+    }
+
     /** Set default values for constants (rendered as {@code = value} in the .rct). */
     public void setConstantDefaults(Map<String, Object> defaults) {
         this.constantDefaults = defaults != null ? defaults : new HashMap<>();
@@ -93,9 +126,13 @@ public class RoboChart2RctTransformer {
 
             // Mutable list injected into EGL — post-processing appends trace entries
             ArrayList<Map<String, String>> traceList = new ArrayList<>();
+            // Mutable list the EGL's addRctWarning appends to (defect U4).
+            ArrayList<Map<String, String>> warningList = new ArrayList<>();
             Map<String, Object> variables = new HashMap<>();
             variables.put("traceEntries", traceList);
             variables.put("constantDefaults", constantDefaults);
+            variables.put("rctWarnings", warningList);
+            variables.put("rctFloatConstants", floatConstantMode);
 
             EglGenerationRunner runner = new EglGenerationRunner();
             String rct = runner.run(
@@ -107,6 +144,7 @@ public class RoboChart2RctTransformer {
 
             // Capture trace entries collected during EGL execution
             this.traceEntries = traceList;
+            this.warnings = warningList;
 
             return rct;
         } catch (IllegalStateException e) {

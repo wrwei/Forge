@@ -1,0 +1,78 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 25-09-2026 21:28:26
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "Movement_Ctrl.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate Movement_Ctrl
+P_Movement_Ctrl = let
+	id__ = 0
+	
+	const_Movement_Ctrl_lv = 1
+	const_Movement_Ctrl_evadeTime = 1
+	const_Movement_Ctrl_stuckPeriod = 3
+	const_Movement_Ctrl_stuckDist = 2
+	const_Movement_Ctrl_outPeriod = 2
+	
+	
+		
+within
+	Movement_Ctrl::O__(id__,
+			    const_Movement_Ctrl_lv,
+			    const_Movement_Ctrl_evadeTime,
+			    const_Movement_Ctrl_stuckPeriod,
+			    const_Movement_Ctrl_stuckDist,
+			    const_Movement_Ctrl_outPeriod)
+
+assert P_Movement_Ctrl :[deadlock-free]	
+assert P_Movement_Ctrl;RUN({r__}) :[deadlock-free]
+assert P_Movement_Ctrl :[deterministic]
+assert P_Movement_Ctrl :[divergence-free]
+
+-- generate Movement_Ctrl_stm_ref0
+P_Movement_Ctrl_stm_ref0 = let
+	id__ = 0
+	
+	const_Movement_lv = 1
+	const_Movement_evadeTime = 1
+	const_Movement_stuckPeriod = 3
+	const_Movement_stuckDist = 2
+	const_Movement_outPeriod = 2
+	
+	
+within
+	Movement_Ctrl::stm_ref0::O__(
+		id__,
+		const_Movement_lv,
+		const_Movement_evadeTime,
+		const_Movement_stuckPeriod,
+		const_Movement_stuckDist,
+		const_Movement_outPeriod
+	)
+assert P_Movement_Ctrl_stm_ref0 :[deadlock-free]	
+assert P_Movement_Ctrl_stm_ref0;RUN({r__}) :[deadlock-free]
+assert P_Movement_Ctrl_stm_ref0 :[deterministic]
+assert P_Movement_Ctrl_stm_ref0 :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_Movement_Ctrl_stm_ref0[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_Movement_Ctrl_stm_ref0
+-- timed deadlock free
+assert prioritise(P_Movement_Ctrl[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_Movement_Ctrl

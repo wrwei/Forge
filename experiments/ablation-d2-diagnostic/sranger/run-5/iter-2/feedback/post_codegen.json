@@ -1,0 +1,104 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Cold SRanger codegen: 8 files, 3 modes, 7 required transitions plus a Final tick self-loop. Six review items.",
+  "issues": [
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Moving->Turning: obstacle event AND obstacleDetected guard",
+      "raw": "SR-Beh2 triggers on the obstacle event; SR-GP1 says obstacleDetected (distance <= obstacleThreshold) guards the same transition.",
+      "fix_directive": "Implemented as trigger Obstacle with guard obstacleDetected. If the guard is meant to be informational only, drop '&& obstacleDetected'.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Final mode has a tick self-loop",
+      "raw": "SR-FR3 makes Final terminal with no listed transitions; the codegen rules require every mode to have an outgoing transition.",
+      "fix_directive": "Added a no-action Tick self-loop in FINAL (never leaves Final). Remove if Final must refuse all events.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "element": "step",
+          "requirement_ids": [
+            "SR-FR3",
+            "SR-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move output realised as Actuator.move(lv, av)",
+      "raw": "SR-DM4 describes Move as an output event with two reals.",
+      "fix_directive": "Implemented as a two-argument actuator call (an operation in RoboChart terms, as in the original SRanger model) rather than a two-field event record.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/actuator/Actuator.java",
+          "element": "move",
+          "requirement_ids": [
+            "SR-DM4",
+            "SR-DM6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Clock time base is seconds; accessor named nowMs()",
+      "raw": "SR-Var1/SR-DM2 give clockResetTime and turnDuration in seconds; the pipeline clock convention uses clock.nowMs().",
+      "fix_directive": "Clock.nowMs() returns seconds (documented) so turnDuration stays 2.0; controller field is 'timer' to avoid the reserved word 'clock'.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/timing/Clock.java",
+          "element": "nowMs",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-GP2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Initial Move(moveVel, 0) issued in constructor",
+      "raw": "SR-FR1: on entering Moving issue Move(moveVel,0); Moving is initial (SR-Beh1).",
+      "fix_directive": "The constructor issues the initial forward Move. Transition priority: endTask first in every mode; in Turning the timed exit precedes the tick self-loop.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "element": "SRangerController",
+          "requirement_ids": [
+            "SR-FR1",
+            "SR-Beh1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "No-reading distance default = 1000000.0 m",
+      "raw": "SR-DM5 requires 'a large default value' without a number.",
+      "fix_directive": "Sensor returns 1000000.0 m until the first update; negative readings are clamped to 0.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Sensor.java",
+          "element": "distance",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline; revisit these choices only if a verifier implicates them."
+}

@@ -50,7 +50,8 @@ PHASES_IN_ORDER = [
 _SUCCESS = {"passed", "completed"}
 
 
-def _authoritative_status(phase_id: str, exec_status: str) -> tuple[str, str]:
+def _authoritative_status(phase_id: str, exec_status: str,
+                          started_at: float | None = None) -> tuple[str, str]:
     """Return ``(status, source)`` for a phase, preferring the verification
     verdict in ``forge.assets/corrections/post_<phase>.json`` over the
     in-memory *execution* status.
@@ -64,6 +65,29 @@ def _authoritative_status(phase_id: str, exec_status: str) -> tuple[str, str]:
     or ``"exec"`` (fallback when no post file was written).
     """
     post = REPO_ROOT / "forge.assets" / "corrections" / f"post_{phase_id}.json"
+    # STALE-VERDICT GUARD (2026-09-25). corrections/ is not cleared between
+    # iterations (the feedback diff needs the previous file), so a phase that
+    # did not execute -- e.g. fdr4 when its dependency m2t failed -- left the
+    # PREVIOUS iteration's post file in place, and it was read here as this
+    # iteration's verdict: three iterations recorded "FDR4 3 passed" in 0.0 s
+    # with no CSP file present. A post file not rewritten since the phase
+    # started is not this iteration's verdict. Record the phase as "skipped"
+    # (not a success, so it can never count toward convergence) and replace
+    # the stale files so neither the actor nor the recorder reads the old pass.
+    if started_at is not None and post.exists() and post.stat().st_mtime < started_at - 0.5:
+        stale = {
+            "phase": phase_id, "status": "skipped",
+            "summary": (f"{phase_id} did not run in this iteration (an upstream "
+                        "phase failed or the phase did not execute). The previous "
+                        "iteration's verdict was discarded."),
+            "issues": [], "files_to_review": [],
+            "new_count": 0, "recurring_count": 0, "resolved_count": 0,
+            "resolved_issue_titles": [],
+        }
+        post.write_text(json.dumps(stale, indent=2), encoding="utf-8")
+        post.with_suffix(".md").write_text(
+            f"# {phase_id}: skipped\n\n{stale['summary']}\n", encoding="utf-8")
+        return "skipped", "stale"
     try:
         data = json.loads(post.read_text(encoding="utf-8"))
         verdict = data.get("status")
@@ -131,7 +155,7 @@ def main() -> int:
             state.set_phase_status(phase_id, "failed")
         elapsed = time.time() - t0
         exec_status = state.get_phase_status(phase_id)
-        status, source = _authoritative_status(phase_id, exec_status)
+        status, source = _authoritative_status(phase_id, exec_status, started_at=t0)
         results[phase_id] = (status, elapsed)
         # If the authoritative verdict disagrees with the execution status,
         # call it out — this is exactly the masking that hid failed preflight
@@ -143,7 +167,8 @@ def main() -> int:
                 flush=True,
             )
         else:
-            tag = "" if source == "post" else " [execution status — no post file]"
+            tag = {"post": "", "stale": " [not run -- previous verdict discarded]"}.get(
+                source, " [execution status — no post file]")
             print(f"===== {phase_id}: {status} ({elapsed:.1f}s){tag} =====", flush=True)
 
     print("\n===== SUMMARY (authoritative post_<phase>.json verdicts) =====", flush=True)

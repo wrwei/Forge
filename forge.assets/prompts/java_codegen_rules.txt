@@ -97,6 +97,20 @@ Controller style:
   High-priority transitions that apply across multiple modes (e.g., operator overrides, emergency stops)
   must be DUPLICATED as the first inner branches in each applicable mode block, giving them highest
   priority within that mode.
+- EVERY MODE MUST HAVE AN OUTGOING TRANSITION. A mode block whose body is empty
+  (e.g. `} else if (currentMode == FINAL) { }`) or whose transitions are all
+  guarded leaves that mode with nothing enabled, which is a defect in the
+  controller: a reactive controller must be able to make progress from every
+  mode it can reach.
+
+  ABLATION (condition D2). The text that stood here explained the mechanism by
+  which such a mode falsifies the generated deadlock-freedom obligation, gave
+  the Java idiom that repairs it, quoted the operation and invariant the
+  extractor emits for that idiom, and stated which modes should and should not
+  receive one. All of that is removed: it tells the developer what shape the
+  PROVER requires, which is the answer rather than the requirement. How to give
+  a mode an outgoing transition, and which event should trigger it, is a design
+  decision for the developer.
 - NAMED BOOLEAN PREDICATES: Before the if-else chain, declare named boolean variables for ALL guard conditions.
   Use descriptive names that encode the sensor/function, reference, and comparison direction
   (e.g., boolean velBelowThreshold = ...; boolean obstaclePresent = ...).

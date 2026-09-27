@@ -81,16 +81,6 @@ per the LAUNCH.md stop rule. No further iteration.
 7. **Local tuning, not committed:** `pipeline.yaml` fdr4 `timeout: 3600`,
    `memory_limit_mb: 65536` (page-file size), `active_case_study: sranger`.
 
-## Findings
-
-- **F1 — preflight rule4 applies to private compile-time constants too.**
-  The lint flags ANY double field without `@RoboChartType("real")`,
-  including a `private static final` default used only as a field
-  initializer (`Sensor.NO_READING_DEFAULT`). The codegen rules text reads
-  as if the annotation targets model-relevant fields/params; a future cold
-  codegen should annotate every `double` declaration unconditionally,
-  whatever its visibility or role.
-
 ## Run-level cost
 
 - **Claude token total:** not read out mid-session; `/cost` is a

@@ -91,29 +91,6 @@ in `iter-1/feedback/post_codegen.md`):
 - The constructor-issued initial `Move(MOVE_VEL, 0)` is Java-side fidelity
   only; constructor statements are not extracted as model transition actions.
 
-## Findings
-
-- **F1 — CLAUDE.md's inline pipeline guidance is sufficient to clear all
-  eight compile-and-extraction phases in one cold shot on a small study.**
-  Every structural decision that mattered (no `Final` state,
-  bare-precondition cover, multi-arg output encoding, clock conventions,
-  reserved-word avoidance) was derivable from CLAUDE.md plus targeted reads
-  of the ETL source. Whether that also yields behaviourally-verified code is
-  exactly what this ablation measures — see `ablation_result.json`.
-- **F2 — Reading the transformation sources ("the tool") before codegen is
-  cheap and prevents whole iterations.** Three greps of `java2robochart.etl`
-  resolved ambiguities the prose docs leave open (does a mode literal named
-  `Final` become a RoboChart Final? — no, states are name-verbatim ordinary
-  states; is clock detection by receiver name or type? — by declaring type;
-  what happens to a two-payload OutputEvent record? — second payload
-  silently dropped). Each wrong guess there would likely have cost an
-  extraction-phase iteration.
-- **F3 — The runner's exit code and `snapshot_iter.py`'s `converged=` banner
-  both aggregate over withheld phases.** For future ablation runs, the
-  helpers could suppress these (exit code 1 + `converged=False` are
-  unavoidable context for the session even under perfect file-read
-  discipline).
-
 ## Reproducibility
 
 Stage `iter-1/java/` into `java.generated.project/src/main/java/sranger/`,

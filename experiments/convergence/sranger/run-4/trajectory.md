@@ -122,51 +122,6 @@ before this file was written:
 
 Whole-run figure (both iters + setup + archive); not splittable per iter.
 
-## Findings (durable, generalisable lessons)
-
-**F1 — An out-of-range constant on a channel payload makes FDR4 report
-"N inconclusive, 0 errors" with an *empty* issue list.** `post_fdr4.md` carries
-no raw output for load-time errors, so the verdict looks like state-space
-exhaustion when it is actually a hard load failure
-(`The value: <chan>.x.y is invalid … not a member of the set {0, 1}`).
-*Why:* FDR aborts before checking any assertion; the runner classifies
-assertions it never saw as inconclusive. *How to apply:* whenever post_fdr4
-shows `0 passed, N inconclusive` in ~1 s, re-run `refines.exe` manually on the
-discovered `*_coreassertions.csp` and read the raw error. Then check every
-constant that reaches a channel/operation argument against the `{0..1}` type
-ranges: values communicated on channels (e.g. LOperations call arguments) must
-lie inside the range; guard-only constants are safe (saturating arithmetic,
-comparisons can't produce invalid channel values).
-
-**F2 — Design the terminal mode out of existence at cold-codegen time.**
-Applying CLAUDE.md's no-Final-state rule *in iter 1* (rename to a live mode +
-Tick self-loop) made Isabelle pass on the very first pipeline run, 10/10
-lemmas. The inlined CLAUDE.md guidance is sufficient — no `docs/` access was
-needed to get the Isabelle phase green from cold. *How to apply:* for any study
-whose spec has a terminal/Final mode, encode it as an ordinary named mode
-(e.g. HALTED) with an event-triggered self-loop and the stop command as its
-entry action; trace it to the Final-state requirements and flag the rename in
-`post_codegen`.
-
-**F3 — Preflight rule4 wants `@RoboChartType("real")` on literally every
-`double`, not just "RoboChart-relevant" ones.** Private statics in helper
-classes (sensor no-data default), clock-class fields, and method *parameters*
-(`Clock.advance#dt`) are all flagged, even though none of them surface in the
-extracted model. The codegen-rules text reads as if only model-relevant
-fields/params need it. *How to apply:* annotate every `double`
-field/parameter/return in the generated package mechanically at cold-codegen
-time; it is cheaper than an iteration.
-
-**F4 — The machine environment can fail every gradle phase before any
-verifier runs; fix and re-run without snapshotting.** A foreign
-`GRADLE_USER_HOME` (or `dafny_path`/`wsl_isabelle_bin` committed for another
-machine) produces a uniform all-phase failure that looks dramatic but contains
-zero verifier signal. *How to apply:* treat a run where compile/preflight/t2m
-all fail with the same wrapper/lock-file exception as a pipeline crash
-(runbook §5): override `GRADLE_USER_HOME` per invocation, localise the
-pipeline.yaml tool paths, re-run, and only snapshot iterations that produced
-real verdicts.
-
 ## Independence
 
 - **Condition B.** Fresh git worktree with a severed single-commit history

@@ -20,8 +20,8 @@ the generated `.thy` — all permitted ("derive the fix from the actual
 pipeline sources under `forge.transformations/`").
 
 No forbidden §4 path was read: nothing under `docs/`, no
-`experiments/convergence/**/run-*`, no `trajectory.md`, no playbook, no
-`CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md`, no `.remember/`, no agent-memory
+`experiments/convergence/**/run-*`, no `trajectory.md`, no playbook,
+no `.remember/`, no agent-memory
 file. No study-specific prior-run content was observed in injected context
 (the severed base commit exposes no `run-*`/`iter-*`/`archive` ancestry).
 
@@ -155,59 +155,6 @@ All 12 phases pass, vacuity = 0 findings → converged.
   `timeout` 600→3600 and `memory_limit_mb` 4096→88659 (page-file size) per
   RUN_TRAJECTORY §2. These are local tuning edits and are **not** committed.
 
-## Findings (durable, generalisable)
-
-- **F1 — A single-controller study with a required terminal mode forces a
-  "live sink" rewrite, and renaming the mode away from `Final` is the
-  mechanism.** CLAUDE.md says the theory-generated controller must have no
-  `Final` state, but for a 1-controller study you cannot push `Final` onto
-  a secondary controller. *Why:* a state named `Final` is treated by the
-  pipeline as a terminal needing no operation, yet the forked generator
-  never designates it terminal — so it hangs with no op, and (per CLAUDE.md)
-  fails the reduction *with* an op. *How to apply:* rename the terminal
-  mode to a non-`Final` name **and** give it one bare-precondition
-  self-loop (here `tick`). This was decisive: same structure named `Final`
-  hung at 613 s; named `Stopped` it proved in 28.5 s. The self-loop alone
-  is not enough — the name must change too (a `Stopped` mode is structurally
-  identical to `Moving`/`Turning`, which already prove with self-loops).
-- **F2 — A diagnostic, not just a hang: the `Final` failure manifests as a
-  per-goal `proof_timeout` on `*_deadlock_free`, not a fast tactic error.**
-  `post_isabelle_verify` classified it `isabelle_tactic_timeout` on the
-  `deadlock_free` lemma with `*** Timeout`. *How to apply:* if
-  `isabelle_verify` *times out* (≈ the configured `proof_timeout`) on the
-  `deadlock_free` lemma — as opposed to failing fast — suspect a state with
-  no bare-precondition operation (an absorbing/`Final` mode) before
-  touching any guard logic. Keep `proof_timeout` finite so the hang is
-  bounded and reported rather than open-ended.
-- **F3 — Gating an autonomous timed transition on the cycle `tick` is the
-  fix when a higher-priority event preempts its Dafny postcondition.** The
-  Dafny generator turns a transition's full guard (including any
-  `event == X`) into the `ensures` premise. A bare autonomous guard yields
-  `guard ==> target`, which any higher-priority event branch falsifies.
-  *How to apply:* if `post_dafny_verify` flags a `dafny_postcondition` on a
-  `transitionFrom<Mode>` whose only guarded outgoing edge is autonomous,
-  add `event instanceof Tick &&` to that guard — the premise becomes
-  event-specific and the operator/`EndTask` branches no longer violate it.
-  Pair it with a plain `tick` self-loop so `tick` retains a total cover.
-- **F4 — The preflight `rule4` annotation lint covers *every* `double`,
-  including non-modelled `private static final` sentinels.** The iter-1
-  block was a `DEFAULT_DISTANCE = 1000.0` constant that never reaches the
-  RoboChart model. *How to apply:* in cold codegen, annotate **all**
-  `double` fields/params/returns with `@RoboChartType("real")` up front
-  (and `int`→`nat` where applicable), not only the ones you expect the M2M
-  to lift — it saves a whole preflight iteration.
-- **F5 — The clock encoding hinges on three exact Java shapes that the ETL
-  pattern-matches; get them right in iter-1 and the timed transition "just
-  works".** (1) a dependency field whose **declared type is `Clock`** (or
-  `@Clock`); (2) a state field assigned `field = clock.nowMs()` (→ promoted
-  to a RoboChart `clock`, reset emitted as `# field` on its transition);
-  (3) the elapsed guard written **exactly** as
-  `clock.nowMs() - field >= CONST` (→ rewritten to `since(field) >= CONST`).
-  Detection is by the receiver's *type*, not the field/method name, so the
-  Clock-holding field can be named `timer` (avoids the reserved word
-  `clock`). This produced a correct `since(clockResetTime) >= turnduration`
-  guard on the first try.
-
 ## Reproducibility
 
 1. `pipeline.yaml` → `agent.active_case_study: sranger`; FDR4 type ranges
@@ -225,11 +172,6 @@ All 12 phases pass, vacuity = 0 findings → converged.
    `status`; timings: `phase_timings.json`. Each iter's snapshot under
    `run-2/iter-<N>/` carries the Java, feedback, traces, and formal
    artefacts (`.dfy`, `.rct`/CSP, `.thy`).
-
-*KB note:* this run executed in a scrubbed worktree, so
-`CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md` is absent here and was deliberately
-**not** recreated; findings F1–F5 above are appended to it during copy-back
-to the main checkout (RUN_TRAJECTORY §6 / Appendix).
 
 
 ## Execution time (recovered post-hoc)

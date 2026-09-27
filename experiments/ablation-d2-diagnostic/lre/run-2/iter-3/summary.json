@@ -1,0 +1,75 @@
+{
+ "study": "lre",
+ "run": 2,
+ "iteration": 3,
+ "recorded_utc": "2026-09-22 15:42:42",
+ "infrastructure_sha": "35f6d5570fb857c94cda4bdf58a9b5a08a4264da",
+ "worktree": "/Users/ranwei/Gitee/forge-d2-run4-lre",
+ "actor": "claude-code",
+ "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+ "codex_thread": null,
+ "actor_session_label": "CLAUDE-lre-run4",
+ "files": {
+  "java": 15,
+  "java_test": 0,
+  "formal_artefacts": 74,
+  "codegen_trace": 1,
+  "agent_summary": 1,
+  "feedback": 12,
+  "feedback_json": 12
+ },
+ "java_loc": 698,
+ "phase_status": {
+  "compile": "passed",
+  "coverage": "passed",
+  "preflight": "passed",
+  "t2m": "passed",
+  "m2m": "passed",
+  "m2t": "passed",
+  "dafny_gen": "passed",
+  "isabelle_gen": "passed",
+  "fdr4": "passed",
+  "dafny_verify": "passed",
+  "isabelle_verify": "failed",
+  "vacuity": "passed"
+ },
+ "phases_without_verdict": [],
+ "codegen_cost": {
+  "kind": "unavailable",
+  "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+  "total_tokens": null,
+  "turns": null,
+  "schema": "unavailable",
+  "tokens_in": null,
+  "tokens_out": null,
+  "scope": "per_turn_sum",
+  "notes": "full per-turn split available"
+ },
+ "converged": false,
+ "failure_summary": "isabelle_verify",
+ "actor_codegen_summary": "# LRE run 4 \u2014 iteration 1 (cold codegen)\n\n## What I wrote\n\nNothing pre-existing was under `java.generated.project/src` (preflight\nconfirmed 0 Java files), so nothing was deleted. I wrote 15 new files under\n`src/main/java/lre/`: `annotation/RoboChartType`, `mode/LreMode`,\n`constants/LreConstants`, `event/{InputEvent,OutputEvent}`,\n`sensor/{Obstacle,ObstacleRegister,Sensor}`,\n`operation/{CalcVel,CalcCStc,CalcCDyn,CheckOPEZ,CalcCPA}`,\n`actuator/Actuator`, `controller/LreController`, plus\n`result_codegen.json` (51/51 requirements traced, every file cited at least\nonce). `gradlew build` is green. No `Clock` class and no `Final` mode exist.\n\n`step()` runs the five operations, latches them into the eight LRE-Var\ncontroller fields, declares ten named predicates, then selects one transition\nin a two-level `currentMode == X` if-else. Every mode has an unguarded\nevent-triggered exit (OCM: reqVel/reqHdng; MOM/HCM/CAM: reqOCM).\n\n## Decisions the requirements did not settle\n\n1. **CPA formulation (LRE-OP5).** The spec names cda/tcpa but gives no\n   formula. I used the standard horizontal CPA projection from relative\n   position and velocity, with the *current vertical separation* folded into\n   cda. That is deliberate: LRE-DM5 fixes the field accessors at zero when no\n   obstacle exists, so a purely horizontal cda would be 0 with no dynamic\n   obstacle and would spuriously fire MOM\u2192CAM. Including `vdist(cdyn)` \u2014\n   which returns the safe large distance \u2014 makes that case safe while keeping\n   DM5 literal.\n2. **Degenerate relative velocity.** `relSpeedSq` carries a 1e-9 floor so\n   tcpa stays total without a ternary or a sentinel branch.\n3. **HCM entry velocity.** `system_description.txt` says HCM runs at 0.1 m/s;\n   LRE-FR3 says 0 m/s. I followed FR3 and flag the contradiction for human\n   review; I did not edit the spec.\n4. **Naming.** `LreConstants` uses the spec's camelCase; the safe large\n   distance (1e6) is a private Sensor constant, not a LRE-DM4 threshold.\n\n## Unresolved\n\nNothing blocking. MOM\u2194HCM guards are mutually exclusive at any one valuation,\nso I expect no guard-only tau cycle; that is the property I am least sure\nsurvives abstraction into CSP.",
+ "iter": 3,
+ "convergence_criterion": "TIGHTENED 2026-09-22 by author decision: the three OBLIGATION VERIFIERS succeed -- Dafny zero errors, every FDR4 assertion passes, Isabelle proves the deadlock-freedom lemma and every invariant -- AND the vacuity audit (Phase 6d) reports nothing AND the structural preflight passes. Five phases. Rationale: preflight is the gate that catches an extracted model which is WRONG BUT STILL VERIFIABLE (non-exclusive preconditions, triggerless branches, unannotated doubles), so a run whose linter rejected the model must not count as converged. The paper as submitted defined convergence over the four verifier phases only; this is a deliberate tightening, disclosed in the response letter, and it moves five runs by one iteration while leaving every reported median unchanged. Here isabelle_verify did not pass.",
+ "structural_inventory": {
+  "scope": "csp-gen/defs plus csp-gen root -- the fdr4 phase's output_dir; csp-gen/timed/ excluded (never read by the phase)",
+  "coreassertions_files": 10,
+  "total_assertions": 83,
+  "state_vars": 5,
+  "transitions": 18,
+  "java_loc": 853,
+  "basis": "computed from this record's own staged artefacts (Amendment 3)"
+ },
+ "adjudication": {
+  "by": "promote_staged_run.py, from the authoritative post_<phase>.json files",
+  "verifier_evidence": {
+   "vacuity": "passed, No blocking vacuity signals detected (syntactic D1/I1 and semantic satisfiability/reachability/constant-consistency checks). Any `0 errors` from Dafny",
+   "dafny_verify": "passed, Dafny: 1 file(s), 12 verified, 0 errors.",
+   "fdr4": "passed, FDR4: 3 assertion(s) checked, 3 passed.",
+   "isabelle_verify": "failed, Isabelle: exit 142, 1 theory marker(s) seen before failure.",
+   "preflight": "passed, 2c \u2014 Preflight (Structural Lint): no structural errors."
+  },
+  "note": "converged was RECOMPUTED from the verifier outputs, not taken from the staged summary (which carries converged=None).",
+  "starved_phases": null
+ },
+ "original_run": 4
+}

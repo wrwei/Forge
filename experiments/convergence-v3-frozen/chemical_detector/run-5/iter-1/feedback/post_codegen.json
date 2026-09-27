@@ -1,0 +1,220 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Initial Java for chemical_detector (iteration 1): two controllers (GasAnalysisController, MovementController) that talk only through turn/stop/resume, and all 81 requirements are traced. The issues listed are invented defaults and design choices the specification leaves open.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Constant values are placeholders",
+      "raw": "CD-Const1..6 say the values are configured at start-up but give none.",
+      "fix_directive": "Replace THR, LV, EVADE_TIME, STUCK_PERIOD, STUCK_DIST, OUT_PERIOD with deployment values. The current values (all 1) were chosen to lie inside the verifier's configured type ranges (0..1), so every guard can be both true and false during model checking.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/constants/ChemConstants.java",
+          "line_start": 14,
+          "line_end": 34,
+          "element": "ChemConstants",
+          "requirement_ids": [
+            "CD-Const1",
+            "CD-Const2",
+            "CD-Const3",
+            "CD-Const4",
+            "CD-Const5",
+            "CD-Const6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Chem modelled as a two-literal enum",
+      "raw": "CD-DM4: Chem is opaque, equality only. The analysis must know which species is the target, but no configuration for it is specified.",
+      "fix_directive": "Chem is enum {TARGET, OTHER}; the target species is fixed rather than configured. A String/record Chem would be extracted as `real` or leak into the Sensors interface, which is why an enum was used.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/domain/Chem.java",
+          "line_start": 8,
+          "line_end": 14,
+          "element": "Chem",
+          "requirement_ids": [
+            "CD-DM4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Meaning of 'a reading indicates the target chemical'",
+      "raw": "CD-Fn1 does not define 'indicates'.",
+      "fix_directive": "analysis returns gasD iff some GasSensor has c == TARGET and i > 0. Confirm or change the criterion.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/sensor/GasAnalysisFunctions.java",
+          "line_start": 25,
+          "line_end": 32,
+          "element": "analysis",
+          "requirement_ids": [
+            "CD-Fn1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor position to direction mapping",
+      "raw": "CD-DM7/CD-Fn3 say position maps to a direction (angle(x)) without giving the map.",
+      "fix_directive": "angle(position): 1 Front, 2 Right, 3 Back, 4 Left, repeating. location returns Front for an empty reading.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/sensor/GasAnalysisFunctions.java",
+          "line_start": 75,
+          "line_end": 86,
+          "element": "angle",
+          "requirement_ids": [
+            "CD-Fn3",
+            "CD-DM7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Threshold guard written as a comparison, not a goreq call",
+      "raw": "CD-Fn4 says goreq is used in the threshold check.",
+      "fix_directive": "Intensity is a Java double (RoboChart real). The guard is `ins >= THR` (goreq is exactly >=) because the extractor keeps a bare method-call predicate as an opaque boolean, which would disconnect the guard from ins and thr. goreq is still used inside intensity/location.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "line_start": 65,
+          "line_end": 65,
+          "element": "insAtOrAboveThr",
+          "requirement_ids": [
+            "CD-Fn4",
+            "CD-DM5",
+            "CD-GA-Beh6",
+            "CD-GA-Beh7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Tick event added so terminal modes stay live",
+      "raw": "Tick is not in the specification. GasAnalysis FINAL and Movement FOUND have no outgoing transitions in the spec.",
+      "fix_directive": "Per java_codegen_rules.txt, each terminal mode gets a tick-triggered self-loop with no action (a transition-less state is a CSP STOP). FINAL still processes no further readings (CD-GA-Beh6), and FOUND stays halted (CD-MV-Beh9). flag and halt run once, on the transitions into FOUND.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/event/InputEvent.java",
+          "line_start": 42,
+          "line_end": 43,
+          "element": "Tick",
+          "requirement_ids": [
+            "CD-GA-Beh6",
+            "CD-MV-Beh9"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "line_start": 97,
+          "line_end": 101,
+          "element": "step",
+          "requirement_ids": [
+            "CD-GA-Beh6"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "line_start": 113,
+          "line_end": 117,
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-FR3",
+            "CD-MV-Beh9"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "MV_Found_to_Final names a transition the description does not describe",
+      "raw": "CD-MV-Beh9 is named Found_to_Final, but its description only says the subsystem stays halted in Found.",
+      "fix_directive": "Implemented as 'stays in FOUND' (tick self-loop). No Movement Final state exists.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "line_start": 113,
+          "line_end": 117,
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-Beh9"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Odometer sampled as a sensor read, not an input event",
+      "raw": "CD-Evt3 lists the odometer under events but says the subsystem 'samples' the distance.",
+      "fix_directive": "d0/d1 are assigned from VehicleSensors.odometer(), which the extractor lifts into the Sensors interface (`d0 = odometer`).",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/sensor/VehicleSensors.java",
+          "line_start": 16,
+          "line_end": 20,
+          "element": "odometer",
+          "requirement_ids": [
+            "CD-Evt3",
+            "CD-MV-Var2",
+            "CD-MV-Var3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "changeDirection and the Waiting during-action",
+      "raw": "CD-OP4 is an operation; CD-MV-FR1 specifies a during action.",
+      "fix_directive": "changeDirection(l) is a one-argument method, so the extractor models it as an output event `changeDirection : Loc`, not a RoboChart operation. Waiting's during randomWalk() is a statement at the top of the WAITING block (it runs on every cycle spent in Waiting); the extractor renders it as an entry action.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/operation/ChangeDirection.java",
+          "line_start": 24,
+          "line_end": 32,
+          "element": "changeDirection",
+          "requirement_ids": [
+            "CD-OP4"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "line_start": 77,
+          "line_end": 77,
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-FR1",
+            "CD-OP2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "System dispatcher settles autonomous modes",
+      "raw": "The requirements do not say how cycles are scheduled.",
+      "fix_directive": "ChemicalDetector.dispatch routes Vehicle events, delivers turn/stop/resume to Movement in order, and steps a subsystem (bounded, 8 steps) while it is in an autonomous mode (ANALYSIS, NO_GAS, GAS_DETECTED, AVOIDING_AGAIN).",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/ChemicalDetector.java",
+          "line_start": 46,
+          "line_end": 59,
+          "element": "dispatch",
+          "requirement_ids": [
+            "CD-ARCH1",
+            "CD-ARCH2"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile \u2192 coverage \u2192 preflight \u2192 T2M \u2192 M2M \u2192 M2T \u2192 verifiers)."
+}

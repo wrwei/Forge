@@ -32,6 +32,12 @@ public class Java2DafnyEglTransformer {
     private static final String EGL_RESOURCE = "transformations/java2dafny.egl";
 
     private Map<EObject, Object> resolvedValues = Map.of();
+    // Controller class to translate ("" = the template's first-match choice).
+    private String targetController = "";
+
+    public void setTargetController(String name) {
+        this.targetController = name == null ? "" : name;
+    }
 
     /** Trace entries collected during the most recent EGL execution. */
     private List<Map<String, String>> traceEntries = List.of();
@@ -66,6 +72,7 @@ public class Java2DafnyEglTransformer {
 
             Map<String, Object> variables = new HashMap<>();
             variables.put("resolvedValues", resolvedValues);
+            variables.put("targetController", targetController);
 
             EglGenerationRunner runner = new EglGenerationRunner();
             String result = runner.run(

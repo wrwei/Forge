@@ -130,20 +130,6 @@ stop point. Loop ended without consulting any behavioural verifier.
   (read-before-write constraint); group id is build metadata with no
   pipeline effect.
 
-## Findings
-
-- **F1 — Preflight rule 4 applies to *constants*, not just model-visible
-  state.** `java_codegen_rules.txt` motivates `@RoboChartType` by nat/int
-  disambiguation and the prompt examples annotate fields/params of
-  sensors, operations and the controller — it is easy to leave
-  `public static final double` threshold constants (and even *private*
-  doubles like a sensor-internal default) unannotated. The preflight
-  linter requires `@RoboChartType("real")` on **every** double field
-  regardless of visibility or finality. Future runs: annotate every
-  `double` field at codegen time, including constants classes and private
-  statics; it is the difference between a 1-iter and 2-iter compile-only
-  trajectory.
-
 ## Reproducibility
 
 - Stage `run-1/iter-2/java/**` into `java.generated.project/src/main/java/lre/`

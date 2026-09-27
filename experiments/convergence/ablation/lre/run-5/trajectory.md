@@ -116,32 +116,6 @@ the run is otherwise clean.
 - FDR4 kill-policy local tuning applied per LAUNCH §C (timeout 3600,
   memory_limit_mb 65536 = page-file size); not to be committed.
 
-## Findings (durable, generalisable)
-
-- **F1 — Never give an extracted helper function the same name as a
-  RoboChart state variable.** The M2M passes both names through verbatim;
-  an action `v = v(arg)` then makes the CSP generator resolve the callee
-  to the in-scope variable and crash *silently* (m2t "produced no files",
-  no classified error). Why it bites: requirement-mandated variable names
-  (`cda`, `tcpa`) tempt you to name the underlying sensor/helper method
-  identically. How to apply: before codegen, sweep planned sensor/helper
-  method names against planned controller/operation field names and
-  rename the *methods* (the variables are usually the spec-mandated
-  side). A secondary diagnostic signature of this collision: the M2M
-  falls back to a generic `( x : real )` parameter for the colliding
-  function instead of the Java-signature-derived parameter, visible in
-  the `.rct`.
-- **F2 — A silent m2t no-op is diagnosable from `robochart_controller.rct`
-  alone.** `post_m2t` carries no classified error when the generator
-  no-ops; reading the `.rct` (the generator's input, produced by the
-  preceding RctPhase) against the CLAUDE.md "Known Gotchas" list found
-  the root cause in one pass, with no verifier feedback needed.
-- **F3 — Runner stdout is a verifier side-channel in restricted-feedback
-  runs.** The per-phase SUMMARY block prints withheld phases' verdicts and
-  error heads. Any future ablation run should redirect
-  `run_experiment_iteration.py` output to an unread log from iter-1 and
-  rely on `check_visible_phases.py` exclusively.
-
 ## Reproducibility
 
 Stage `run-5/iter-N/java/` into

@@ -1,0 +1,75 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 23 SRanger requirements implemented across 8 Java files; ./gradlew build clean. Four judgement calls flagged for review.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Move(lv, av) emitted as a 2-arg actuator call, not an event constructor",
+      "raw": "SR-DM4 specifies a single output event Move(lv : real, av : real). RoboChart events carry at most one payload value, and extractOutputEventInfo keeps only the first constructor argument, so actuator.apply(new OutputEvent.Move(lv, av)) would silently drop av. The controller calls actuator.move(lv, av), which the M2M turns into an LOperations operation call carrying both values. OutputEvent.Move is still declared and is the Actuator's stored last-command type.",
+      "fix_directive": "If the extracted model must show Move as a RoboChart event rather than an operation, the transformation chain (not the Java) has to gain two-payload event support.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/actuator/Actuator.java",
+          "element": "move",
+          "requirement_ids": [
+            "SR-DM4",
+            "SR-DM6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Turning: the autonomous timeout out-prioritises endTask",
+      "raw": "SR-Beh5 (autonomous Turning to Moving) and SR-Beh6 (Turning to Final on endTask) give no relative priority. An event-triggered branch placed before a triggerless one is enabled simultaneously in the extracted model (preflight rule8_event_branch_precedes_triggerless), so the triggerless branch is first and the two event branches carry '&& !turnDurationElapsed'. An endTask arriving in the same step in which the turn duration has elapsed is served one step later, from Moving. The three Turning guards form a total cover, which keeps the mode deadlock-free without a bare self-loop.",
+      "fix_directive": "If endTask must pre-empt the timeout, reorder the Turning branches and accept the nondeterminism warning.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "obstacle event vs. obstacleDetected guard on Moving to Turning",
+      "raw": "SR-Beh2 says the transition fires when the obstacle event is received (no guard); SR-GP1 says obstacleDetected is used as the guard on that same transition. Implemented as trigger AND guard, satisfying both readings. The guard is redundant if the framework only raises obstacle when distance <= obstacleThreshold.",
+      "fix_directive": "Confirm whether the guard is intended as belt-and-braces or whether SR-Beh2 is the authoritative form.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading distance and clock unit",
+      "raw": "SR-DM5 requires a large default value without naming one; IrSensor.NO_READING_DISTANCE = 1000.0 m was chosen. SR-Var1 states clockResetTime is in seconds but no clock API is specified; Clock exposes nowSeconds() so TURN_DURATION = 2.0 is compared in the same unit. CSP-gen ceils fractional constants, so obstacleThreshold = 0.5 reaches the CSP model as 1 (vacuity signal K1, advisory instrument limitation).",
+      "fix_directive": "Replace 1000.0 with the IR sensor's documented out-of-range reading if one exists.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/sensor/IrSensor.java",
+          "element": "distance",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1",
+            "SR-DM2",
+            "SR-Var1"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers) and feed failures back via /fix-from-feedback."
+}

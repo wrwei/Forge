@@ -1,0 +1,143 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "81/81 chemical_detector requirements implemented in 17 Java files; 9 design choices / invented defaults recorded for human review.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Chem modelled as a two-literal enumeration",
+      "raw": "CD-DM4 calls `Chem` an *opaque* type needing only equality. Java needs a\nconcrete type and `analysis` needs a concrete classification rule, so `Chem`\nis `enum Chem { Target, Other }` and `analysis` returns `gasD` iff some sensor\nin the reading carries `Chem.Target`. Nothing in the requirements names the\ntarget species.\ntype literal, add a `Chem` constant to `ChemicalDetectorConstants` and compare\nagainst it in `GasAnalysisFunctions.analysis`.",
+      "fix_directive": "If the target chemical should be configuration rather than a",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-DM4",
+            "CD-Fn1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Intensity modelled as `double`",
+      "raw": "`Intensity` is specified only as totally ordered. A dedicated record would be\nretyped to RoboChart `real` by the extractor anyway (and would be mistaken for\nthe sensor record by the M2M's dependency-chain heuristic), so intensities are\nplain `double` and `goreq` is `i1 >= i2`. `thr` is a `double` constant.",
+      "fix_directive": "Review the choice recorded above; no code change is required unless the intent differs.",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-DM5",
+            "CD-Const1",
+            "CD-Fn2",
+            "CD-Fn4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "sensor position to Angle mapping",
+      "raw": "CD-DM7 says the 1-based position in a reading \"maps to a sensing direction\"\nbut never gives the map. `GasAnalysisFunctions.angle` uses\n1\u2192Left, 2\u2192Right, 3\u2192Back, otherwise Front.",
+      "fix_directive": "Review the choice recorded above; no code change is required unless the intent differs.",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-Fn3",
+            "CD-DM7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "gas-analysis terminal mode is `Stopped`, not a Final state",
+      "raw": "CD-GA-Beh6 ends the gas-analysis subsystem in a final state. A RoboChart\n`Final` state in the theory-generated machine leaves the deadlock-freedom\nobligation unprovable (CLAUDE.md, \"Interpreting Isabelle Results\"), so the\nsubsystem instead enters a live `Stopped` mode whose only transition is a\n`gas`-triggered self-loop: it still emits `stop` once, and it processes no\nfurther readings (it stores the reading and re-enters `Stopped`). This gives\n`Stopped` a bare-precondition operation without an autonomous self-loop.",
+      "fix_directive": "Review the choice recorded above; no code change is required unless the intent differs.",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-GA-Beh6",
+            "CD-GA-FR4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "complementary guards instead of enum-literal guards",
+      "raw": "`Analysis`, `GasDetected` and `AvoidingAgain` are left by pairs of autonomous\ntransitions written as `p` / `!p` (`statusNoGas`, `insAtOrAboveThr`,\n`makingProgress`). This is a total guard cover, so those modes are\ndeadlock-free with no self-loop and the residual Isabelle goal is `p or not p`.\nWriting the second guard as `sts == gasD` instead would need enum exhaustion\ninside the proof. Semantically identical because `Status` has exactly two\nvalues (CD-DM1).",
+      "fix_directive": "Review the choice recorded above; no code change is required unless the intent differs.",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-GA-Beh4",
+            "CD-GA-Beh5",
+            "CD-GA-Beh7",
+            "CD-MV-Beh17",
+            "CD-MV-Beh18"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "constant values",
+      "raw": "No values are given. Integral values were chosen (`THR=5.0`, `LV=1.0`,\n`EVADE_TIME=2`, `STUCK_PERIOD=10`, `STUCK_DIST=1.0`, `OUT_PERIOD=3`) because\nthe RoboChart CSP generator ceils fractional constants.",
+      "fix_directive": "Review the choice recorded above; no code change is required unless the intent differs.",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-Const1",
+            "CD-Const2",
+            "CD-Const3",
+            "CD-Const4",
+            "CD-Const5",
+            "CD-Const6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "odometer is a sensor read, not an event",
+      "raw": "CD-Evt3 says the movement subsystem *samples* the distance into d0/d1. It is\ntherefore `Vehicle.odometer()`, a zero-argument sensor method read from\ntransition actions (it surfaces in the RoboChart `Sensors` interface), rather\nthan a fourth `MovementEvent`.",
+      "fix_directive": "Review the choice recorded above; no code change is required unless the intent differs.",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-Evt3",
+            "CD-MV-Var2",
+            "CD-MV-Var3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "clock name",
+      "raw": "The README calls the movement clock `T`; the requirement text names no\nidentifier. The Java field is `evadeStart` (assigned from `Clock.nowMs()`), so\nthe extracted RoboChart clock is `evadeStart` and the stuck guard becomes\n`since(evadeStart) < stuckPeriod`.",
+      "fix_directive": "Review the choice recorded above; no code change is required unless the intent differs.",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-MV-Clock1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "`Resume` is not accepted in `Found`",
+      "raw": "CD-MV-FR3 says the movement subsystem \"remains stopped\" once in `Found`, and\nno CD-MV-Beh requirement gives `Found` a resume transition, so `Found` accepts\nonly `stop` (a self-loop, which is what CD-MV-Beh9 is mapped to). This is safe\nbecause the gas-analysis subsystem emits nothing after `stop`.",
+      "fix_directive": "Review the choice recorded above; no code change is required unless the intent differs.",
+      "java_trace": [
+        {
+          "requirement_ids": [
+            "CD-MV-FR3",
+            "CD-MV-Beh9"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the dashboard pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

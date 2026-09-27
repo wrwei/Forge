@@ -1,0 +1,49 @@
+{
+  "phase": "vacuity",
+  "label": "6d — Vacuity Audit (Dafny + Isabelle)",
+  "status": "passed",
+  "summary": "No blocking vacuity signals detected (syntactic D1/I1 and semantic satisfiability/reachability/constant-consistency checks). Any `0 errors` from Dafny / Isabelle / FDR is at least potentially load-bearing for the checked signals. 4 ADVISORY finding(s) recorded and NOT blocking: P1/dead_state_no_offer, P1/dead_state_offered_pair_checked, R2/mode_unreachable_checked, T2/transition_unfireable_checked. These follow from the deliberate narrowing of the CSP data domains that FDR4's finiteness requirement imposes, not from the Java under test; they bound what the passing FDR4 assertions are evidence about and must be reported with any verdict drawn from them.",
+  "new_count": 1,
+  "recurring_count": 3,
+  "resolved_count": 2,
+  "resolved_issue_titles": [
+    "[ADVISORY] 15 transition(s) can never fire under the checked CSP instantiation",
+    "[BLOCKING] Constant `minrelspeedsq` diverges between the Java source and generated artefact(s)"
+  ],
+  "issues": [
+    {
+      "kind": "mode_unreachable_checked",
+      "title": "[ADVISORY] Mode(s) unreachable under the CHECKED CSP instantiation: CAM, HCM, MOM",
+      "raw": "checked-reachable = {OCM, initial} (narrowed ranges + constant stubs from instantiations.csp)",
+      "fix_directive": "ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.",
+      "java_trace": [],
+      "seen_in_runs": 2
+    },
+    {
+      "kind": "transition_unfireable_checked",
+      "title": "[ADVISORY] 15 transition(s) can never fire under the checked CSP instantiation",
+      "raw": "OCMToMOM: `odist(cdyn)>1.0` evaluates to 0 > 1 = False; MOMToOCM: source mode MOM is unreachable; MOMToCAM: source mode MOM is unreachable; MOMToHCM: source mode MOM is unreachable; MOMToHCM_1: source mode MOM is unreachable; MOMToHCM_2: source mode MOM is unreachable; MOMToOCM_1: source mode MOM is unreachable; MOMToOCM_2: source mode MOM is unreachable; MOMToHCM_3: source mode MOM is unreachable; HCMToOCM: source mode HCM is unreachable; HCMToCAM: source mode HCM is unreachable; HCMToMOM: source mode HCM is unreachable; HCMToOCM_1: source mode HCM is unreachable; CAMToOCM: source mode CAM is unreachable; CAMToOCM_1: source mode CAM is unreachable",
+      "fix_directive": "ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.",
+      "java_trace": [],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "dead_state_offered_pair_checked",
+      "title": "[ADVISORY] 1 (state, offered) pair(s) dead only under the checked CSP instantiation",
+      "raw": "(OCM, {reqMOM})",
+      "fix_directive": "ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.",
+      "java_trace": [],
+      "seen_in_runs": 2
+    },
+    {
+      "kind": "dead_state_no_offer",
+      "title": "[ADVISORY] 1 reachable state(s) from which no operation can fire when the environment offers nothing",
+      "raw": "(OCM, {})",
+      "fix_directive": "ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.",
+      "java_trace": [],
+      "seen_in_runs": 2
+    }
+  ],
+  "files_to_review": [],
+  "next_step": "Nothing to do. Re-run after each iteration to catch regressions."
+}

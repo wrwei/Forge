@@ -135,69 +135,6 @@ one SeqGs definition. **All 12 phases pass; vacuity 0 findings. Converged.**
 6. Iter-1's pipeline was executed twice (tool-path config failures on the
    first attempt); the snapshot records the second, genuine-verdict run.
 
-## Findings (durable, generalisable)
-
-**F1 — Never call a multi-arg sensor/helper function inside a named guard
-predicate.** The M2M cannot inline a multi-arg call in a guard: it lifts the
-predicate into the Sensors interface as a *nat*-typed variable (FDR4
-`Bool`/`Int` type error) and the Dafny generator emits a wrong-arity function
-signature for the callee (it keeps only the first parameter). Diagnostic
-signature: FDR "Couldn't match expected type Bool with actual type Int —
-<predName> :: Int" + Dafny "wrong number of arguments". Apply: express the
-guard as a direct comparison/boolean expression over state vars, constants and
-*zero-arg* sensor calls; keep the helper method on the sensor class for
-requirement traceability if needed.
-
-**F2 — At most ONE payload-capturing transition per typed event per machine.**
-The Isabelle theory template emits `definition Seq<Var> ... = UNIV` once per
-transition whose trigger captures a Seq-typed payload, with no deduplication —
-two captures of `gas ? gs` produce a duplicate-constant theory load error.
-Apply: capture the payload on exactly one transition (the spec's
-reading-consumption transition); any additional event-triggered branches a mode
-needs must use a payload-less event.
-
-**F3 — Never leave a typed-event trigger uncaptured.** A self-loop on a typed
-event without capturing the payload binds the trigger to the machine's default
-`var v : real` (`trigger gas ? v`), a latent CSP type error against non-real
-payloads. Apply: either capture into the matching state var (subject to F2) or
-trigger on a payload-less event.
-
-**F4 — Total guard cover does NOT satisfy the Isabelle `deadlock_free`
-closer.** CLAUDE.md recommends total guard cover for autonomous-only modes (it
-does give FDR-side deadlock/divergence freedom — fdr4 passed 9/9 with it), but
-`by (metis St.exhaust_disc)` cannot use Status-enum exhaustiveness or
-arithmetic (`g ∨ ¬g`) to discharge the residual `st = X ∧ <guard>` disjuncts —
-the symptom is a tactic *timeout*, not a fast failure. Every mode of the
-theory-generated controller needs a literally-bare operation: an
-event-triggered branch with no extra guard, or an unconditional autonomous
-transition. A payload-less Tick self-loop is the least-invasive form.
-
-**F5 — In a mode mixing autonomous guarded exits with an added event-triggered
-branch, put the event branch AFTER the guards.** The Dafny generator emits
-*unconditional* `ensures <guard> ==> mode' = <target>` for autonomous
-transitions and replicates the Java branch order in the method body: an event
-branch ahead of the guards is a reachable return path that violates the
-ensures; placed after exhaustive guards it is dead in Dafny (postconditions
-prove) yet still a real transition in RoboChart/Isabelle (branch order is
-immaterial there — transitions are concurrent choices). This composes with F4:
-"guards first, Tick self-loop last" satisfies Dafny, FDR and Isabelle
-simultaneously.
-
-**F6 — Tool-bridge failures are distinguishable from verdicts by speed and
-message shape.** Dafny exe missing and WSL-Isabelle path wrong both fail in
-seconds with a path string in the raw output (`No such file or directory`,
-exit 127/`not found`), vs. 600+ s for a genuine proof timeout. Fix
-`pipeline.yaml` (`dafny_path.win32`, `wsl_isabelle_bin` — beware per-machine
-*usernames* in both) and re-run the same iter without snapshotting the broken
-run.
-
-**F7 — The Isabelle theory is generated for the diagram-named (first)
-controller, but design both controllers to its constraints anyway.** Here the
-theory covered GasAnalysisController only (12 lemmas; Dafny likewise emitted
-only GasAnalysisController.dfy), yet discovery order is not knowable at
-codegen time — giving every controller bare-precondition coverage and no
-`Final` state costs little and removes the gamble.
-
 ## Cost
 
 - **Run-level Claude token total** (source: summed `usage` blocks from the
@@ -235,11 +172,3 @@ codegen time — giving every controller bare-precondition coverage and no
    phases green and vacuity 0 findings. Per-iter feedback pairs are preserved
    under `run-3/iter-N/feedback/`; formal artefacts under
    `run-3/iter-N/formal-artefacts/`.
-
-## Knowledgebase append
-
-This run executed in a scrubbed worktree where
-`experiments/convergence/CONVERGENCE_FINDINGS_KNOWLEDGEBASE.md` does not exist.
-Per RUN_TRAJECTORY §6.3 the findings above (F1–F7) are recorded here only; the
-KB append happens during copy-back to the main checkout (append-only, without
-reading the KB).

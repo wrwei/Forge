@@ -1,0 +1,53 @@
+# 2c — Preflight (Structural Lint) — PASSED
+
+## Summary
+2c — Preflight (Structural Lint): no structural errors.
+
+## Run history
+- New this run: 2
+- Recurring from previous run: 0
+- Resolved since previous run: 3
+
+**Resolved issue titles**
+- MovementController.step(): triggerless branch guarded by 'evasionWithinStuckPeriod || advancedBeyondStuckDist' follows event-triggered branch(es): event instanceof chemical_detector.event.InputEvent.stop, event instanceof chemical_detector.event.InputEvent.resume — in the extracted model both are enabled together
+- MovementController.step(): triggerless branch guarded by '(!evasionWithinStuckPeriod) && (!advancedBeyondStuckDist)' follows event-triggered branch(es): event instanceof chemical_detector.event.InputEvent.stop, event instanceof chemical_detector.event.InputEvent.resume — in the extracted model both are enabled together
+- MovementController.step(): branch guarded by '(!evasionWithinStuckPeriod) && (!advancedBeyondStuckDist)' does not negate preceding triggerless guard(s): evasionWithinStuckPeriod||advancedBeyondStuckDist
+
+## Issues
+### Issue 1: lint_rule8_event_branch_precedes_triggerless — MovementController.step(): triggerless branch guarded by 'makingProgress' follows event-triggered branch(es): event instanceof chemical_detector.event.InputEvent.stop, event instanceof chemical_detector.event.InputEvent.resume — in the extracted model both are enabled together
+
+**Raw**
+```
+Rule: rule8_event_branch_precedes_triggerless
+Severity: warning
+Message: MovementController.step(): triggerless branch guarded by 'makingProgress' follows event-triggered branch(es): event instanceof chemical_detector.event.InputEvent.stop, event instanceof chemical_detector.event.InputEvent.resume — in the extracted model both are enabled together
+Location: /Users/ranwei/Gitee/forge-mce-run3-chemical_detector/java.generated.project/src/main/java/chemical_detector/controller/MovementController.java:142
+```
+
+**Java trace**
+  - Java: `MovementController.java`:142-152
+
+**Fix directive**
+An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. RoboChart has no event-absence guard.
+
+### Issue 2: lint_rule8_event_branch_precedes_triggerless — MovementController.step(): triggerless branch guarded by '!makingProgress' follows event-triggered branch(es): event instanceof chemical_detector.event.InputEvent.stop, event instanceof chemical_detector.event.InputEvent.resume — in the extracted model both are enabled together
+
+**Raw**
+```
+Rule: rule8_event_branch_precedes_triggerless
+Severity: warning
+Message: MovementController.step(): triggerless branch guarded by '!makingProgress' follows event-triggered branch(es): event instanceof chemical_detector.event.InputEvent.stop, event instanceof chemical_detector.event.InputEvent.resume — in the extracted model both are enabled together
+Location: /Users/ranwei/Gitee/forge-mce-run3-chemical_detector/java.generated.project/src/main/java/chemical_detector/controller/MovementController.java:148
+```
+
+**Java trace**
+  - Java: `MovementController.java`:148-152
+
+**Fix directive**
+An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. RoboChart has no event-absence guard.
+
+## Files to review
+(none identified)
+
+## Next step
+Proceed to Phase 3 (T2M — Spoon Discovery).

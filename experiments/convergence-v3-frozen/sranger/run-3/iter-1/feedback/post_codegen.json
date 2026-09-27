@@ -1,0 +1,98 @@
+{
+  "phase": "codegen",
+  "label": "Interactive Code Generation (Phase 2)",
+  "status": "uncertain",
+  "summary": "All 23 SRanger requirements implemented across 9 Java files; 4 items need human review (terminal-mode encoding, output-event arity, endTask priority, sensor default).",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "FINAL has no outgoing transition (no tick self-loop added)",
+      "raw": "SR-DM1/SR-FR3 specify Final as terminal; SR-Beh1..SR-Beh7 enumerate exactly seven transitions and SR-DC1 forbids duplicates. No Final -> Final transition is specified, so none was written. java_codegen_rules.txt 'EVERY MODE MUST HAVE AN OUTGOING TRANSITION' asks for a tick-triggered self-loop on sink modes; that measurement predates the frozen instrument's fix, which emits `until (st = FINAL)` for source-of-no-transition states and thereby exempts them from the deadlock_free obligation. vacuity.py also classifies `dead_state_no_offer` as ADVISORY for 'a specified terminal mode'.",
+      "fix_directive": "If Isabelle 6c reports an unprovable or hanging <Stm>_deadlock_free, or FDR4 reports a deadlock whose witness trace ends in FINAL, add a tick-triggered self-loop to the FINAL block of SRangerController.step(): `if (event instanceof InputEvent.Tick) { this.currentMode = SRangerMode.FINAL; }`. Never a bare `else { ... }` fallback — that becomes a tau-self-loop and diverges.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 71,
+          "line_end": 74,
+          "element": "step",
+          "requirement_ids": ["SR-DM1", "SR-FR3", "SR-Beh3", "SR-Beh6", "SR-DC1"]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "endTask given highest priority in Turning, ahead of the autonomous turn-complete transition",
+      "raw": "The requirements do not order SR-Beh5 (autonomous Turning -> Moving on turnDurationElapsed) against SR-Beh6 (Turning -> Final on endTask). endTask is an operator-level shutdown, so it is placed first, per CLAUDE.md's rule that operator overrides are duplicated as the first inner branch of each mode block. Consequence: preflight rule8_event_branch_precedes_triggerless will fire as a WARNING on the turnDurationElapsed branch, because a triggerless branch follows an event-triggered one. This is the same shape as the documented LRE CAM block. The alternative ordering (triggerless first) silences the warning but drops an endTask that arrives in the same cycle the turn completes, leaving the robot running after a commanded shutdown.",
+      "fix_directive": "Treat rule8 on SRangerController.step() Turning block as accepted, not as a defect to fix. If the model must be made overlap-free, the correct edit is to move `turnDurationElapsed` to the first inner branch and conjoin `&& !turnDurationElapsed` onto both event branches — but confirm first that losing endTask on the turn-completion cycle is acceptable.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 60,
+          "line_end": 70,
+          "element": "step",
+          "requirement_ids": ["SR-Beh5", "SR-Beh6", "SR-Beh7"]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "Move carries two reals but the extractor keeps only the first",
+      "raw": "SR-DM4 requires a single output event Move(lv, av) with two real values and forbids introducing any other output event. java2robochart.etl's extractOutputEventInfo records only ctorArgs.at(0), so the extracted RoboChart event `move` is typed real and carries the linear velocity only; the angular velocity is dropped from the formal model. The Java is faithful to SR-DM4; the loss is in the M2M, which this experiment may not modify.",
+      "fix_directive": "No Java change. If the angular component must appear in the formal model, that is an instrument change (extractOutputEventInfo) and must be reported to the operator, not worked around by splitting Move into two events — SR-DM4 forbids additional output events.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/event/OutputEvent.java",
+          "line_start": 11,
+          "line_end": 12,
+          "element": "Move",
+          "requirement_ids": ["SR-DM4"]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading default fixed at 1000.0 m",
+      "raw": "SR-DM5 requires distance() to return 'a large default value' when no reading is available but names no magnitude. 1000.0 m was chosen: three orders of magnitude above obstacleThreshold (0.5 m), so the obstacle-detection condition cannot be satisfied by missing data.",
+      "fix_directive": "Adjust Sensor.NO_READING if the domain specifies a sensor range ceiling. Any value strictly greater than SRangerConstants.OBSTACLE_THRESHOLD preserves the required behaviour.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_start": 16,
+          "line_end": 17,
+          "element": "NO_READING",
+          "requirement_ids": ["SR-DM5", "SR-SF1"]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "SR-FR1 entry action vs SR-Beh4 'no action' on the Moving tick self-loop",
+      "raw": "SR-FR1 says Move(moveVel, 0) is issued 'on entering Moving'. SR-Beh4 says the Moving -> Moving tick transition performs no action. Read literally the two conflict for a self-transition, which in RoboChart re-enters the state. SR-Beh4 was taken as the more specific statement: the tick self-loop assigns the mode and issues nothing. Move(moveVel, 0) is issued on the constructor (power-up entry, SR-Beh1) and on the Turning -> Moving transition (SR-Beh5).",
+      "fix_directive": "No change unless the reviewer intends the tick self-loop to re-issue the forward command; if so, add `actuator.apply(new OutputEvent.Move(SRangerConstants.MOVE_VEL, 0.0));` to the Moving tick branch and note the deviation from SR-Beh4.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 56,
+          "line_end": 58,
+          "element": "step",
+          "requirement_ids": ["SR-FR1", "SR-Beh1", "SR-Beh4", "SR-Beh5"]
+        }
+      ]
+    }
+  ],
+  "files_to_review": [
+    {
+      "file": "SRangerController.java",
+      "requirement_ids": ["SR-ARCH1", "SR-ARCH2", "SR-Var1", "SR-GP1", "SR-GP2", "SR-Beh1", "SR-Beh2", "SR-Beh3", "SR-Beh4", "SR-Beh5", "SR-Beh6", "SR-Beh7", "SR-DC1"]
+    },
+    {
+      "file": "OutputEvent.java",
+      "requirement_ids": ["SR-DM4"]
+    },
+    {
+      "file": "Sensor.java",
+      "requirement_ids": ["SR-DM5", "SR-SF1"]
+    }
+  ],
+  "next_step": "Run the pipeline from Phase 2a (compile) through 6d. Expect preflight rule8 as an accepted warning on the Turning block, and the M2M deadlock-lint to name FINAL. Escalate only a genuine Isabelle/FDR4 failure."
+}

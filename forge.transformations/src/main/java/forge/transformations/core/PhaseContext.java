@@ -35,6 +35,14 @@ public final class PhaseContext {
         return v.toString();
     }
 
+    /** Optional string arg: returns {@code fallback} when unset or blank. */
+    public String argString(String name, String fallback) {
+        Object v = args.get(name);
+        if (v == null) return fallback;
+        String s = v.toString();
+        return s.isBlank() ? fallback : s;
+    }
+
     public <T> T require(String key, Class<T> type) {
         Object v = bag.get(key);
         if (v == null) throw new IllegalStateException("PhaseContext missing: " + key);

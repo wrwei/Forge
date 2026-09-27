@@ -1,0 +1,103 @@
+{
+  "status": "uncertain",
+  "summary": "All 51 LRE requirements implemented across 15 Java files; build clean. Six judgement calls flagged for human review.",
+  "issues": [
+    {
+      "kind": "ambiguous_requirement",
+      "title": "HCM entry velocity: 0 m/s (LRE-FR3) vs 0.1 m/s (system description)",
+      "raw": "LRE-FR3 says 'On entering HCM, the LRE advises a velocity of 0 m/s'. system_description.txt says HCM is 'Reduced speed (0.1 m/s)'.",
+      "fix_directive": "Implemented LRE-FR3 (0.0 m/s) because the structured requirement is the canonical input. If 0.1 m/s is intended, amend LRE-FR3.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "step",
+          "requirement_ids": [
+            "LRE-FR3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "CAM has no specified entry output",
+      "raw": "LRE-FR4 says CAM 'performs evasive manoeuvres' but names no advised velocity or heading; LRE-DM7 restricts outputs to advVel/advHdng.",
+      "fix_directive": "No output is emitted on entering CAM. If an evasive advisory is required, LRE-FR4 must state its value.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "step",
+          "requirement_ids": [
+            "LRE-FR4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Safe large distance for absent obstacles",
+      "raw": "LRE-DM5 requires odist/hdist/vdist to 'return a safe large distance' when no obstacle exists, without giving a value.",
+      "fix_directive": "Sensor.SAFE_LARGE_DIST = 1000.0 m. Any value well above the 1 m thresholds preserves the intended guard polarity.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/sensor/Sensor.java",
+          "element": "odist",
+          "requirement_ids": [
+            "LRE-DM5",
+            "LRE-SF1",
+            "LRE-SF2",
+            "LRE-SF3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Relative-speed floor in CalcCPA",
+      "raw": "LRE-OP5 does not define cda/tcpa when the relative speed is zero, which is the 'no dynamic obstacle and stationary AUV' case its own Sensor defaults produce.",
+      "fix_directive": "MIN_REL_SPEED_SQ = 1.0E-9 is added to the squared relative speed so tcpa stays finite instead of NaN.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/operation/CalcCPA.java",
+          "element": "compute",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-Var7",
+            "LRE-Var8"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "cstc/cdyn annotated nat but carry -1",
+      "raw": "LRE-Var5/LRE-Var6 call cstc and cdyn natural numbers and also give -1 as the 'no obstacle' value; the ETL maps Java int to RoboChart nat unconditionally.",
+      "fix_directive": "Followed the requirement literally; the controller never tests for -1, the Sensor absorbs the absent-obstacle case via safe defaults, so no guard depends on the unrepresentable value.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "cstc",
+          "requirement_ids": [
+            "LRE-Var5",
+            "LRE-Var6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Literal 1 vs named threshold in LRE-Beh4",
+      "raw": "LRE-Beh4 says odist to cdyn and cstc must be 'greater than 1' without naming a threshold, while neighbouring requirements name thresholds explicitly.",
+      "fix_directive": "Used the literal 1.0 where the requirement gives a bare number and LreConstants only where a threshold is named. If LRE-Beh4 means minSafeDist, say so.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "step",
+          "requirement_ids": [
+            "LRE-Beh4"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline: compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers."
+}

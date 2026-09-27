@@ -1,0 +1,157 @@
+{
+  "phase": "preflight",
+  "label": "2c — Preflight (Structural Lint)",
+  "status": "passed",
+  "summary": "2c — Preflight (Structural Lint): no structural errors.",
+  "new_count": 7,
+  "recurring_count": 0,
+  "resolved_count": 16,
+  "resolved_issue_titles": [
+    "LreController.step(): triggerless branch guarded by 'inOpez' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM, event instanceof lre.event.InputEvent.endTask, event instanceof lre.event.InputEvent.reqHCM — in the extracted model both are enabled together",
+    "LreController.step(): triggerless branch guarded by 'cdaBelowMinSafeDist && tcpaNonNegative' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM, event instanceof lre.event.InputEvent.endTask, event instanceof lre.event.InputEvent.reqHCM — in the extracted model both are enabled together",
+    "LreController.step(): branch guarded by 'cdaBelowMinSafeDist && tcpaNonNegative' does not negate preceding triggerless guard(s): inOpez",
+    "LreController.step(): triggerless branch guarded by 'hvelAtLeastOne && hdistCstcAtMostHorizLimit' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM, event instanceof lre.event.InputEvent.endTask, event instanceof lre.event.InputEvent.reqHCM — in the extracted model both are enabled together",
+    "LreController.step(): branch guarded by 'hvelAtLeastOne && hdistCstcAtMostHorizLimit' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafeDist&&tcpaNonNegative",
+    "LreController.step(): triggerless branch guarded by 'vdistCstcAtMostDfltVertLimit' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM, event instanceof lre.event.InputEvent.endTask, event instanceof lre.event.InputEvent.reqHCM — in the extracted model both are enabled together",
+    "LreController.step(): branch guarded by 'vdistCstcAtMostDfltVertLimit' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafeDist&&tcpaNonNegative, hvelAtLeastOne&&hdistCstcAtMostHorizLimit",
+    "LreController.step(): triggerless branch guarded by 'vvelAtLeastOne && vdistCstcAtMostVertLimit' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM, event instanceof lre.event.InputEvent.endTask, event instanceof lre.event.InputEvent.reqHCM — in the extracted model both are enabled together",
+    "LreController.step(): branch guarded by 'vvelAtLeastOne && vdistCstcAtMostVertLimit' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafeDist&&tcpaNonNegative, hvelAtLeastOne&&hdistCstcAtMostHorizLimit, vdistCstcAtMostDfltVertLimit",
+    "LreController.step(): triggerless branch guarded by 'inOpez' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM — in the extracted model both are enabled together",
+    "LreController.step(): triggerless branch guarded by 'cdaBelowMinSafeDist && tcpaNonNegative' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM — in the extracted model both are enabled together",
+    "LreController.step(): triggerless branch guarded by '(!hdistCstcAtMostHorizLimit) && (!vdistCstcAtMostVertLimit)' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM — in the extracted model both are enabled together",
+    "LreController.step(): branch guarded by '(!hdistCstcAtMostHorizLimit) && (!vdistCstcAtMostVertLimit)' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafeDist&&tcpaNonNegative",
+    "LreController.step(): triggerless branch guarded by '!cdaBelowMinSafeDist' follows event-triggered branch(es): event instanceof lre.event.InputEvent.reqOCM — in the extracted model both are enabled together",
+    "field 'Sensor.SAFE_LARGE_DIST' is a double without @RoboChartType(\"real\")",
+    "field 'Sensor.MIN_REL_SPEED_SQ' is a double without @RoboChartType(\"real\")"
+  ],
+  "issues": [
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by '(((!inOpez) && (!collisionImminent)) && (!nearStaticHoriz)) && vdistCstcAtMostDfltVertLimit' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by '(((!inOpez) && (!collisionImminent)) && (!nearStaticHoriz)) && vdistCstcAtMostDfltVertLimit' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz\nLocation: /Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java:127",
+      "fix_directive": "Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 127,
+          "line_end": 146,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by '((((!inOpez) && (!collisionImminent)) && (!nearStaticHoriz)) && (!vdistCstcAtMostDfltVertLimit)) && nearStaticVert' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz, ((!collisionImminent)&&!nearStaticHoriz)&&vdistCstcAtMostDfltVertLimit",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by '((((!inOpez) && (!collisionImminent)) && (!nearStaticHoriz)) && (!vdistCstcAtMostDfltVertLimit)) && nearStaticVert' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz, ((!collisionImminent)&&!nearStaticHoriz)&&vdistCstcAtMostDfltVertLimit\nLocation: /Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java:131",
+      "fix_directive": "Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 131,
+          "line_end": 146,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by '(((((event instanceof lre.event.InputEvent.reqOCM) && (!inOpez)) && (!collisionImminent)) && (!nearStaticHoriz)) && (!vdistCstcAtMostDfltVertLimit)) && (!nearStaticVert)' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz, ((!collisionImminent)&&!nearStaticHoriz)&&vdistCstcAtMostDfltVertLimit, (((!collisionImminent)&&!nearStaticHoriz)&&!vdistCstcAtMostDfltVertLimit)&&nearStaticVert",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by '(((((event instanceof lre.event.InputEvent.reqOCM) && (!inOpez)) && (!collisionImminent)) && (!nearStaticHoriz)) && (!vdistCstcAtMostDfltVertLimit)) && (!nearStaticVert)' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz, ((!collisionImminent)&&!nearStaticHoriz)&&vdistCstcAtMostDfltVertLimit, (((!collisionImminent)&&!nearStaticHoriz)&&!vdistCstcAtMostDfltVertLimit)&&nearStaticVert\nLocation: /Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java:135",
+      "fix_directive": "Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 135,
+          "line_end": 146,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by '(((((event instanceof lre.event.InputEvent.endTask) && (!inOpez)) && (!collisionImminent)) && (!nearStaticHoriz)) && (!vdistCstcAtMostDfltVertLimit)) && (!nearStaticVert)' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz, ((!collisionImminent)&&!nearStaticHoriz)&&vdistCstcAtMostDfltVertLimit, (((!collisionImminent)&&!nearStaticHoriz)&&!vdistCstcAtMostDfltVertLimit)&&nearStaticVert",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by '(((((event instanceof lre.event.InputEvent.endTask) && (!inOpez)) && (!collisionImminent)) && (!nearStaticHoriz)) && (!vdistCstcAtMostDfltVertLimit)) && (!nearStaticVert)' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz, ((!collisionImminent)&&!nearStaticHoriz)&&vdistCstcAtMostDfltVertLimit, (((!collisionImminent)&&!nearStaticHoriz)&&!vdistCstcAtMostDfltVertLimit)&&nearStaticVert\nLocation: /Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java:138",
+      "fix_directive": "Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 138,
+          "line_end": 146,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by '(((((event instanceof lre.event.InputEvent.reqHCM) && (!inOpez)) && (!collisionImminent)) && (!nearStaticHoriz)) && (!vdistCstcAtMostDfltVertLimit)) && (!nearStaticVert)' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz, ((!collisionImminent)&&!nearStaticHoriz)&&vdistCstcAtMostDfltVertLimit, (((!collisionImminent)&&!nearStaticHoriz)&&!vdistCstcAtMostDfltVertLimit)&&nearStaticVert",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by '(((((event instanceof lre.event.InputEvent.reqHCM) && (!inOpez)) && (!collisionImminent)) && (!nearStaticHoriz)) && (!vdistCstcAtMostDfltVertLimit)) && (!nearStaticVert)' does not negate preceding triggerless guard(s): (!collisionImminent)&&nearStaticHoriz, ((!collisionImminent)&&!nearStaticHoriz)&&vdistCstcAtMostDfltVertLimit, (((!collisionImminent)&&!nearStaticHoriz)&&!vdistCstcAtMostDfltVertLimit)&&nearStaticVert\nLocation: /Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java:142",
+      "fix_directive": "Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 142,
+          "line_end": 146,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by '(((event instanceof lre.event.InputEvent.reqOCM) && (!inOpez)) && (!collisionImminent)) && (!clearOfStatic)' does not negate preceding triggerless guard(s): (!collisionImminent)&&clearOfStatic",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by '(((event instanceof lre.event.InputEvent.reqOCM) && (!inOpez)) && (!collisionImminent)) && (!clearOfStatic)' does not negate preceding triggerless guard(s): (!collisionImminent)&&clearOfStatic\nLocation: /Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java:156",
+      "fix_directive": "Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 156,
+          "line_end": 159,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by '(event instanceof lre.event.InputEvent.reqOCM) && cdaBelowMinSafeDist' does not negate preceding triggerless guard(s): !cdaBelowMinSafeDist",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by '(event instanceof lre.event.InputEvent.reqOCM) && cdaBelowMinSafeDist' does not negate preceding triggerless guard(s): !cdaBelowMinSafeDist\nLocation: /Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java:165",
+      "fix_directive": "Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run5-lre/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 165,
+          "line_end": 167,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    }
+  ],
+  "files_to_review": [],
+  "next_step": "Proceed to Phase 3 (T2M — Spoon Discovery)."
+}

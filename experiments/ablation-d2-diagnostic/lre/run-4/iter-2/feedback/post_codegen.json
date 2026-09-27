@@ -1,0 +1,91 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "15 Java files written under lre/; all 51 requirements traced in result_codegen.json; gradlew build clean. Five items need human review.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Safe large distance is 1000.0 m",
+      "raw": "LRE-DM5 requires odist/hdist/vdist to return 'a safe large distance' with no obstacle but gives no value.",
+      "fix_directive": "If the AUV sensor range implies a different value, set Sensor.SAFE_DISTANCE accordingly.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/sensor/Sensor.java",
+          "element": "SAFE_DISTANCE",
+          "requirement_ids": [
+            "LRE-DM5",
+            "LRE-SF1",
+            "LRE-SF2",
+            "LRE-SF3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "LRE-DM5 no-obstacle defaults are mutually inconsistent",
+      "raw": "LRE-DM5 requires nsRelDist/ewRelDist to return zero with no obstacle while hdist must return a safe large distance; LRE-SF1 defines hdist from those accessors, so the two clauses conflict. The conflict propagates into LRE-OP5: zero relative position makes the naive CPA formula give cda=0, falsely enabling MOM->CAM.",
+      "fix_directive": "Confirm the intended no-obstacle value for nsRelDist/ewRelDist, or state that the distance functions are primitive rather than derived from the accessors. Implemented by giving odist/hdist/vdist an explicit no-obstacle branch and expanding cda^2 as hdist(cdyn)^2 + 2*tcpa*closingRate + tcpa^2*relSpeedSq, which is algebraically identical to the standard CPA distance but carries the hdist safe default through.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/operation/CalcCPA.java",
+          "element": "compute",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-DM5",
+            "LRE-Beh8",
+            "LRE-Beh14"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Floor on relative speed keeps tcpa finite",
+      "raw": "LRE-OP5 does not define tcpa when the relative velocity is zero (division by zero).",
+      "fix_directive": "Replace CalcCPA.MIN_REL_SPEED_SQ (1e-6) with the intended degenerate-case handling if specified.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/operation/CalcCPA.java",
+          "element": "MIN_REL_SPEED_SQ",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-Var8"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "unimplemented",
+      "title": "CAM has no entry action",
+      "raw": "LRE-FR4 says CAM performs evasive manoeuvres, but LRE-DM7 restricts outputs to advVel/advHdng and no requirement states which value CAM should issue.",
+      "fix_directive": "Specify the evasive advVel/advHdng values for CAM entry. CAM retains two outgoing transitions (LRE-Beh17, LRE-Beh18) so it is not a sink.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "element": "step",
+          "requirement_ids": [
+            "LRE-FR4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "nat-typed indices carry a -1 sentinel",
+      "raw": "LRE-Var5/Var6 call cstc/cdyn natural numbers yet assign -1 for 'none'; Java int maps to RoboChart nat unconditionally, so -1 is not representable in the extracted model.",
+      "fix_directive": "Implemented as specified (-1), with all missing-data handling pushed into Sensor so no controller predicate tests the sentinel. Confirm this is the intended encoding.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "element": "cstc",
+          "requirement_ids": [
+            "LRE-Var5",
+            "LRE-Var6"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

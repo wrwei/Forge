@@ -58,15 +58,22 @@ _INTERACTIVE_PHASES = [
 
 
 
-def _count_lint_errors(lint_report: Path) -> int:
+def _count_lint_errors(lint_report: Path) -> int | None:
     """Count error-severity violations in a lint_report.json. Warnings
-    do not count (preflight passes with warnings, fails only on errors)."""
+    do not count (preflight passes with warnings, fails only on errors).
+
+    Returns ``None`` when the report is missing or unreadable — the
+    caller must treat that as a FAILURE, not a pass. (False-pass audit
+    2026-08: this used to return 0, so a linter that crashed after the
+    gradle wrapper exited 0, or a truncated/corrupt report, counted as
+    "no structural errors".)
+    """
     if not lint_report.exists():
-        return 0
+        return None
     try:
         data = json.loads(lint_report.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
-        return 0
+        return None
     return sum(
         1 for v in data.get("violations", [])
         if v.get("severity") == "error"
@@ -115,98 +122,47 @@ def _update_csp_file_in_config(config_path: str) -> None:
 
 
 def _consolidate_traces(t2m_output: Path, codegen_output: Path) -> None:
-    """Merge per-stage trace files into a single trace_full.json."""
+    """Merge per-stage trace files into a single trace_full.json.
+
+    The pure merge logic lives in :func:`web.trace_postprocess.consolidate`;
+    this wrapper only resolves paths (incl. the Dafny/Isabelle JSON traces and
+    the generated CSP assertions) and writes the result.
+    """
+    from web.trace_postprocess import consolidate, parse_csp_trace
+
     def _load(path: Path) -> dict | None:
         if path.exists():
             return json.loads(path.read_text(encoding="utf-8"))
         return None
 
-    codegen = _load(codegen_output / "result_codegen.json")
-    t2m = _load(t2m_output / "trace_t2m.json")
     m2m = _load(t2m_output / "trace_m2m.json")
-    m2t = _load(t2m_output / "trace_m2t.json")
-    m2t_rct = _load(t2m_output / "trace_m2t_rct.json")
-
     if not m2m:
         logger.warning("Missing trace_m2m.json, skipping consolidation")
         return
 
-    # Build lookups
-    codegen_by_name: dict[str, list[dict]] = {}
-    if codegen:
-        for entry in codegen.get("codegen_trace", []):
-            name = entry.get("java_element", "")
-            codegen_by_name.setdefault(name, []).append(entry)
+    # Prefer the module-level CSP assertions file; fall back to any coreassertions.
+    csp_file = None
+    csp_defs = t2m_output / "csp-gen" / "defs"
+    if csp_defs.exists():
+        csp_file = (next(iter(sorted(csp_defs.glob("*_Module_coreassertions.csp"))), None)
+                    or next(iter(sorted(csp_defs.glob("*_coreassertions.csp"))), None))
 
-    t2m_by_suffix: dict[str, list] = {}
-    if t2m:
-        for entry in t2m.get("source_positions", []):
-            qn = entry.get("qualified_name", "")
-            simple = qn.rsplit(".", 1)[-1] if "." in qn else qn
-            t2m_by_suffix.setdefault(simple, []).append(entry)
-
-    m2t_by_name: dict[str, dict] = {}
-    if m2t:
-        for entry in m2t.get("mappings", []):
-            m2t_by_name[entry.get("robochart_element", "")] = entry
-
-    rct_by_name: dict[str, dict] = {}
-    if m2t_rct:
-        for entry in m2t_rct.get("mappings", []):
-            rct_by_name[entry.get("robochart_element", "")] = entry
-
-    traces = []
-    for m2m_entry in m2m.get("mappings", []):
-        rc_type = m2m_entry.get("robochart_type", "")
-        rc_name = m2m_entry.get("robochart_element", "")
-
-        trace: dict[str, Any] = {
-            "robochart_type": rc_type,
-            "robochart_element": rc_name,
-        }
-
-        if rc_type == "Transition":
-            for key in ("source_state", "target_state", "trigger_event"):
-                if key in m2m_entry:
-                    trace[key] = m2m_entry[key]
-
-        if rc_name in m2t_by_name:
-            m2t_entry = m2t_by_name[rc_name]
-            trace["csp_line_start"] = m2t_entry.get("csp_line_start")
-            trace["csp_line_end"] = m2t_entry.get("csp_line_end")
-
-        if rc_name in rct_by_name:
-            rct_entry = rct_by_name[rc_name]
-            trace["rct_line_start"] = rct_entry.get("rct_line_start")
-            trace["rct_line_end"] = rct_entry.get("rct_line_end")
-
-        java_name = rc_name
-        m2m_java_elem = m2m_entry.get("java_element", "")
-        cg_entries = codegen_by_name.get(java_name) or codegen_by_name.get(m2m_java_elem)
-        if cg_entries:
-            trace["requirement_ids"] = list({e["requirement_gid"] for e in cg_entries})
-            trace["java_file"] = cg_entries[0].get("java_file", "")
-
-        if "java_file" not in trace and m2m_entry.get("java_file"):
-            trace["java_file"] = m2m_entry["java_file"]
-        if "java_line_start" not in trace and m2m_entry.get("java_line_start"):
-            trace["java_line_start"] = m2m_entry["java_line_start"]
-            trace["java_line_end"] = m2m_entry.get("java_line_end")
-
-        t2m_entries = (t2m_by_suffix or {}).get(java_name) or (t2m_by_suffix or {}).get(m2m_java_elem)
-        if t2m_entries and "java_line_start" not in trace:
-            trace["java_line_start"] = t2m_entries[0].get("line_start")
-            trace["java_line_end"] = t2m_entries[0].get("line_end")
-            trace["java_source_file"] = t2m_entries[0].get("file", "")
-
-        traces.append(trace)
+    out = consolidate(
+        codegen=_load(codegen_output / "result_codegen.json"),
+        t2m=_load(t2m_output / "trace_t2m.json"),
+        m2m=m2m,
+        m2t_rct=_load(t2m_output / "trace_m2t_rct.json"),
+        dafny=_load(t2m_output / "trace_dafny.json"),
+        csp=parse_csp_trace(csp_file),
+        isa=_load(t2m_output / "trace_isabelle.json"),
+    )
 
     out_path = t2m_output / "trace_full.json"
     out_path.write_text(
-        json.dumps({"traces": traces}, indent=2, ensure_ascii=False),
+        json.dumps(out, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
-    logger.info("Consolidated trace: %s (%d entries)", out_path, len(traces))
+    logger.info("Consolidated trace: %s (%d entries)", out_path, len(out.get("traces", [])))
 
 
 class PipelineBridge:
@@ -680,7 +636,14 @@ class PipelineBridge:
         if command_id == "preflight":
             lint_report = _T2M_OUTPUT / "lint_report.json"
             error_count = _count_lint_errors(lint_report)
-            if fb_status == "passed" and error_count > 0:
+            if fb_status == "passed" and error_count is None:
+                fb_status = "failed"
+                summary = (
+                    f"{label}: lint_report.json is missing or unreadable "
+                    f"— the linter's result cannot be confirmed, so "
+                    f"preflight is treated as failed."
+                )
+            elif fb_status == "passed" and error_count > 0:
                 fb_status = "failed"
                 summary = (
                     f"{label}: {error_count} structural error(s) "

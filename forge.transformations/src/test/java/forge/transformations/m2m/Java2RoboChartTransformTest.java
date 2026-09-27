@@ -423,17 +423,16 @@ class Java2RoboChartTransformTest {
         EObject stm = getChild(rcPackage, "machines", 0);
         List<EObject> transitions = getChildren(stm, "transitions");
 
-        // t_init, t1 (S1->S2, guardA), t2 (S1->S3, guardB), t3 (S2->S1)
-        // The ETL deliberately does NOT encode else-if branch priority via
-        // negated predecessors (walkInnerChain comment: "Priority encoding
-        // removed (Phase 3): guard-only transitions are nondeterministic in
-        // RoboChart when multiple guards are simultaneously true"). FDR4
-        // nondeterminism from overlapping guards is documented as EXPECTED
-        // in forge.assets/prompts/fdr4_system.txt.
+        // t_init, t1 (S1->S2, guardA), t2 (S1->S3, guardB && !guardA), t3 (S2->S1)
+        // C1 fix: the ETL encodes else-if branch priority (first matching
+        // branch wins) by conjoining the negations of every preceding
+        // TRIGGERLESS branch's guard, matching the hand-written LRE
+        // convention (`hcmActive && !camActive`). Without this the model
+        // over-approximates: t2 could fire when guardA also holds.
         assertEquals(4, transitions.size(),
                 "Expected 4 transitions (t_init + 3), got " + transitions.size());
 
-        // t1: first branch — condition is bare CallExp("guardA")
+        // t1: first branch — condition is bare CallExp("guardA") (no predecessors)
         EObject t1 = transitions.get(1);
         assertEquals("S1", get((EObject) get(t1, "source"), "name"));
         assertEquals("S2", get((EObject) get(t1, "target"), "name"));
@@ -443,16 +442,24 @@ class Java2RoboChartTransformTest {
                 "First branch guard should be simple CallExp");
         assertEquals("guardA", getCallExpName(t1Cond));
 
-        // t2: second branch — condition is bare CallExp("guardB") (NOT
-        // And(Not(guardA), guardB) — no priority encoding).
+        // t2: second branch — condition is And(guardB, Not(guardA)):
+        // own guard first, negated predecessor appended (LRE artefact shape).
         EObject t2 = transitions.get(2);
         assertEquals("S1", get((EObject) get(t2, "source"), "name"));
         assertEquals("S3", get((EObject) get(t2, "target"), "name"));
         EObject t2Cond = (EObject) get(t2, "condition");
         assertNotNull(t2Cond, "t2 should have guard condition");
-        assertEquals("CallExp", t2Cond.eClass().getName(),
-                "Second branch guard should be bare CallExp (no priority encoding)");
-        assertEquals("guardB", getCallExpName(t2Cond));
+        assertEquals("And", t2Cond.eClass().getName(),
+                "Second branch guard should be And(guardB, Not(guardA)) — C1 priority encoding");
+        EObject t2Left = (EObject) get(t2Cond, "left");
+        assertEquals("CallExp", t2Left.eClass().getName());
+        assertEquals("guardB", getCallExpName(t2Left),
+                "Own guard comes first");
+        EObject t2Right = (EObject) get(t2Cond, "right");
+        assertEquals("Not", t2Right.eClass().getName(),
+                "Negated predecessor appended");
+        assertEquals("guardA", getCallExpName((EObject) get(t2Right, "exp")),
+                "Negated predecessor should be guardA");
     }
 
     @Test
@@ -496,16 +503,13 @@ class Java2RoboChartTransformTest {
         EObject stm = getChild(rcPackage, "machines", 0);
         List<EObject> transitions = getChildren(stm, "transitions");
 
-        // t_init, t1 (S1->S2, guardA), t2 (S1->S3, no condition), t3 (S2->S1)
-        // The ETL deliberately does NOT encode else-if branch priority via
-        // negated predecessors; terminal-else transitions get NO condition
-        // (fire unconditionally when no other branch is taken). See the
-        // walkInnerChain comment "Priority encoding removed (Phase 3)".
-        // NOTE: the unconditional terminal-else τ-self-loop competes with
-        // enabled guarded autonomous transitions in tock-CSP and causes
-        // FDR4 :[deterministic] failures (see CLAUDE.md "Linter output"
-        // section). Prefer event-triggered bare-precondition branches over
-        // terminal-else fallbacks in real controllers.
+        // t_init, t1 (S1->S2, guardA), t2 (S1->S3, Not(guardA)), t3 (S2->S1)
+        // C1 fix (E13): the terminal else fires only when no preceding
+        // triggerless guard holds, so it receives the accumulated
+        // negations. The previous behaviour (no condition) made the else
+        // transition unconditionally enabled — an over-approximation that
+        // also caused FDR4 :[deterministic] failures (unguarded τ-loop
+        // competing with enabled guarded transitions).
         assertEquals(4, transitions.size(),
                 "Expected 4 transitions (t_init + 3), got " + transitions.size());
 
@@ -516,12 +520,15 @@ class Java2RoboChartTransformTest {
         assertEquals("CallExp", t1Cond.eClass().getName());
         assertEquals("guardA", getCallExpName(t1Cond));
 
-        // t2: terminal else — no condition (unconditional).
+        // t2: terminal else — condition is Not(guardA) (C1 priority encoding).
         EObject t2 = transitions.get(2);
         assertEquals("S3", get((EObject) get(t2, "target"), "name"));
         EObject t2Cond = (EObject) get(t2, "condition");
-        assertNull(t2Cond,
-                "Terminal else should have no condition (no priority encoding)");
+        assertNotNull(t2Cond,
+                "Terminal else should receive negated predecessor guards (C1/E13)");
+        assertEquals("Not", t2Cond.eClass().getName(),
+                "Terminal else condition should be Not(guardA)");
+        assertEquals("guardA", getCallExpName((EObject) get(t2Cond, "exp")));
     }
 
     @Test
@@ -583,6 +590,132 @@ class Java2RoboChartTransformTest {
                 "Guard should be simple CallExp, not wrapped with negated predecessor");
         assertEquals("guardA", getCallExpName(t2Cond),
                 "Guard should just be 'guardA' — event branch does not contribute predecessors");
+    }
+
+    @Test
+    void innerChainHandWrittenNegationNotDuplicated(TestInfo testInfo) throws IOException {
+        writeSource("sm", "MyMode.java", """
+                package sm;
+                public enum MyMode { S1, S2, S3 }
+                """);
+        writeSource("sm", "MyEvent.java", """
+                package sm;
+                public sealed interface MyEvent {
+                    record GoS2() implements MyEvent {}
+                }
+                """);
+        // LRE hand-written convention: second branch already negates the first
+        // (guardB && !guardA). C1 synthesis must NOT add a second !guardA.
+        writeSource("sm", "MyController.java", """
+                package sm;
+                public final class MyController {
+                    private MyMode currentMode = MyMode.S1;
+                    public void step(MyEvent event) {
+                        boolean guardA = checkA();
+                        boolean guardB = checkB();
+                        if (currentMode == MyMode.S1) {
+                            if (guardA) {
+                                currentMode = MyMode.S2;
+                            } else if (guardB && !guardA) {
+                                currentMode = MyMode.S3;
+                            }
+                        } else if (currentMode == MyMode.S2) {
+                            currentMode = MyMode.S1;
+                        }
+                    }
+                    private boolean checkA() { return true; }
+                    private boolean checkB() { return false; }
+                }
+                """);
+
+        Resource javaResource = discoverer.discover(tempDir);
+        Resource rcResource = transformer.transform(javaResource);
+        saveModel(rcResource, testInfo);
+
+        EObject rcPackage = rcResource.getContents().get(0);
+        EObject stm = getChild(rcPackage, "machines", 0);
+        List<EObject> transitions = getChildren(stm, "transitions");
+        assertEquals(4, transitions.size());
+
+        // t2: guard stays And(guardB, Not(guardA)) — exactly one negation of
+        // guardA (hand-written), no synthesised duplicate appended.
+        EObject t2 = transitions.get(2);
+        assertEquals("S3", get((EObject) get(t2, "target"), "name"));
+        EObject t2Cond = (EObject) get(t2, "condition");
+        assertNotNull(t2Cond, "t2 should have guard condition");
+        assertEquals(1, countNegationsOf(t2Cond, "guardA"),
+                "Hand-written !guardA must not be duplicated by C1 synthesis");
+    }
+
+    @Test
+    void innerChainEventBranchReceivesPriorityNegation(TestInfo testInfo) throws IOException {
+        writeSource("sm", "MyMode.java", """
+                package sm;
+                public enum MyMode { S1, S2, S3 }
+                """);
+        writeSource("sm", "MyEvent.java", """
+                package sm;
+                public sealed interface MyEvent {
+                    record GoS2() implements MyEvent {}
+                }
+                """);
+        // Triggerless guarded branch FIRST, event-triggered branch second:
+        // the event branch must RECEIVE Not(guardA) (rule: event branches
+        // receive but never contribute).
+        writeSource("sm", "MyController.java", """
+                package sm;
+                public final class MyController {
+                    private MyMode currentMode = MyMode.S1;
+                    public void step(MyEvent event) {
+                        boolean guardA = checkA();
+                        if (currentMode == MyMode.S1) {
+                            if (guardA) {
+                                currentMode = MyMode.S2;
+                            } else if (event instanceof MyEvent.GoS2) {
+                                currentMode = MyMode.S3;
+                            }
+                        } else if (currentMode == MyMode.S2) {
+                            currentMode = MyMode.S1;
+                        }
+                    }
+                    private boolean checkA() { return true; }
+                }
+                """);
+
+        Resource javaResource = discoverer.discover(tempDir);
+        Resource rcResource = transformer.transform(javaResource);
+        saveModel(rcResource, testInfo);
+
+        EObject rcPackage = rcResource.getContents().get(0);
+        EObject stm = getChild(rcPackage, "machines", 0);
+        List<EObject> transitions = getChildren(stm, "transitions");
+        assertEquals(4, transitions.size());
+
+        // t2: event-triggered, receives Not(guardA) as its condition.
+        EObject t2 = transitions.get(2);
+        assertNotNull(get(t2, "trigger"), "t2 should keep its GoS2 trigger");
+        EObject t2Cond = (EObject) get(t2, "condition");
+        assertNotNull(t2Cond,
+                "Event-triggered branch below a triggerless guard must receive its negation");
+        assertEquals("Not", t2Cond.eClass().getName());
+        assertEquals("guardA", getCallExpName((EObject) get(t2Cond, "exp")));
+    }
+
+    /** Count Not(CallExp(name)) occurrences in an expression tree. */
+    private int countNegationsOf(EObject expr, String name) {
+        if (expr == null) return 0;
+        int count = 0;
+        if ("Not".equals(expr.eClass().getName())) {
+            EObject inner = (EObject) get(expr, "exp");
+            if (inner != null && "CallExp".equals(inner.eClass().getName())
+                    && name.equals(getCallExpName(inner))) {
+                count++;
+            }
+        }
+        for (EObject child : expr.eContents()) {
+            count += countNegationsOf(child, name);
+        }
+        return count;
     }
 
     // === E4: Action extraction from then-blocks ===
@@ -841,6 +974,35 @@ class Java2RoboChartTransformTest {
                 "Value should be IntegerExp for integer literal");
         assertEquals(42, get(value, "value"),
                 "IntegerExp value should be 42");
+    }
+
+    @Test
+    void literalResolvedFromValueKindWithoutResolvedValues(TestInfo testInfo) throws IOException {
+        writeStateMachineWithLiteralAndConstant();
+
+        Resource javaResource = discoverer.discover(tempDir);
+        // Deliberately do NOT pass resolvedValues: the ETL must fall back to
+        // parsing the CtLiteral's own value/valueKind EString attributes
+        // (T2M mapper) rather than substituting IntegerExp(0). Before the
+        // fix, resolveLiteralValue tested the EString value against
+        // Native("java.lang.Number") — a dead check — so this path
+        // silently emitted 0.
+        Resource rcResource = transformer.transform(javaResource);
+        saveModel(rcResource, testInfo);
+
+        EObject rcPackage = rcResource.getContents().get(0);
+        EObject stm = getChild(rcPackage, "machines", 0);
+        List<EObject> transitions = getChildren(stm, "transitions");
+
+        // t2: S2 -> S3 with action doOther(42)
+        EObject t2 = transitions.get(2);
+        assertEquals("S3", get((EObject) get(t2, "target"), "name"));
+        EObject comm = unwrapComm((EObject) get(t2, "action"));
+        EObject value = (EObject) get(comm, "value");
+        assertNotNull(value, "Communication should have value parsed from valueKind");
+        assertEquals("IntegerExp", value.eClass().getName());
+        assertEquals(42, get(value, "value"),
+                "Literal 42 must survive without resolvedValues (no IntegerExp(0) substitution)");
     }
 
     // === E11: Cross-branch channel consistency ===

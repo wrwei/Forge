@@ -140,57 +140,6 @@ the same transcript, captured at archive time):
 (The consolidated cross-run table `experiments/convergence/execution_times.md`
 was scrubbed from this worktree; add this run's row during copy-back.)
 
-## Findings (durable, generalisable)
-
-**F1 — Never wrap a multi-arg sensor-function call in a named predicate.**
-The ETL inlines predicates whose RHS is a direct comparison (`sts == gasD`,
-`ins >= thr`, `clock.nowMs() - t < C`), but a predicate whose RHS is a
-sensor-method call with arguments (`boolean p = sensor.goreq(ins, thr)`)
-becomes an untyped Sensors-interface variable (`var p : nat`). One such
-predicate produced three downstream symptoms at once in this run: an FDR4
-CSP Bool/Int type error on the guard, the referenced constant silently
-missing from the Constants interface, and a wrong-arity function declaration
-in the generated Dafny (declared `(p0: real)`, called with 2 args). *How to
-apply:* express threshold/ordering guards as comparison operators in the
-predicate; keep spec-named comparison functions (goreq-style) as sensor-layer
-implementation detail. Zero-arg sensor calls in actions are fine (they become
-Sensors vars by design — that's the odometer pattern).
-
-**F2 — Diagnose multi-phase failures from the .rct before fixing per phase.**
-fdr4 and dafny_verify failed with unrelated-looking messages (CSP type
-mismatch vs Dafny arity error) that shared one root cause. The generated
-`robochart_controller.rct` is the cheapest cross-check: scan the emitted
-interfaces (Sensors/Constants/Ctrl_State) for variables that should have been
-guards or constants that are missing. One .rct read collapsed two phase
-failures into one one-line Java fix.
-
-**F3 — Preflight the machine-specific tool paths before iter-1.**
-`pipeline.yaml` carried another machine's user directories for Dafny
-(win32 path) and Isabelle (wsl_isabelle_bin); both verify phases failed on
-not-found in the first pipeline run. These are environment failures, not
-verdicts: fix the paths, re-run the *unchanged* code, and snapshot only the
-clean run. A 10-second check (`Test-Path` the dafny_path; `wsl -- ls` the
-isabelle bin) before the first run would have saved a full pipeline cycle.
-
-**F4 — Front-loading CLAUDE.md's verification-driven structure converges fast.**
-Designing iter-1 for the verifiers — no Final states (terminal-live modes
-with event-triggered bare-precondition self-loops), total guard covers
-(`b`/`!b` complementary pairs) on autonomous-only modes, payload capture as
-first action on every typed trigger — made isabelle_verify and the FDR4
-deadlock/divergence checks pass on the first real attempt with zero
-verifier-driven control-flow iterations. The entire trajectory cost was one
-encoding fix (F1) plus trace bookkeeping. Corollary: the feared state-space
-blowup of the two-controller composition never materialized under `{0..1}`
-ranges with all constants = 1 (FDR4: 9 assertions, 2.4 s).
-
-**F5 — Every source file needs at least one result_codegen.json row.**
-Coverage's over-implementation check is per-file: any public element in a
-file with no trace rows is flagged, while elements in files that have ≥1 row
-are implicitly covered. Supporting classes (Actuator, Clock) are easy to
-forget because no single requirement names them — map them to the
-architecture/variable requirement they serve (CD-ARCH2, CD-MV-Clock1) at
-cold-codegen time.
-
 ## Independence
 
 - **Iter-1 inputs (complete list):**

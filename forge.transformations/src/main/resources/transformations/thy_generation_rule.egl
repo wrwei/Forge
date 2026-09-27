@@ -1,4 +1,8 @@
 [%
+// MULTI-CONTROLLER (2026-09-25): IsabelleEgxRunner runs this template once
+// per state machine and injects `stm_index` (its position in p.machines)
+// with the matching `stm_name`; every former `p.machines.at(0)` reads
+// `p.machines.at(stm_index)`. One machine => index 0 => unchanged output.
 // `stm_name` is injected by IsabelleEgxRunner (set to the first
 // StateMachineDef's name). Do NOT re-declare it here — the old loop
 // `for (stm in RC!StateMachineDef.allInstances){ stm_name=stm.name }`
@@ -49,7 +53,7 @@ for (p in RC!RCPackage) {
 	var set_output_event: String;
 	
 	
-	for (n in p.machines.at(0).nodes){
+	for (n in p.machines.at(stm_index).nodes){
 		enum_output= enum_output+ n.zmState() +" | ";
 		set_output= set_output+ n.zmState() +", ";}
 	 
@@ -66,7 +70,7 @@ for (p in RC!RCPackage) {
 
 [%
 //to generate enum for events
-for (e in p.machines.at(0).events){ 
+for (e in p.machines.at(stm_index).events){ 
 	"print out the event names".println();
 	 e.name.println();
 	 enum_output_event =  enum_output_event+ e.name +" | ";
@@ -230,14 +234,39 @@ for(e in ordered){
 		// Field names that collide with Isabelle reserved words (e.g.
 		// `value`, the name of the `value` evaluation command) get a
 		// trailing underscore so Isabelle sees them as fresh identifiers.
-		var isabelleReservedFieldNames = Sequence{"value", "term", "prop"};
+		// FIX (2026-09-14). "values" is a HOL OUTER keyword
+		// (Predicate_Compile.thy: keywords "values" :: diag), so a record
+		// field named `values` kills the theory at outer syntax — chem
+		// run-1 v2's `record GasSensorReading(List<GasSensor> values)`
+		// died at the record line even after the fix quoted its type. Same
+		// mangling as `value`: trailing underscore.
+		var isabelleReservedFieldNames = Sequence{"value", "values", "term", "prop"};
 		var fieldList = "";
 		var i=0;
 		while(i<e.fields.size()){
 			if(i > 0){ fieldList = fieldList + " "; }
 			var fname = e.fields.at(i).name;
 			if(isabelleReservedFieldNames.includes(fname)){ fname = fname + "_"; }
-			fieldList = fieldList + fname + " :: " + e.fields.at(i).type.ref.name;
+			// FORK (steam boiler held-out): map Java/RoboChart primitive
+			// names through zmType() (boolean -> bool, real -> real, etc.)
+			// instead of emitting type.ref.name verbatim. The scalar zstore
+			// path already mapped correctly; the record path was never
+			// exercised by the three admitted studies (none has a record
+			// field of primitive type) and leaked `boolean`, which Isabelle
+			// rejects ("Undefined type name: boolean").
+			// FIX (2026-09-14). Isabelle's `record` command requires
+			// COMPOUND field types quoted: `values :: "GasSensor list"`
+			// parses, `values :: (GasSensor list)` dies at outer syntax
+			// ("end-of-input", chem run-1 v2 line 64). Simple type names
+			// stay unquoted so sranger/lre theories are byte-unchanged.
+			var ftype = e.fields.at(i).type.zmType();
+			if (ftype.indexOf(" ") >= 0 or ftype.indexOf("\\") >= 0) {
+				if (ftype.startsWith("(") and ftype.endsWith(")")) {
+					ftype = ftype.substring(1, ftype.length() - 1);
+				}
+				ftype = '"' + ftype + '"';
+			}
+			fieldList = fieldList + fname + " :: " + ftype;
 			i++;
 		}
 %]record [%=e.name%] = [%=fieldList%]
@@ -266,7 +295,7 @@ var const_string: String;
 // (auto times out on their arithmetic guards — see the LRE regression).
 var hasPayloadDomain = false;
 //PART 1: transfer all constants in Robochart
-for(vrl in p.machines.at(0).variableList){
+for(vrl in p.machines.at(stm_index).variableList){
 	var i=0;
 	while(i< vrl.vars.size()){
 	
@@ -308,6 +337,35 @@ for(iface in p.interfaces){
 		}
 	}
 }
+// FORK (steam boiler held-out): OPERATION-CARRIED state variables.
+// A RoboChart OperationDef's variableList (Java: fields of a stateful
+// compute() operation object — construct 7, e.g. CalcLevelEstimate's
+// levelLow/levelHigh/projLow/projHigh) is machine state exactly like
+// Ctrl_State vars: written each cycle, carried across cycles, read by
+// guards through the inlined data plane. Pre-fix these names got NO
+// zstore lens, so their bare pre-state reads fell through to the
+// auto-consts fallback, which (a) shaped them `unit \<Rightarrow> T`
+// — not a lens read, unlike how the admitted studies' theories
+// reference zstore variables — and (b) mis-typed projLow as int via
+// the index-argument heuristic although Java/RCT declare real
+// ("Type unification failed ... Operand: projLow :: unit => int").
+// Collecting them here gives them model-typed lenses, routes their
+// update clauses through the existing data-plane emission, and the
+// stateVarNames gate suppresses the consts fallback. The three
+// admitted studies have no OperationDef variableList entries, so
+// their collections gain nothing.
+var opStateVarNames: OrderedSet;
+for(opd in p.operations){
+	for(vrl in opd.variableList){
+		for(v in vrl.vars){
+			if(not stateVarNames.includes(v.name)){
+				stateVarNames.add(v.name);
+				stateVarTypes.put(v.name, v.type);
+				opStateVarNames.add(v.name);
+			}
+		}
+	}
+}
 
 // FORK: collect enum type names — these have a `default` type-class
 // instance (the first constructor), so they're safe to use as zstore
@@ -324,9 +382,203 @@ for(t in p.types){
 }
 
 //------------------------------------------------------------------
+// FORK (I1 fix): collect the DATA PLANE — the per-cycle recomputation
+// of controller state variables.
+//
+// THE DEFECT. Pre-fix, every emitted `zoperation` update assigned only
+// `st`, `tr` and `triggers`. The zstore's data lenses (LRE: inOpez,
+// vel, cstc, cdyn, cda, camActive, hcmActive, momReturn) were assigned
+// by NO operation, so Z-Machines' frame rule left each one arbitrary
+// but CONSTANT for a whole run. The Java re-evaluates all of them at
+// the top of every `step()` before any guard is read. The theory
+// therefore UNDER-approximates: it excludes behaviour the Java
+// exhibits, which is unsound for liveness (a run in which `cda` falls
+// below the threshold is simply not a run of the model). Note this is
+// the OPPOSITE direction from U1 (operations declared but never
+// invoked, which over-approximates).
+//
+// WHERE THE DATA IS. The `.rct`/XMI carries the operation bodies:
+// each RC!OperationDef has one transition whose action is the sequence
+// of assignments from the Java `compute()` method, in source order
+// (the M2M U3 fix pinned that order). `defs` below maps each assigned
+// variable name to its RHS RC!Expression; `dataDefOrder` keeps the
+// Java's source order across operations (the order the controller
+// dispatches them, which is the `p.operations` order).
+//
+// THE CRUX — SIMULTANEOUS SUBSTITUTION. A Z-Machines `update` block is
+// a simultaneous substitution, not a sequence: the existing emission
+// `tr\<Zprime> = tr @ [State S]` reads the OLD `tr`. So emitting
+//     [tcpa\<Zprime> = E_tcpa, cda\<Zprime> = f(tcpa), ...]
+// would make `cda\<Zprime>` read the STALE `tcpa`, silently
+// reintroducing at the Isabelle stage exactly the stale-read defect
+// (U3) that was fixed at M2M. We therefore INLINE: the emitter
+// substitutes each data variable's new-value expression into any later
+// expression that reads it (`inlineRender` at the bottom of this
+// template), so `cda\<Zprime> = f(E_tcpa)`. Inlining is sound only for
+// an ACYCLIC dependency graph; `inlineRender` carries a recursion stack
+// and, on a genuine fixpoint (`x = g(y); y = h(x)`), emits an
+// `(*I1-CYCLE:<v>*)` marker rather than something plausible, so the
+// blocker is visible in the artefact instead of hidden.
+//
+// SCOPE. `defs` holds EVERY operation-body-assigned variable, including
+// ones that never reach the zstore (LRE `hvel`, `vvel`, `tcpa`): those
+// are needed as inlining sources even though nothing is emitted for
+// them. Only names that are also zstore lenses get an emitted clause.
+//------------------------------------------------------------------
+var dataDefOrder: OrderedSet;
+var dataDefExpr: Map;
+for(opDef in p.operations){
+	for(opTr in opDef.transitions){
+		if(opTr.action.isDefined()){
+			if(opTr.action.isTypeOf(SeqStatement)){
+				for(opStmt in opTr.action.statements){
+					if(opStmt.isTypeOf(Assignment) and opStmt.left.isDefined()
+							and opStmt.left.name.isDefined()){
+						dataDefOrder.add(opStmt.left.name.name);
+						dataDefExpr.put(opStmt.left.name.name, opStmt.right);
+					}
+				}
+			} else if(opTr.action.isTypeOf(Assignment) and opTr.action.left.isDefined()
+					and opTr.action.left.name.isDefined()){
+				dataDefOrder.add(opTr.action.left.name.name);
+				dataDefExpr.put(opTr.action.left.name.name, opTr.action.right);
+			}
+		}
+	}
+}
+// FORK (I1 guard-skew, sranger cycle counter): guard-side inlining of
+// STATEFUL data-plane definitions.
+//
+// THE DEFECT THIS CLOSES. The Java's step() recomputes every data-plane
+// variable BEFORE dispatching on it; the zoperation precondition reads
+// the PRE-state lens — the value computed by the PREVIOUS step. For a
+// MEMORYLESS definition (one grounded entirely in uninterpreted sensor
+// calls and constants — all of LRE's and the chemical detector's) the
+// two coincide: the lens carries the same opaque expression the guard
+// would inline, so the bare lens read is faithful and stays. For a
+// STATEFUL definition (one that transitively reads mutable state — a
+// state variable with no per-cycle definition, or a self-reading
+// counter) they differ by exactly one step: sranger's
+// `turnDurationElapsed` lens holds `(cycleCount_pre) - turnStartCycle_prev >= N`
+// while the Java dispatches on `(cycleCount_pre + 1) - turnStartCycle >= N`.
+// Concretely (simulated on the emitted operations): the naive emission
+// admits TurningToMoving ONE step after entering Turning while the Java
+// stays for `turnDurationCycles` — a spurious transition, an
+// OVER-approximation the Java cannot exhibit. Inlining the definition
+// into the precondition — evaluated over pre-state lenses, self-reads
+// rendered bare — reproduces the Java's dispatch-time value exactly.
+//
+// WHY THE CLASSIFICATION IS INJECTED, NOT COMPUTED HERE.
+// `statefulLensNames` is computed in IsabelleEgxRunner.java (a
+// string-only walk of the loaded model, before the EGL module executes)
+// and injected as a read-only frame variable. Computing it in-template
+// requires traversing every definition expression, and ANY new
+// EObject-touching execution at this point in the template — even a
+// traversal that allocates nothing the emission reads — measurably
+// perturbs the iteration order of the hash-ordered EolSet collections
+// that feed the `listens` sets and the consts block (established by
+// byte-diff controls on the LRE theory: an added `var`+`if` on ints is
+// order-neutral; an added println or collector traversal is not; a
+// comment-only edit is neutral). Every new statement below is therefore
+// gated behind `statefulLensNames.size() > 0` — an integer comparison —
+// so memoryless studies execute nothing new and their theories stay
+// byte-identical.
+var preDefs: Map;
+if(statefulLensNames.size() > 0){
+	for(dvName in dataDefOrder){
+		if(statefulLensNames.includes(dvName)){ preDefs.put(dvName, dataDefExpr.get(dvName)); }
+	}
+}
+
+// FORK (I1): STATE ENTRY ACTIONS are part of the data plane too, but
+// they are NOT per-cycle — they fire only on entry to their state, and
+// the existing target-enter-action emission below already writes them
+// into the update of every transition INTO that state. The chemical
+// detector's `insVal = peakIntensity(gs)` (entry of GasDetected) is the
+// only such case across the three studies; it is deliberately NOT added
+// to `dataDefOrder`, because assigning it on every transition would
+// over-write it in states where the Java leaves it alone. See the
+// separate handling of the bare-Assignment transition action below,
+// which is what actually makes `insVal` move.
+
+// FORK (I1): assignment-context return types for auto-emitted consts.
+// A data definition `cdyn = closestDynamicIndex` types the zero-arg
+// sensor call by its ASSIGNMENT TARGET, which is more precise than the
+// guard-usage heuristic below (nat > bool > real). Without this,
+// `closestDynamicIndex` defaults to `real` and `cdyn\<Zprime> =
+// closestDynamicIndex()` fails to typecheck against the `int` lens.
+var assignCtxType: Map;
+// MULTI-CONTROLLER (2026-09-25): machine-transition action assignments
+// `<lens> := <fn>()` fix <fn>'s return type exactly, same as the data-plane
+// loop below (chem: `d0 := odometer()` with d0 :: real => odometer :: real).
+for (mtr in p.machines.at(stm_index).transitions){
+	var stmts = new Sequence;
+	if (mtr.action.isDefined() and mtr.action.isTypeOf(SeqStatement)){ for (s in mtr.action.statements){ stmts.add(s); } }
+	else if (mtr.action.isDefined() and mtr.action.isTypeOf(Assignment)){ stmts.add(mtr.action); }
+	else { continue; }
+	for (mstmt in stmts){
+		if (mstmt.isTypeOf(Assignment) and mstmt.left.isDefined() and mstmt.left.name.isDefined()
+				and mstmt.right.isDefined() and mstmt.right.isTypeOf(CallExp) and mstmt.right.args.size() == 0
+				and not (mstmt.right.`function`.isDefined() and mstmt.right.`function`.isTypeOf(StringExp)
+				         and mstmt.right.`function`.value = "v")){
+			var mty = stateVarTypes.get(mstmt.left.name.name);
+			if (mty.isDefined() and mty.isTypeOf(TypeRef) and mty.ref.isDefined()){
+				assignCtxType.put(mstmt.right.funcName(), mty.zmType());
+			}
+		}
+	}
+}
+for(dvName in dataDefOrder){
+	var dvRhs = dataDefExpr.get(dvName);
+	if(dvRhs.isTypeOf(CallExp) and dvRhs.args.size() == 0){
+		var dvTy = stateVarTypes.get(dvName);
+		if(dvTy.isDefined() and dvTy.isTypeOf(TypeRef) and dvTy.ref.isDefined()){
+			assignCtxType.put(dvRhs.funcName(), dvTy.zmType());
+		}
+	}
+}
+
+// FORK (I1): index-argument domain correction for DECLARED RC!Functions.
+//
+// An UPSTREAM (ETL) DEFECT, latent pre-fix, becomes live here. Functions
+// discovered from operation BODIES are declared by java2robochart.etl
+// (Phase 6b, the `opBodyFuncNames` loop) with a hardcoded signature
+// `(x : real) : real`, with NO Java type inference — unlike functions
+// discovered from GUARDS, which do infer (that path gives LRE `odist`
+// its correct `index : int`). So the `.rct` says
+//     function nsRelDist ( x : real ) : real
+// while the Java says `double nsRelDist(@RoboChartType("nat") int index)`.
+// Pre-fix this was invisible: those four functions were DECLARED in the
+// theory and APPLIED NOWHERE, so nothing could typecheck against the
+// wrong domain. Inlining the data plane applies them — to `cdyn`, an
+// `int` lens — and a `real`-domain declaration would be an argument-type
+// mismatch at `zoperation` elaboration.
+//
+// The correct repair is in the ETL (infer from the Java signature there,
+// as the guard path already does), which would also fix the `.rct` and
+// the CSP. That is out of scope for a fix scoped to this template and is
+// reported as a residual finding. What we can do soundly HERE is derive
+// the domain from the application site the data plane actually emits: if
+// a declared function is applied to an argument that is a data variable
+// with an `int` lens, its Isabelle domain is `int`. This changes the
+// emitted THEORY only; the `.rct` keeps the ETL's (wrong) `real`, so the
+// two artefacts disagree on these four signatures until the ETL is fixed.
+var intDomainFuncs: OrderedSet;
+for(dvName in dataDefOrder){
+	dataDefExpr.get(dvName).collectIntArgFuncNames(intDomainFuncs, stateVarTypes);
+}
+
+//------------------------------------------------------------------
 //PART 2: generate consts for input events as the possible input set
 //-------------------------------------------------------------------
- for(tr in p.machines.at(0).transitions){
+ // FIX (2026-09-20). The payload-set `definition` below is emitted inside
+// this per-transition loop with no dedup, so a state variable rebound by TWO
+// typed-trigger transitions produced the definition twice and Isabelle
+// rejected the theory with 'Duplicate constant declaration'. Found by the
+// autonomous arm's chemical_detector run-5, where `gs` is rebound by four
+// transitions. Track the names already emitted and emit each once.
+var emittedPayloadSets: OrderedSet;
+for(tr in p.machines.at(stm_index).transitions){
 
 	//CASE 0 (FORK): typed-trigger-from-Java pattern. The ETL marks every
 	// trigger as SIMPLE (see setCommunicationType in java2robochart.etl)
@@ -360,12 +612,24 @@ for(t in p.types){
 			// the [simp] attribute lets `using St.exhaust_disc by auto` discharge the
 			// existential. The ICECCS2023 GasAnalysis hand-verification does the same
 			// (definition SeqGasSensor = {...} + SeqGasSensor_def in the proof).
+			var payloadSetName;
+			if(evType0.isTypeOf(SeqType)){ payloadSetName = "Seq" + sv0.firstToUpperCase(); }
+			else { payloadSetName = sv0.firstToUpperCase(); }
+			if(emittedPayloadSets.includes(payloadSetName)){
+				// already declared by an earlier transition rebinding the same
+				// state variable. hasPayloadDomain stays true so the downstream
+				// tactic fork is unaffected.
+				hasPayloadDomain = true;
+				const_string = "";
+			} else {
+			emittedPayloadSets.add(payloadSetName);
 			if(evType0.isTypeOf(TypeRef) or evType0.isTypeOf(ProductType)){
 				const_string = "definition " + sv0.firstToUpperCase() + " :: \"" + evType0.zmType() + " set\" where [simp]: \"" + sv0.firstToUpperCase() + " = UNIV\"";
 				hasPayloadDomain = true;
 			} else if(evType0.isTypeOf(SeqType)){
 				const_string = "definition Seq" + sv0.firstToUpperCase() + " :: \"((" + evType0.domain.zmType() + ") list) set\" where [simp]: \"Seq" + sv0.firstToUpperCase() + " = UNIV\"";
 				hasPayloadDomain = true;
+			}
 			}
 %][%=const_string%]
 	  [%
@@ -510,7 +774,13 @@ function_string="consts "+f.name+ " :: \" "+ f.parameters.at(0).type.domain.zmTy
  if(f.parameters.at(0).type.isTypeOf(TypeRef) or f.parameters.at(0).type.isTypeOf(ProductType)){
 ("consts "+f.name+ " :: \" "+ f.parameters.at(0).type.zmType() +" \\<Rightarrow> "+ func_type+"\"").println();
 //function_string= "consts "+f.name+ " :: \" "+ f.parameters.at(0).type.ref.name +" \\<Rightarrow> "+ f.type.ref.name+"\"";
-function_string= "consts "+f.name+ " :: \" "+ f.parameters.at(0).type.zmType() +" \\<Rightarrow> "+ func_type+"\"";
+// FORK (I1): override the declared domain with `int` when the data
+// plane applies this function to an int-typed data variable. See the
+// `intDomainFuncs` block in PART 1 for the upstream ETL defect this
+// works around and its scope limits.
+var domString: String = f.parameters.at(0).type.zmType();
+if(intDomainFuncs.includes(f.name)){ domString = "int"; }
+function_string= "consts "+f.name+ " :: \" "+ domString +" \\<Rightarrow> "+ func_type+"\"";
 }
 }
 //CASE 2: multiple parameters, we will need pXp pattern in ZM
@@ -602,6 +872,52 @@ for (m in p.machines){
 		}
 	}
 }
+// MULTI-CONTROLLER (2026-09-25). The scans above cover GUARDS and the
+// OPERATION-BODY data plane. A call appearing only in a MACHINE-transition
+// ACTION was collected by neither: chem's MovementController assigns
+// `d0 := odometer()` in GoingToAvoiding's action, so `odometer` reached the
+// zoperation update with no consts declaration and `zoperation` elaboration
+// failed with `Extra variables on rhs: "odometer"` (first exposed when this
+// template began emitting the second machine -- GasAnalysis has no such
+// action). Scan THIS machine's transition actions the same way; the OrderedSet
+// dedups names other scans already found, and machines whose action calls are
+// all lens or declared-function names (SRanger, LRE, GasAnalysis) add nothing,
+// so their theories are unchanged.
+for (tr in p.machines.at(stm_index).transitions){
+	if (tr.action.isDefined()){
+		var actStmts = new Sequence;
+		if (tr.action.isTypeOf(SeqStatement)){ for (s in tr.action.statements){ actStmts.add(s); } }
+		else { actStmts.add(tr.action); }
+		for (actStmt in actStmts){
+			// `<sv> := v` is the event-payload binding (CallExp("v"), no args) --
+			// rendered by the payload path, not a function call; see the
+			// emittedPayloadSets block. Collecting it would emit a bogus
+			// `consts v`, shadowing the binder (caught on GasAnalysis).
+			if (actStmt.isTypeOf(Assignment) and actStmt.right.isDefined()
+					and not (actStmt.right.isTypeOf(CallExp)
+					         and actStmt.right.`function`.isDefined()
+					         and actStmt.right.`function`.isTypeOf(StringExp)
+					         and actStmt.right.`function`.value = "v"
+					         and actStmt.right.args.size() == 0)){
+				actStmt.right.collectCallExpNames(undeclaredFuncNames, declaredFuncNames);
+				actStmt.right.collectBoolCallExpNames(boolFuncNames, declaredFuncNames);
+				actStmt.right.collectNatCallExpNames(natFuncNames, declaredFuncNames);
+			}
+		}
+	}
+}
+// FORK (I1): the scan above covers GUARDS only. Now that the data-plane
+// definitions are inlined into update blocks, every identifier reachable
+// from an operation-body RHS also reaches the theory text and must be
+// declared. LRE witness: `closestDynamicIndex`, `closestStaticIndex`,
+// `ns_vel`, `ew_vel`, `rate_of_climb`, `depth` appear ONLY in operation
+// bodies, never in a guard, so pre-fix they were correctly absent and
+// post-fix they would be undefined constants.
+for(dvName in dataDefOrder){
+	dataDefExpr.get(dvName).collectCallExpNames(undeclaredFuncNames, declaredFuncNames);
+	dataDefExpr.get(dvName).collectBoolCallExpNames(boolFuncNames, declaredFuncNames);
+	dataDefExpr.get(dvName).collectNatCallExpNames(natFuncNames, declaredFuncNames);
+}
 // FORK: choose return type per usage context.
 //   - bool  : appears as direct operand of Not (e.g. `\<not>inOpez()`)
 //   - nat   : appears as a direct arg of another CallExp (e.g. cstc()
@@ -624,8 +940,17 @@ for (funcName in undeclaredFuncNames){
 	// `sts = noGas` typecheck in pre conditions (sts :: Status).
 	if(enumLiteralNames.includes(funcName)){ continue; }
 	var sigType: String;
-	if (natFuncNames.includes(funcName)){
-		sigType = "nat";
+	// FORK (I1): an assignment context (`<lens> = <fn>()`) fixes the
+	// return type exactly — prefer it over the usage heuristic below.
+	if (assignCtxType.containsKey(funcName)){
+		sigType = assignCtxType.get(funcName);
+	} else if (natFuncNames.includes(funcName)){
+		// Coordinated with the M2M int fix: identifiers in index-argument
+		// position stand for Java int-typed quantities; with int/long now
+		// mapped to RoboChart/Isabelle `int` (not `nat`), the auto-consts
+		// return type must be `int` so `odist(<idx>)`-style applications
+		// typecheck against the declared function's int domain.
+		sigType = "int";
 	} else if (boolFuncNames.includes(funcName)){
 		sigType = "bool";
 	} else {
@@ -660,7 +985,7 @@ subsection \<open> State Space \<close>
 zstore [%=stm_name%] =
 [%
 //Part 1 of zstore is variables from variableLsit
-for(vrl in p.machines.at(0).variableList){
+for(vrl in p.machines.at(stm_index).variableList){
 	"vrl".println();
 	vrl.println();
 	
@@ -692,7 +1017,7 @@ for(vrl in p.machines.at(0).variableList){
 // transitions for VarRef name references (LHS of assignments) and
 // CallExp StringExp.value matches (RHS of expressions).
 var usedStateVarNames: OrderedSet;
-for(tr in p.machines.at(0).transitions){
+for(tr in p.machines.at(stm_index).transitions){
 	if(tr.action.isDefined() and tr.action.isTypeOf(SeqStatement)){
 		for(stmt in tr.action.statements){
 			if(stmt.isTypeOf(Assignment)){
@@ -712,6 +1037,26 @@ for(tr in p.machines.at(0).transitions){
 		}
 	}
 }
+// FORK: the machine-transition scan above cannot see reads that
+// enter the theory text through DATA-PLANE INLINING — a guard reading
+// levelRiskM1M2 inlines its definition, whose text reads projLow. Any
+// state variable read (or assigned) by a data-plane definition therefore
+// needs its lens too, or the inlined pre/update strings reference names
+// with no zstore declaration. Assigned names: dataDefOrder itself.
+// Read names: collectLensReadNames over each definition expression.
+for(dvName in dataDefOrder){
+	if(stateVarNames.includes(dvName)){ usedStateVarNames.add(dvName); }
+	var dvReads: OrderedSet;
+	dataDefExpr.get(dvName).collectLensReadNames(dvReads);
+	for(dvRead in dvReads){
+		if(stateVarNames.includes(dvRead)){ usedStateVarNames.add(dvRead); }
+	}
+}
+// FORK (I1): record which state variables actually receive a zstore
+// lens. The update-block emitter may only write `<v>\<Zprime>` for a
+// name that has a lens here; writing one for a name with no lens is an
+// "Extra variables on rhs" elaboration failure.
+var zstoreLensNames: OrderedSet;
 for(svName in stateVarNames){
 	if(not usedStateVarNames.includes(svName)){ continue; }
 	var svType = stateVarTypes.get(svName);
@@ -726,6 +1071,7 @@ for(svName in stateVarNames){
 		sv_string = svName + " :: \"" + svType.domain.zmType() + " list\"";
 	}
 	if(emit){
+		zstoreLensNames.add(svName);
 %]  [%=sv_string%]
 [%
 	}
@@ -741,11 +1087,89 @@ for(svName in stateVarNames){
 // downstream `deadlock_free` proof can run. The trace-shape condition
 // is then a separate verification problem the user can take on later
 // if needed (replacing `True` here, hand-writing inv preservation).
+%][%
+// FORK (C2 fix, companion to the pre-conjunct in SUBSECTION 3 below;
+// retargeted by the dynamic-lens split). Event-triggered operations carry
+// `<evt> \<in> offered` in their precondition. The invariant pins the
+// STATIC lens per state:
+//   st = S \<longrightarrow> listens = T_S
+// where T_S is exactly the set every operation entering S writes into
+// `listens\<Zprime>` (same per-target computation as the update
+// emission below scans outgoing transitions of S). Init (st = initial,
+// listens = {}) matches the initial-node conjunct because the initial
+// junction has no triggered outgoing transitions.
+//
+// WHY THE PIN IS NOT VACUOUS AFTER THE SPLIT. Nothing reads `listens`
+// directly in a guard, so a pin on it would be dead weight on its own —
+// that is the vacuity criticism (R2) we must not walk into. The
+// `offered \<subseteq> listens` conjunct emitted alongside every presence
+// and every absence conjunct is what carries the pin onto the guards: in
+// state S it forces `offered \<subseteq> T_S`, so a trigger conjunct
+// `<evt> \<in> offered` is satisfiable exactly when `<evt> \<in> T_S`,
+// which is the constraint the single-lens encoding asserted directly.
+// The pin therefore still does work; it just does it one step removed,
+// and one step removed is precisely what makes absence satisfiable.
+//
+// Emit a pin ONLY for states with at least one triggered outgoing
+// transition. A `listens = {}` pin is dead weight: no operation's
+// precondition reads `listens` in such a state (there is no trigger
+// conjunct to discharge), so the conjunct adds a proof obligation to
+// every one of the N structural `_inv` lemmas while constraining
+// nothing. Measured on chemical_detector (2026-08-15): pinning all six
+// states did NOT terminate at a 3600s per-goal timeout, and isolation
+// showed the cost is carried by the 12 `<Op>_inv ... preserves
+// GasAnalysisController_inv` lemmas, not by deadlock_free — each must
+// now case-split the state-indexed invariant, and this is the one study
+// combining that with a typed payload domain (`SeqGs = UNIV [simp]`),
+// which makes the enabledness existentials solvable rather than closed
+// structurally. Dropping the two empty pins (NoGas, initial) discharges
+// the whole session in 1m53s with zero errors. LRE and SRanger each have
+// exactly one empty-trigger state (`initial`), so the filter drops one
+// conjunct from each; both already discharged WITH that conjunct present
+// (1m21s / 0m32s), so removing a vacuous pin cannot make them harder --
+// but re-verify after regeneration rather than assuming it.
+var trigInvConjuncts: String = "";
+for (invNode in p.machines.at(stm_index).nodes){
+	var invTrigSet: String = "";
+	var invTrigCount = 0;
+	for (invTr in p.machines.at(stm_index).transitions.select(t|t.source = invNode)){
+		if (invTr.trigger.isDefined() and invTr.trigger.event.isDefined()){
+			if (invTrigCount > 0) { invTrigSet = invTrigSet + ", "; }
+			invTrigSet = invTrigSet + invTr.trigger.event.name;
+			invTrigCount++;
+		}
+	}
+	if (invTrigCount > 0) {
+		trigInvConjuncts = trigInvConjuncts + "\n   \\<and> (st = " + invNode.zmState() + " \\<longrightarrow> listens = {" + invTrigSet + "})";
+	}
+}
 %]  st::"St"
   tr :: "(St, Evt) tag list"
-  triggers:: "Evt set"
+  listens :: "Evt set"   (* FORK: STATIC. The events state `st` listens
+                            for. Written by every operation's update to the
+                            target state's awaited set; pinned per state by the
+                            invariant below. A property OF THE AUTOMATON. *)
+  offered :: "Evt set"   (* FORK: DYNAMIC. The events the environment
+                            offers THIS step. Written by no operation, pinned by
+                            no invariant conjunct: a free input. Read by trigger
+                            presence conjuncts (C2) and absence conjuncts.
+                            A property OF THE ENVIRONMENT, not of the automaton. *)
   where inv:
-    "tr \<noteq> []"
+    "tr \<noteq> [][%=trigInvConjuncts%] \<and> offered = listens"
+[%
+// FIX (2026-09-16). The conjunct `offered = listens` is the
+// MAXIMAL-COOPERATION ENVIRONMENT ASSUMPTION: the environment offers exactly
+// the events the machine listens for. Without it, `offered` is a zstore field
+// no operation updates and no invariant pins, so the deadlock-freedom goal
+// universalises it (method deadlock_free's allI, Z_Machine.thy:117) and the
+// obligation reads "enabled under EVERY conceivable offer" -- refuted
+// machine-checked on chem (probe_P2: false at READING for every listens).
+// With the conjunct, the probe run of 2026-09-16 closed ALL obligations:
+// sranger 17/17 (21s), lre 39/39 (119s), chem 17/17 (30s, with the tactic
+// fix at the ddTac fork below). Established by Init (offered ~> {}) and
+// preserved by pairing every listens' update with an offered' update -- both
+// emitted below. The paper must state this as the environment model.
+%]
 
 subsection \<open> Operations \<close>
 
@@ -755,12 +1179,17 @@ subsection \<open> Operations \<close>
 //zoperations_string is used for zmachine section
 //zoperations_set is used for the lemma of structural invariant section
 var zoperations_string:String;
+// Tactic support: accumulate every emitted precondition so the ddTac fork
+// can compute WHICH enums' exhaust_disc lemmas the deadlock_free proof needs
+// (an enum compared in a pre lands in the residual disjunction).
+var allPreStrings : String;
+allPreStrings = "";
 var zoperations_set: OrderedSet;
 var zop_name: String;
 
 //this para_string is a set to contain all the parameter in para segment, and will be used for lemma generation
 
-for(tr in p.machines.at(0).transitions){ 
+for(tr in p.machines.at(stm_index).transitions){ 
 var para_string: OrderedSet;
 
 "START NEW TRANSITION QUERY".println();
@@ -809,12 +1238,26 @@ params_string="";
 // parameter for the zoperation: emits `params <sv>_input \<in> "..."`
 // and records `<sv>` in lensParas so the action-substitution path can
 // strip the `()` from the corresponding lens-read CallExp.
+// FIX (2026-09-20). This guard required the action to be a SeqStatement,
+// so a transition whose action is a SINGLE Assignment never reached it: no
+// `params <sv>_input` was emitted, while the update path still rendered the
+// lens read as `v()`. Isabelle then rejected the definition with
+// "Extra variables on rhs: v". Found by the autonomous arm's
+// chemical_detector run-5, where of four gs-assigning branches the two with
+// a FOLLOWING statement became SeqStatement and emitted `gs_input`
+// correctly, while the two with the assignment alone emitted undeclared
+// `v()`. Accept both shapes; the body below is unchanged.
+var actionP = tr.action;
+var singleAssignP = actionP.isDefined() and actionP.isTypeOf(Assignment);
+var seqAssignP = actionP.isDefined() and actionP.isTypeOf(SeqStatement)
+		and actionP.statements.size() > 0
+		and actionP.statements.at(0).isTypeOf(Assignment);
 if(tr.trigger.isDefined() and tr.trigger.event.isDefined()
 		and tr.trigger.event.type.isDefined()
-		and tr.action.isDefined() and tr.action.isTypeOf(SeqStatement)
-		and tr.action.statements.size() > 0
-		and tr.action.statements.at(0).isTypeOf(Assignment)){
-	var firstAssignP = tr.action.statements.at(0);
+		and (seqAssignP or singleAssignP)){
+	var firstAssignP;
+	if(seqAssignP){ firstAssignP = actionP.statements.at(0); }
+	else { firstAssignP = actionP; }
 	var rhsP = firstAssignP.right;
 	var rhsArgsP = rhsP.args.isDefined() ? rhsP.args : new Sequence;
 	if(rhsP.isTypeOf(CallExp) and rhsArgsP.isEmpty()
@@ -872,7 +1315,11 @@ if(tr.action.statements.at(i).isTypeOf(CommunicationStmt) and  tr.action.stateme
 if(tr.action.statements.at(i).communication.parameter.type.isTypeOf(TypeRef) or tr.action.statements.at(i).communication.parameter.type.isTypeOf(ProductType)){
 params_string=params_string + tr.action.statements.at(i).communication.parameter.name+"_input \\<in> \"" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\" ";
 } 
-else if(tr.action.parameter.type.isTypeOf(SeqType)){
+// FIX (audit): was `tr.action.parameter.type` — SeqStatement has no
+// `parameter` feature, so a SeqType payload in a multi-action transition
+// aborted the template with a property-not-found error instead of
+// emitting the Seq domain param.
+else if(tr.action.statements.at(i).communication.parameter.type.isTypeOf(SeqType)){
 params_string=params_string + tr.action.statements.at(i).communication.parameter.name+"_input \\<in> \"Seq" + tr.action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\" ";
 }
 
@@ -904,8 +1351,13 @@ if(tr.target.actions.at(0).action.statements.at(i).isTypeOf(CommunicationStmt) a
 if(tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.isTypeOf(TypeRef) or tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.isTypeOf(ProductType)){
 params_string=params_string + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name+"_input \\<in> \"" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\" ";
 } 
-else if(tr.target.actions.at(0).action.statements.at(i).parameter.type.isTypeOf(SeqType)){
-params_string=params_string + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name+"_input \\<in> \"Seq" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\"";
+// FIX (audit): was `...statements.at(i).parameter.type` — missing the
+// `.communication` segment (CommunicationStmt holds the parameter under
+// communication), so CASE 5's SeqType branch aborted on property-not-found.
+// Also restored the trailing space after the closing quote for consistency
+// with CASES 1-4 (params concatenation separator).
+else if(tr.target.actions.at(0).action.statements.at(i).communication.parameter.type.isTypeOf(SeqType)){
+params_string=params_string + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name+"_input \\<in> \"Seq" + tr.target.actions.at(0).action.statements.at(i).communication.parameter.name.firstToUpperCase() +"\" ";
 }
 zop_tuple.hasPara = true;
 zop_tuple.paras.add(tr.target.actions.at(0).action.statements.at(i).communication.parameter.name);
@@ -930,14 +1382,85 @@ pre_string="pre \"st= "+tr.source.zmState();
 if (tr.condition.isDefined() )
 {
 ("tr.condition: " + tr.condition).println();
-pre_string=pre_string+" \\<and> "+ tr.condition.binaryExpString();
+// FORK (I1 guard-skew): a condition that reads a STATEFUL data-plane
+// variable (see `preDefs` above) must dispatch on the value the Java
+// computes THIS step, not the previous step's lens — inline the
+// definition (self-reads render as bare pre-state lenses, so the
+// inlined text is exactly the Java's dispatch-time expression over
+// pre-state). Conditions reading only memoryless names keep the
+// original bare-lens rendering, byte-identically.
+var preNeedsInline = false;
+if(statefulLensNames.size() > 0){
+	var preCondReads: OrderedSet;
+	tr.condition.collectLensReadNames(preCondReads);
+	for(preRn in preCondReads){
+		if(preDefs.containsKey(preRn)){ preNeedsInline = true; }
+	}
+}
+if(preNeedsInline){
+	var preStack: OrderedSet;
+	pre_string=pre_string+" \\<and> "+ tr.condition.inlineRender(preDefs, stateVarNames, enumLiteralNames, preStack);
+} else {
+	pre_string=pre_string+" \\<and> "+ tr.condition.binaryExpString();
+}
 }
 
 var tr_string:String;
 
 //SUBSECTION 3:transition trigger of Simple/input/output event  -> this should be converted to a 'pre' section
+// FORK (C2 fix): the trigger event was previously written ONLY into the
+// trace annotation (`tr_string`) and the post-state `triggers\<Zprime>` set;
+// no precondition ever read it, so the zmachine's unguarded choice let an
+// event-triggered operation fire under ANY event (witness: OCMToMOM fired
+// without ReqMOM in the Tier-B conformance enumeration). We conjoin a
+// trigger-presence test into the pre, so an operation with trigger `e`
+// is enabled only when `e` is actually available. Autonomous
+// (triggerless) transitions remain unconstrained unless they take an
+// absence conjunct (SUBSECTION 3b).
+//
+// ENCODING, AS REVISED BY THE DYNAMIC-LENS SPLIT. The original C2 fix reused the
+// single `triggers :: "Evt set"` field for both the pin and the guard.
+// That field carried two meanings — the events a state LISTENS FOR
+// (static, automaton-side) and the events OFFERED this step (dynamic,
+// environment-side) — and the conflation made the absence conjunct
+// contradict C2's pin. The zstore now declares the two separately:
+//   listens :: "Evt set"   static, pinned per state by the invariant
+//   offered :: "Evt set"   dynamic free input, written by no operation
+// The guard reads `offered`; the well-formedness link
+// `offered \<subseteq> listens` is conjoined beside it so the pin still
+// constrains what can be offered. Rejected alternative (unchanged
+// judgement): `trg :: "Evt option"` as a pending-event variable — no
+// operation writes `trg`, so under Init `trg = Some e` would be
+// unsatisfiable and the machine would deadlock. `offered` avoids this
+// because it is never initialised at all, so Init leaves it arbitrary
+// rather than fixing it to a value no guard accepts.
+// Two consistent readings of the conjunct, now genuinely consistent:
+//   * Proof world: the invariant pins `listens` per state; with
+//     `offered \<subseteq> listens` the conjunct is satisfiable in every
+//     state that awaits `e`, and refutable in every state that does not.
+//   * Conformance world: a checker enumerating (state, event) pairs
+//     instantiates `offered := {e}` for the pending event `e`; the
+//     conjunct then blocks any operation whose trigger differs from `e`,
+//     closing the C2 gap (OCMToMOM no longer fires under endTask), and
+//     `offered := {}` models a step where nothing is offered — which is
+//     what makes the absence conjunct satisfiable.
 if(tr.trigger.isDefined()and tr.trigger.event.isDefined() ){
-//pre_string=pre_string+" \\<and> trg=Some "+ tr.trigger.event.name;
+// FORK: read the DYNAMIC lens. `<evt> \<in> offered` says "the
+// environment is offering <evt> this step" — that is what a trigger guard
+// tests. Reading the STATIC `listens` here (the pre-split encoding) made the
+// conjunct entailed by the per-state pin, hence inert: it constrained the
+// automaton's own shape rather than the input, which is why its negation
+// came out unsatisfiable. See SUBSECTION 3b.
+pre_string=pre_string+" \\<and> "+tr.trigger.event.name+" \\<in> offered";
+// FORK: ALSO conjoin the well-formedness link `offered \<subseteq>
+// listens` — the environment may only offer events the current state listens
+// for. This is what keeps the C2 pins load-bearing rather than vacuous: the
+// pin fixes `listens` per state, and this conjunct transfers that constraint
+// onto the free input. Without it the pins would constrain a variable that no
+// precondition reads, which is exactly the vacuity reviewer R2 objects to.
+// It is a SUBSET, not an equality: equality would re-assert "every listened
+// event is offered every step", reintroducing the contradiction.
+pre_string=pre_string+" \\<and> offered \\<subseteq> listens";
 tr_string= "@ [Event "+tr.trigger.event.name+"]";
 }
 
@@ -978,9 +1501,123 @@ for(elName in enumLiteralNames){
 		pre_string = pre_string.replace(elName + "\\(\\)", elName);
 	}
 }
+//SUBSECTION 3b: event-ABSENCE conjuncts for TRIGGERLESS transitions.
+// DEFECT. Java renders the outgoing transitions of a state as one
+// if / else-if chain in SOURCE ORDER, so an event-triggered branch that
+// appears BEFORE an autonomous (triggerless) branch pre-empts it: the
+// autonomous branch runs only when that event is ABSENT this step.
+// Witness (LRE, reference-runs/lre/java/controller/LreController.java:272-281):
+//     if (event instanceof InputEvent.ReqOCM) { currentMode = OCM; }        // t14
+//     else if (cdaAboveOrAtMinSafe)          { currentMode = OCM; ... }     // t15
+// The RoboChart metamodel has no expression form for event absence
+// (robochart.ecore has no "event not offered" node), so the M2M stage
+// cannot record the else-arm obligation and both transitions reach this
+// template with independent guards. Emitted preconditions were
+//     CAMToOCM    pre "st= CAM \<and> reqOCM \<in> triggers"
+//     CAMToOCM_1  pre "st= CAM \<and> cda\<ge>minsafedist()"
+// which are simultaneously satisfiable, admitting TWO operations where
+// the Java is deterministic (measured: 128 of 8192 LRE abstract states).
+// Both target OCM, so the defect is spurious NONDETERMINISM, not a wrong
+// successor. Isabelle CAN express the missing conjunct even though
+// RoboChart cannot, because trigger presence is already encoded as set
+// membership, so its negation is available with no new proof machinery.
+// (The dynamic-lens split did add a zstore field — `offered`, split out of
+// `triggers` — because the ONE field could not carry both meanings; see
+// the RESOLVED note below.)
+//
+// RULE. For a triggerless transition `tr`, conjoin
+// `\<not>(<evt> \<in> offered)` for every event `<evt>` triggering a
+// HIGHER-PRIORITY transition from the SAME source state.
+//   * DIRECTION: only triggerless transitions receive absence conjuncts.
+//     Event-triggered ones must not: at most one event is offered per
+//     step, so two event-triggered branches are already separated by
+//     trigger disjointness, and adding absence conjuncts there would
+//     over-constrain (chemical_detector already carries two operations
+//     with unsatisfiable preconditions from the M2M-side C1 guard
+//     negation — GasAnalysisController_Beh.thy:135,168 — do not add more).
+//   * SAME SOURCE ONLY: a higher-priority transition out of a DIFFERENT
+//     state imposes no obligation here.
+//   * PRIORITY SOURCE: the Java if/else-if order, preserved by the M2M
+//     stage as the index of `p.machines.at(stm_index).transitions`. Verified on
+//     LRE: t1..t15 appear in the order of LRE-Beh2..Beh18 in the Java
+//     source, and CAM's t14 (reqOCM, line 273) precedes t15 (autonomous,
+//     line 277). This is the same list order the C2 pin above and the
+//     `listens\<Zprime>` update below already scan, so no new ordering
+//     assumption is introduced. Scan positions strictly BEFORE `tr`.
+//
+// RESOLVED — was a BLOCKER while one lens carried two meanings.
+// HISTORY. The C2 fix pinned, for each state S with a triggered outgoing
+// transition, `st = S \<longrightarrow> triggers = T_S` where T_S is ALL
+// events triggering an outgoing transition of S, and read the SAME
+// `triggers` in the presence conjunct. Every event `<evt>` used here is by
+// construction the trigger of an outgoing transition of `tr.source`, hence
+// `<evt> \<in> T_tr.source`. Under the pin `<evt> \<in> triggers` was
+// therefore TRUE and the absence conjunct FALSE: the precondition was
+// UNSATISFIABLE in the invariant world and the operation proof-dead.
+// Structural, not incidental — it held for EVERY absence conjunct the rule
+// can emit, with the C2 conjuncts the inert mirror image.
+// DIAGNOSIS. One variable, two meanings. (a) the events a state LISTENS
+// FOR — static per state, what the update writes and the pin records; (b)
+// the events OFFERED this step — a dynamic environment input, what a guard
+// must read to test presence OR absence. Conflating them is precisely why
+// an absence conjunct contradicted a pin.
+// FIX. The zstore now declares BOTH: `listens` (static, pinned) and
+// `offered` (dynamic, unpinned free input). Presence and absence conjuncts
+// both read `offered`; the pin still constrains `listens`, and stays
+// load-bearing via the `offered \<subseteq> listens` conjunct emitted
+// alongside each presence conjunct. `<evt> \<in> offered` and
+// `\<not>(<evt'> \<in> offered)` for `<evt> \<noteq> <evt'>` are then
+// jointly satisfiable — witness for LRE CAM: `offered = {}` satisfies
+// CAMToOCM_1's absence conjunct while `listens = {reqOCM}` still holds.
+// RESIDUAL, STATED HONESTLY. `offered` is unconstrained apart from the
+// subset link, which is the CORRECT encoding of "an event may or may not
+// be offered" but means enabledness now depends on a free variable: an
+// operation guarded on absence is DISABLED in valuations where the
+// pre-empting event is offered, and an operation guarded on presence is
+// disabled when it is not. `deadlock_free`'s statement is unchanged in
+// FORM, but its truth now quantifies over environment valuations too, and
+// whether it still discharges CANNOT be checked here (no Isabelle in this
+// environment). See close_thy_report.md; measured claims are guard-level
+// only. Rejected alternative: weakening the pin to `triggers \<subseteq>
+// T_S` on a single lens — that makes both conjuncts satisfiable but makes
+// `deadlock_free` FALSE rather than merely unproven (LRE CAM with
+// `triggers = {}` and `cda < minsafedist()` enables nothing).
+var absenceEvents: OrderedSet;
+if(not (tr.trigger.isDefined() and tr.trigger.event.isDefined())){
+	var allTrs = p.machines.at(stm_index).transitions;
+	var reachedSelf = false;
+	var k = 0;
+	while(k < allTrs.size()){
+		var hp = allTrs.at(k);
+		if(hp = tr){
+			reachedSelf = true;
+		}
+		if(not reachedSelf){
+			if(hp.source = tr.source and hp.trigger.isDefined()
+			   and hp.trigger.event.isDefined()){
+				absenceEvents.add(hp.trigger.event.name);
+			}
+		}
+		k = k + 1;
+	}
+	for(absEv in absenceEvents){
+		pre_string = pre_string + " \\<and> \\<not>(" + absEv + " \\<in> offered)";
+	}
+	// FORK: a triggerless transition carries NO presence conjunct,
+	// so it never gets the `offered \<subseteq> listens` link from SUBSECTION 3
+	// above. Emit it here whenever an absence conjunct was emitted, so the
+	// absence guard is still read against a well-formed environment (an
+	// `offered` containing events the state does not listen for is not a
+	// behaviour the Java can exhibit). Triggerless transitions with NO absence
+	// conjunct stay entirely free of `offered`, exactly as before the split.
+	if(absenceEvents.size() > 0){
+		pre_string = pre_string + " \\<and> offered \\<subseteq> listens";
+	}
+}
 pre_string=pre_string+"\"";
 pre_string.println();
 %]
+[% allPreStrings = allPreStrings + pre_string; %]
   [%=pre_string%]
 [%
 
@@ -989,6 +1626,92 @@ pre_string.println();
 %]
   update "[st\<Zprime>= [%=tr.target.zmState()%]
   		  [%
+// FORK (I1 fix): emit the DATA PLANE. The Java `step()` re-evaluates
+// every operation-defined variable BEFORE selecting a transition, so
+// every operation must carry the same data updates.
+//
+// EMISSION ORDER IS NOT SEMANTICALLY LOAD-BEARING, and is not claimed
+// to match the Java. `dataDefOrder` follows `p.operations` (the ETL's
+// class-discovery order: for LRE, CalcCDyn, CalcCPA, CalcCStc, CalcVel,
+// CheckOPEZ), whereas the controller dispatches calcVel, calcCStc,
+// calcCDyn, calcCPA, checkOPEZ — a different permutation. That is
+// harmless BECAUSE the block is a simultaneous substitution whose RHSs
+// are fully inlined (see `inlineRender`): no clause reads any other
+// clause's lens, so the list is order-invariant by construction. WITHIN
+// one operation body the order does matter for choosing what to inline,
+// and that order is the Java's (pinned by the M2M U3 fix).
+//
+// LIMITATION: `dataDefExpr` is a Map keyed by variable name, so a body
+// that assigns the same variable twice (`x = a; x = b`) keeps only the
+// LAST definition, and a read of `x` between the two would inline the
+// wrong one. No operation body in the three case studies assigns any
+// variable more than once (verified by inspecting the `.rct` action
+// LHSs), so this cannot be mis-emitting anything today; it is a
+// correctness gap to close if a repeated-assignment body appears.
+//
+// Restrictions, each of which drops a clause rather than emitting
+// something unsound:
+//   * only names with a zstore lens (`zstoreLensNames`) are emitted;
+//     inlining-only intermediates (LRE hvel/vvel/tcpa) have no lens.
+//   * a name rebound by this operation's own trigger payload
+//     (`lensParas`) is skipped: the payload assignment below is the
+//     authoritative new value and two clauses for one lens would be a
+//     duplicate-substitution error.
+//   * a name assigned by this transition's own action, or by the target
+//     state's entry action, is skipped for the same reason — the
+//     transition-local write wins, matching the Java, where the
+//     transition body runs after the refresh.
+var i1Skip: OrderedSet;
+if(zop_tuple.hasPara){
+	for(pSkip in zop_tuple.paras){
+		if(zop_tuple.lensParas.includes(pSkip)){ i1Skip.add(pSkip); }
+	}
+}
+if(tr.action.isDefined()){
+	if(tr.action.isTypeOf(SeqStatement)){
+		for(aStmt in tr.action.statements){
+			if(aStmt.isTypeOf(Assignment) and aStmt.left.isDefined()
+					and aStmt.left.name.isDefined()){
+				i1Skip.add(aStmt.left.name.name);
+			}
+		}
+	} else if(tr.action.isTypeOf(Assignment) and tr.action.left.isDefined()
+			and tr.action.left.name.isDefined()){
+		i1Skip.add(tr.action.left.name.name);
+	}
+}
+if(tr.target.actions.notEmpty()
+		and (tr.target.actions.at(0).isTypeOf(EntryAction)
+			or tr.target.actions.at(0).isTypeOf(DuringAction))){
+	var tAct = tr.target.actions.at(0).action;
+	if(tAct.isTypeOf(Assignment) and tAct.left.isDefined() and tAct.left.name.isDefined()){
+		i1Skip.add(tAct.left.name.name);
+	} else if(tAct.isTypeOf(SeqStatement)){
+		for(tStmt in tAct.statements){
+			if(tStmt.isTypeOf(Assignment) and tStmt.left.isDefined()
+					and tStmt.left.name.isDefined()){
+				i1Skip.add(tStmt.left.name.name);
+			}
+		}
+	}
+}
+for(dvName in dataDefOrder){
+	if(not zstoreLensNames.includes(dvName)){ continue; }
+	if(i1Skip.includes(dvName)){ continue; }
+	var i1Stack: OrderedSet;
+	// FORK (I1 self-read): seed the expansion stack with the clause's own
+	// LHS, so a definition that reads its own name (`cycleCount =
+	// cycleCount + 1`) renders that read as the bare PRE-state lens —
+	// the simultaneous-substitution meaning, same as `tr\<Zprime> = tr @
+	// [...]` — instead of inlining the definition into itself (which
+	// emitted a double increment and a spurious I1-CYCLE marker).
+	i1Stack.add(dvName);
+	var i1Rhs = dataDefExpr.get(dvName).inlineRender(dataDefExpr, stateVarNames,
+			enumLiteralNames, i1Stack);
+%]
+         ,[%=dvName%]\<Zprime> = [%=i1Rhs%]
+[%
+}
 
 if(zop_tuple.hasPara){
 for(p in zop_tuple.paras){
@@ -1033,7 +1756,29 @@ if(assignRhs.isTypeOf(CallExp)){
 if(not skipAssign){
 //CASE a, there is no input event in this transition
 //this is the default setting: "not zop_tuple.hasPara"
-tr_action_string=","+tr.action.statements.at(i).left.name.name+"\\<Zprime> = "+tr.action.statements.at(i).right.oneSideOfBianryString();
+// FORK (I1 fix, sranger cycle counter): when the assignment's RHS reads a
+// DATA-PLANE variable (a name defined in this cycle's refresh), the Java
+// branch body runs AFTER the top-level refresh, so the read must see the
+// value THIS step computes — `turnStartCycle = cycleCount` on the
+// Moving -> Turning transition must record the incremented count, not the
+// stale pre-state lens. Route exactly those RHSs through `inlineRender`
+// (same rule the bare-Assignment CASE 3 below already applies); every
+// other RHS keeps the original `oneSideOfBianryString` rendering, so
+// transitions that read no data-plane name emit byte-identical text.
+var caseAReadsDataPlane = false;
+if(statefulLensNames.size() > 0){
+	var caseARhsNames: OrderedSet;
+	tr.action.statements.at(i).right.collectCallExpNames(caseARhsNames, new Set);
+	for(caseARn in caseARhsNames){
+		if(dataDefExpr.containsKey(caseARn)){ caseAReadsDataPlane = true; }
+	}
+}
+if(caseAReadsDataPlane){
+	var caseAStack: OrderedSet;
+	tr_action_string=","+tr.action.statements.at(i).left.name.name+"\\<Zprime> = "+tr.action.statements.at(i).right.inlineRender(dataDefExpr, stateVarNames, enumLiteralNames, caseAStack);
+} else {
+	tr_action_string=","+tr.action.statements.at(i).left.name.name+"\\<Zprime> = "+tr.action.statements.at(i).right.oneSideOfBianryString();
+}
 
 //CASE b, there is input event, we need to use var_input instead of var
 for(p in zop_tuple.paras){
@@ -1086,6 +1831,65 @@ else if(tr.action.isTypeOf(CommunicationStmt)){
 if(tr.action.communication._type.name="SIMPLE" or tr.action.communication._type.name="INPUT" or tr.action.communication._type.name="OUTPUT"){
 tr_string=tr_string+"@ [Event "+tr.action.communication.event.name +"]";
 }}
+
+//CASE 3 (FORK, I1 fix): single BARE Assignment as the whole transition
+// action. The dispatcher above handled only SeqStatement (CASE 1) and a
+// bare CommunicationStmt (CASE 2), so a transition whose entire action
+// is one assignment fell through and the assignment VANISHED from the
+// update block. Witness — chemical detector t4 (Analysis -> GasDetected)
+// carries `<action xsi:type="robochart:Assignment">` for the
+// GasDetected entry action `insVal = peakIntensity(gs)`; pre-fix,
+// `insVal` was declared in the zstore, read by three preconditions
+// (GasDetectedToFinal / ToReading / ToGasDetected) and written by
+// nothing, so it was frozen exactly as the LRE data variables were.
+//
+// The RHS goes through `inlineRender` (not `oneSideOfBianryString`) so
+// that a read of a data-plane variable in a transition action sees the
+// value this same step computes, not the previous cycle's — the Java
+// runs the refresh before the transition body. On these three studies
+// the two renderings coincide (no transition action reads a data-plane
+// variable), so this cannot change LRE or SRanger output; it is the
+// correct rule for a model where one does.
+else if(tr.action.isTypeOf(Assignment) and tr.action.left.isDefined()
+		and tr.action.left.name.isDefined()
+		and zstoreLensNames.includes(tr.action.left.name.name)){
+	// FIX (2026-09-20), second site. CASE 1 (SeqStatement) skips the
+	// redundant `<sv> = v` trigger-rebind assignment; CASE 3 did not, so a
+	// single-assignment action emitted BOTH the storage clause
+	// `gs\\<Zprime> = gs_input` (from the lensParas path) and a stale
+	// `gs\\<Zprime> = v()`, leaving `v` free. Same rule, same rationale: the
+	// trigger already binds the payload.
+	var bareRhs = tr.action.right;
+	var bareSkip = false;
+	if(bareRhs.isTypeOf(CallExp)){
+		var bareArgs = bareRhs.args.isDefined() ? bareRhs.args : new Sequence;
+		if(bareArgs.isEmpty() and bareRhs.`function`.isDefined()
+				and bareRhs.`function`.isTypeOf(StringExp)
+				and bareRhs.`function`.value="v"){
+			bareSkip = true;
+		}
+	}
+	if(not bareSkip){
+	var bareStack: OrderedSet;
+	var bare_action_string = "," + tr.action.left.name.name + "\\<Zprime> = "
+		+ tr.action.right.inlineRender(dataDefExpr, stateVarNames, enumLiteralNames, bareStack);
+	// Same param / paren substitutions the SeqStatement path applies.
+	for(p in zop_tuple.paras){
+		if(zop_tuple.lensParas.includes(p)){
+			if((p + "()").isSubstringOf(bare_action_string)){
+				bare_action_string = bare_action_string.replace(p + "\\(\\)", p + "_input");
+			}
+		} else {
+			if(p.isSubstringOf(bare_action_string)){
+				bare_action_string = bare_action_string.replace(p, (p + "_input"));
+			}
+		}
+	}
+%]
+         [%=bare_action_string%]
+[%
+	}
+}
 }
 
 
@@ -1209,7 +2013,7 @@ i++;
 var triggers_string;
 var numOfNewTrig=0;
 
-for(t in p.machines.at(0).transitions.select(t|t.source.name=tr.target.name)){
+for(t in p.machines.at(stm_index).transitions.select(t|t.source.name=tr.target.name)){
 if  (t.trigger.isDefined()and t.trigger.event.isDefined() and numOfNewTrig=0)
 {numOfNewTrig++;
 triggers_string=t.trigger.event.name;}
@@ -1217,8 +2021,20 @@ else if  (t.trigger.isDefined()and t.trigger.event.isDefined() and numOfNewTrig>
 {numOfNewTrig++;
 triggers_string=triggers_string+", "+t.trigger.event.name;}
 }     
-%]         ,triggers\<Zprime> = {[%=triggers_string%]}
+%]         ,listens\<Zprime> = {[%=triggers_string%]}
+         ,offered\<Zprime> = {[%=triggers_string%]}
          ]"
+[%
+// FORK: the update writes ONLY the static lens — the awaited set
+// of the TARGET state, which is what re-establishes that state's invariant
+// pin. `offered` is deliberately NOT assigned by any operation. Under the
+// Z-Machines frame rule an unassigned lens is left arbitrary, which is
+// exactly the intended reading: what the environment offers next step is
+// not determined by the automaton. (Contrast the I1 data-plane lenses,
+// where "arbitrary but CONSTANT for a whole run" was the defect — there the
+// Java recomputes each cycle, so silence was wrong. Here silence is right:
+// the Java's `step(MyEvent event)` takes the offered event as a PARAMETER.)
+%]
         
 [%
 //'}' in the line below is the close end of transition for loop
@@ -1232,24 +2048,95 @@ triggers_string=triggers_string+", "+t.trigger.event.name;}
 // Emit sensible defaults so the theory parses:
 //   st       -> initial          (designated pseudo-state from St enumtype)
 //   tr       -> [State initial]  (history starts at the initial state)
-//   triggers -> {}               (no triggers before first step)
+//   listens  -> {}               (nothing awaited before the first step)
 // The developer can hand-edit the defaults to match their domain if
 // Init_inv doesn't close automatically.
+//
+// FORK: `offered` is deliberately ABSENT from this substitution.
+// It is the environment's free input; Init must not fix it, or every run
+// would start from one environment valuation. Init_inv still closes: the
+// invariant's pins are all of the form
+// `st = S \<longrightarrow> listens = T_S` for states S WITH triggered
+// outgoing transitions, and Init sets `st = initial` — the initial
+// pseudo-state has no triggered outgoing transition, so it carries no pin
+// and no conjunct constrains `listens = {}` here. No invariant conjunct
+// mentions `offered` at all, so leaving it arbitrary cannot break Init_inv.
 %]
 definition Init :: "[%=stm_name%] subst" where
   [z_defs]:
   "Init =
   [st\<leadsto> initial
   ,tr\<leadsto> [State initial]
-  ,triggers\<leadsto> {}
+  ,listens\<leadsto> {}
+  ,offered\<leadsto> {}
   ]"
 (* FORK: defaults emitted by template; edit to match intended initial state if needed. *)
   
   
+[%
+// FIX (2026-09-16). Emit the `until` clause for terminal states.
+//
+// THE DEFECT. deadlock_free_z_machine (Z_Machine.thy:83) is
+//   Init establishes Inv;  all E in Events. H{Inv} E {Inv};
+//   `~End /\ Inv --> dfp (foldr (box) Events Stop)`
+//   ==> deadlock_free (z_machine Init Inv Events End)
+// so `End` marks states EXEMPT from the deadlock-freedom obligation. The
+// zmachine outer syntax accepts it as an optional trailing clause --
+// `Scan.optional (@{keyword "until"} |-- term) "False"` (Z_Machine.ML:336) --
+// and this template never emitted it, so End defaulted to False: every state,
+// including terminal ones, had to offer something.
+//
+// WHY THAT IS FALSE, MEASURED. The residual goal quantifies the environment
+// offer UNIVERSALLY (`method deadlock_free` at Z_Machine.thy:113 ends with
+// `(rule conjI allI impI | erule conjE disjE exE)+` at Z_Machine.thy:117 --
+// the allI is what universalises the offer), so a state whose every operation is
+// trigger-guarded (`e : offered /\ offered <= listens`) fails at offered = {}.
+// Machine-checked on chem 2026-09-16 by scripts/test_f17_probe.sh:
+//   P  goal FALSE at READING, offered = {}   CLOSED  65s
+//   Q  goal FALSE at FINAL,   offered = {}   CLOSED  55s
+//   S  SANITY: same shape TRUE at NO_GAS     CLOSED  55s   (non-vacuity)
+// The tick-triggered self-loop gave FINAL a disjunct but a trigger-guarded
+// one, so it removed the "no disjunct at all" defect and not the falsity.
+//
+// WHAT THIS FIX DOES. Marks states that are the source of no transition as
+// End, which is exactly their meaning: the machine has finished there and is
+// not required to offer anything. This is narrower than the gate, which
+// warns about the same states -- with `until` emitted the obligation becomes
+// provable and the warning is no longer a blocker, so the gate text now says
+// so. It does NOT touch trigger-guarded NON-terminal states (chem's READING):
+// those must offer something, and that they currently cannot at offered = {}
+// is a separate question about whether the invariant should force a non-empty
+// offer. Left open deliberately rather than papered over here.
+var endStates: OrderedSet;
+for (nd in p.machines.at(stm_index).nodes) {
+  if (not nd.isTypeOf(Final)) {
+    var isSrc = false;
+    for (tx in p.machines.at(stm_index).transitions) {
+      if (tx.source = nd) { isSrc = true; }
+    }
+    if (not isSrc) { endStates.add(nd.zmState()); }
+  }
+}
+var untilTerm: String = "";
+for (s in endStates) {
+  if (untilTerm = "") { untilTerm = "st = " + s; }
+  else { untilTerm = untilTerm + " \\<or> st = " + s; }
+}
+if (not endStates.isEmpty()) {
+  ("  emitting `until` for terminal state(s): " + endStates.concat(", ")).println();
+}
+%]
 zmachine [%=stm_name%]Machine =
   init Init
   invariant [%=stm_name%]_inv
-  operations [%=zoperations_string%] 
+  operations [%=zoperations_string%]
+[% if (not endStates.isEmpty()) { %]
+  until "[%=untilTerm%]"
+(* `until` marks states exempt from deadlock-freedom (deadlock_free_z_machine's
+   End parameter). These are states that are the source of no transition, so the
+   machine has terminated there and is not required to offer an event. Without this
+   clause End defaults to False and the obligation is FALSE at such a state --
+   machine-checked, see scripts/test_f17_probe.sh. *)[% } %]
 
 
 subsection \<open> Structural Invariants \<close>
@@ -1361,30 +2248,122 @@ n++;
 %]
 definition [z_defs]: "[%=stm_name%]_axioms = True"
 
+[%
+// GATE (2026-09-16). A state that is the SOURCE of no transition makes the
+// deadlock_free obligation below FALSE, not merely hard.
+//
+// WHY. `z_machine Init Ops = process Init (loop (foldr (\<box>) Ops))`
+// (Z_Machine.thy:80): the operations are combined by external choice and
+// wrapped in LOOP, so the machine never returns. A state enabling no operation
+// therefore offers the empty set — `Vis {}` — which is exactly
+// `deadlock` (ITree_Deadlock.thy:10). `deadlock_free_Ret` does NOT rescue it:
+// the machine never reaches Ret.
+//
+// MEASURED. chemical_detector v2 reached `state FINAL` (target of
+// GAS_DETECTEDToFINAL, source of nothing) and four tactics burned their budgets
+// on it — auto OOM-killed at 978s, metis 1825s, blast 922s, fastforce 923s —
+// all searching for a proof of a false statement. Refuted by
+// `probe_Y3_obligation_refuted` (scripts/isabelle_falsity_probe.sh), witness
+// st = FINAL. v1 did NOT have this: its model carried a `FinalToFinal` tick
+// self-loop (reference-runs/.../isabelle:170), and its proof closed in seconds.
+// The self-loops were lost between v1 and v2, which is what exposed this.
+//
+// THE FIX IS UPSTREAM, in the Java: every mode needs an outgoing transition,
+// and for a sink mode that means a TICK-TRIGGERED self-loop (bare
+// `pre "st = X"` for Isabelle, a visible event for FDR4 rather than a
+// tau-divergence). forge.assets/prompts/java_codegen_rules.txt now requires it.
+// This gate exists so the omission fails HERE, loudly, at generation time,
+// instead of silently downstream as an unprovable obligation that costs an hour
+// of verifier budget to not-diagnose.
+var nonSourceStates: OrderedSet;
+for (nd in p.machines.at(stm_index).nodes) {
+  if (not nd.isTypeOf(Final)) {
+    var isSrc = false;
+    for (tx in p.machines.at(stm_index).transitions) {
+      if (tx.source = nd) { isSrc = true; }
+    }
+    if (not isSrc) { nonSourceStates.add(nd.zmState()); }
+  }
+}
+if (not nonSourceStates.isEmpty()) {
+  ("  !! states with NO outgoing transition in " + stm_name + ": "
+   + nonSourceStates.concat(", ")
+   + " -- deadlock_free is FALSE for this machine (loop semantics: a state"
+   + " enabling no operation offers Vis {} = deadlock). Add a tick-triggered"
+   + " self-loop in the Java for each. Emitting the lemma with an explicit"
+   + " marker rather than a silent unprovable goal.").println();
+}
+%]
+[% if (not nonSourceStates.isEmpty()) { %]
+(* WARNING -- THIS OBLIGATION IS FALSE AS EMITTED.
+   State(s) with no outgoing transition: [%=nonSourceStates.concat(", ")%].
+   Under `loop` semantics such a state offers Vis {} = deadlock, so
+   deadlock_free does not hold. This is a MODEL defect (a missing tick-triggered
+   self-loop in the Java), not a proof-search problem: no tactic can close it.
+   Measured on chemical_detector v2 -- auto OOM 978s, metis 1825s, blast 922s,
+   fastforce 923s; refuted by probe_Y3_obligation_refuted with witness
+   st = [%=nonSourceStates.at(0)%].
+   Fix the Java per forge.assets/prompts/java_codegen_rules.txt ("EVERY MODE
+   MUST HAVE AN OUTGOING TRANSITION"), re-extract, and this marker disappears. *)
+[% } %]
 lemma [%=stm_name%]_deadlock_free: "[%=stm_name%]_axioms  \<Longrightarrow> deadlock_free [%=stm_name%]Machine"
   unfolding [%=stm_name%]Machine_def
   apply deadlock_free
-[% var ddTac; if(hasPayloadDomain){ ddTac = "using St.exhaust_disc by auto"; } else { ddTac = "by (metis St.exhaust_disc)"; } %]
+[% // FORK (C2 fix follow-on): event-triggered operations' enabledness
+   // disjuncts now carry `<evt> \<in> offered`; with the invariant pinning
+   // `st = S \<longrightarrow> listens = {..}` and the guards carrying
+   // `offered \<subseteq> listens`, discharging them needs set membership
+   // introduction on top of the enumtype exhaustion lemma. `insertCI`
+   // (a \<in> insert a A) supplies it for the metis path.
+   //
+   // !! UNVERIFIED AFTER THE DYNAMIC-LENS SPLIT — the tactic selection below was
+   // measured against the SINGLE-LENS encoding, where the pin fixed
+   // `triggers` exactly and the trigger conjunct was entailed by it. With
+   // `offered` a free input the residual goal changes shape: enabledness is
+   // now conditional on an unconstrained variable, so the bare `st = X`
+   // disjunct no longer closes every case by exhaustion alone. Whether
+   // `metis`/`auto` still discharge, and whether `deadlock_free` remains
+   // TRUE (not merely provable), could not be checked here: Isabelle is not
+   // runnable in this environment. Re-run the three sessions before
+   // claiming any proof result. The timings and tactic choices recorded
+   // below are PRE-SPLIT measurements, retained as the starting point for
+   // that re-run, NOT as evidence about the current emission.
+   // TACTIC FIX (2026-09-16). With the `offered = listens` invariant
+   // conjunct (see the inv emission above) the residual goal is a finite case
+   // analysis over St PLUS every enum some precondition compares (chem:
+   // `sts = noGas` puts Status in the disjunction). metis needs that enum's
+   // exhaust_disc among its facts or it searches forever -- measured: chem
+   // `metis St.exhaust_disc insertCI` TIMEOUT 900s, adding
+   // Status.exhaust_disc -> ALL CLOSED 30s (probe_iteration3.sh arm M2).
+   // COMPUTED, not hardcoded: an enum's lemma is supplied iff one of its
+   // literals occurs in an accumulated precondition. sranger/lre have no such
+   // enum and keep the bare-St call that closes them (21s/119s measured).
+   // The old hasPayloadDomain->auto fork existed because metis hung on the
+   // payload existential -- measured against a goal that was FALSE;
+   // with the true goal, metis+facts closes the payload machine too.
+   var exhaustFacts = "St.exhaust_disc";
+   for (t in p.types) {
+       if (t.isTypeOf(Enumeration) and t.name <> "St" and t.name <> "Evt") {
+           var used = false;
+           for (lit in t.literals) {
+               if (allPreStrings.indexOf(lit.name) >= 0) { used = true; }
+           }
+           if (used) { exhaustFacts = exhaustFacts + " " + t.name + ".exhaust_disc"; }
+       }
+   }
+   var ddTac; ddTac = "by (metis " + exhaustFacts + " insertCI)"; %]
   [%=ddTac%]
-  (* FORK: the deadlock_free closing tactic is selected by `hasPayloadDomain`
-     (set in PART 2 when this machine emits a typed-payload domain set such as
-     `SeqGs`). The residual goal after `apply deadlock_free` is
-       \<And>st. st = M\<^sub>1 \<or> ... \<or> guarded-disjuncts
-     and St.exhaust_disc is the enumtype discriminator exhaustion lemma that
-     matches the bare `st = X` disjunct for each state. Two cases:
-       * has payload domain -> `using St.exhaust_disc by auto`. metis HANGS
-         (>10 min) when a state's ONLY transition consumes a typed payload
-         (e.g. gas-analysis Reading: `params gs_input \<in> SeqGs`), because the
-         enabledness disjunct is `\<exists>gs_input \<in> SeqGs. ...`. With the set
-         emitted as a [simp] `= UNIV` definition (PART 2), `auto` discharges the
-         existential and closes via the bare disjunct. Verified on
-         chemical_detector (gas-analysis, ~15s).
-       * no payload domain -> `by (metis St.exhaust_disc)` (the ICECCS2023 LRE
-         tactic). `auto` TIMES OUT (>6 min) on LRE's real-arithmetic guards --
-         confirmed by regression -- so LRE-style machines keep metis.
-     Tried and rejected: `(cases st; simp_all)` / `(cases st; auto)` leave the
-     guarded disjunct (e.g. `thr() \<le> ins`) open because the split selects the
-     guarded disjunct instead of the bare one. *)
+  (* TACTIC (2026-09-16, supersedes the hasPayloadDomain fork): the closing
+     call is `by (metis St.exhaust_disc <used-enum>.exhaust_disc ... insertCI)`.
+     Under the invariant conjunct `offered = listens` the residual goal after
+     `apply deadlock_free` is a finite case analysis over St plus every enum a
+     precondition compares (e.g. `sts = noGas` puts Status in the disjunction);
+     each such enum's exhaust_disc lemma is supplied, computed from the emitted
+     preconditions. Measured 2026-09-16: sranger 17/17 obligations (21s), lre
+     39/39 (119s), chem 17/17 (30s -- without Status.exhaust_disc the same call
+     is a >900s timeout). The earlier auto branch existed for a payload
+     existential measured against a goal that was FALSE before this fix; with the true
+     goal, metis with the computed fact list closes the payload machine too. *)
  [%
 // '}' in the line below is the close end of package scope: if (p.name="Chemical")
 } 
@@ -1443,6 +2422,17 @@ operation RC!Node zmStateCapt(): String{
 operation RC!Type zmType(): String{
   if(self.isTypeOf(ProductType)){
   return "("+self.types.at(0).zmType() + "\\<times>" + self.types.at(1).zmType()+")";
+  // FIX (2026-09-14). Only TypeRef carries `.ref`; SeqType/SetType carry
+  // `.domain` (robochart.ecore:145-149) and reaching the `.ref` branches with
+  // one died with "Property 'ref' not found". First hit: chem run-1 v2's
+  // codegen wrote `record GasSensorReading(List<GasSensor> values)` — a
+  // sequence-typed record field no admitted study had produced before
+  // (sranger/lre records carry scalar fields only). Map to the Z-Machine
+  // list/set types the session provides.
+  } else if(self.isTypeOf(SeqType)){
+  return "(" + self.domain.zmType() + " list)";
+  } else if(self.isTypeOf(SetType)){
+  return "(" + self.domain.zmType() + " set)";
   } else if(self.ref.name="boolean"){
   return "bool";
   } else if(self.ref.name="real"){
@@ -1546,6 +2536,13 @@ operation RC!Expression orString(): String{
 
 [%
 operation RC!Expression notString(): String{
+	// FIX (2026-09-17): twin of the inlineRender Not case — see the
+	// comment there. \<not> binds tighter than \<and>/\<or>, so a negated
+	// connective must be parenthesised or the negation lands on the first
+	// operand only. Comparisons stay bare (they bind tighter than \<not>).
+	if(self.exp.isTypeOf(And) or self.exp.isTypeOf(Or)){
+		return "\\<not>(" + self.exp.binaryExpString() + ")";
+	}
 	return "\\<not>" + self.exp.binaryExpString();
 }
 %]
@@ -1587,6 +2584,38 @@ operation RC!Expression negString(): String{
 [%
 //DONE
 //to return the string of left or right expression string of the binary expression
+
+// FIX (2026-09-19). Java renders small/large doubles in SCIENTIFIC
+// notation -- `1.0E-9` -- and the FloatExp render site passed that text
+// through verbatim. Isabelle/HOL has no `E` exponent syntax, so the theory
+// read `1.0E-9` as the application `(1.0) (-9)` and the build failed with
+// "Type error in application: operator not of function type" alongside a
+// bogus "(10::??'a) / (10::??'a)" operand. Found by the autonomous arm's
+// lre run-4, which worked around it by moving the literal behind an
+// abstracted sensor method -- a code-shape workaround for an instrument gap.
+//
+// Expand to an exact rational HOL can parse. A negative exponent becomes
+// `(m / 10...0)` rather than a long 0.000... string: HOL decimal literals are
+// exact either way, and the division form stays readable at large k.
+operation normaliseFloatLiteral(raw : String) : String {
+	var t = raw.trim();
+	var up = t.toUpperCase();
+	if (up.indexOf("E") < 0) { return t; }
+	var i = up.indexOf("E");
+	var mant = t.substring(0, i);
+	var expo = t.substring(i + 1, t.length());
+	if (expo.startsWith("+")) { expo = expo.substring(1, expo.length()); }
+	var neg = expo.startsWith("-");
+	if (neg) { expo = expo.substring(1, expo.length()); }
+	var k = expo.asInteger();
+	if (mant.endsWith(".0")) { mant = mant.substring(0, mant.length() - 2); }
+	var pow = "1";
+	var j = 0;
+	while (j < k) { pow = pow + "0"; j = j + 1; }
+	if (neg) { return "(" + mant + " / " + pow + ")"; }
+	return "(" + mant + " * " + pow + ")";
+}
+
 //currently covers 3 types: Integer, RefExp, CallExp
 operation RC!Expression oneSideOfBianryString(): String{
 	if(self.isTypeOf(IntegerExp)){
@@ -1600,9 +2629,18 @@ operation RC!Expression oneSideOfBianryString(): String{
 		// FORK: in EOL, `== null` is harness-dependent for unset
 		// EAttributes — `.isUndefined()` is the idiomatic check.
 		if(self.value.isUndefined()){ return "0"; }
-		return self.value.toString();
+		// expand scientific notation; HOL has no `E` exponent.
+		return normaliseFloatLiteral(self.value.toString());
 	}
 	else if(self.isTypeOf(BooleanExp)){
+		// FIX (2026-09-14). HOL's boolean literals are True/False;
+		// emitting Java's lowercase `true` verbatim leaves a FREE
+		// VARIABLE in the update ("Extra variables on rhs: true",
+		// chem run-1 v2 InitialToREADING_def). Note BooleanExp.value
+		// is EString in the metamodel, so compare as text.
+		var bv = self.value.toString().toLowerCase();
+		if (bv == "true")  { return "True"; }
+		if (bv == "false") { return "False"; }
 		return self.value.toString();
 	}
 	else if(self.isTypeOf(StringExp)){
@@ -1652,11 +2690,290 @@ operation RC!Expression oneSideOfBianryString(): String{
 // FORK: extract a function name from a CallExp's `function` feature,
 // handling both RefExp (archive's shape) and StringExp (the shape our
 // ETL emits). Keeps all callExp-name accesses in one place.
+// FORK (I1): collect functions APPLIED to an int-typed data variable.
+// See the `intDomainFuncs` block above for why the ETL's hardcoded
+// `(x : real)` signature for operation-body functions must be corrected
+// at the application site. Only a DIRECT zero-arg-CallExp argument whose
+// name has an `int` state-var type counts; anything else leaves the
+// declared domain alone.
+operation RC!Expression collectIntArgFuncNames(acc: OrderedSet, svTypes: Map){
+	if(self.isTypeOf(CallExp)){
+		for(a in self.args){
+			if(a.isTypeOf(CallExp) and a.args.size() == 0){
+				var an = a.funcName();
+				var at = svTypes.get(an);
+				if(at.isDefined() and at.isTypeOf(TypeRef) and at.ref.isDefined()
+						and at.zmType() = "int"){
+					acc.add(self.funcName());
+				}
+			}
+			a.collectIntArgFuncNames(acc, svTypes);
+		}
+		return;
+	}
+	if(self.isTypeOf(And) or self.isTypeOf(Or) or self.isTypeOf(LessThan)
+			or self.isTypeOf(LessOrEqual) or self.isTypeOf(GreaterThan)
+			or self.isTypeOf(GreaterOrEqual) or self.isTypeOf(Equals)
+			or self.isTypeOf(Different) or self.isTypeOf(Plus)
+			or self.isTypeOf(Minus) or self.isTypeOf(Mult) or self.isTypeOf(Div)){
+		self.left.collectIntArgFuncNames(acc, svTypes);
+		self.right.collectIntArgFuncNames(acc, svTypes);
+		return;
+	}
+	if(self.isTypeOf(Not) or self.isTypeOf(ParExp) or self.isTypeOf(Neg)){
+		self.exp.collectIntArgFuncNames(acc, svTypes);
+		return;
+	}
+}
+%]
+[%
+// FORK (I1 fix): render an expression for a SIMULTANEOUS-SUBSTITUTION
+// update block, inlining data-plane dependencies.
+//
+// WHY THIS EXISTS. `binaryExpString()` renders a variable read as the
+// bare lens name, which in an `update` block denotes the variable's
+// PRE-state value. That is right for a guard and right for `tr\<Zprime>
+// = tr @ ...`, but wrong for the data plane: the Java computes `tcpa`
+// and then computes `cda` from the FRESH `tcpa`. Emitting
+// `cda\<Zprime> = f(tcpa)` alongside `tcpa\<Zprime> = E` would make
+// `cda` read the STALE `tcpa` — the same stale-read defect (U3) that
+// was fixed at the M2M stage, reappearing one level up where it is much
+// harder to see. So wherever a read resolves to a data-plane variable
+// with a definition, we splice that definition's rendered text in.
+//
+// CYCLES. Inlining terminates only on an acyclic dependency graph. A
+// genuine fixpoint (`x = g(y); y = h(x)`) has no finite inlined form,
+// and substituting the pre-state value there would silently change the
+// semantics. `stack` carries the chain of names currently being
+// expanded; on re-entry we emit `(*I1-CYCLE:<name>*)<name>` — a marker
+// that is BOTH grep-able in the artefact and a deliberate Isabelle
+// comment, so the affected variable is reported as a blocker rather
+// than quietly mis-emitted. The three case studies emit no such marker
+// (grep for `I1-CYCLE` in the generated theories); the cycle path is
+// exercised directly by IsabelleDataPlaneRegressionTest.
+//
+// `defs`  : Map name -> RC!Expression (the data-plane definitions)
+// `svs`   : OrderedSet of state-variable names (for `f()` -> `f` strip)
+// `enums` : OrderedSet of enum literal names (same strip)
+// `stack` : OrderedSet of names on the current expansion path
+operation RC!Expression inlineRender(defs: Map, svs: OrderedSet,
+		enums: OrderedSet, stack: OrderedSet): String{
+	if(self.isTypeOf(CallExp)){
+		var fn = self.funcName();
+		// Zero-arg call: either a data-plane read (inline it), a state
+		// var / enum literal (strip the parens), or a genuine zero-arg
+		// function (leave as `f()`).
+		if(self.args.size() == 0){
+			if(defs.containsKey(fn)){
+				// FORK (I1 self-read, sranger cycle counter): a read of the
+				// SAME name whose definition is currently being expanded —
+				// `fn` is the TOP of the expansion stack — is a SELF-READ
+				// (`cycleCount = cycleCount + 1`). Under simultaneous
+				// substitution that read denotes the PRE-state lens, exactly
+				// like the existing `tr\<Zprime> = tr @ [...]` emission, so
+				// render the bare lens: it is well-defined, not a fixpoint.
+				// Without this case the renderer inlined the definition into
+				// itself once (emitting a DOUBLE increment) before the stack
+				// guard fired and mis-labelled the inner read I1-CYCLE.
+				// A re-entry of a name DEEPER in the stack (x = g(y); y =
+				// h(x)) is still a genuine mutual fixpoint: substituting the
+				// pre-state there would silently change semantics, so the
+				// I1-CYCLE marker is kept for that case.
+				if(stack.size() > 0 and stack.last() = fn){
+					return fn;
+				}
+				if(stack.includes(fn)){
+					// FORK (steam boiler held-out): the marker used to be
+					// emitted INSIDE the quoted term as `(*I1-CYCLE:fn*)fn` —
+					// but Isabelle's inner (term) syntax does not accept
+					// (*..*) comments, so any theory containing one fails at
+					// `Failed to parse term`. The marker is also semantically
+					// over-cautious: these defs come from SEQUENTIAL Java
+					// compute() bodies, where a read that re-enters the
+					// expansion stack necessarily reads a variable assigned
+					// at-or-after the current statement, i.e. the PRE-state
+					// (steam boiler: levelLow = baseLevelLow(projLow) reads
+					// the previous cycle's carried projLow). Under a
+					// zoperation's simultaneous substitution the bare lens IS
+					// the pre-state, so emit the bare name; keep the
+					// diagnostic grep-able by printing it at GENERATION time
+					// instead of inside the term.
+					("[thy-inline] I1-CYCLE pre-state read: " + fn).println();
+					return fn;
+				}
+				stack.add(fn);
+				var inl = defs.get(fn).inlineRender(defs, svs, enums, stack);
+				stack.remove(fn);
+				return "(" + inl + ")";
+			}
+			if(svs.includes(fn) or enums.includes(fn)){ return fn; }
+			return fn + "()";
+		}
+		var argStr: String = self.args.at(0).inlineRender(defs, svs, enums, stack);
+		var aj = 1;
+		while(aj < self.args.size()){
+			argStr = argStr + ", " + self.args.at(aj).inlineRender(defs, svs, enums, stack);
+			aj++;
+		}
+		return fn + "(" + argStr + ")";
+	}
+	if(self.isTypeOf(RefExp)){
+		var rn = self.ref.name;
+		if(defs.containsKey(rn)){
+			// FORK (I1 self-read): see the CallExp twin above — a read of the
+			// name whose definition is currently being expanded denotes the
+			// PRE-state lens under simultaneous substitution.
+			if(stack.size() > 0 and stack.last() = rn){ return rn; }
+			// FORK: see the CallExp twin above — bare pre-state lens,
+			// diagnostic printed at generation time (inner-syntax comments
+			// are not legal Isabelle terms).
+			if(stack.includes(rn)){
+				("[thy-inline] I1-CYCLE pre-state read: " + rn).println();
+				return rn;
+			}
+			stack.add(rn);
+			var inlR = defs.get(rn).inlineRender(defs, svs, enums, stack);
+			stack.remove(rn);
+			return "(" + inlR + ")";
+		}
+		return rn;
+	}
+	// Binary / unary structure — bracketing mirrors the corresponding
+	// *String() operations above so inlined text is parenthesised
+	// identically to text rendered by the guard path.
+	if(self.isTypeOf(And)){
+		return self.left.inlineRender(defs, svs, enums, stack) + " \\<and> "
+			+ self.right.inlineRender(defs, svs, enums, stack); }
+	if(self.isTypeOf(Or)){
+		return "(" + self.left.inlineRender(defs, svs, enums, stack) + " \\<or> "
+			+ self.right.inlineRender(defs, svs, enums, stack) + ")"; }
+	if(self.isTypeOf(Not)){
+		// FIX (2026-09-17). Isabelle's \<not> binds TIGHTER than \<and>
+		// and \<or>, so \<not>A \<and> B parses as (\<not>A) \<and> B — the
+		// negation lands on the first conjunct only. For Not(And(A,B)) that
+		// text is strictly stronger than \<not>(A \<and> B) and injects B
+		// POSITIVELY; witness: lre run-2 iter-5, MOMToHCM_3's pre carried
+		// `\<not>vvel\<ge>1.0 \<and> vdist(cstc)\<le>1.0` for the Java's
+		// !(vvel>=1 && vdist<=1), colliding with the later branch's genuine
+		// \<not>vdist\<le>1.0 into a false-by-construction precondition
+		// (vacuity S1; escalated via the corrected directive's
+		// extraction-introduced clause). Parenthesise ONLY connective
+		// operands: comparisons bind tighter than \<not> and stay bare, so
+		// theories without a negated conjunction are byte-identical.
+		if(self.exp.isTypeOf(And) or self.exp.isTypeOf(Or)){
+			return "\\<not>(" + self.exp.inlineRender(defs, svs, enums, stack) + ")"; }
+		return "\\<not>" + self.exp.inlineRender(defs, svs, enums, stack); }
+	if(self.isTypeOf(Plus)){
+		return "(" + self.left.inlineRender(defs, svs, enums, stack) + " + "
+			+ self.right.inlineRender(defs, svs, enums, stack) + ")"; }
+	if(self.isTypeOf(Minus)){
+		return "(" + self.left.inlineRender(defs, svs, enums, stack) + " - "
+			+ self.right.inlineRender(defs, svs, enums, stack) + ")"; }
+	if(self.isTypeOf(Mult)){
+		return "(" + self.left.inlineRender(defs, svs, enums, stack) + " * "
+			+ self.right.inlineRender(defs, svs, enums, stack) + ")"; }
+	if(self.isTypeOf(Div)){
+		return "(" + self.left.inlineRender(defs, svs, enums, stack) + " / "
+			+ self.right.inlineRender(defs, svs, enums, stack) + ")"; }
+	if(self.isTypeOf(Neg)){
+		return "(- " + self.exp.inlineRender(defs, svs, enums, stack) + ")"; }
+	if(self.isTypeOf(LessThan)){
+		return self.left.inlineRender(defs, svs, enums, stack) + "<"
+			+ self.right.inlineRender(defs, svs, enums, stack); }
+	if(self.isTypeOf(LessOrEqual)){
+		return self.left.inlineRender(defs, svs, enums, stack) + "\\<le>"
+			+ self.right.inlineRender(defs, svs, enums, stack); }
+	if(self.isTypeOf(GreaterThan)){
+		return self.left.inlineRender(defs, svs, enums, stack) + ">"
+			+ self.right.inlineRender(defs, svs, enums, stack); }
+	if(self.isTypeOf(GreaterOrEqual)){
+		return self.left.inlineRender(defs, svs, enums, stack) + "\\<ge>"
+			+ self.right.inlineRender(defs, svs, enums, stack); }
+	if(self.isTypeOf(Equals)){
+		return self.left.inlineRender(defs, svs, enums, stack) + "= ("
+			+ self.right.inlineRender(defs, svs, enums, stack) + ")"; }
+	if(self.isTypeOf(Different)){
+		return "(" + self.left.inlineRender(defs, svs, enums, stack) + " \\<noteq> "
+			+ self.right.inlineRender(defs, svs, enums, stack) + ")"; }
+	if(self.isTypeOf(ParExp)){
+		return self.exp.inlineRender(defs, svs, enums, stack); }
+	// Leaves with no sub-expressions: defer to the shared renderer.
+	return self.oneSideOfBianryString();
+}
+%]
+[%
+// FIX (2026-09-14). The CyPhyAssure session registers OUTER-SYNTAX
+// KEYWORDS beyond Isabelle's own — Z_Testing.thy alone reserves "depth",
+// and the Z_Machines/Z_Toolkit theories add zmachine/zoperation/zinit/
+// enumtype/actions/params/pre/update/... . A Java method whose name
+// collides (LRE run-1 v2: `double depth()`) was emitted VERBATIM as
+// `consts depth :: ...`, and the theory died at parse ("name expected")
+// before any proof ran. Mangle colliding names to `<name>_fn` at the
+// SINGLE SOURCE every collector and renderer routes through, so the
+// consts declaration and every call site stay consistent by construction.
+// The list is the session's registrations (grepped from the pinned
+// distribution's `keywords` clauses), not guessed. Names that do not
+// collide pass through untouched — the sranger/chem theories are
+// byte-identical under this change.
+operation String zsafeThyName(): String{
+	var reserved = Sequence{
+		"depth", "zmachine", "zoperation", "zinit", "zfun", "enumtype",
+		"actions", "animate", "check_deadlock", "check_reachable",
+		"def_consts", "emit", "extends", "init", "invariant", "operations",
+		"output", "over", "params", "pre", "precondition", "postcondition",
+		"promote", "record_default", "show_record", "tabulate", "until",
+		"update"};
+	if (reserved.includes(self)){
+		return self + "_fn";
+	}
+	return self;
+}
+
 operation RC!CallExp funcName(): String{
 	if(self.`function`.isTypeOf(StringExp)){
-		return self.`function`.value;
+		return self.`function`.value.zsafeThyName();
 	}
-	return self.`function`.ref.name;
+	return self.`function`.ref.name.zsafeThyName();
+}
+
+// FORK (I1 guard-skew): recursive collector for every NAME READ by an
+// expression — zero-arg CallExps (the ETL's shape for state-var and
+// sensor reads) AND RefExps — used to classify data-plane definitions
+// as stateful and to decide whether a guard needs definition inlining.
+// Differs from collectCallExpNames below in that it takes no `declared`
+// filter and also walks RefExp leaves.
+operation RC!Expression collectLensReadNames(acc: OrderedSet){
+	if (self.isTypeOf(CallExp)){
+		acc.add(self.funcName());
+		for (a in self.args){
+			a.collectLensReadNames(acc);
+		}
+		return;
+	}
+	if (self.isTypeOf(RefExp)){
+		if(self.ref.isDefined() and self.ref.name.isDefined()){
+			acc.add(self.ref.name);
+		}
+		return;
+	}
+	if (self.isTypeOf(And) or self.isTypeOf(Or) or self.isTypeOf(LessThan)
+			or self.isTypeOf(LessOrEqual) or self.isTypeOf(GreaterThan)
+			or self.isTypeOf(GreaterOrEqual) or self.isTypeOf(Equals)
+			or self.isTypeOf(Different) or self.isTypeOf(Plus)
+			or self.isTypeOf(Minus) or self.isTypeOf(Mult) or self.isTypeOf(Div)){
+		self.left.collectLensReadNames(acc);
+		self.right.collectLensReadNames(acc);
+		return;
+	}
+	if (self.isTypeOf(Not)){
+		self.exp.collectLensReadNames(acc);
+		return;
+	}
+	if (self.isTypeOf(ParExp)){
+		self.exp.collectLensReadNames(acc);
+		return;
+	}
+	// Leaves (IntegerExp, FloatExp, BooleanExp, StringExp, ...) contribute nothing.
 }
 
 // FORK: recursive collector for CallExp identifiers used anywhere in

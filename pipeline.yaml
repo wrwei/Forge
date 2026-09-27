@@ -73,7 +73,10 @@ phases:
       output: ${output_dir}
     depends_on: [t2m]
     output_dir: ${output_dir}
-    output_files: [robochart_model.xmi, trace_m2m.json]
+    # constant_defaults.json added 2026-08-15: TransformPhase now writes it
+    # unconditionally; declaring it here makes the bridge pre-clean stale
+    # copies on a case-study switch (RctPhase consumes this file).
+    output_files: [robochart_model.xmi, trace_m2m.json, constant_defaults.json]
 
   # ── Phase 5b ────────────────────────────────────────────────────────────────
   m2t:
@@ -109,7 +112,11 @@ phases:
       output: ${output_dir}
     depends_on: [m2m]
     output_dir: ${output_dir}
-    output_files: ["*.dfy"]
+    # trace_dafny.json added 2026-08-15: DafnyPhase writes it unconditionally
+    # and feedback.load_dafny_trace consumes it; declaring it here pre-cleans
+    # a stale trace on case-study switch. (*.dfy already covers the stale-
+    # controller case: GasAnalysisController.dfy vs LreController.dfy.)
+    output_files: ["*.dfy", trace_dafny.json]
 
   # ── Phase 5c ────────────────────────────────────────────────────────────────
   isabelle_gen:
@@ -133,11 +140,12 @@ phases:
     output_dir: ${output_dir}/csp-gen/defs
     # FDR4 writes unified feedback to corrections_dir — no files under output_dir.
     output_files: []
-    # NOTE: preserved-as-is from PHASE_COMMANDS in bridge.py; clearing
-    # csp-gen before FDR4 runs would delete FDR4's input. Currently
-    # works because clear_dirs runs AFTER the phase (TODO: verify in
-    # bridge.py and either fix the underlying semantics or remove this).
-    clear_dirs: ["${output_dir}/csp-gen"]
+    # clear_dirs removed (2026-08-15): bridge._clean_phase_outputs wipes
+    # declared outputs BEFORE a phase runs, and only for gradle/sequence
+    # phases — the old clear_dirs entry here was never honoured, and if a
+    # future consumer had honoured it, pre-cleaning csp-gen would delete
+    # FDR4's own input (produced by m2t, which correctly declares the
+    # csp-gen clear_dirs itself).
     # Runtime tuning (verbatim from forge.dashboard/config.yaml)
     # csp_file is OPTIONAL. When unset (or pointing at a non-existent
     # path), the runner auto-discovers a *_coreassertions.csp file under
@@ -160,8 +168,10 @@ phases:
     timeout: 600
     # Windows page-file size is often smaller than 8 GB; the GHC
     # runtime in refines.exe tries to commit address space up-front, so
-    # a lower cap is friendlier across machines. The dashboard passes
-    # this as +RTS -M<size>m -RTS to refines.exe. Raise locally if you
+    # a lower cap is friendlier across machines. refines.exe is built
+    # with restricted RTS options, so this is NOT passed as +RTS flags —
+    # the dashboard's python-side memory monitor polls the process RSS
+    # and kills the run when it exceeds this cap. Raise locally if you
     # need more state-space headroom (and grow the page file to match).
     memory_limit_mb: 4096
     expected_failures: []
@@ -204,8 +214,12 @@ phases:
     runner:
       kind: python
       function: "forge.dashboard.web.runners:run_isabelle_verify"
-    args:
-      session_dir: ${output_dir}/isabelle
+    # session_dir is runtime tuning read from the phase CONFIG by
+    # run_isabelle_verify (ctx.config['session_dir']). It used to sit
+    # under args:, which the manifest loader routes to phase.args —
+    # invisible to python runners — so the runner silently fell back to
+    # its default. Phase-level placement makes the declaration live.
+    session_dir: ${output_dir}/isabelle
     depends_on: [isabelle_gen]
     output_dir: ${output_dir}/isabelle
     # Isabelle build writes unified feedback to corrections_dir — no new artifacts here.
@@ -214,8 +228,18 @@ phases:
     # Bare binary names resolve via PATH (shutil.which). Override with
     # an absolute path if needed. Windows uses wsl.exe — the runner
     # bridges to the isabelle binary inside WSL via wsl_isabelle_bin.
+    # darwin: the CyPhyAssure distribution ships Poly/ML only for
+    # x86_64-linux / x86_64_32-linux, so it CANNOT run natively on macOS —
+    # the launcher detects arm64-darwin, finds no ML runtime, and every
+    # ML-requiring command fails (`isabelle version` still works, which makes
+    # a broken install look healthy). scripts/isabelle-docker.sh is an
+    # argument-transparent wrapper that runs the same distribution in a
+    # linux/amd64 container; host paths under $HOME and /tmp resolve
+    # unchanged inside it, so no path translation is needed here.
+    # Verified 2026-08-15: LreController_Check discharges in ~71 s.
+    # Set to plain `isabelle` if a native macOS build is ever installed.
     isabelle_path:
-      darwin: isabelle
+      darwin: ${repo}/scripts/isabelle-docker.sh
       linux: isabelle
       win32: wsl.exe
     # WSL distro to target (only used when isabelle_path == "wsl.exe").

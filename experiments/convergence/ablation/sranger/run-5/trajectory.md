@@ -113,15 +113,6 @@ stopped per the ablation stop rule; no verifier feedback was consulted.
   `active_case_study: sranger`, fdr4 `timeout: 3600`,
   `memory_limit_mb: 65536` (machine page-file size).
 
-## Findings
-
-- **F1 — preflight's rule4 covers `static final` constants, not just
-  state fields.** The codegen-rules text exemplifies `@RoboChartType` on
-  instance fields and parameters; iter-1 applied it there but left the
-  constants class bare, which is the single thing preflight caught. In any
-  future run, annotate *every* `double` field — including `static final`
-  constants and private sensor defaults — at cold-codegen time.
-
 ## Reproducibility
 
 Stage `run-5/iter-N/java/` into `java.generated.project/src/main/java/sranger/`,

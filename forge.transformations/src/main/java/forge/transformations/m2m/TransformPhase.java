@@ -93,19 +93,23 @@ public final class TransformPhase implements Phase {
         System.out.println("RoboChart model saved to: " + rcOutputPath.toAbsolutePath());
 
         // ── Save constant_defaults.json ──────────────────────────────────────
-        if (!constantDefaults.isEmpty()) {
-            Path constPath = outputDir.resolve("constant_defaults.json");
-            try (Writer w = Files.newBufferedWriter(constPath)) {
-                w.write("{\n");
-                var entries = new ArrayList<>(constantDefaults.entrySet());
-                for (int i = 0; i < entries.size(); i++) {
-                    var e = (Map.Entry<String, Object>) entries.get(i);
-                    w.write("  \"" + escapeJson(e.getKey()) + "\": " + jsonValueOf(e.getValue()));
-                    if (i < entries.size() - 1) w.write(",");
-                    w.write("\n");
-                }
-                w.write("}\n");
+        // Written unconditionally (an empty {} when the study defines no
+        // constants). The old skip-when-empty behaviour left the PREVIOUS
+        // case study's constant_defaults.json on disk after a switch, and
+        // RctPhase silently consumed the stale constants. Unconditional
+        // emission also lets pipeline.yaml declare the file in m2m's
+        // output_files so pre-clean and the postcondition check cover it.
+        Path constPath = outputDir.resolve("constant_defaults.json");
+        try (Writer w = Files.newBufferedWriter(constPath)) {
+            w.write("{\n");
+            var entries = new ArrayList<>(constantDefaults.entrySet());
+            for (int i = 0; i < entries.size(); i++) {
+                var e = (Map.Entry<String, Object>) entries.get(i);
+                w.write("  \"" + escapeJson(e.getKey()) + "\": " + jsonValueOf(e.getValue()));
+                if (i < entries.size() - 1) w.write(",");
+                w.write("\n");
             }
+            w.write("}\n");
         }
 
         // ── Write M2M trace ──────────────────────────────────────────────────

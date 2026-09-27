@@ -1,0 +1,36 @@
+# 6d — Vacuity Audit (Dafny + Isabelle) — PASSED
+
+## Summary
+No blocking vacuity signals detected (syntactic D1/I1 and semantic satisfiability/reachability/constant-consistency checks). Any `0 errors` from Dafny / Isabelle / FDR is at least potentially load-bearing for the checked signals. 2 ADVISORY finding(s) recorded and NOT blocking: K1/constant_divergence_csp_ceiling, P1/dead_state_no_offer. These follow from the deliberate narrowing of the CSP data domains that FDR4's finiteness requirement imposes, not from the Java under test; they bound what the passing FDR4 assertions are evidence about and must be reported with any verdict drawn from them.
+
+## Run history
+- New this run: 0
+- Recurring from previous run: 2
+- Resolved since previous run: 0
+
+## Issues
+### Issue 1: dead_state_no_offer — [ADVISORY] 2 reachable state(s) from which no operation can fire when the environment offers nothing [recurring x2]
+
+**Raw**
+```
+(FINAL, {}); (MOVING, {})
+```
+
+**Fix directive**
+ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.
+
+### Issue 2: constant_divergence_csp_ceiling — [ADVISORY] Constant `obstaclethreshold` diverges between the Java source and generated artefact(s) [recurring x2]
+
+**Raw**
+```
+Java (forge.transformations/output/constant_defaults.json): 0.5; forge.transformations/output/robochart_controller.rct: 1; forge.transformations/output/csp-gen/file_robochart_controller_coreassertions.csp: 1; forge.transformations/output/csp-gen/timed/file_robochart_controller_coreassertions.csp: 1
+```
+
+**Fix directive**
+ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.
+
+## Files to review
+(none identified)
+
+## Next step
+Nothing to do. Re-run after each iteration to catch regressions.

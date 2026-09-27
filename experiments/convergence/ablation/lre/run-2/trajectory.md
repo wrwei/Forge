@@ -85,26 +85,6 @@ the verifiers.
   shell step (failed before any phase ran, exit 2); re-launched from the
   repo root. No snapshot impact.
 
-## Findings
-
-- **F1 — `run_fdr4`'s timeout is unenforceable for a quiet hang.** The
-  subprocess timeout only applies after stdout EOF
-  (`forge.dashboard/web/runners.py`: stdout iteration precedes
-  `proc.wait(timeout=...)`), so a wedged `refines.exe` that emits nothing
-  and holds stdout open hangs the phase forever; the 60-min kill policy
-  must then be applied by hand (kill the process; the runner recovers and
-  classifies the failure on its own). How to apply: if FDR4 shows ~zero
-  CPU accumulation well past the configured timeout, deliver the
-  policy kill manually instead of waiting; fixing the runner would mean
-  reading stdout with a deadline (e.g. a reader thread + timed join).
-- **F2 — preflight's rule4 wants `@RoboChartType("real")` on *every*
-  double declaration, including setter parameters and private constants
-  never referenced by guards.** Iter-1 annotated all model-relevant
-  doubles (fields, sensor-function params, record components) but skipped
-  the `update()` plumbing params and a private constant; rule4 flags
-  those too. How to apply: at codegen time, annotate doubles
-  mechanically-everywhere rather than reasoning about model relevance.
-
 ## Reproducibility
 
 Stage `run-2/iter-N/java/` into

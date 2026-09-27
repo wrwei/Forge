@@ -1,0 +1,36 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Initial SRanger controller generated (9 Java files, 3 modes, 7 specified transitions plus one Final self-loop). Four review items flagged.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Final mode given a tick self-loop",
+      "raw": "SR-FR3 describes Final as terminal with no outgoing transition; the codegen rules require every mode to have an outgoing transition.",
+      "fix_directive": "Confirm that a tick-triggered Final->Final self-loop with no action is acceptable; it keeps Final terminal (never left) while giving it an enabled transition. It is an extra transition beyond SR-Beh1..7.",
+      "java_trace": [{"java_file": "src/main/java/sranger/controller/SRangerController.java", "element": "step", "requirement_ids": ["SR-FR3", "SR-DC1"]}]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Clock accessor named nowMs() but returns seconds",
+      "raw": "SR-Var1/SR-DM2 express clockResetTime and turnDuration in seconds; the extractor convention reads clocks through nowMs().",
+      "fix_directive": "Clock.nowMs() returns seconds so that turnDuration stays 2.0 and the model constant is not scaled to 2000. Review whether the name/unit mismatch is acceptable.",
+      "java_trace": [{"java_file": "src/main/java/sranger/timing/Clock.java", "element": "nowMs", "requirement_ids": ["SR-Var1", "SR-DM2"]}]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Moving->Turning: obstacle event AND obstacleDetected guard",
+      "raw": "SR-Beh2 says the transition fires when the obstacle event is received; SR-GP1 says obstacleDetected is the guard on the same transition.",
+      "fix_directive": "Implemented as trigger obstacle with guard obstacleDetected (both requirements honoured). An obstacle event with distance above the threshold is ignored.",
+      "java_trace": [{"java_file": "src/main/java/sranger/controller/SRangerController.java", "element": "step", "requirement_ids": ["SR-Beh2", "SR-GP1"]}]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading default of 1000.0 m",
+      "raw": "SR-DM5 asks for a 'large default value' without a number.",
+      "fix_directive": "Sensor.NO_READING_DISTANCE = 1000.0 (private to Sensor, not a controller constant).",
+      "java_trace": [{"java_file": "src/main/java/sranger/sensor/Sensor.java", "element": "distance", "requirement_ids": ["SR-DM5"]}]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

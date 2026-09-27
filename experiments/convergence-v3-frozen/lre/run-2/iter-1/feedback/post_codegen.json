@@ -1,0 +1,132 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Cold iteration 1 for the LRE case study: 15 Java files written from the specification alone, all 51 requirements traced. Seven items need human review, the load-bearing one being the LRE-DM5 / LRE-OP5 conflict over the no-obstacle default for the relative-distance accessors.",
+  "issues": [
+    {
+      "kind": "ambiguous_requirement",
+      "title": "LRE-DM5 and LRE-OP5 disagree on the no-obstacle default for nsRelDist/ewRelDist",
+      "raw": "LRE-DM5: 'field accessors nsRelDist, ewRelDist, obsNsVel, and obsEwVel return zero' when no obstacle exists. LRE-OP5: 'The no-dynamic-obstacle case is handled by the Sensor layer, which returns zero-velocity and large-distance defaults when no dynamic obstacle exists.' Returning zero for the two RELATIVE DISTANCE accessors models a phantom obstacle at the AUV's own position, which drives cda to 0 and fires a spurious MOM->CAM transition (LRE-Beh8) whenever no dynamic obstacle exists.",
+      "fix_directive": "Resolved in favour of LRE-OP5 for the two distance accessors: Sensor.nsRelDist/ewRelDist return NO_OBSTACLE_DISTANCE (1000.0 m) for an unknown index, while Sensor.obsNsVel/obsEwVel return 0.0 per LRE-DM5. Confirm this reading, or amend LRE-DM5 to scope 'return zero' to the velocity accessors.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/sensor/Sensor.java",
+          "element": "nsRelDist",
+          "requirement_ids": [
+            "LRE-DM5",
+            "LRE-OP5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "CPA formulas and their safe defaults are not specified",
+      "raw": "LRE-OP5 names cda and tcpa and says they are computed from the closest dynamic obstacle's relative position and velocity, but gives no formula (unlike LRE-SF1..SF3). The standard closest-point-of-approach formulas were used: tcpa = -(r.v)/|v|^2 and cda = |r + v*tcpa|, over the horizontal plane only (obs_roc and rate_of_climb are not part of the CPA). The division is undefined when the relative speed is zero.",
+      "fix_directive": "Added Sensor.relSpeedSq(index), which floors the squared relative speed at 1.0e-6 so CalcCPA.compute() stays a total straight-line expression with no conditional (the compute() body rule forbids branching). Confirm the horizontal-plane-only CPA and the floor value.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/operation/CalcCPA.java",
+          "element": "compute",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-Var7",
+            "LRE-Var8"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "HCM advised velocity: system_description says 0.1 m/s, LRE-FR3 says 0 m/s",
+      "raw": "system_description.txt: 'HCM (High Caution Mode): Reduced speed (0.1 m/s)'. LRE-FR3: 'On entering HCM, the LRE advises a velocity of 0 m/s'.",
+      "fix_directive": "Implemented LRE-FR3 (advVel(0.0)) because requirement_all.json is the canonical source. If 0.1 m/s is intended, amend LRE-FR3.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "step",
+          "requirement_ids": [
+            "LRE-FR3",
+            "LRE-Beh9",
+            "LRE-Beh10",
+            "LRE-Beh11",
+            "LRE-Beh12"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Branch order inside MOM chosen so hand-negated guards stay satisfiable",
+      "raw": "LRE-Beh9/Beh10/Beh11 are three separate MOM->HCM transitions (LRE-DC1 forbids merging them). Each lower-priority branch textually carries the negation of every preceding triggerless guard. Ordering Beh10 (vdist <= staticObsDfltVertDist) before Beh11 (vvel >= 1 and vdist <= staticObsVertDist) would leave Beh11 with 'not (vdist <= staticObsDfltVertDist) and vdist <= staticObsVertDist', which is unsatisfiable when the two thresholds share a value (both default to 1).",
+      "fix_directive": "Order inside MOM is Beh9, then Beh11, then Beh10. No requirement states a priority among the three, so the order is free; confirm it is acceptable.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "step",
+          "requirement_ids": [
+            "LRE-Beh9",
+            "LRE-Beh10",
+            "LRE-Beh11",
+            "LRE-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Event-triggered branches placed before autonomous ones in every mode block",
+      "raw": "java_codegen_rules.txt requires operator overrides to be the first inner branches, while the preflight rule8 directive prefers triggerless branches first. The two cannot both be satisfied; the codegen rule was followed.",
+      "fix_directive": "Expect rule8_event_branch_precedes_triggerless warnings from preflight. They are advisory (preflight fails on errors only). Every affected pair (reqOCM vs inOpez in MOM/HCM, reqOCM vs camClear in CAM) targets the same mode OCM, so the divergence is observationally inert except for the advVel(0) on LRE-Beh18.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "step",
+          "requirement_ids": [
+            "LRE-Beh17",
+            "LRE-Beh18",
+            "LRE-Beh15",
+            "LRE-Beh16",
+            "LRE-Beh5",
+            "LRE-Beh6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "cstc/cdyn keep the -1 sentinel the requirements mandate, despite the int -> nat mapping",
+      "raw": "LRE-Var5/Var6 define -1 as 'no obstacle exists'. CLAUDE.md records that the M2M maps Java int to RoboChart nat unconditionally, so -1 leaves the formal type's domain.",
+      "fix_directive": "The sentinel never reaches a controller guard: the Sensor returns safe defaults for an out-of-range index, so no predicate compares cstc or cdyn against -1 and no negative literal appears in the controller. The extracted model therefore under-approximates only the index value, not the behaviour.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "cstc",
+          "requirement_ids": [
+            "LRE-Var5",
+            "LRE-Var6",
+            "LRE-DM5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "LRE-FR4 does not say what CAM actually does",
+      "raw": "LRE-FR4: 'In CAM ... the AUV performs evasive manoeuvres.' LRE-DM7 restricts the LRE's outputs to advVel and advHdng, but no requirement says which values CAM issues, and no LRE-Beh transition into CAM carries an action.",
+      "fix_directive": "No entry action was emitted for CAM \u2014 inventing an evasive heading would be unverifiable behaviour nobody specified. Supply the CAM entry action if one is intended.",
+      "java_trace": [
+        {
+          "file": "src/main/java/lre/controller/LreController.java",
+          "element": "step",
+          "requirement_ids": [
+            "LRE-FR4",
+            "LRE-Beh8",
+            "LRE-Beh14"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers) and feed failures back via /fix-from-feedback."
+}

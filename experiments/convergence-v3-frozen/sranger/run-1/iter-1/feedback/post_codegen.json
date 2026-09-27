@@ -1,0 +1,88 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 23 SRanger requirements implemented across 8 Java files under src/main/java/sranger/. Five points flagged for review.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Move(lv, av) modelled as a two-argument actuator call, not an OutputEvent record",
+      "raw": "RoboChart events carry a single payload; a two-real output must be a multi-arg call, which becomes a RoboChart Call in LOperations.",
+      "fix_directive": "Confirm that actuator.move(lv, av) is the intended encoding of SR-DM4, or accept losing av if an OutputEvent record is required.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/actuator/Actuator.java",
+          "element": "move",
+          "requirement_ids": [
+            "SR-DM4",
+            "SR-DM6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "FINAL carries a tick self-loop that no SR-Beh requirement specifies",
+      "raw": "A mode with no outgoing transition is a deadlock in the extracted Z-machine; java_codegen_rules.txt requires a tick-triggered self-loop on terminal modes.",
+      "fix_directive": "Accept the extra transition or provide a requirement for it. SR-DC1 is not violated (no duplicate source/trigger pair).",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "element": "step",
+          "requirement_ids": [
+            "SR-FR3",
+            "SR-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Branch priority inside Turning is unspecified",
+      "raw": "SR-Beh5/6/7 give no relative priority. Resolved as endTask > turnDurationElapsed > tick.",
+      "fix_directive": "The autonomous transition must precede the tick self-loop or the per-cycle tick starves it. Confirm endTask outranks both.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/controller/SRangerController.java",
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Clock exposes seconds rather than milliseconds",
+      "raw": "Clock.nowSeconds() returns seconds so clockResetTime and TURN_DURATION share the spec's unit.",
+      "fix_directive": "Confirm seconds is acceptable; otherwise add a millisecond constant.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/time/Clock.java",
+          "element": "nowSeconds",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-GP2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor missing-data default is 1000.0 m",
+      "raw": "SR-DM5 says 'a large default value' without fixing one.",
+      "fix_directive": "Confirm 1000.0 m or specify the intended default.",
+      "java_trace": [
+        {
+          "file": "src/main/java/sranger/sensor/Sensor.java",
+          "element": "distance",
+          "requirement_ids": [
+            "SR-DM5"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

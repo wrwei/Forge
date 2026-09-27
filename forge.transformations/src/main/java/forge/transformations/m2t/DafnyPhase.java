@@ -72,24 +72,78 @@ public final class DafnyPhase implements Phase {
         }
 
         // ── Discover controller class name ────────────────────────────────────
-        String controllerName = discoverControllerName(javaResource);
-        Path dafnyOutputPath = outputDir.resolve(controllerName + ".dfy");
+        // MULTI-CONTROLLER (2026-09-25). One .dfy per controller class --
+        // a class with step() and a mode field (the template's own test). A
+        // study with one controller yields the same single file as before.
+        // Falls back to the old first-step()-class choice when no class has
+        // both, so LRE-style controllers are unaffected.
+        List<String> controllers = discoverControllerNames(javaResource);
+        if (controllers.isEmpty()) {
+            controllers = List.of(discoverControllerName(javaResource));
+        }
+        List<Map<String, String>> allTrace = new ArrayList<>();
+        for (String controllerName : controllers) {
+            Path dafnyOutputPath = outputDir.resolve(controllerName + ".dfy");
+            System.out.println("Generating Dafny verification code (EGL) for " + controllerName + "...");
+            Java2DafnyEglTransformer dafnyTransformer = new Java2DafnyEglTransformer();
+            dafnyTransformer.setResolvedValues(resolvedValues);
+            dafnyTransformer.setTargetController(controllers.size() > 1 ? controllerName : "");
+            dafnyTransformer.transform(javaResource, dafnyOutputPath);
+            System.out.println("Dafny written to: " + dafnyOutputPath.toAbsolutePath());
+            for (Map<String, String> e : dafnyTransformer.getTraceEntries()) {
+                Map<String, String> tagged = new LinkedHashMap<>(e);
+                tagged.put("controller", controllerName);
+                allTrace.add(tagged);
+            }
+        }
 
-        // ── Dafny EGL generation ──────────────────────────────────────────────
-        System.out.println("Generating Dafny verification code (EGL)...");
-        Java2DafnyEglTransformer dafnyTransformer = new Java2DafnyEglTransformer();
-        dafnyTransformer.setResolvedValues(resolvedValues);
-        dafnyTransformer.transform(javaResource, dafnyOutputPath);
-        System.out.println("Dafny written to: " + dafnyOutputPath.toAbsolutePath());
-
-        // ── Write Dafny trace ─────────────────────────────────────────────────
-        writeDafnyTrace(dafnyTransformer.getTraceEntries(), outputDir,
-                sourcePositionsByName, controllerName);
+        // Dafny trace: all controllers in one file
+        writeDafnyTrace(allTrace, outputDir, sourcePositionsByName, controllers.get(0));
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    /** Find the controller class name: the CtClass that contains a step() method. */
+    /**
+     * Every controller class: a CtClass with a step() method AND a field named
+     * mode/currentMode whose type is an enum in the model -- the same test as
+     * java2dafny.egl's findControllerClass. Model order is preserved.
+     */
+    private static List<String> discoverControllerNames(Resource spoonResource) {
+        java.util.Set<String> enums = new java.util.HashSet<>();
+        for (var it = spoonResource.getAllContents(); it.hasNext(); ) {
+            EObject o = it.next();
+            if ("CtEnum".equals(o.eClass().getName())) {
+                Object n = feature(o, "name");
+                if (n != null) enums.add(n.toString());
+            }
+        }
+        List<String> out = new ArrayList<>();
+        for (var it = spoonResource.getAllContents(); it.hasNext(); ) {
+            EObject cls = it.next();
+            if (!"CtClass".equals(cls.eClass().getName())) continue;
+            boolean hasStep = false, hasMode = false;
+            for (EObject tm : cls.eContents()) {
+                String kind = tm.eClass().getName();
+                Object n = feature(tm, "name");
+                if ("CtMethod".equals(kind) && "step".equals(n)) hasStep = true;
+                if ("CtField".equals(kind) && ("mode".equals(n) || "currentMode".equals(n))) {
+                    Object t = feature(tm, "type");
+                    Object tn = t instanceof EObject ? feature((EObject) t, "name") : null;
+                    if (tn != null && enums.contains(tn.toString())) hasMode = true;
+                }
+            }
+            Object name = feature(cls, "name");
+            if (hasStep && hasMode && name != null && !out.contains(name.toString())) out.add(name.toString());
+        }
+        return out;
+    }
+
+    private static Object feature(EObject o, String f) {
+        EStructuralFeature sf = o.eClass().getEStructuralFeature(f);
+        return sf == null ? null : o.eGet(sf);
+    }
+
+        /** Find the controller class name: the CtClass that contains a step() method. */
     private static String discoverControllerName(Resource spoonResource) {
         for (var it = spoonResource.getAllContents(); it.hasNext(); ) {
             EObject obj = it.next();

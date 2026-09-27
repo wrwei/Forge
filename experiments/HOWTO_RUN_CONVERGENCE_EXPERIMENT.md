@@ -355,15 +355,6 @@ After the trajectory finishes (converged or capped), write
 - Headline table: per iter, what changed and which verifiers passed/failed.
 - Iter-by-iter narrative: what feedback drove the change, what the change was.
 - Caveats: any spec compromises made, any tooling workarounds applied.
-- Findings: durable lessons from this run that aren't obvious from `CLAUDE.md`,
-  the codegen rules, or this HOWTO, and that should help future runs of any
-  case study. One paragraph per finding (F1, F2, ...), each naming the rule,
-  the *why* (with the supporting incident or diagnostic signal), and *how to
-  apply* it next time. Distinguish from caveats: caveats are run-specific
-  compromises ("in this run I had to..."); findings are generalisable
-  guidance ("in any future run, do/avoid this because..."). Findings sections
-  of *other* studies' trajectories are still forbidden reads (RUN_TRAJECTORY
-  §4) — do not consult them when writing your own.
 - Reproducibility: how a reader can stage iter-N's source and re-run the pipeline.
 
 Reference `experiments/convergence/<study>/trajectory.md` as the template.

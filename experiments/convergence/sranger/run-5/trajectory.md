@@ -162,56 +162,6 @@ undercounts the final archive-commit messages written after capture.
 Per-iter token fields in `summary.json` are `null` / `kind: "estimated"`
 per protocol (not measurable per-iter from inside the session).
 
-## Findings (durable, generalisable)
-
-**F1 — Spec constants that ride a channel must fit the FDR4 type ranges,
-and only a Java-side change can fix them.** The CSP generator inlines the
-`.rct` Constants defaults as `let`-bound `const_<Stm>_<name>` values
-inside the generated `*_coreassertions.csp`. The pre-FDR4 correction step
-(`apply_csp_corrections` + `csp_overrides.csp`) rewrites only
-`-- generate` blocks in `instantiations.csp`, so it **cannot** reach
-those constants. Under the experiment's `{0..1}` ranges, any constant
-> 1 that is passed as an event/operation payload (e.g. a velocity handed
-to an actuator call) kills every assertion at load time. *How to apply:*
-at cold-codegen time, scale payload-carried constants into the verifier
-range (documenting the deviation), or catch it on iter 2 from the
-refines error; guard-only constants (thresholds, durations) merely make
-guards trivially true/false and don't error.
-
-**F2 — `post_fdr4` "N inconclusive" with an empty issues list means the
-CSP failed to *load*, and the feedback layer won't tell you why.** A
-channel-range violation (F1) aborts evaluation before any assertion runs;
-the runner classifies this as "0 passed, N inconclusive, 0 errors" and
-emits no issue, no fix directive, and a misleadingly tiny wall-clock
-(~1 s). *How to apply:* whenever FDR4 reports inconclusive assertions,
-re-run `refines.exe` manually on the file named by the
-"auto-discovered" line in `post_fdr4.md` and read the raw error; don't
-guess from the (empty) structured feedback. (Mind RUN_TRAJECTORY §2's
-kill policy — manual *diagnostic* runs are fine; never interrupt the
-pipeline's own live FDR4 run.)
-
-**F3 — Preflight's rule4 is stricter than the codegen-rules text reads:
-EVERY `double` field and parameter needs `@RoboChartType("real")`,
-including private constants and framework-facing setter parameters that
-never reach the model** (`Sensor.update(double)`, `Clock.setTime(double)`,
-a private `static final` default). *How to apply:* annotate every
-`double` declaration site mechanically during cold codegen; it's nine
-silent error-severity lint hits otherwise, and preflight failure blocks
-nothing downstream in this pipeline (t2m..isabelle still ran) but costs
-the iteration its converged status.
-
-**F4 — (Confirmation) The two documented patterns fired exactly as the
-canonical inputs describe, and applying them proactively/on-cue is what
-made this a 2-iter run:** (a) CLAUDE.md's "no `Final` state on the
-theory-generated controller" — implemented at iter 1 as a *renamed*
-ordinary absorbing state (`Halted` + no-action tick self-loop + entry
-`move(0,0)`), which kept the spec's terminal semantics and let the
-Isabelle deadlock-freedom proof pass on first contact, no rerouting to a
-live operational state needed; (b) HOWTO §3's Dafny
-autonomous-preemption fix (gate the autonomous transition on `Tick`) —
-the iter-1 failure matched the documented symptom verbatim and the
-documented fix resolved it in one edit.
-
 ## Reproducibility
 
 1. Stage iter-N: copy `run-5/iter-N/java/**` to

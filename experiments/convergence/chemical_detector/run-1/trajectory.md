@@ -109,59 +109,6 @@ deadlock-freedom, vacuity 0 findings. Converged.
    `/home/will/...`. FDR4 timeout 3600 / memory_limit_mb 78002 were already
    set and match this machine's page file (78001 MB).
 
-## Findings (durable, generalisable)
-
-**F1 — Never call a multi-arg sensor function in a guard predicate; inline
-spec-level comparison functions as Java operators.** A 2-arg sensor method
-(`goreq(ins, thr)`) used as a named-predicate RHS is mis-extracted *twice*:
-the M2M emits the predicate as a zero-arg `Sensors` var defaulted to `nat`
-(CSP guard becomes Int-typed → FDR "Couldn't match expected type Bool with
-actual type Int"), and the Dafny generator declares the function with one
-parameter while emitting 2-arg call sites ("wrong number of arguments").
-A tell-tale secondary symptom: any constant referenced *only* inside such a
-call silently disappears from the Constants interface. Single-arg
-Seq-consuming functions (`analysis(gs)`, `intensity(gs)`, `location(gs)`) and
-zero-arg sensor vars extract perfectly. *How to apply:* spec functions whose
-job is comparison (goreq-style) should be realised as direct `>=`/`<=`
-operators inside the named predicate; keep the Java helper method if a
-requirement traces to it, just don't call it from the controller.
-
-**F2 — Complementary predicate pairs (`if (p) … else if (!p)`) give
-autonomous-only modes a first-try-provable total guard cover.** Both verifiers
-accepted it at the first attempt that reached them: Isabelle's
-`deadlock_free` + `metis St.exhaust_disc` closes `P ∨ ¬P` without needing any
-enum-exhaustiveness fact, and FDR4 finds no deadlock/divergence. This run
-deliberately wrote Analysis's second guard as `!statusNoGas` rather than the
-spec's `sts == Status.gasD` — semantically identical for a 2-literal enum, but
-propositionally total, which is what the canned closer can discharge. No
-self-loops and no bare `else` fallbacks were needed anywhere; the M2M
-deadlock-lint advisories ("state without unconditional fallback" on all 10
-states) were correctly ignored as the documented too-broad case.
-
-**F3 — In a two-controller study the Isabelle theory went to the diagram
-controller (`GasAnalysisController`, the first/diagram-named one), and keeping
-BOTH controllers Final-free cost little.** The rerouted terminal transitions
-(stop→Reading re-emission loop; Found stop-self-loop) pass FDR4, Dafny and
-Isabelle simultaneously. When you cannot predict which controller the theory
-generator will pick, make every controller Final-free up front rather than
-gambling on discovery order.
-
-**F4 — Named-boolean composition survives extraction, including under the
-`since()` rewrite.** `makingProgress = withinStuckPeriod || escapedDistance`
-(where `withinStuckPeriod` is a `clock.nowMs() - field < CONST` time
-predicate) was inlined into the transition guard as
-`since(stuckTimer) < stuckPeriod \/ d1 - d0 > stuckDist`, and its negation
-`!makingProgress` as the complementary guard. Composing previously-declared
-named booleans with `||`/`!` is safe and keeps the Java readable.
-
-**F5 — (process) The harness git-status snapshot leaks deleted-file *paths*
-into a fresh session.** This worktree had the forbidden dirs scrubbed by
-uncommitted deletion, so the session-start git status listed
-`experiments/cold-baseline/chemical_detector/run-1/...` paths — exposing a
-prior run's Java file naming (though no content, counts, or fixes). For full
-hygiene, scrub by *committing* the deletions (or base the severed commit on a
-tree that never contained the answer material) so the status snapshot is clean.
-
 ## Run-level cost
 
 **Claude token total (whole-run, source: summed `usage` blocks from the

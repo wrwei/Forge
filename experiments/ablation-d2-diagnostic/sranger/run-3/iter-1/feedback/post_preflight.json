@@ -1,0 +1,50 @@
+{
+  "phase": "preflight",
+  "label": "2c — Preflight (Structural Lint)",
+  "status": "passed",
+  "summary": "2c — Preflight (Structural Lint): no structural errors.",
+  "new_count": 2,
+  "recurring_count": 0,
+  "resolved_count": 0,
+  "resolved_issue_titles": [],
+  "issues": [
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "SRangerController.step(): triggerless branch guarded by 'turnDurationElapsed' follows event-triggered branch(es): event instanceof sranger.event.InputEvent.EndTask — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: SRangerController.step(): triggerless branch guarded by 'turnDurationElapsed' follows event-triggered branch(es): event instanceof sranger.event.InputEvent.EndTask — in the extracted model both are enabled together\nLocation: /Users/ranwei/Gitee/forge-d2-run4-sranger/java.generated.project/src/main/java/sranger/controller/SRangerController.java:70",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. RoboChart has no event-absence guard.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run4-sranger/java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 70,
+          "line_end": 75,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "SRangerController.step(): branch guarded by 'event instanceof sranger.event.InputEvent.Tick' does not negate preceding triggerless guard(s): turnDurationElapsed",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: SRangerController.step(): branch guarded by 'event instanceof sranger.event.InputEvent.Tick' does not negate preceding triggerless guard(s): turnDurationElapsed\nLocation: /Users/ranwei/Gitee/forge-d2-run4-sranger/java.generated.project/src/main/java/sranger/controller/SRangerController.java:73",
+      "fix_directive": "Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Gitee/forge-d2-run4-sranger/java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 73,
+          "line_end": 75,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    }
+  ],
+  "files_to_review": [],
+  "next_step": "Proceed to Phase 3 (T2M — Spoon Discovery)."
+}

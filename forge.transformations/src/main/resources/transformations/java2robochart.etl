@@ -30,6 +30,13 @@
 // =====================================================================
 
 pre {
+    // FIX (2026-09-18). Enum simple names, consulted by findJavaLocalByName's
+    // enum-parameter branch. Declared here in the `pre` block because an
+    // operation-local `var` is not visible to operations (a first attempt
+    // declared it beside enumTypeMap and every extraction failed with
+    // "Undefined variable, type or model: 'enumNamesForParamLookup'").
+    var enumNamesForParamLookup = new OrderedSet;
+
     var clockClassName = "Clock";
     var sensorClassNameHint = "sensor";
     var timingMethodNames = Sequence{"pause", "wait", "delay"};
@@ -78,6 +85,15 @@ pre {
     // an OperationSig declared in an `LOperations` interface. The lookup
     // is populated lazily by buildOperationCall during action extraction.
     var operationSigLookup = new Map;
+
+    // I1 (remainder): names of operation output variables whose action is a
+    // STUB (`x = 0` / `x = false`) because extractComputeBody bailed out —
+    // the compute() body had conditionals, an untranslatable method chain, or
+    // an unassigned declared output. Populated in Phase 6; read by the
+    // controller-field lifting pass (Phase 6a-ctrl) which refuses to lift any
+    // expression whose reads include a stubbed name, so a placeholder is never
+    // propagated into a lifted expression as though it were the Java's value.
+    var stubbedOpVarNames = new OrderedSet;
 
     // Compute body local variable map: varName -> Spoon initializer expression.
     // Populated during extractComputeBody(); cleared after extraction.
@@ -212,6 +228,7 @@ pre {
         }
         rcPackage.types.add(enumType);
         enumTypeMap.put(eName, enumType);
+        enumNamesForParamLookup.add(eName);
 
         // Trace: Java enum -> RoboChart Enumeration
         var te = new Map;
@@ -364,6 +381,23 @@ pre {
             var stateVar = new RoboChart!Variable;
             stateVar.name = fName;
             stateVar.type = rcVarType;
+            // U5 FIX (initial data state). `Variable.initial` was never
+            // populated anywhere in this file, so every emitted model carried
+            // ZERO <initial> elements and each backend substituted its own
+            // type default. On the CSP path that got the booleans WRONG:
+            // LreController.java's constructor sets camActive/hcmActive/
+            // momReturn/inOpez = false, but the CSP memory started them at
+            // `true` — a state the Java constructor cannot produce.
+            // resolveJavaFieldInitial reads the Java field's declaration
+            // initialiser and its constructor-body assignment (constructor
+            // wins, matching Java's own ordering) and returns a RoboChart
+            // literal Expression, or undefined when the value does not fold.
+            // Unresolved initials are left absent — same emission as before
+            // this fix — so the change is strictly additive.
+            var initExpr = resolveJavaFieldInitial(cc, tm, fName);
+            if (initExpr.isDefined()) {
+                stateVar.initial = initExpr;
+            }
             ctrlStateVarList.vars.add(stateVar);
             ctrlStateFieldNames.add(fName);
             ctrlStateVarLookup.put(fName, stateVar);
@@ -477,6 +511,16 @@ pre {
                     }
                 }
 
+                // C1 fix (priority negation synthesis): Java's if-else chain gives
+                // earlier branches priority; RoboChart transitions are an unguarded
+                // choice. Accumulate each preceding TRIGGERLESS branch's data-guard
+                // (keyed by source state) and prepend its negation to every LATER
+                // branch's guard from the same source state — reproducing the
+                // hand-written `hcmActive && !camActive` convention where the Java
+                // lacks it. Event-triggered branches RECEIVE negations but never
+                // CONTRIBUTE (their blocking effect is trigger disjointness, not a
+                // state predicate — covered by the C2 trigger-precondition fix).
+                var priorityGuardsByState = new Map;
                 var currentIf = findFirstCtIf(bodyBlock);
                 while (currentIf.isDefined() and currentIf.isTypeOf(Spoon!CtIf)) {
                     // Analyze condition
@@ -536,11 +580,20 @@ pre {
                         markEventTyped(trigEvt, eventTypeName);
                     }
 
+                    // C1 fix: raw (pre-negation) guard of this branch, captured for
+                    // accumulation so LATER branches from the same source state can
+                    // negate it. Captured immediately after createTransition, BEFORE
+                    // applyPriorityNegations rewrites the condition.
+                    var branchRawGuard;
+
                     // Create transitions based on the comparison type
                     if (eqModeName <> "" and targetModeName <> "") {
                         // EQ: single transition from specific source state
                         tCount = createTransition(stm, stateMap, eqModeName, targetModeName,
                                 eventTypeName, eventMap, tCount, guardConjuncts, predicateDefinitions, currentIf);
+                        branchRawGuard = stm.transitions.last().condition;
+                        // C1 fix: block this branch when a higher-priority triggerless guard holds
+                        applyPriorityNegations(stm, getPriorityList(priorityGuardsByState, eqModeName));
                         // E4/E11: extract actions from then-block with pattern variable context
                         var actions = extractActions(thenBlock, stm, eventMap, patternVarName, eventTypeName);
                         attachActions(stm, actions);
@@ -552,6 +605,11 @@ pre {
                             if (sn <> neModeName) {
                                 tCount = createTransition(stm, stateMap, sn, targetModeName,
                                         eventTypeName, eventMap, tCount, guardConjuncts, predicateDefinitions, currentIf);
+                                if (branchRawGuard.isUndefined()) {
+                                    branchRawGuard = stm.transitions.last().condition;
+                                }
+                                // C1 fix: per-source-state priority negations
+                                applyPriorityNegations(stm, getPriorityList(priorityGuardsByState, sn));
                                 // E4/E11: fresh actions for each transition (EMF containment)
                                 var neActions = extractActions(thenBlock, stm, eventMap, patternVarName, eventTypeName);
                                 attachActions(stm, neActions);
@@ -568,6 +626,8 @@ pre {
                         if (eqModeName <> "") {
                             tCount = createTransition(stm, stateMap, eqModeName, eqModeName,
                                     eventTypeName, eventMap, tCount, guardConjuncts, predicateDefinitions, currentIf);
+                            // C1 fix: per-source-state priority negations
+                            applyPriorityNegations(stm, getPriorityList(priorityGuardsByState, eqModeName));
                             // E4/E11: extract actions from self-transition then-block
                             var e9Actions = extractActions(thenBlock, stm, eventMap, patternVarName, eventTypeName);
                             attachActions(stm, e9Actions);
@@ -577,6 +637,8 @@ pre {
                                 if (sn <> neModeName) {
                                     tCount = createTransition(stm, stateMap, sn, sn,
                                             eventTypeName, eventMap, tCount, guardConjuncts, predicateDefinitions, currentIf);
+                                    // C1 fix: per-source-state priority negations
+                                    applyPriorityNegations(stm, getPriorityList(priorityGuardsByState, sn));
                                     // E4/E11: fresh actions for each self-transition
                                     var neE9Actions = extractActions(thenBlock, stm, eventMap, patternVarName, eventTypeName);
                                     attachActions(stm, neE9Actions);
@@ -606,6 +668,38 @@ pre {
                         }
                     }
 
+                    // C1 fix: contribute this branch's data guard to the per-state
+                    // accumulator so later branches negate it. Rule (a): only
+                    // TRIGGERLESS branches contribute — an event-triggered branch
+                    // blocks via trigger disjointness (C2), not a state predicate.
+                    if (eventTypeName == "" and guardConjuncts.size() > 0) {
+                        if (branchRawGuard.isDefined()) {
+                            if (eqModeName <> "") {
+                                accumulatePriorityGuard(priorityGuardsByState, eqModeName, branchRawGuard);
+                            } else if (neModeName <> "") {
+                                for (sn in stateNames) {
+                                    if (sn <> neModeName) {
+                                        accumulatePriorityGuard(priorityGuardsByState, sn, branchRawGuard);
+                                    }
+                                }
+                            } else {
+                                // Guarded triggerless branch with no mode comparison:
+                                // Java blocks ALL later branches when it fires, but the
+                                // ETL created no transition to source a guard from.
+                                ("[priority-c1] WARNING: triggerless guarded branch without "
+                                        + "mode comparison — its blocking effect on later "
+                                        + "branches is NOT encoded").println();
+                            }
+                        } else {
+                            // Triggerless guarded branch that produced no transition
+                            // (no target mode): the branch is dropped from the model,
+                            // and its blocking effect is likewise not encoded.
+                            ("[priority-c1] WARNING: dropped triggerless guarded branch "
+                                    + "(no target mode) — its blocking effect on later "
+                                    + "branches is NOT encoded").println();
+                        }
+                    }
+
                     // Move to next else-if branch
                     // Spoon wraps else-if in a CtBlock; unwrap to get the inner CtIf
                     var elseVal = getFeature(currentIf, "else");
@@ -623,6 +717,9 @@ pre {
                                     for (sn in stateNames) {
                                         tCount = createTransition(stm, stateMap, sn, elseTarget,
                                                 "", eventMap, tCount, new Sequence, predicateDefinitions, currentIf);
+                                        // C1 fix (E13): the terminal else fires only when no
+                                        // preceding triggerless guard holds — receive negations.
+                                        applyPriorityNegations(stm, getPriorityList(priorityGuardsByState, sn));
                                         // E4: fresh actions from terminal else block (no pattern var in else)
                                         var elseActions = extractActions(elseVal, stm, eventMap, "", "");
                                         attachActions(stm, elseActions);
@@ -657,7 +754,13 @@ pre {
                         // an explicit BooleanExp(true) so semantics stay visible.
                         if (simplified.isUndefined()) {
                             var trueExp = new RoboChart!BooleanExp;
-                            trueExp.value = true;
+                            // FIX (2026-09-14). BooleanExp.value is EString in
+                            // robochart.ecore; every other ETL site assigns "true"/
+                            // "false" as STRINGS. This fallback path assigned the
+                            // Boolean `true` and was never exercised until chem
+                            // run-1 v2's codegen produced a guard the simplifier
+                            // reduced to undefined — sranger/lre never reach here.
+                            trueExp.value = "true";
                             trans.condition = trueExp;
                         } else {
                             trans.condition = simplified;
@@ -717,14 +820,26 @@ pre {
     // sensor data (e.g. update(AuvInputParameters)), while constructor-parameter
     // records are typically static configuration (e.g. SensorClass(ConstantsRecord)).
     var sensorRecordName = "";
-    var controllerCls = null;
+    // Parse-order fix: this used to loop over Spoon!CtClass.all taking the
+    // LAST class with step() (no mode-field requirement), while
+    // findControllerClass() prefers step()+enum-mode-field and takes the
+    // FIRST — so sensor detection could silently key off a dispatch-only
+    // class (or a different controller) depending on model iteration order.
+    // Use the same canonical pick as the rest of the ETL, and collect
+    // constructor dependencies from ALL controllers so multi-controller
+    // case studies don't depend on which controller was picked.
+    var controllerCls = findControllerClass();
     var depClassNames = new OrderedSet;
-    for (cls in Spoon!CtClass.all) {
-        if (findStepMethod(cls).isDefined()) { controllerCls = cls; }
-    }
     if (controllerCls.isDefined()) {
-        // Collect dependency class names from controller constructor
-        for (tm in controllerCls.typeMember) {
+        // Collect dependency class names from every controller constructor
+        // (allControllers resolved before Phase 4.9c; falls back to the
+        // single canonical pick when empty).
+        var depSourceControllers = allControllers;
+        if (depSourceControllers.size() == 0) {
+            depSourceControllers = Sequence{controllerCls};
+        }
+        for (depCc in depSourceControllers) {
+        for (tm in depCc.typeMember) {
             if (not tm.isTypeOf(Spoon!CtConstructor)) { continue; }
             var ctorParams = getFeature(tm, "parameter");
             if (ctorParams.isUndefined()) { continue; }
@@ -737,6 +852,7 @@ pre {
                     }
                 }
             }
+        }
         }
 
         // Pass 1: Check dependency class METHOD parameters for records (dynamic data)
@@ -1081,90 +1197,14 @@ pre {
         // name collectors above, hence this skip.
         if (fname == "since") { continue; }
         if (not registerFuncNames.includes(fname)) {
-            var func = new RoboChart!Function;
-            func.name = fname;
-
-            // Find matching Java method for type inference
-            var javaMethod = findJavaMethodByName(fname);
-
-            // Infer parameter type from Java method signature. Reuses
-            // the generic mapJavaTypeToRcTypeRef helper so that
-            // enums, records, and parameterized collections
-            // (List<X> → Seq(X)) all surface correctly instead of
-            // falling through to the `real` default.
-            var paramName = "x";
-            var paramRcType;
-            if (javaMethod.isDefined()) {
-                var javaParams = getFeature(javaMethod, "parameter");
-                if (javaParams.isDefined() and javaParams.size() > 0) {
-                    var firstParam = javaParams.first();
-                    var jpName = getFeature(firstParam, "name");
-                    if (jpName.isDefined() and jpName <> "") { paramName = jpName; }
-                    var jpTypeRef = getFeature(firstParam, "type");
-                    if (jpTypeRef.isDefined()) {
-                        var jpTypeName = getFeature(jpTypeRef, "name");
-                        if (jpTypeName.isDefined()) {
-                            var jpElem = "";
-                            var jpArgs = getFeature(jpTypeRef, "typeArgument");
-                            if (jpArgs.isDefined() and jpArgs.size() > 0) {
-                                var ja = jpArgs.first();
-                                if (ja.isDefined()) {
-                                    var jaName = getFeature(ja, "name");
-                                    if (jaName.isDefined()) { jpElem = jaName; }
-                                }
-                            }
-                            paramRcType = mapJavaTypeToRcTypeRef(jpTypeName, jpElem,
-                                    enumTypeMap, recordTypeMap, rcPackage);
-                        }
-                    }
-                }
-            }
-            if (paramRcType.isUndefined()) {
-                var paramType = new RoboChart!PrimitiveType;
-                paramType.name = "real";
-                rcPackage.types.add(paramType);
-                paramRcType = new RoboChart!TypeRef;
-                paramRcType.ref = paramType;
-            }
-            var param = new RoboChart!Parameter;
-            param.name = paramName;
-            param.type = paramRcType;
-            func.parameters.add(param);
-
-            // Infer return type from Java method signature. Same helper
-            // and same fallback as the parameter type, so enum returns
-            // (`Status`, `Angle`) and record returns (`Intensity`) come
-            // through with proper TypeRefs instead of `real`.
-            var retRcType;
-            if (javaMethod.isDefined()) {
-                var jRetTypeRef = getFeature(javaMethod, "type");
-                if (jRetTypeRef.isDefined()) {
-                    var jRetTypeName = getFeature(jRetTypeRef, "name");
-                    if (jRetTypeName.isDefined()) {
-                        var jRetElem = "";
-                        var jRetArgs = getFeature(jRetTypeRef, "typeArgument");
-                        if (jRetArgs.isDefined() and jRetArgs.size() > 0) {
-                            var jr = jRetArgs.first();
-                            if (jr.isDefined()) {
-                                var jrName = getFeature(jr, "name");
-                                if (jrName.isDefined()) { jRetElem = jrName; }
-                            }
-                        }
-                        retRcType = mapJavaTypeToRcTypeRef(jRetTypeName, jRetElem,
-                                enumTypeMap, recordTypeMap, rcPackage);
-                    }
-                }
-            }
-            if (retRcType.isUndefined()) {
-                var retType = new RoboChart!PrimitiveType;
-                retType.name = "real";
-                rcPackage.types.add(retType);
-                retRcType = new RoboChart!TypeRef;
-                retRcType.ref = retType;
-            }
-            func.type = retRcType;
-
-            rcPackage.functions.add(func);
+            // I2: the inference body that used to be inlined here now lives
+            // in buildInferredFunction (see its header), so the guard path
+            // and the Phase 6b operation-body path derive signatures from
+            // the same Java declared types by the same code. This call is
+            // behaviour-preserving for the guard path: the operation is a
+            // verbatim extraction, fallbacks included.
+            rcPackage.functions.add(
+                buildInferredFunction(fname, enumTypeMap, recordTypeMap, rcPackage));
         }
     }
 
@@ -1185,12 +1225,18 @@ pre {
                     if (cName.isUndefined()) { continue; }
                     var v = new RoboChart!Variable;
                     v.name = cName;
-                    var vType = new RoboChart!PrimitiveType;
-                    vType.name = "real";
-                    rcPackage.types.add(vType);
-                    var vTypeRef = new RoboChart!TypeRef;
-                    vTypeRef.ref = vType;
-                    v.type = vTypeRef;
+                    // Type from the Java component type (was hardcoded "real",
+                    // which silently retyped int/boolean sensor components —
+                    // same defect class as the int->nat mapping). Unknown /
+                    // non-primitive component types still fall back to "real"
+                    // inside mapJavaTypeToRcTypeRef, preserving old behaviour.
+                    var cTypeName = "";
+                    var cTypeRef = getFeature(comp, "type");
+                    if (cTypeRef.isDefined()) {
+                        var ctn = getFeature(cTypeRef, "name");
+                        if (ctn.isDefined()) { cTypeName = ctn; }
+                    }
+                    v.type = mapJavaTypeToRcTypeRef(cTypeName, "", enumTypeMap, recordTypeMap, rcPackage);
                     varList.vars.add(v);
                 }
             }
@@ -1215,6 +1261,12 @@ pre {
                                     domainTypeName = "real";
                                 } else if (jpTypeName == "boolean" or jpTypeName == "Boolean") {
                                     domainTypeName = "boolean";
+                                } else if (jpTypeName == "int" or jpTypeName == "Integer"
+                                    or jpTypeName == "long" or jpTypeName == "Long") {
+                                    // Signed Java int -> signed RoboChart int, matching
+                                    // mapJavaTypeToRcTypeRef so int state vars can be
+                                    // passed to these functions without a type clash.
+                                    domainTypeName = "int";
                                 }
                             }
                         }
@@ -1278,7 +1330,8 @@ pre {
                         rcTypeName = "real";
                     } else if (fTypeName == "int" or fTypeName == "Integer"
                                or fTypeName == "long" or fTypeName == "Long") {
-                        rcTypeName = "nat";
+                        // Signed Java int -> signed RoboChart int (see mapJavaTypeToRcTypeRef)
+                        rcTypeName = "int";
                     } else if (fTypeName == "boolean" or fTypeName == "Boolean") {
                         rcTypeName = "boolean";
                     }
@@ -1310,6 +1363,10 @@ pre {
                                         domainTypeName = "real";
                                     } else if (jpTypeName == "boolean" or jpTypeName == "Boolean") {
                                         domainTypeName = "boolean";
+                                    } else if (jpTypeName == "int" or jpTypeName == "Integer"
+                                        or jpTypeName == "long" or jpTypeName == "Long") {
+                                        // Signed Java int -> signed RoboChart int (see 5b block)
+                                        domainTypeName = "int";
                                     }
                                 }
                             }
@@ -1519,11 +1576,29 @@ pre {
                         rcTypeName = "boolean";
                     } else if (javaTypeName == "int" or javaTypeName == "Integer"
                                or javaTypeName == "long" or javaTypeName == "Long") {
-                        rcTypeName = "nat";
+                        // Signed Java int -> signed RoboChart int (see mapJavaTypeToRcTypeRef)
+                        rcTypeName = "int";
                     } else if (javaTypeName == "double" or javaTypeName == "Double"
                                or javaTypeName == "float" or javaTypeName == "Float") {
                         rcTypeName = "real";
                     } else {
+                        // FIX (2026-09-17). Enum-typed operation fields
+                        // (chem run-2: OperationMove.direction : Angle) fell
+                        // through to the default "real", so the .rct declared
+                        // `var direction : real` while the actuator signature
+                        // it flows into is `move(p0: real, p1: Angle)` — the
+                        // parameter path types enums correctly via
+                        // enumTypeMap, this field path never did (no prior
+                        // study had enum-typed operation state). FDR4 then
+                        // rejects CALL__move with "expected Angle, actual
+                        // Int". Reference the existing Enumeration directly.
+                        if (enumTypeMap.containsKey(javaTypeName)) {
+                            var enumRef = new RoboChart!TypeRef;
+                            enumRef.ref = enumTypeMap.get(javaTypeName);
+                            opVar.type = enumRef;
+                            opVarList.vars.add(opVar);
+                            continue;
+                        }
                         // Custom type: check if it matches a model RecordType.
                         // In the nat -> RecordType mapping pattern, variables of
                         // that type represent indices, so use nat.
@@ -1563,11 +1638,18 @@ pre {
         } else if (outputFieldNames.size() == 1) {
             // Fallback: stub assignment fieldName = 0
             opTrans.action = createAssignment(opVarList.vars.at(0));
+            // I1 (remainder): remember that this variable carries a STUB
+            // placeholder, not the Java's computation. The controller-field
+            // lifting pass below refuses to lift any expression that reads a
+            // stubbed variable, because the lifted clause would propagate the
+            // placeholder into the model as if it were the Java's value.
+            stubbedOpVarNames.add(opVarList.vars.at(0).name);
         } else if (outputFieldNames.size() > 1) {
             // Fallback: stub assignments wrapped in SeqStatement
             var seq = new RoboChart!SeqStatement;
             for (v in opVarList.vars) {
                 seq.statements.add(createAssignment(v));
+                stubbedOpVarNames.add(v.name);   // see note above
             }
             opTrans.action = seq;
         }
@@ -1584,6 +1666,237 @@ pre {
         te.put("output_fields", outputFieldNames.concat(", "));
         traceEntries.add(te);
     }
+
+    // =========================================================================
+    // Phase 6a-ctrl: Lift CONTROLLER-LEVEL FIELD ASSIGNMENTS (I1 remainder).
+    //
+    // THE GAP. Three kinds of assignment appear in a controller's `step()`,
+    // and pre-fix only two of them reached the model:
+    //   1. inside a compute() body  -> lifted by Phase 6 into an OperationDef
+    //                                  action (so the I1 data plane emits it);
+    //   2. a controller-level LOCAL  -> recorded in `predicateDefinitions` and
+    //      (`boolean velOk = ...`)      inlined into guards;
+    //   3. a controller-level FIELD  -> NEITHER. The field is declared in
+    //      (`this.camActive = ...`)     Ctrl_State (Phase 4.9c) and its guard
+    //                                   READS are emitted, but its defining
+    //                                   expression was dropped on the floor.
+    // Consequence for the Isabelle data plane: `camActive`, `hcmActive`,
+    // `momReturn` (LreController.java:176-183) and `turnDurationElapsed`
+    // (SRangerController.java:155) reach the theory as zstore lenses that no
+    // operation assigns — arbitrary but CONSTANT for a whole run, while the
+    // Java re-evaluates them every step. Same under-approximation direction as
+    // the rest of I1.
+    //
+    // THE VEHICLE, and why it is an OperationDef. The data plane is collected
+    // (thy_generation_rule.egl, `dataDefOrder`/`dataDefExpr`) by walking
+    // `p.operations` transition actions. Within a fix scoped to this file, an
+    // OperationDef action is therefore the only place a lifted expression can
+    // live and still reach the theory. One synthesized operation per
+    // controller, named `<Controller>_Refresh`, holds the lifted block.
+    //
+    // HONEST NOTE ON WHAT THIS ADDS. The synthesized operation is declared and
+    // opref'd but never `call`ed from the state machine — like the FIVE
+    // operations already emitted (no `.rct` in any of the three studies
+    // contains a single `call` statement). It therefore joins the existing,
+    // already-documented U1 over-approximation rather than introducing a new
+    // one; it does not make U1 worse in kind, but it does add one more
+    // uninvoked operation to it.
+    //
+    // SOURCE ORDER (the U3 lesson). `step()` interleaves controller-field
+    // assignments with compute() dispatches: `camActive` (:176) reads `cda`
+    // and `tcpa`, which `calcCPA.compute()` (:171) produces earlier in the
+    // same step. Assignments are collected by walking the step() body in
+    // SOURCE ORDER into parallel Sequences — the same shape as
+    // extractComputeBody's `assignedFieldOrder`/`assignedRhsOrder` — and
+    // emitted into a SeqStatement in that order, so the downstream
+    // `inlineRender` resolves a read of `cda` to CalcCPA's fresh expression
+    // instead of a stale lens. A field assigned twice at top level yields two
+    // statements, in order (not a Map collapse to the last one).
+    //
+    // WHAT IS REFUSED RATHER THAN GUESSED. Each guard below drops the single
+    // assignment and logs `[i1-ctrl]` with the reason:
+    //   * LHS is not a Ctrl_State variable (mode field, final dependency, or a
+    //     field promoted to a `clock`);
+    //   * RHS contains a Clock call — those are clock resets, whose promotion
+    //     is Phase 4.9c-clocks' business, not the data plane's;
+    //   * identity (`hvel = hvel`): the copy-out assignments
+    //     `this.hvel = calcVel.hvel()` translate to a read of the same name,
+    //     because the operation output variable and the controller field share
+    //     it. Emitting `hvel = hvel` would add a vacuous clause and, worse,
+    //     make `hvel` look controller-defined when CalcVel defines it;
+    //   * RHS translation failed, or produced `unknown_expr` — the
+    //     translateSpoonExpr fallback for a Java shape it cannot render;
+    //   * RHS reads an operation output variable whose own action is a STUB
+    //     (`stubbedOpVarNames`). This is the SRanger case:
+    //     `this.turnDurationElapsed = turnTimer.elapsed()` translates to
+    //     `turnDurationElapsed = elapsed`, and `elapsed` is stubbed to `false`
+    //     because TurnTimer.compute() declares an output (`resetTime`) it does
+    //     not assign, so extractComputeBody bails to stubs. Lifting it would
+    //     PIN `turnDurationElapsed` to false — excluding the Turning -> Moving
+    //     transition entirely, which is strictly worse than leaving the lens
+    //     frozen-but-arbitrary. Refused, and reported as still-blocked.
+    // =========================================================================
+    var savedPredicateDefinitions = predicateDefinitions;
+    for (cc in allControllers) {
+        var ccStep = findStepMethod(cc);
+        if (ccStep.isUndefined()) { continue; }
+        var ccStepBody = getFeature(ccStep, "body");
+        if (ccStepBody.isUndefined() or not ccStepBody.isKindOf(Spoon!CtBlock)) { continue; }
+
+        // Scope local-variable inlining to THIS controller's step() body, so a
+        // lifted RHS reading a step local inlines that controller's
+        // definition. (After the multi-controller machine loop the module-level
+        // map holds only the LAST controller's locals.)
+        predicateDefinitions = new Map;
+        for (stmt in ccStepBody.statement) {
+            if (stmt.isTypeOf(Spoon!CtLocalVariable)) {
+                var lvName = getFeature(stmt, "name");
+                var lvInit = getFeature(stmt, "assignment");
+                if (lvName.isDefined() and lvInit.isDefined()) {
+                    predicateDefinitions.put(lvName, lvInit);
+                }
+            }
+        }
+
+        // Walk ONLY the top level of step(). Assignments nested inside the
+        // if-else chain are transition actions and are already handled by
+        // extractActions/buildStateAssignment — reaching into the chain here
+        // would duplicate them and could perturb the C1 priority-negation
+        // synthesis, which reads that chain.
+        var liftedFieldOrder = new Sequence;   // fieldName, in source order
+        var liftedRhsOrder = new Sequence;     // parallel: Spoon RHS expression
+        for (stmt in ccStepBody.statement) {
+            if (not stmt.isTypeOf(Spoon!CtAssignment)) { continue; }
+            var lhs = getFeature(stmt, "assigned");
+            if (lhs.isUndefined()) { continue; }
+            if (not (lhs.isKindOf(Spoon!CtFieldWrite) or lhs.isKindOf(Spoon!CtFieldAccess))) { continue; }
+            var lhsVarRef = lhs.variable;
+            if (lhsVarRef.isUndefined()) { continue; }
+            var fName = getFeature(lhsVarRef, "name");
+            if (fName.isUndefined() or fName == "") { continue; }
+            if (not ctrlStateVarLookup.containsKey(fName)) {
+                ("[i1-ctrl] " + cc.name + "." + fName + ": not a Ctrl_State "
+                    + "variable (mode field, final dependency, or promoted to a "
+                    + "clock) — not lifted").println();
+                continue;
+            }
+            var rhs = getFeature(stmt, "assignment");
+            if (rhs.isUndefined()) { continue; }
+            if (containsClockCall(rhs)) {
+                ("[i1-ctrl] " + cc.name + "." + fName + ": RHS reads a Clock — "
+                    + "clock promotion (Phase 4.9c-clocks) owns this, not the "
+                    + "data plane — not lifted").println();
+                continue;
+            }
+            liftedFieldOrder.add(fName);
+            liftedRhsOrder.add(rhs);
+        }
+
+        // Translate in source order, applying the per-assignment refusals.
+        //
+        // The size guard is load-bearing, not defensive noise: Epsilon's
+        // `Sequence{0..-1}` is NOT empty (it iterates 0 then -1), so an empty
+        // `liftedFieldOrder` — every controller in the chemical detector study,
+        // whose step() assigns fields only INSIDE the if-else chain — would
+        // index a zero-length sequence and abort the whole M2M phase.
+        if (liftedFieldOrder.size() == 0) { continue; }
+        var ccLiftedAssignments = new Sequence;
+        for (li in Sequence{0..liftedFieldOrder.size() - 1}) {
+            var fName = liftedFieldOrder.at(li);
+            var rcRhs = translateSpoonExpr(liftedRhsOrder.at(li));
+            if (rcRhs.isUndefined()) {
+                ("[i1-ctrl] " + cc.name + "." + fName + ": RHS did not translate "
+                    + "to a RoboChart expression — not lifted").println();
+                continue;
+            }
+            var rhsNames = new OrderedSet;
+            collectAllRcCallExpNames(rcRhs, rhsNames);
+            if (rhsNames.includes("unknown_expr")) {
+                ("[i1-ctrl] " + cc.name + "." + fName + ": RHS contains an "
+                    + "untranslatable Java sub-expression (unknown_expr) — "
+                    + "not lifted").println();
+                continue;
+            }
+            // Identity copy-out: `this.<f> = <op>.<f>()` renders as `<f>`.
+            if (rhsNames.size() == 1 and rhsNames.includes(fName)
+                    and rcRhs.isKindOf(RoboChart!CallExp)) {
+                ("[i1-ctrl] " + cc.name + "." + fName + ": copy-out of an "
+                    + "operation output of the same name — identity assignment, "
+                    + "not lifted (the defining operation already carries the "
+                    + "expression)").println();
+                continue;
+            }
+            var stubbedReads = new OrderedSet;
+            for (rn in rhsNames) {
+                if (stubbedOpVarNames.includes(rn)) { stubbedReads.add(rn); }
+            }
+            if (stubbedReads.size() > 0) {
+                ("[i1-ctrl] " + cc.name + "." + fName + ": RHS reads stubbed "
+                    + "operation output(s) " + stubbedReads.concat(", ")
+                    + " whose compute() body did not lift — lifting would "
+                    + "propagate the stub placeholder as if it were the Java's "
+                    + "value — not lifted").println();
+                continue;
+            }
+            var assign = new RoboChart!Assignment;
+            var vref = new RoboChart!VarRef;
+            vref.name = ctrlStateVarLookup.get(fName);
+            assign.left = vref;
+            assign.right = rcRhs;
+            ccLiftedAssignments.add(assign);
+            ("[i1-ctrl] " + cc.name + "." + fName + ": lifted (source position "
+                + li.toString() + " of " + liftedFieldOrder.size().toString()
+                + " top-level field assignments)").println();
+        }
+
+        if (ccLiftedAssignments.size() == 0) { continue; }
+
+        // Synthesize the refresh operation. Its Assignment LHS VarRefs point at
+        // the EXISTING Ctrl_State Variables (via ctrlStateVarLookup), so the
+        // operation declares no variableList of its own and the RCT's
+        // "operation output variables" sweep cannot duplicate these names into
+        // a state interface.
+        var refreshOp = new RoboChart!OperationDef;
+        refreshOp.name = cc.name + "_Refresh";
+        refreshOp.terminates = true;
+        refreshOp.rInterfaces.add(ctrlStateIface);
+        if (sensorsIfaceRef.isDefined()) {
+            refreshOp.rInterfaces.add(sensorsIfaceRef);
+        }
+        if (constantValueMap.size() > 0) {
+            refreshOp.rInterfaces.add(constantsIface);
+        }
+        var refreshInitial = new RoboChart!Initial;
+        refreshInitial.name = "i0";
+        refreshOp.nodes.add(refreshInitial);
+        var refreshFinal = new RoboChart!Final;
+        refreshFinal.name = "f0";
+        refreshOp.nodes.add(refreshFinal);
+        var refreshTrans = new RoboChart!Transition;
+        refreshTrans.name = "t0";
+        refreshTrans.source = refreshInitial;
+        refreshTrans.target = refreshFinal;
+        if (ccLiftedAssignments.size() == 1) {
+            refreshTrans.action = ccLiftedAssignments.at(0);
+        } else {
+            var refreshSeq = new RoboChart!SeqStatement;
+            for (a in ccLiftedAssignments) {
+                refreshSeq.statements.add(a);
+            }
+            refreshTrans.action = refreshSeq;
+        }
+        refreshOp.transitions.add(refreshTrans);
+        rcPackage.operations.add(refreshOp);
+
+        var teR = new Map;
+        teR.put("robochart_type", "OperationDef");
+        teR.put("robochart_element", refreshOp.name);
+        teR.put("java_element", cc.name + ".step");
+        teR.put("java_type", "CtMethod");
+        teR.put("output_fields", liftedFieldOrder.concat(", "));
+        traceEntries.add(teR);
+    }
+    predicateDefinitions = savedPredicateDefinitions;
 
     // =========================================================================
     // Phase 6b: Discover functions used in operation body actions.
@@ -1675,25 +1988,20 @@ pre {
     builtInFuncNames.add("since");
     for (fname in opBodyFuncNames) {
         if (not existingFuncNames.includes(fname) and not builtInFuncNames.includes(fname)) {
-            // Functions with args: default signature (x : real) : real
-            var func = new RoboChart!Function;
-            func.name = fname;
-            var param = new RoboChart!Parameter;
-            param.name = "x";
-            var paramType = new RoboChart!PrimitiveType;
-            paramType.name = "real";
-            rcPackage.types.add(paramType);
-            var paramTypeRef = new RoboChart!TypeRef;
-            paramTypeRef.ref = paramType;
-            param.type = paramTypeRef;
-            func.parameters.add(param);
-            var retType = new RoboChart!PrimitiveType;
-            retType.name = "real";
-            rcPackage.types.add(retType);
-            var retTypeRef = new RoboChart!TypeRef;
-            retTypeRef.ref = retType;
-            func.type = retTypeRef;
-            rcPackage.functions.add(func);
+            // I2 FIX. This site used to hardcode `(x : real) : real` with no
+            // Java type inference whatsoever, so LRE emitted
+            //     function nsRelDist ( x : real ) : real
+            // against `double nsRelDist(@RoboChartType("nat") int index)`.
+            // It now uses the SAME inferencer as the guard path (Phase 5b),
+            // reading the Java DECLARED parameter/return types, so the four
+            // operation-body functions (nsRelDist, ewRelDist, obsNsVel,
+            // obsEwVel) come out as `( index : int ) : real` — agreeing with
+            // the Java and with `odist`, which the guard path already got
+            // right. Names with no resolvable Java method (`sqrt` resolves to
+            // java.lang.Math, absent from the Spoon model) keep the previous
+            // `( x : real ) : real` via the operation's fallbacks.
+            rcPackage.functions.add(
+                buildInferredFunction(fname, enumTypeMap, recordTypeMap, rcPackage));
             existingFuncNames.add(fname);
         }
     }
@@ -1738,7 +2046,13 @@ pre {
                     and not constantFieldMap.values().includes(fname)) {
                 // Infer RoboChart type from Java method return type
                 var retTypeName = "nat";
+                var enumRetRef = null;
                 var javaMethod = findJavaMethodByName(fname);
+                if (javaMethod.isUndefined()) {
+                    // not a method — maybe a step-body local
+                    // (boolean b = ...) referenced from a guard.
+                    javaMethod = findJavaLocalByName(fname);
+                }
                 if (javaMethod.isDefined()) {
                     var jRetType = getFeature(javaMethod, "type");
                     if (jRetType.isDefined()) {
@@ -1748,16 +2062,38 @@ pre {
                             retTypeName = "real";
                         } else if (jRetName == "boolean" or jRetName == "Boolean") {
                             retTypeName = "boolean";
+                        } else if (jRetName == "int" or jRetName == "Integer"
+                            or jRetName == "long" or jRetName == "Long") {
+                            // Signed Java int -> signed RoboChart int, matching
+                            // mapJavaTypeToRcTypeRef. The "nat" default above is
+                            // retained only for names with NO resolvable Java
+                            // method (heuristic index guess).
+                            retTypeName = "int";
+                        } else if (jRetName.isDefined()
+                                   and enumTypeMap.isDefined()
+                                   and enumTypeMap.containsKey(jRetName)) {
+                            // FIX (2026-09-14). Enum-returning sensor reads
+                            // (chem: `Angle commandedAngle()`, `Angle
+                            // avoidanceAngle()`) fell to the nat default; the
+                            // lifted var then typed `nat` while assignments
+                            // wrote enum literals into it — CSP-M died on
+                            // Int-vs-Angle at every such site. Reference the
+                            // Enumeration itself.
+                            enumRetRef = enumTypeMap.get(jRetName);
                         }
                     }
                 }
                 var sVar = new RoboChart!Variable;
                 sVar.name = fname;
-                var sVarType = new RoboChart!PrimitiveType;
-                sVarType.name = retTypeName;
-                rcPackage.types.add(sVarType);
                 var sVarTypeRef = new RoboChart!TypeRef;
-                sVarTypeRef.ref = sVarType;
+                if (enumRetRef.isDefined()) {
+                    sVarTypeRef.ref = enumRetRef;
+                } else {
+                    var sVarType = new RoboChart!PrimitiveType;
+                    sVarType.name = retTypeName;
+                    rcPackage.types.add(sVarType);
+                    sVarTypeRef.ref = sVarType;
+                }
                 sVar.type = sVarTypeRef;
                 // Add to existing variable list or create one
                 if (sensorsIfaceForZeroArg.variableList.size() > 0) {
@@ -1800,6 +2136,31 @@ operation createAssignment(variable : Any) : Any {
         boolExp.value = "false";
         assign.right = boolExp;
     } else {
+        // FIX (2026-09-17). The earlier fix typed enum-valued operation fields as their
+        // Enumeration, but this placeholder still assigned IntegerExp 0 — so the
+        // .rct read `obstacleLocation = 0` against `var obstacleLocation : Loc`.
+        // Both back ends rejected it downstream, from the SAME cause:
+        //   FDR4  : "expected Int with actual Loc" at set_obstacleLocation!0
+        //   Isabelle: "No type arity Loc :: zero"
+        // For an Enumeration, emit its FIRST literal as the placeholder (a
+        // well-typed member of the type, exactly what the Java field's own
+        // initialiser is: `private Loc obstacleLocation = Loc.front`).
+        var resolvedT = variable.type;
+        if (resolvedT.isDefined() and resolvedT.isKindOf(RoboChart!TypeRef)) {
+            resolvedT = resolvedT.ref;
+        }
+        // Shape note: an enum-literal use is CallExp(function = StringExp(name))
+        // — the shape the working `move ( 0 , Front )` emission serialises to in
+        // this same model. Build it with createNamedCallExp, which sets the
+        // `function` feature reflectively (dot-access on it does not parse).
+        if (resolvedT.isDefined() and resolvedT.isKindOf(RoboChart!Enumeration)
+                and resolvedT.literals.size() > 0) {
+            var litName = getFeature(resolvedT.literals.at(0), "name");
+            if (litName.isDefined()) {
+                assign.right = createNamedCallExp(litName);
+                return assign;
+            }
+        }
         var intExp = new RoboChart!IntegerExp;
         intExp.value = 0;
         assign.right = intExp;
@@ -1857,8 +2218,27 @@ operation extractComputeBody(cls : Any, opVarList : Any) : Any {
     }
 
     // Pass 2: Collect field assignments (this.field = expr).
-    // Maps fieldName -> Spoon RHS expression.
+    //
+    // U3 FIX (source order). This pass previously stored the assignments in a
+    // Map keyed by field name, which DISCARDS the order in which the Java
+    // executes them, and Pass 3 then re-emitted them in `opVarList.vars`
+    // (i.e. FIELD DECLARATION) order. That is wrong whenever one assignment
+    // reads a field an earlier assignment writes. Witness — LRE CalcCPA.java:
+    //     :39  this.tcpa = ...;                 // written first
+    //     :44  this.cda  = sqrt(... this.tcpa ...);   // reads the fresh tcpa
+    // but the field declarations are `cda` (:26) then `tcpa` (:29), so the
+    // emitted SeqStatement ran `cda` FIRST and the model's `cda` was computed
+    // from the PREVIOUS cycle's `tcpa` — a value the Java never uses there.
+    //
+    // We now record (fieldName, rhs) in SOURCE order in two parallel
+    // Sequences, and keep `fieldAssignments` solely to serve the
+    // completeness check Pass 3 already performs against `opVarList`.
+    // Repeated assignments to the same field are each recorded, so a
+    // `this.x = a; this.x = b;` body emits both statements in order (the
+    // Map form silently collapsed them to the last one).
     var fieldAssignments = new Map;
+    var assignedFieldOrder = new Sequence;   // fieldName, in source order
+    var assignedRhsOrder = new Sequence;     // parallel: Spoon RHS expression
     for (stmt in bodyBlock.statement) {
         if (stmt.isTypeOf(Spoon!CtAssignment)) {
             var lhs = stmt.assigned;
@@ -1869,46 +2249,252 @@ operation extractComputeBody(cls : Any, opVarList : Any) : Any {
                     var rhs = stmt.assignment;
                     if (fieldName.isDefined() and rhs.isDefined()) {
                         fieldAssignments.put(fieldName, rhs);
+                        assignedFieldOrder.add(fieldName);
+                        assignedRhsOrder.add(rhs);
                     }
                 }
             }
         }
     }
 
-    // Pass 3: Build RoboChart assignments for each output variable.
-    // Order follows opVarList (preserves field declaration order).
-    var rcAssignments = new Sequence;
+    // Pass 3a: PER-VARIABLE completeness classification (I1-SR fix).
+    //
+    // WHAT THIS USED TO DO, AND WHY IT WAS WRONG. This pass was a WHOLE-BODY
+    // completeness check: if ANY declared output variable was not assigned
+    // somewhere in compute(), it `return`ed, and the caller's fallback stubbed
+    // EVERY output of the class — including the ones compute() does assign
+    // with a perfectly translatable expression. The check conflated two
+    // different facts: "this operation's body did not lift" (a property of the
+    // body) with "this variable's value is unknown to the model" (a property of
+    // one variable).
+    //
+    // WITNESS — sranger TurnTimer.java. Phase 6's output-field rule classifies
+    // a private field with a zero-arg getter as an operation OUTPUT, so
+    // TurnTimer declares two: `elapsed` (getter `elapsed()`) and `resetTime`
+    // (getter `resetTime()`). But `compute()` assigns only `elapsed`;
+    // `resetTime` is written by `markReset()`, which the controller calls from
+    // the Moving -> Turning TRANSITION, not from compute(). Under the whole-body
+    // check the emitted action was
+    //     action resetTime = 0 ; elapsed = false
+    // so `elapsed` — whose Java RHS
+    //     cycleClock.nowMs() - this.resetTime >= SRangerConstants.turnDurationMs
+    // translates fine — arrived in the model as the literal `false`. That in turn
+    // put `elapsed` in `stubbedOpVarNames`, which made Phase 6a-ctrl refuse to
+    // lift `SRangerController.turnDurationElapsed = turnTimer.elapsed()`,
+    // leaving the last I1 data-lens unassigned.
+    //
+    // WHAT IT DOES NOW. Each declared output is classified on its own:
+    //   * ASSIGNED in compute() -> carries its real translated expression
+    //     (built by Pass 3b below, in Java source order);
+    //   * NOT ASSIGNED in compute() -> stubbed INDIVIDUALLY (`x = 0` /
+    //     `x = false` via createAssignment, the same placeholder the whole-body
+    //     fallback used) and recorded in `stubbedOpVarNames`, so every consumer
+    //     that already refuses to build on a stub — notably the Phase 6a-ctrl
+    //     lift guard — keeps refusing for exactly that variable and no other.
+    //
+    // WHAT DID NOT CHANGE. The OTHER abort paths are still whole-body, and
+    // deliberately so: a conditional/loop/return body (pre-check above), an
+    // untranslatable method chain, or a translateSpoonExpr failure (Pass 3b)
+    // each mean we could not read the body's CONTROL FLOW or an expression we
+    // were supposed to render, so no assignment in it can be trusted. An
+    // unassigned declared output is different in kind — it says nothing about
+    // the assignments that ARE there. Only that one case is now per-variable.
+    //
+    // BLAST RADIUS (measured across all three case studies). TurnTimer is the
+    // only operation class with a partial compute(): lre CalcCDyn {cdyn},
+    // CalcCPA {cda,tcpa}, CalcCStc {cstc}, CalcVel {hvel,vel,vvel} and
+    // CheckOPEZ {inOpez} assign every declared output, and chemical_detector's
+    // ChangeDirection declares none. So the five total classes take the
+    // `unassignedOutputs.size() == 0` path and their emission is unchanged.
+    var opVarByName = new Map;
+    var unassignedOutputs = new Sequence;   // RoboChart Variables, declaration order
+    // `className` in the Phase 6 loop is caller-scope and NOT visible here;
+    // re-derive it from the parameter for the log lines below.
+    var ecbClassName = getFeature(cls, "name");
+    if (ecbClassName.isUndefined()) { ecbClassName = "<anonymous>"; }
     for (opVar in opVarList.vars) {
         var fieldName = opVar.name;
+        opVarByName.put(fieldName, opVar);
         if (not fieldAssignments.containsKey(fieldName)) {
-            // No assignment found for this field — abort, fall back to stubs
-            computeLocalVarInits = new Map;
-            return;
+            unassignedOutputs.add(opVar);
+            ("[i1-op] " + ecbClassName + "." + fieldName + ": declared an operation "
+                + "output (private field with a zero-arg getter) but compute() "
+                + "does not assign it — stubbed INDIVIDUALLY; the outputs "
+                + "compute() does assign keep their real expressions").println();
         }
-        var spoonRhs = fieldAssignments.get(fieldName);
+    }
+
+    // Pass 3b (stage 1): index the assigned outputs and collect each RHS's
+    // READ NAMES at the JAVA level, in source order (U3 fix). Fields assigned
+    // in the body but not declared as output variables are skipped, exactly as
+    // before (Pass 3 only ever iterated `opVarList`).
+    //
+    // NOTHING IS TRANSLATED YET, deliberately: stage 2 decides which
+    // assignments may keep a real expression, and a RoboChart expression built
+    // for an assignment that stage 2 then discards would be serialised into
+    // robochart_model.xmi as an orphan root object (see the header comment on
+    // collectSpoonReadNames for the measured consequence). The whole-body abort
+    // checks that used to live in this loop move to stage 3, where they run
+    // only for the assignments actually being emitted.
+    var xlFieldOrder = new Sequence;     // output name, source order
+    var xlSpoonOrder = new Sequence;     // parallel: Spoon RHS expression
+    var xlReadsOrder = new Sequence;     // parallel: OrderedSet of Java read names
+    for (i in Sequence{0..assignedFieldOrder.size() - 1}) {
+        if (assignedFieldOrder.size() == 0) { break; }   // Sequence{0..-1} is not empty
+        var fieldName = assignedFieldOrder.at(i);
+        if (not opVarByName.containsKey(fieldName)) {
+            continue;
+        }
+        var spoonRhs = assignedRhsOrder.at(i);
+        var spoonReads = new OrderedSet;
+        collectSpoonReadNames(spoonRhs, spoonReads);
+        xlFieldOrder.add(fieldName);
+        xlSpoonOrder.add(spoonRhs);
+        xlReadsOrder.add(spoonReads);
+    }
+
+    // Pass 3b (stage 2): TRANSITIVE STUB CLOSURE.
+    //
+    // WHY THIS IS NOT OPTIONAL — measured, not hypothesised. Per-variable
+    // stubbing without this closure was run end-to-end on sranger and the
+    // artefacts were inspected. TurnTimer.compute() assigns
+    //     this.elapsed = cycleClock.nowMs() - this.resetTime >= turnDurationMs
+    // whose RHS READS `resetTime` — the output that compute() does NOT assign
+    // and that we have just stubbed to `0`. Emitting `elapsed`'s real
+    // expression alongside that stub produced, in the `.rct`,
+    //     action resetTime = 0 ; elapsed = nowMs - resetTime >= turndurationms
+    // and, after the Isabelle template's data-plane inlining (which substitutes
+    // each definition into its readers),
+    //     turnDurationElapsed\<Zprime> = ((nowMs() - (0)) \<ge> turndurationms())
+    // The Java predicate is "at least turnDurationMs has passed SINCE THE LAST
+    // Turning ENTRY". That clause says "since the epoch" — the stub `0` reached
+    // the theory dressed as the Java's reset timestamp. It is not a frozen
+    // lens and not an under-approximation; it is a substituted value asserted
+    // as the program's semantics, which is the precise failure mode the
+    // pre-existing `stubbedOpVarNames` guard at Phase 6a-ctrl exists to
+    // prevent. The guard was simply one level too high: it screened the
+    // CONTROLLER's lift while the operation body could still splice a stub in
+    // BELOW it.
+    //
+    // So an output keeps its real expression only if NOTHING it reads is
+    // stubbed, transitively. `stubbed` starts as the unassigned outputs plus
+    // the module-level `stubbedOpVarNames` (outputs of operation classes
+    // already processed), and grows to a fixpoint: any assignment reading a
+    // stubbed name becomes stubbed itself, and its own readers follow. The
+    // loop terminates because `stubbed` only grows and is bounded by the
+    // declared outputs; the `while` re-scans rather than ordering the graph,
+    // so it is correct regardless of source order or read direction.
+    //
+    // CONSEQUENCE FOR SRANGER — stated plainly. `elapsed` reads `resetTime`,
+    // so `elapsed` is stubbed too, TurnTimer's emission is unchanged, and
+    // Phase 6a-ctrl's existing `stubbedOpVarNames` guard still refuses
+    // `turnDurationElapsed`. Per-variable stubbing is therefore NOT sufficient
+    // to close the SRanger lens: the blocker is not the whole-body check, it is
+    // that `resetTime` — the datum the predicate is relative to — is written by
+    // `markReset()` from a TRANSITION and is genuinely absent from the data
+    // plane. Closing it needs transition-written operation state to reach the
+    // data plane, which is a different fix. This pass is kept because it is
+    // the correct per-variable semantics and it makes the residual blocker
+    // precise (`resetTime`, not "the body"), but it is not the I1 close.
+    //
+    // CROSS-CLASS LIMITATION. `stubbedOpVarNames` accumulates in Phase 6's
+    // `Spoon!CtClass.all` iteration order, so a class read BEFORE its stubbed
+    // producer is processed would not see that producer's stub. No operation
+    // body in the three case studies reads another operation class's output
+    // (verified from the `.rct` action RHSs), so this cannot mis-emit today;
+    // it needs a pre-pass over all bodies to close in general.
+    //
+    // The size guards on the index loops below are load-bearing, not
+    // defensive noise, and for the reason already documented at Phase
+    // 6a-ctrl: Epsilon's `Sequence{0..-1}` is NOT empty — it iterates 0 then
+    // -1 — so an empty `xlFieldOrder` (every declared output unassigned, or a
+    // class declaring no outputs at all, e.g. chemical_detector's
+    // ChangeDirection) would index a zero-length sequence and abort the whole
+    // M2M phase.
+    var stubbed = new OrderedSet;
+    for (uv in unassignedOutputs) { stubbed.add(uv.name); }
+    for (sn in stubbedOpVarNames) {
+        if (opVarByName.containsKey(sn)) { stubbed.add(sn); }
+    }
+    var closureChanged = xlFieldOrder.size() > 0;
+    while (closureChanged) {
+        closureChanged = false;
+        for (xi in Sequence{0..xlFieldOrder.size() - 1}) {
+            var xName = xlFieldOrder.at(xi);
+            if (stubbed.includes(xName)) { continue; }
+            var tainted = new OrderedSet;
+            for (rn in xlReadsOrder.at(xi)) {
+                if (stubbed.includes(rn)) { tainted.add(rn); }
+            }
+            if (tainted.size() > 0) {
+                stubbed.add(xName);
+                closureChanged = true;
+                ("[i1-op] " + ecbClassName + "." + xName + ": compute() assigns "
+                    + "it, but its RHS reads stubbed output(s) "
+                    + tainted.concat(", ") + " — emitting the real expression "
+                    + "would splice a stub placeholder in as if it were the "
+                    + "Java's value — stubbed too").println();
+            }
+        }
+    }
+    // Pass 3b (stage 3): TRANSLATE the survivors first, then emit.
+    //
+    // Translation runs BEFORE any stub object is created so that a whole-body
+    // abort (method chain / translateSpoonExpr failure) leaves NO RoboChart
+    // object behind: on that path the caller's fallback creates all the stubs
+    // itself, and a stub built here would be an orphan in the XMI. The
+    // `stubbedOpVarNames` additions likewise happen only after the last abort
+    // point — and re-adding on the abort path would be harmless anyway, since
+    // the caller adds every output to that same OrderedSet.
+    var realNames = new Sequence;    // survivor output names, Java source order
+    var realRhs = new Sequence;      // parallel: translated RoboChart RHS
+    for (xi2 in Sequence{0..xlFieldOrder.size() - 1}) {
+        if (xlFieldOrder.size() == 0) { break; }   // see Sequence{0..-1} note above
+        var xName2 = xlFieldOrder.at(xi2);
+        if (stubbed.includes(xName2)) { continue; }
+        var spoonRhs2 = xlSpoonOrder.at(xi2);
 
         // Detect untranslatable Java patterns: method chains (e.g. result.map(...).orElse(-1))
         // are CtInvocation whose target is also a CtInvocation. These cannot be faithfully
         // rendered in RoboChart; fall back to stubs for the entire operation.
-        if (spoonRhs.isKindOf(Spoon!CtInvocation)) {
-            var rhsTarget = getFeature(spoonRhs, "target");
+        // Still WHOLE-BODY (see the stage-2 header): an unreadable expression
+        // says nothing trustworthy about the rest of the body.
+        if (spoonRhs2.isKindOf(Spoon!CtInvocation)) {
+            var rhsTarget = getFeature(spoonRhs2, "target");
             if (rhsTarget.isDefined() and rhsTarget.isKindOf(Spoon!CtInvocation)) {
                 computeLocalVarInits = new Map;
                 return;
             }
         }
 
-        var rcRhs = translateSpoonExpr(spoonRhs);
+        var rcRhs = translateSpoonExpr(spoonRhs2);
         if (rcRhs.isUndefined()) {
             // Translation failed — abort, fall back to stubs
             computeLocalVarInits = new Map;
             return;
         }
+        realNames.add(xName2);
+        realRhs.add(rcRhs);
+    }
+
+    // Past every abort point. Stubs go FIRST, in DECLARATION order — that
+    // position is not semantically load-bearing (a stub RHS is a literal with
+    // no reads), and it makes the all-stub case byte-identical to the previous
+    // whole-body fallback, which also iterated `opVarList.vars`. Real
+    // assignments follow in Java source order, exactly as before.
+    var rcAssignments = new Sequence;
+    for (opVarE in opVarList.vars) {
+        if (not stubbed.includes(opVarE.name)) { continue; }
+        rcAssignments.add(createAssignment(opVarE));
+        stubbedOpVarNames.add(opVarE.name);
+    }
+    for (ri in Sequence{0..realNames.size() - 1}) {
+        if (realNames.size() == 0) { break; }   // see Sequence{0..-1} note above
         var assign = new RoboChart!Assignment;
         var vref = new RoboChart!VarRef;
-        vref.name = opVar;
+        vref.name = opVarByName.get(realNames.at(ri));
         assign.left = vref;
-        assign.right = rcRhs;
+        assign.right = realRhs.at(ri);
         rcAssignments.add(assign);
     }
 
@@ -1928,12 +2514,248 @@ operation extractComputeBody(cls : Any, opVarList : Any) : Any {
     }
 }
 
+// Build a RoboChart!Function for `fname`, inferring the parameter name,
+// parameter type and return type from the matching Java method's DECLARED
+// types via mapJavaTypeToRcTypeRef.
+//
+// I2 FIX (signature inference for operation-body functions). This body used
+// to exist ONLY on the guard-discovery path (Phase 5b). Phase 6b — which
+// declares functions discovered inside operation BODIES — instead hardcoded
+//     function <name> ( x : real ) : real
+// with no Java type inference at all, so the `.rct` said
+//     function nsRelDist ( x : real ) : real
+// while the Java says `double nsRelDist(@RoboChartType("nat") int index)`.
+// Pre-I1 that mismatch was inert: those four LRE functions (nsRelDist,
+// ewRelDist, obsNsVel, obsEwVel) were declared and applied ZERO times, so
+// nothing could disagree with the wrong domain. The I1 data-plane inlining
+// APPLIES them — to `cdyn`, an `int` variable — which makes the wrong domain
+// live and forced the Isabelle template to patch the domain to `int` at its
+// own emission site, leaving the `.rct`/CSP and the theory disagreeing on
+// four signatures.
+//
+// Extracting the inference here (rather than writing a second inferencer)
+// keeps ONE derivation of a RoboChart function signature from Java. Types
+// come from the Java DECLARED types only: the `@RoboChartType` annotations on
+// those parameters are deliberately NOT consulted — audit finding A-4
+// established that annotation is read only by StructuralLinter and
+// coverage.py, and making it a semantic input here would add a second,
+// competing source of truth for typing.
+//
+// Fallbacks are exactly the guard path's previous ones: parameter name "x"
+// and type `real` when no Java method matches (e.g. `sqrt`, which resolves to
+// java.lang.Math and is absent from the Spoon model), and return type `real`
+// on the same condition. Only the FIRST Java parameter is mapped, matching
+// the previous guard-path behaviour.
+operation buildInferredFunction(fname : String, enumTypeMap : Map,
+                                 recordTypeMap : Map, rcPackage : Any) : Any {
+    var func = new RoboChart!Function;
+    func.name = fname;
+
+    // Find matching Java method for type inference. Functions are
+    // synthesised only for arg-carrying CallExps, so prefer an explicit
+    // method WITH parameters over an implicit record accessor of the same
+    // simple name (see findJavaMethodForFunction). The zero-arg Sensors
+    // lift (Phase 6b) keeps the plain lookup — zero-arg reads are exactly
+    // where an accessor IS the right declaration.
+    var javaMethod = findJavaMethodForFunction(fname);
+
+    // Infer parameter type from Java method signature. Reuses the generic
+    // mapJavaTypeToRcTypeRef helper so that enums, records, and
+    // parameterized collections (List<X> -> Seq(X)) all surface correctly
+    // instead of falling through to the `real` default.
+    // FIX (2026-09-19). This block read only javaParams.first() and added
+    // exactly ONE RoboChart Parameter, so EVERY multi-argument Java method was
+    // modelled as unary. The theory generator's own CASE 2 (multiple
+    // parameters, `a \<times> b \<Rightarrow> r`) was therefore unreachable
+    // from inferred functions: `double tcpaFrom(double approachDot, double
+    // relSpeedSq)` emitted `consts tcpaFrom :: "real \<Rightarrow> real"` while
+    // the call site passed two arguments, and Isabelle failed with
+    // "Type unification failed: Clash of types _ x _ and R". Found by the
+    // autonomous arm's lre run-5. Emit one Parameter per Java parameter; the
+    // single-parameter case is unchanged (the loop runs once).
+    var javaParamList;
+    if (javaMethod.isDefined()) {
+        javaParamList = getFeature(javaMethod, "parameter");
+    }
+    var nParams = 0;
+    if (javaParamList.isDefined()) { nParams = javaParamList.size(); }
+    if (nParams = 0) {
+        // No signature resolved: keep the historical single `real` placeholder
+        // rather than emitting a zero-parameter function, which would change
+        // the shape of every previously-inferred nullary-lookup function.
+        var paramType0 = new RoboChart!PrimitiveType;
+        paramType0.name = "real";
+        rcPackage.types.add(paramType0);
+        var paramRcType0 = new RoboChart!TypeRef;
+        paramRcType0.ref = paramType0;
+        var param0 = new RoboChart!Parameter;
+        param0.name = "x";
+        param0.type = paramRcType0;
+        func.parameters.add(param0);
+    } else {
+        var pi = 0;
+        while (pi < nParams) {
+            var jp = javaParamList.at(pi);
+            var paramName = "x" + pi.asString();
+            var paramRcType;
+            var jpName = getFeature(jp, "name");
+            if (jpName.isDefined() and jpName <> "") { paramName = jpName; }
+            var jpTypeRef = getFeature(jp, "type");
+            if (jpTypeRef.isDefined()) {
+                var jpTypeName = getFeature(jpTypeRef, "name");
+                if (jpTypeName.isDefined()) {
+                    var jpElem = "";
+                    var jpArgs = getFeature(jpTypeRef, "typeArgument");
+                    if (jpArgs.isDefined() and jpArgs.size() > 0) {
+                        var ja = jpArgs.first();
+                        if (ja.isDefined()) {
+                            var jaName = getFeature(ja, "name");
+                            if (jaName.isDefined()) { jpElem = jaName; }
+                        }
+                    }
+                    paramRcType = mapJavaTypeToRcTypeRef(jpTypeName, jpElem,
+                            enumTypeMap, recordTypeMap, rcPackage);
+                }
+            }
+            if (paramRcType.isUndefined()) {
+                var paramTypeF = new RoboChart!PrimitiveType;
+                paramTypeF.name = "real";
+                rcPackage.types.add(paramTypeF);
+                paramRcType = new RoboChart!TypeRef;
+                paramRcType.ref = paramTypeF;
+            }
+            var param = new RoboChart!Parameter;
+            param.name = paramName;
+            param.type = paramRcType;
+            func.parameters.add(param);
+            pi = pi + 1;
+        }
+    }
+
+    // Infer return type from Java method signature. Same helper and same
+    // fallback as the parameter type, so enum returns (`Status`, `Angle`) and
+    // record returns (`Intensity`) come through with proper TypeRefs instead
+    // of `real`.
+    var retRcType;
+    if (javaMethod.isDefined()) {
+        var jRetTypeRef = getFeature(javaMethod, "type");
+        if (jRetTypeRef.isDefined()) {
+            var jRetTypeName = getFeature(jRetTypeRef, "name");
+            if (jRetTypeName.isDefined()) {
+                var jRetElem = "";
+                var jRetArgs = getFeature(jRetTypeRef, "typeArgument");
+                if (jRetArgs.isDefined() and jRetArgs.size() > 0) {
+                    var jr = jRetArgs.first();
+                    if (jr.isDefined()) {
+                        var jrName = getFeature(jr, "name");
+                        if (jrName.isDefined()) { jRetElem = jrName; }
+                    }
+                }
+                retRcType = mapJavaTypeToRcTypeRef(jRetTypeName, jRetElem,
+                        enumTypeMap, recordTypeMap, rcPackage);
+            }
+        }
+    }
+    if (retRcType.isUndefined()) {
+        var retType = new RoboChart!PrimitiveType;
+        retType.name = "real";
+        rcPackage.types.add(retType);
+        retRcType = new RoboChart!TypeRef;
+        retRcType.ref = retType;
+    }
+    func.type = retRcType;
+
+    return func;
+}
+
 // Find a Java method by name in the Spoon model.
 // Returns the first matching CtMethod or null if not found.
 operation findJavaMethodByName(name : String) : Any {
     for (m in Spoon!CtMethod.all) {
         if (getFeature(m, "name") == name) {
             return m;
+        }
+    }
+    return null;
+}
+
+// FIX (2026-09-14). Java allows several methods with one simple name;
+// the model can also carry IMPLICIT record-component accessors under the
+// same name (chem: `Obstacle.location(): Loc`, isImplicit, 0 params, vs
+// `GasSensorService.location(GasSensorReading): Angle`). The plain
+// first-match lookup returned the accessor, so the uninterpreted function
+// was emitted as a chimera `location (x : real) : Loc` — return from the
+// accessor, parameter from the no-params fallback — and BOTH CSP-M
+// (Loc vs Angle at `set_anl!location(gs)`) and Isabelle
+// (GasSensorReading_scheme vs real) rejected the artefacts. Functions are
+// only synthesised for arg-carrying CallExps (see collectFunctionNames),
+// so the right declaration is: explicit method WITH parameters first,
+// then any explicit method, then the implicit accessor as a last resort.
+operation findJavaMethodForFunction(name : String) : Any {
+    var explicitWithParams = null;
+    var explicitAny = null;
+    var implicitAny = null;
+    for (m in Spoon!CtMethod.all) {
+        if (getFeature(m, "name") <> name) { continue; }
+        var isImp = getFeature(m, "isImplicit");
+        var ps = getFeature(m, "parameter");
+        var hasParams = ps.isDefined() and ps.size() > 0;
+        if (isImp.isDefined() and isImp == true) {
+            if (implicitAny.isUndefined()) { implicitAny = m; }
+        } else {
+            if (hasParams and explicitWithParams.isUndefined()) { explicitWithParams = m; }
+            if (explicitAny.isUndefined()) { explicitAny = m; }
+        }
+    }
+    if (explicitWithParams.isDefined()) { return explicitWithParams; }
+    if (explicitAny.isDefined()) { return explicitAny; }
+    return implicitAny;
+}
+
+// FIX (2026-09-14). Step-body LOCALS (e.g. chem's
+// `boolean intensityAtOrAboveThreshold = sensor.goreq(...)`) surface as
+// bare names in guards and get lifted into Sensors, but they are not
+// methods — findJavaMethodByName returns null and the lift fell to the
+// `nat` default, so a boolean local typed `nat` and CSP-M failed
+// Bool-vs-Int at `condition intensityAtOrAboveThreshold`. Resolve the
+// declared type of a local by name so the lift can type it correctly.
+operation findJavaLocalByName(name : String) : Any {
+    for (lv in Spoon!CtLocalVariable.all) {
+        if (getFeature(lv, "name") == name) {
+            return lv;
+        }
+    }
+    // FIX (2026-09-18). This resolver fed the Phase 6b zero-arg lift's type
+    // inference and saw ONLY CtLocalVariable, so a name that is a METHOD
+    // PARAMETER (`void compute(Angle commanded) { this.a = commanded; }`)
+    // resolved to null, the inference chain never reached its enum branch, and
+    // the lifted variable took the `nat` default while assignments wrote enum
+    // literals into it. Same defect class as the enum-RETURNING-method fix on
+    // the parameter path.
+    //
+    // SCOPED TO ENUM-TYPED PARAMETERS ONLY, and this scope is load-bearing. A
+    // first version returned ANY matching CtParameter, which regressed chem
+    // run-2: `lv`, `stuckDist` and `stuckPeriod` are accessor names on the
+    // constants class whose CONSTRUCTOR PARAMETERS share those names. Resolving
+    // to those parameters made the lift use the declared Java type
+    // (double->real, int->int) instead of falling through to the `nat` default
+    // that agrees with constantTypeMap's deliberate int->nat mapping (line
+    // ~166), silently retyping three recorded variables. Primitive-typed
+    // parameters must therefore keep resolving to null here.
+    //
+    // Returning only enum-typed parameters cannot regress a primitive: the
+    // enum branch is the sole consumer that reads this result for a
+    // non-primitive type, and `@RoboChartType` is deliberately not a semantic
+    // input (audit finding A-4).
+    for (pv in Spoon!CtParameter.all) {
+        if (getFeature(pv, "name") == name) {
+            var pvType = getFeature(pv, "type");
+            if (pvType.isDefined()) {
+                var pvTypeName = getFeature(pvType, "name");
+                if (pvTypeName.isDefined() and enumNamesForParamLookup.includes(pvTypeName)) {
+                    return pv;
+                }
+            }
         }
     }
     return null;
@@ -1963,25 +2785,33 @@ operation collectFunctionNames(expr : Any, names : OrderedSet) {
         }
         return;
     }
-    if (expr.isKindOf(RoboChart!And)) {
-        collectFunctionNames(getRcFeature(expr, "left"), names);
-        collectFunctionNames(getRcFeature(expr, "right"), names);
-        return;
-    }
-    if (expr.isKindOf(RoboChart!Or)) {
-        collectFunctionNames(getRcFeature(expr, "left"), names);
-        collectFunctionNames(getRcFeature(expr, "right"), names);
-        return;
-    }
-    if (expr.isKindOf(RoboChart!Not)) {
-        collectFunctionNames(getRcFeature(expr, "exp"), names);
-        return;
-    }
-    // Comparisons: check both sides for function calls
-    for (featName in Sequence{"left", "right"}) {
-        var child = getRcFeature(expr, featName);
-        if (child.isDefined()) {
-            collectFunctionNames(child, names);
+    // FIX (2026-09-14). The generic tail below used to probe only
+    // {left, right} (with And/Or/Not special-cased above it), so any
+    // expression class carrying its child under a different feature hid
+    // every call beneath it. Observed live on LRE run-1 v2: the codegen
+    // wrote `tcpa = -(nsRelDist(cdyn) * ... + ewRelDist(cdyn) * ...)` — a
+    // UNARY minus (child feature `exp`) — and exactly those two names
+    // never reached the function-declaration list, while `obsNsVel`
+    // (under a BINARY minus, features left/right) did. csp-gen then
+    // failed on unresolved NamedExpressions, cascading fdr4 to
+    // no-verdict. Descend reflectively over ALL containment features
+    // (the collectAllRcCallExpNames pattern) so no metamodel expression
+    // class can hide a call; the args>0 filter above is unchanged — the
+    // zero-arg partition still routes to the Sensors path.
+    for (f in expr.eClass().getEAllReferences()) {
+        if (not f.isContainment()) { continue; }
+        var val = expr.eGet(f);
+        if (val.isUndefined()) { continue; }
+        if (f.isMany()) {
+            for (child in val) {
+                if (child.isDefined() and child.isKindOf(RoboChart!Expression)) {
+                    collectFunctionNames(child, names);
+                }
+            }
+        } else {
+            if (val.isKindOf(RoboChart!Expression)) {
+                collectFunctionNames(val, names);
+            }
         }
     }
 }
@@ -2015,6 +2845,46 @@ operation collectZeroArgFuncNamesFromAction(stmt : Any, names : OrderedSet) {
     if (stmt.isKindOf(RoboChart!Assignment)) {
         collectZeroArgCallExpNames(stmt.right, names);
         return;
+    }
+}
+
+// I1 (remainder): collect EVERY CallExp name in a RoboChart expression tree,
+// of any arity, recursing through all containment features rather than a fixed
+// {left, right, exp, args} list.
+//
+// The two pre-existing collectors are each deliberately partial —
+// `collectFunctionNames` takes only CallExps WITH arguments and
+// `collectZeroArgCallExpNames` only those WITHOUT — because each feeds a
+// different declaration path (Function vs Sensors variable). The
+// controller-field lifting pass needs a TOTAL name set instead: it uses the
+// names to decide whether an expression is safe to lift at all (does it read
+// a stubbed placeholder? did translation give up and leave `unknown_expr`?),
+// and a name missed by a partial collector would be a lift wrongly allowed.
+// Reflective iteration over eClass features means a metamodel expression class
+// this file does not enumerate cannot silently hide a name from the check.
+operation collectAllRcCallExpNames(expr : Any, names : OrderedSet) {
+    if (expr.isUndefined()) { return; }
+    if (expr.isKindOf(RoboChart!CallExp)) {
+        var funcExpr = getRcFeature(expr, "function");
+        if (funcExpr.isDefined() and funcExpr.isKindOf(RoboChart!StringExp)) {
+            names.add(funcExpr.value);
+        }
+    }
+    for (f in expr.eClass().getEAllReferences()) {
+        if (not f.isContainment()) { continue; }
+        var val = expr.eGet(f);
+        if (val.isUndefined()) { continue; }
+        if (f.isMany()) {
+            for (child in val) {
+                if (child.isDefined() and child.isKindOf(RoboChart!Expression)) {
+                    collectAllRcCallExpNames(child, names);
+                }
+            }
+        } else {
+            if (val.isKindOf(RoboChart!Expression)) {
+                collectAllRcCallExpNames(val, names);
+            }
+        }
     }
 }
 
@@ -2608,7 +3478,22 @@ operation translateSpoonExpr(expr : Any) : Any {
                 return boolExpr;
             }
         }
-        // No resolved value: fall back to IntegerExp(0)
+        // No resolved value: parse the literal's own value/valueKind
+        // attributes (populated by the T2M mapper) before giving up.
+        var directLit = resolveLiteralValue(expr);
+        if (directLit.isDefined()) {
+            return directLit;
+        }
+        // Last resort: IntegerExp(0). This SUBSTITUTES a value — warn
+        // loudly so the corpus surfaces it instead of silently shipping
+        // a wrong constant into guards/actions.
+        var wKind = getFeature(expr, "valueKind");
+        if (wKind.isUndefined()) { wKind = "?"; }
+        var wVal = getFeature(expr, "value");
+        if (wVal.isUndefined()) { wVal = "?"; }
+        ("[m2m] WARNING: unresolved CtLiteral (valueKind=" + wKind
+                + ", value=" + wVal
+                + ") substituted with IntegerExp(0) in guard/expression").println();
         var intExpr = new RoboChart!IntegerExp;
         intExpr.value = 0;
         return intExpr;
@@ -2770,6 +3655,74 @@ operation isComparisonOp(spoonExpr : Any) : Boolean {
     var opName = getOpName(spoonExpr);
     return opName == "LE" or opName == "GE" or opName == "LT"
         or opName == "GT" or opName == "EQ" or opName == "NE";
+}
+
+// Collect the READ NAMES of a Spoon expression tree at the JAVA level:
+// every field read (`this.resetTime` -> "resetTime"), local/parameter read,
+// and invoked method name (`turnTimer.elapsed()` -> "elapsed"), recursing
+// through binary/unary operands and invocation targets and arguments.
+//
+// WHY A JAVA-LEVEL COLLECTOR (I1-SR fix). extractComputeBody's stub closure
+// needs to know what an assignment's RHS reads BEFORE deciding whether to
+// translate it. Asking the question after translation (via
+// collectAllRcCallExpNames on the RoboChart tree) would mean CREATING the
+// RoboChart expression objects for assignments the closure then discards.
+// Those objects are not garbage: Epsilon adds every `new RoboChart!...` to the
+// target resource, so a discarded RHS is SERIALISED into robochart_model.xmi as
+// an orphan (a root-level `GreaterOrEqual` with no container). Measured
+// consequence on sranger: the orphan changed the XMI, and the Isabelle
+// template's downstream OrderedSet iteration over the resource then emitted
+// the `listens` sets in a different order ({tick, endTask, obstacle} instead of
+// {endTask, obstacle, tick}) — a set-valued, semantically inert difference, but
+// enough to break byte-identity of a theory the change must not touch.
+// Deciding at the Spoon level creates nothing and keeps the emission clean.
+//
+// Names are matched against DECLARED OUTPUT FIELD NAMES, which are Java field
+// names verbatim (Phase 6 sets `opVar.name = fieldName`), so no RoboChart-side
+// renaming (constant camelCasing, `since(C)` rewriting) can affect the match.
+// Over-collection is safe here: an extra name that is not a declared output
+// simply never matches.
+operation collectSpoonReadNames(spoonExpr : Any, nameSet : OrderedSet) {
+    if (spoonExpr.isUndefined()) { return; }
+    if (spoonExpr.isKindOf(Spoon!CtFieldRead) or spoonExpr.isTypeOf(Spoon!CtVariableRead)) {
+        var varRef = spoonExpr.variable;
+        if (varRef.isDefined()) {
+            var vn = getFeature(varRef, "name");
+            if (vn.isDefined() and vn <> "") { nameSet.add(vn); }
+        }
+        return;
+    }
+    if (spoonExpr.isKindOf(Spoon!CtInvocation)) {
+        var execRef = getFeature(spoonExpr, "executableRef");
+        if (execRef.isDefined()) {
+            var mn = getFeature(execRef, "name");
+            if (mn.isDefined() and mn <> "") { nameSet.add(mn); }
+        }
+        var invTarget = getFeature(spoonExpr, "target");
+        if (invTarget.isDefined()) { collectSpoonReadNames(invTarget, nameSet); }
+        var invArgs = getFeature(spoonExpr, "argument");
+        if (invArgs.isDefined()) {
+            for (a in invArgs) { collectSpoonReadNames(a, nameSet); }
+        }
+        return;
+    }
+    if (spoonExpr.isTypeOf(Spoon!CtBinaryOperator)) {
+        collectSpoonReadNames(spoonExpr.leftOperand, nameSet);
+        collectSpoonReadNames(spoonExpr.rightOperand, nameSet);
+        return;
+    }
+    if (spoonExpr.isTypeOf(Spoon!CtUnaryOperator)) {
+        collectSpoonReadNames(spoonExpr.expression, nameSet);
+        return;
+    }
+    // Local variables inlined by translateSpoonExpr are followed here too, so a
+    // read reaching a stubbed output THROUGH a compute() local is still seen.
+    if (spoonExpr.isTypeOf(Spoon!CtLocalVariable)) {
+        var lvInit = getFeature(spoonExpr, "assignment");
+        if (lvInit.isUndefined()) { lvInit = getFeature(spoonExpr, "defaultExpression"); }
+        if (lvInit.isDefined()) { collectSpoonReadNames(lvInit, nameSet); }
+        return;
+    }
 }
 
 // Recursively collect method invocation names from a Spoon expression tree.
@@ -2939,9 +3892,6 @@ operation cloneExpression(expr : Any) : Any {
     return expr;
 }
 
-// Build a priority-encoded guard by prepending negated predecessor guards (E6 fix).
-// Returns: not(pred1) AND not(pred2) AND ... AND rawGuard.
-// If both predecessors is empty and rawGuard is undefined, returns undefined.
 // Phase 3: Simplify presence-check guard patterns.
 // Removes presence-check variable references (names ending in "Present") from guards.
 // Patterns:
@@ -3016,15 +3966,201 @@ operation isNegatedPresenceCheckExpr(expr : Any) : Boolean {
     return false;
 }
 
+// =====================================================================
+// C1 fix: priority-negation synthesis for if-else chains
+// =====================================================================
+// Java's if-else chain gives earlier branches priority: a later branch
+// fires only when every earlier branch's condition is false. RoboChart
+// composes transitions as unguarded choice, so without explicit
+// negations the model over-approximates (Tier-B conformance witness:
+// OCMToMOM fires on ANY event where Java requires ReqMOM + guards).
+// These helpers synthesise the negations that LRE's Java writes by
+// hand (`hcmActive && !camActive`) for branches that LACK them.
+//
+// Rules:
+//  - only preceding TRIGGERLESS branches contribute (an event-triggered
+//    branch blocks via trigger disjointness, which the C2
+//    trigger-precondition fix encodes — not via a state predicate);
+//  - every later branch from the same source state RECEIVES the
+//    accumulated negations, including event-triggered branches and
+//    terminal-else transitions (the E13 unguarded case);
+//  - vacuous conjuncts (BooleanExp(true) from isPresent absorption,
+//    "*Present" presence checks) are dropped before negating so no
+//    `not true` junk is emitted — each drop is logged;
+//  - a predecessor whose negation is already syntactically implied by
+//    the branch's own guard is skipped (LRE hand-negates predecessors;
+//    naive prepending would emit `not camActive and (hcmActive and
+//    not camActive)`);
+//  - inside a multi-conjunct predecessor, conjuncts already asserted
+//    true in context (by the branch guard or an earlier pending
+//    negation) are removed before negating, so `not (hcmActive and
+//    not camActive)` under a pending `not camActive` collapses to
+//    `not hcmActive` — matching the hand-written artefact shape.
+
+// Produce a recursive structural key for a RoboChart expression, used
+// for syntactic dedupe/implication checks in priority-negation
+// synthesis. Deliberately deeper than exprSignature() (which only
+// keys top-level refs/literals for entry-action lifting).
+operation rcExprKey(expr : Any) : String {
+    if (expr.isUndefined()) { return "?"; }
+    if (expr.isKindOf(RoboChart!IntegerExp) or expr.isKindOf(RoboChart!FloatExp)
+            or expr.isKindOf(RoboChart!BooleanExp) or expr.isKindOf(RoboChart!StringExp)) {
+        var v = getRcFeature(expr, "value");
+        var vs = "?";
+        if (v.isDefined()) { vs = v.toString(); }
+        return expr.eClass().getName() + "(" + vs + ")";
+    }
+    if (expr.isKindOf(RoboChart!CallExp)) {
+        var parts = new Sequence;
+        parts.add(rcExprKey(getRcFeature(expr, "function")));
+        var args = getRcFeature(expr, "args");
+        if (args.isDefined()) {
+            for (a in args) { parts.add(rcExprKey(a)); }
+        }
+        return "CallExp(" + parts.concat(",") + ")";
+    }
+    if (expr.isKindOf(RoboChart!Not) or expr.isKindOf(RoboChart!Neg)) {
+        return expr.eClass().getName() + "(" + rcExprKey(getRcFeature(expr, "exp")) + ")";
+    }
+    if (expr.isKindOf(RoboChart!BinaryExpression)) {
+        return expr.eClass().getName() + "(" + rcExprKey(getRcFeature(expr, "left"))
+                + "," + rcExprKey(getRcFeature(expr, "right")) + ")";
+    }
+    return expr.eClass().getName();
+}
+
+// Flatten a RoboChart And-tree into its leaf conjuncts.
+operation collectRcConjuncts(expr : Any, out : Sequence) {
+    if (expr.isUndefined()) { return; }
+    if (expr.isKindOf(RoboChart!And)) {
+        collectRcConjuncts(getRcFeature(expr, "left"), out);
+        collectRcConjuncts(getRcFeature(expr, "right"), out);
+        return;
+    }
+    out.add(expr);
+}
+
+// Append a predecessor guard to the per-state accumulator map (outer chain).
+operation accumulatePriorityGuard(map : Map, stateName : String, guardExpr : Any) {
+    if (guardExpr.isUndefined()) { return; }
+    if (not map.containsKey(stateName)) {
+        map.put(stateName, new Sequence);
+    }
+    map.get(stateName).add(guardExpr);
+}
+
+// Fetch the accumulated predecessor guards for a state (may be empty).
+operation getPriorityList(map : Map, stateName : String) : Sequence {
+    if (map.containsKey(stateName)) {
+        return map.get(stateName);
+    }
+    return new Sequence;
+}
+
+// Prepend the negations of the accumulated predecessor guards to the
+// MOST RECENTLY created transition's condition (call immediately after
+// createTransition). See the C1 block comment above for the rules.
+operation applyPriorityNegations(stm : Any, predecessors : Sequence) {
+    if (predecessors.isUndefined() or predecessors.isEmpty()) { return; }
+    var trans = stm.transitions.last();
+    var existingKeys = new Sequence;
+    if (trans.condition.isDefined()) {
+        var existingConjs = new Sequence;
+        collectRcConjuncts(trans.condition, existingConjs);
+        for (ec in existingConjs) { existingKeys.add(rcExprKey(ec)); }
+    }
+    var toNegate = new Sequence;
+    var pendingKeys = new Sequence;   // keys of negations queued so far (chain order)
+    for (p in predecessors) {
+        var pConjs = new Sequence;
+        collectRcConjuncts(p, pConjs);
+        // Drop un-negatable (vacuous) conjuncts: BooleanExp(true) from
+        // isPresent() absorption and "*Present" presence-check refs.
+        var keep = new Sequence;
+        for (pc in pConjs) {
+            if (isPresenceCheckExpr(pc)) {
+                ("[priority-c1] " + stm.name + "." + trans.name
+                        + ": skipped un-negatable predecessor conjunct "
+                        + rcExprKey(pc)).println();
+            } else {
+                keep.add(pc);
+            }
+        }
+        if (keep.isEmpty()) { continue; }
+        // Implication check: skip the predecessor entirely when the branch
+        // guard already excludes it syntactically (hand-written negations).
+        var implied = false;
+        for (pc in keep) {
+            if (existingKeys.includes("Not(" + rcExprKey(pc) + ")")) { implied = true; }
+            if (pc.isKindOf(RoboChart!Not)) {
+                if (existingKeys.includes(rcExprKey(getRcFeature(pc, "exp")))) { implied = true; }
+            }
+        }
+        if (implied) { continue; }
+        // Context simplification: a conjunct already asserted true by the
+        // branch guard or an earlier pending negation can be removed from
+        // inside this negation (not (A and B) with A asserted ≡ not B).
+        var contextKeep = new Sequence;
+        for (pc in keep) {
+            var k = rcExprKey(pc);
+            if (existingKeys.includes(k) or pendingKeys.includes(k)) { continue; }
+            contextKeep.add(pc);
+        }
+        if (contextKeep.isEmpty()) {
+            // Every conjunct is asserted true in context: the predecessor
+            // always fires first, so keep the full guard (negation = false
+            // is the faithful reading, but emit it un-simplified so the
+            // contradiction is visible in the artefact rather than hidden).
+            contextKeep = keep;
+        }
+        // Rebuild the (possibly reduced) predecessor guard from clones.
+        var pGuard;
+        for (pc in contextKeep) {
+            var pcClone = cloneExpression(pc);
+            if (pGuard.isUndefined()) {
+                pGuard = pcClone;
+            } else {
+                var andExpr = new RoboChart!And;
+                andExpr.left = pGuard;
+                andExpr.right = pcClone;
+                pGuard = andExpr;
+            }
+        }
+        var negKey = "Not(" + rcExprKey(pGuard) + ")";
+        // Double-negation: negating a Not(x) predecessor yields x directly.
+        if (pGuard.isKindOf(RoboChart!Not)) {
+            negKey = rcExprKey(getRcFeature(pGuard, "exp"));
+        }
+        if (existingKeys.includes(negKey) or pendingKeys.includes(negKey)) { continue; }
+        pendingKeys.add(negKey);
+        toNegate.add(pGuard);
+    }
+    if (toNegate.isEmpty()) { return; }
+    trans.condition = prependNegatedGuards(trans.condition, toNegate);
+}
+
+// Build a priority-encoded guard: rawGuard AND not(pred1) AND not(pred2) ...
+// Revived for the C1 fix (was dead after the Phase-3 "priority encoding
+// removed" change; applyPriorityNegations is now its only call site).
+// The branch's own guard comes FIRST, negations appended — matching the
+// hand-written convention in the archived LRE artefacts
+// (MOMToHCM pre "st = MOM \<and> hcmActive \<and> \<not> camActive").
+// Double negation is unwrapped: a predecessor of shape Not(x)
+// contributes x rather than Not(Not(x)).
+// Returns undefined when predecessors is empty and rawGuard is undefined.
 operation prependNegatedGuards(rawGuard : Any, predecessors : Sequence) : Any {
     var parts = new Sequence;
-    for (pred in predecessors) {
-        var negExpr = new RoboChart!Not;
-        negExpr.exp = cloneExpression(pred);
-        parts.add(negExpr);
-    }
     if (rawGuard.isDefined()) {
         parts.add(cloneExpression(rawGuard));
+    }
+    for (pred in predecessors) {
+        if (pred.isKindOf(RoboChart!Not)) {
+            parts.add(cloneExpression(getRcFeature(pred, "exp")));
+        } else {
+            var negExpr = new RoboChart!Not;
+            negExpr.exp = cloneExpression(pred);
+            parts.add(negExpr);
+        }
     }
     if (parts.isEmpty()) {
         return;
@@ -3277,7 +4413,8 @@ operation buildOperationCall(invocation : Any, patternVarName : Any, eventTypeNa
                         paramTypeName = "real";
                     } else if (jpTypeName == "int" or jpTypeName == "Integer"
                             or jpTypeName == "long" or jpTypeName == "Long") {
-                        paramTypeName = "nat";
+                        // Signed Java int -> signed RoboChart int (see mapJavaTypeToRcTypeRef)
+                        paramTypeName = "int";
                     } else if (jpTypeName == "boolean" or jpTypeName == "Boolean") {
                         paramTypeName = "boolean";
                     } else if (enumTypeMap.containsKey(jpTypeName)) {
@@ -3644,22 +4781,217 @@ operation extractOutputEventInfo(arg : Any) : Any {
 // Resolve a CtLiteral directly to a RoboChart expression.
 // For integer-valued doubles (e.g. 1.0, 0.0), creates IntegerExp.
 // For non-integer doubles, creates FloatExp.
-// Returns undefined for non-literals.
+// Returns undefined for non-literals and non-numeric literals.
+//
+// NOTE: since the T2M metamodel change, CtLiteral carries `value` as an
+// EString plus a `valueKind` discriminator (the Java boxed type's simple
+// name, e.g. "Integer", "Double"). The old code tested the value against
+// Native("java.lang.Number"), which can never match a String — making
+// this operation silently dead. Parse the string per valueKind instead.
+// The resolvedValues map (typed objects, sign-correct after the T2M
+// ValueResolver fix) remains the primary path in callers; this is the
+// fallback for literals ValueResolver did not fold.
 operation resolveLiteralValue(arg : Any) : Any {
     if (not arg.isKindOf(Spoon!CtLiteral)) { return; }
     var litValue = getFeature(arg, "value");
     if (litValue.isUndefined()) { return; }
-    if (litValue.isKindOf(Native("java.lang.Number"))) {
-        var dv = litValue.doubleValue();
-        var iv = litValue.intValue();
+    var kind = getFeature(arg, "valueKind");
+    if (kind.isUndefined()) { kind = ""; }
+    if (kind == "Integer" or kind == "Long" or kind == "Short" or kind == "Byte") {
+        var boxed = new Native("java.lang.Double")(litValue.toString());
+        var intExpr = new RoboChart!IntegerExp;
+        intExpr.value = boxed.intValue();
+        return intExpr;
+    }
+    if (kind == "Double" or kind == "Float") {
+        var boxed = new Native("java.lang.Double")(litValue.toString());
+        var dv = boxed.doubleValue();
+        var iv = boxed.intValue();
         if (dv == iv) {
             var intExpr = new RoboChart!IntegerExp;
             intExpr.value = iv;
             return intExpr;
         }
         var floatExpr = new RoboChart!FloatExp;
-        floatExpr.value = litValue.floatValue();
+        floatExpr.value = boxed.floatValue();
         return floatExpr;
+    }
+    if (kind == "Boolean") {
+        var boolExpr = new RoboChart!BooleanExp;
+        boolExpr.value = litValue.toString();
+        return boolExpr;
+    }
+    // Character / String / null literals have no RoboChart literal form here.
+}
+
+// ---------------------------------------------------------------------------
+// U5 FIX — resolve a Java field's INITIAL VALUE to a RoboChart literal.
+//
+// Defect: `RoboChart!Variable.initial` was never populated anywhere in this
+// transformation, so every emitted model contained zero <initial> elements
+// and each backend fell back to its own type default. On the CSP path the
+// booleans came out WRONG (Memory_camActive started `true` where the Java
+// constructor sets `false`), which is under-approximating with respect to
+// the Java's initial state: the model starts somewhere the program cannot.
+//
+// Java semantics implemented here (and the reason for the two-step lookup):
+// a field declaration initialiser runs first, then the constructor body
+// executes and may overwrite it. So the CONSTRUCTOR assignment WINS on
+// collision — the same ordering java2dafny.egl already implements in its
+// `extractStateFields` operation (the `ctorInits` map: comment at :631, the
+// populating for-loop opens at :640 and closes at :676; :677 begins the
+// separate declaration-site capture loop)
+// for the Dafny constructor, which is why the Dafny artefact was already
+// emitting `cstc := -1` while the RoboChart model carried nothing.
+//
+// Value resolution prefers the `resolvedValues` map injected by the T2M
+// phase (post-T2M-2 it folds negated literals, so `cstc = -1` resolves to
+// Integer(-1) rather than the +1 the persisted XMI still shows), and falls
+// back to the literal's own value/valueKind attributes.
+//
+// Deliberately NOT resolved (returns undefined, leaving `initial` absent and
+// the emission byte-identical to before this fix):
+//   * non-literal initialisers such as `Double.MAX_VALUE` or a method call —
+//     folding those would require constant propagation this stage does not do;
+//   * constructor-parameter passthrough (`this.sensor = sensor`, a
+//     CtVariableRead) — those are dependency objects, not data state, and are
+//     excluded by the caller's final-modifier check anyway;
+//   * String/char/null literals, which have no RoboChart literal form.
+// Leaving the slot absent preserves the pre-fix behaviour for exactly the
+// cases the fix cannot honestly represent, rather than substituting a value.
+operation resolveJavaFieldInitial(classDecl : Any, fieldDecl : Any, fieldName : String) : Any {
+    // Step 1 — declaration initialiser (`private int cstc = -1;`).
+    var declInit = getFeature(fieldDecl, "assignment");
+    if (declInit.isUndefined()) {
+        declInit = getFeature(fieldDecl, "defaultExpression");
+    }
+    var result = resolveInitialExpression(declInit);
+    if (declInit.isDefined() and result.isUndefined()) {
+        // The Java DOES give this field an initial value but it is not a
+        // primitive literal this fix can carry. The two shapes present in the
+        // case studies are enum literals (`private Status sts = Status.noGas;`)
+        // and collection constructors (`= new ArrayList<>()`).
+        //
+        // Enum initials are deliberately NOT emitted, and the reason is
+        // downstream rather than here: robochart2rct.egl's formatRctExprPrec
+        // (:1748-1805) has no EnumExp branch, so it falls through to its
+        // "UNKNOWN" default and the .rct would read `var sts : Status = UNKNOWN`
+        // — a worse artefact than the missing initial, and one the CSP
+        // generator cannot parse. Emitting them requires an EnumExp case in
+        // that operation first; until then the slot is left absent and the
+        // gap is announced here rather than passing silently.
+        ("[u5-initial] " + fieldName + ": declaration initialiser is not a "
+                + "primitive literal (enum literal / constructor call) — no "
+                + "initial emitted; see formatRctExprPrec EnumExp gap").println();
+    }
+
+    // Step 2 — constructor-body assignment (`this.cstc = -1;`), which
+    // OVERWRITES the declaration initialiser in Java's execution order.
+    // Only top-level statements of the constructor body are considered: a
+    // conditional or loop-nested assignment has no single static value.
+    for (tm in classDecl.typeMember) {
+        if (not tm.isTypeOf(Spoon!CtConstructor)) { continue; }
+        var cbody = getFeature(tm, "body");
+        if (cbody.isUndefined() or not cbody.isKindOf(Spoon!CtBlock)) { continue; }
+        for (cstmt in cbody.statement) {
+            if (not cstmt.isTypeOf(Spoon!CtAssignment)) { continue; }
+            var lhs = getFeature(cstmt, "assigned");
+            if (lhs.isUndefined()) { continue; }
+            if (not (lhs.isKindOf(Spoon!CtFieldWrite) or lhs.isKindOf(Spoon!CtFieldAccess))) {
+                continue;
+            }
+            var lhsVar = getFeature(lhs, "variable");
+            if (lhsVar.isUndefined()) { continue; }
+            if (getFeature(lhsVar, "name") <> fieldName) { continue; }
+            var rhs = getFeature(cstmt, "assignment");
+            var ctorResolved = resolveInitialExpression(rhs);
+            if (ctorResolved.isDefined()) {
+                // Constructor wins.
+                result = ctorResolved;
+            } else {
+                // The constructor DOES assign this field but the value did
+                // not fold (e.g. `this.cda = Double.MAX_VALUE`). Emitting the
+                // declaration initialiser here would be wrong — Java would
+                // have overwritten it — so drop back to no initial at all.
+                result = null;
+                ("[u5-initial] " + fieldName + ": constructor assigns a value that "
+                        + "did not resolve to a literal — no initial emitted "
+                        + "(backend type default applies)").println();
+            }
+        }
+    }
+    return result;
+}
+
+// Resolve one Spoon expression to a RoboChart literal Expression for use as
+// a Variable.initial, or undefined when it does not fold. Handles the unary
+// minus wrapper directly as well: the PERSISTED discovered_model.xmi stores
+// `-1` as CtUnaryOperator[NEG] over CtLiteral("1") with no value="-1"
+// anywhere in the file, so a consumer reading the XMI rather than the live
+// resolvedValues map would otherwise recover +1 (audit finding P4).
+operation resolveInitialExpression(expr : Any) : Any {
+    if (expr.isUndefined()) { return; }
+
+    // Preferred: the T2M-injected value map (sign-correct post T2M-2).
+    if (resolvedValues.isDefined() and resolvedValues.containsKey(expr)) {
+        var resolved = resolvedValues.get(expr);
+        if (resolved.isKindOf(Native("java.lang.Boolean"))) {
+            var boolExpr = new RoboChart!BooleanExp;
+            boolExpr.value = resolved.toString();
+            return boolExpr;
+        }
+        if (resolved.isKindOf(Native("java.lang.Integer"))
+                or resolved.isKindOf(Native("java.lang.Long"))
+                or resolved.isKindOf(Native("java.lang.Short"))
+                or resolved.isKindOf(Native("java.lang.Byte"))) {
+            var intExpr = new RoboChart!IntegerExp;
+            intExpr.value = resolved.intValue();
+            return intExpr;
+        }
+        if (resolved.isKindOf(Native("java.lang.Double"))
+                or resolved.isKindOf(Native("java.lang.Float"))) {
+            var dv = resolved.doubleValue();
+            var iv = resolved.intValue();
+            if (dv == iv) {
+                // Integral real: emit in integer form. The .rct consumer
+                // (robochart2rct.egl:448-461) does the same normalisation
+                // because the CSP generator v3.0.0 cannot compile FloatExp.
+                var intExpr2 = new RoboChart!IntegerExp;
+                intExpr2.value = iv;
+                return intExpr2;
+            }
+            var floatExpr = new RoboChart!FloatExp;
+            floatExpr.value = resolved.floatValue();
+            return floatExpr;
+        }
+        return;
+    }
+
+    // Unary minus over a literal (the persisted-XMI shape of a negative
+    // initialiser). Recurse and negate the recovered literal.
+    if (expr.isKindOf(Spoon!CtUnaryOperator)) {
+        var opKind = getFeature(expr, "kind");
+        if (opKind.isUndefined()) { opKind = getFeature(expr, "operatorKind"); }
+        if (opKind.isDefined() and opKind.toString() == "NEG") {
+            var inner = resolveInitialExpression(getFeature(expr, "operand"));
+            if (inner.isUndefined()) { return; }
+            if (inner.isKindOf(RoboChart!IntegerExp)) {
+                var negInt = new RoboChart!IntegerExp;
+                negInt.value = 0 - inner.value;
+                return negInt;
+            }
+            if (inner.isKindOf(RoboChart!FloatExp)) {
+                var negFloat = new RoboChart!FloatExp;
+                negFloat.value = 0.0 - inner.value;
+                return negFloat;
+            }
+        }
+        return;
+    }
+
+    // Plain literal: use its own value/valueKind attributes.
+    if (expr.isKindOf(Spoon!CtLiteral)) {
+        return resolveLiteralValue(expr);
     }
 }
 
@@ -3744,7 +5076,11 @@ operation buildCommunication(invocation : Any, stm : Any, eventMap : Map, patter
                 comm.value = fallbackExpr;
                 setCommunicationType(comm, "OUTPUT");
             } else {
-                // Last resort: IntegerExp(0) to prevent FDR4 type error on typed channel
+                // Last resort: IntegerExp(0) to prevent FDR4 type error on typed
+                // channel. This SUBSTITUTES a value — warn loudly (was silent).
+                ("[m2m] WARNING: unresolved value for typed event '"
+                        + actualEventName
+                        + "' substituted with IntegerExp(0) (cross-branch typed-channel fill)").println();
                 var intExpr = new RoboChart!IntegerExp;
                 intExpr.value = 0;
                 comm.value = intExpr;
@@ -3917,11 +5253,16 @@ operation findFirstCtIf(block : Any) : Any {
 // Walk an inner if-else chain within a mode block (E8 fix).
 // The source state is fixed (from the outer branch's currentMode == X).
 // Each inner branch may have an event trigger, guard conjuncts, and a target mode.
-// E6 fix: accumulates negated predecessor guards for triggerless branches to encode
-// Java's if-else priority (first matching branch wins) in the CSP-M output.
+// C1 fix: accumulates each preceding TRIGGERLESS branch's data guard and
+// prepends its negation to every later branch (and the terminal else) so the
+// model encodes Java's if-else priority (first matching branch wins) —
+// reinstating the E6 behaviour that the Phase-3 change removed, which the
+// Tier-B conformance enumeration proved to be an extraction gap.
 operation walkInnerChain(firstIf : Any, sourceModeName : String,
         stm : Any, stateMap : Map, stateNames : Sequence,
         eventMap : Map, tCount : Integer, predDefs : Map) : Integer {
+    // Accumulated raw guards of preceding triggerless branches (chain order).
+    var priorityPredecessors = new Sequence;
     var currentIf = firstIf;
     while (currentIf.isDefined() and currentIf.isTypeOf(Spoon!CtIf)) {
         var cond = currentIf.condition;
@@ -3967,15 +5308,20 @@ operation walkInnerChain(firstIf : Any, sourceModeName : String,
 
         var targetModeName = findTargetMode(thenBlock);
 
+        // C1 fix: raw guard captured before negation-rewrite (see outer chain).
+        var branchRawGuard;
+
         // Create transition: source is always sourceModeName
         if (targetModeName <> "") {
             tCount = createTransition(stm, stateMap, sourceModeName, targetModeName,
                     eventTypeName, eventMap, tCount, guardConjuncts, predDefs, currentIf);
+            branchRawGuard = stm.transitions.last().condition;
+            // C1 fix: this branch fires only when no preceding triggerless
+            // guard in the chain holds — prepend their negations.
+            applyPriorityNegations(stm, priorityPredecessors);
             // E4/E11: extract actions from inner then-block with pattern variable context
             var innerActions = extractActions(thenBlock, stm, eventMap, patternVarName, eventTypeName);
             attachActions(stm, innerActions);
-            // Priority encoding removed (Phase 3): guard-only transitions are
-            // nondeterministic in RoboChart when multiple guards are simultaneously true.
         }
         // E9: no-op branch with event trigger -> self-transition
         // Skip empty handler bodies (no statements) — these are no-op
@@ -3985,9 +5331,25 @@ operation walkInnerChain(firstIf : Any, sourceModeName : String,
         if (targetModeName == "" and eventTypeName <> "" and innerThenStmts.size() > 0) {
             tCount = createTransition(stm, stateMap, sourceModeName, sourceModeName,
                     eventTypeName, eventMap, tCount, guardConjuncts, predDefs, currentIf);
+            // C1 fix: event-triggered self-loops also fire only below
+            // higher-priority triggerless guards.
+            applyPriorityNegations(stm, priorityPredecessors);
             // E4/E11: extract actions from inner self-transition
             var innerE9Actions = extractActions(thenBlock, stm, eventMap, patternVarName, eventTypeName);
             attachActions(stm, innerE9Actions);
+        }
+
+        // C1 fix: contribute this branch's guard for later branches.
+        // Rule (a): only TRIGGERLESS branches contribute.
+        if (eventTypeName == "" and guardConjuncts.size() > 0) {
+            if (branchRawGuard.isDefined()) {
+                priorityPredecessors.add(branchRawGuard);
+            } else {
+                ("[priority-c1] WARNING: dropped triggerless guarded inner branch in "
+                        + stm.name + "." + sourceModeName
+                        + " (no target mode) — its blocking effect on later "
+                        + "branches is NOT encoded").println();
+            }
         }
 
         // Follow inner else branch
@@ -4003,10 +5365,12 @@ operation walkInnerChain(firstIf : Any, sourceModeName : String,
                     if (elseTarget <> "") {
                         tCount = createTransition(stm, stateMap, sourceModeName, elseTarget,
                                 "", eventMap, tCount, new Sequence, predDefs, currentIf);
+                        // C1 fix (E13): the terminal else fires only when no preceding
+                        // triggerless guard holds — receive the accumulated negations.
+                        applyPriorityNegations(stm, priorityPredecessors);
                         // E4: extract actions from inner terminal else (no pattern var in else)
                         var innerElseActions = extractActions(elseVal, stm, eventMap, "", "");
                         attachActions(stm, innerElseActions);
-                        // Priority encoding removed (Phase 3) — no negated predecessors on terminal else.
                     }
                     elseVal = null;
                 }
@@ -4106,6 +5470,37 @@ operation extractCastVariable(block : Any, eventTypeName : String) : Any {
 operation markEventTyped(evt : Any, eventTypeName : String) {
     var existingType = getFeature(evt, "type");
     if (existingType.isDefined()) { return; }
+
+    // FIX (2026-09-14). Two ways the metadata key was missed, both
+    // observed on chem run-1 v2 (instrumented trace):
+    //   1. the OUTPUT path for an ENTRY-ACTION output (actuator.turn(anl)
+    //      outside any instanceof branch) calls with eventTypeName = "" —
+    //      the synthetic value_int fallback then typed `turn`, and because
+    //      this operation returns early once a type exists, the trigger
+    //      side's later correct call (typeName=Turn, metadata hit) could
+    //      never repair it: `event turn : int` vs a writer sending Angle,
+    //      and FDR4 died on the payload type clash.
+    //   2. method name vs record simple name case ("turn" vs "Turn").
+    // Derive the candidate from the event's own name when the caller has
+    // none, and resolve the lowercase-method -> Capitalised-record
+    // convention before falling through.
+    if (recordMetadata.isDefined()) {
+        var candidate = eventTypeName;
+        if (candidate == "") {
+            candidate = getFeature(evt, "name");
+        }
+        if (candidate.isDefined() and candidate.length() > 0
+            and not recordMetadata.containsKey(candidate)) {
+            var cap = candidate.substring(0, 1).toUpperCase()
+                      + candidate.substring(1, candidate.length());
+            if (recordMetadata.containsKey(cap)) {
+                candidate = cap;
+            }
+        }
+        if (candidate.isDefined() and recordMetadata.containsKey(candidate)) {
+            eventTypeName = candidate;
+        }
+    }
 
     // Preferred path: single-field event records map to a clean
     // RoboChart TypeRef (Enumeration / RecordType / PrimitiveType / SeqType).
@@ -4241,8 +5636,21 @@ operation resolveArgumentValue(arg : Any, patternVarName : Any, eventTypeName : 
                 }
             }
         }
-        // Fallback when a pattern variable is active but no resolved value
+        // No resolvedValues entry: parse the literal's own value/valueKind
+        // attributes (T2M mapper) before substituting anything.
+        if (arg.isKindOf(Spoon!CtLiteral)) {
+            var directLit = resolveLiteralValue(arg);
+            if (directLit.isDefined()) {
+                return directLit;
+            }
+        }
+        // Fallback when a pattern variable is active but no resolved value.
+        // This SUBSTITUTES IntegerExp(0) for an unresolved argument — warn
+        // loudly (was silent; a wrong payload constant reaches the .rct).
         if (patternVarName.isDefined() and patternVarName <> "") {
+            ("[m2m] WARNING: unresolved communication argument ("
+                    + arg.eClass().getName()
+                    + ") substituted with IntegerExp(0)").println();
             var intExpr = new RoboChart!IntegerExp;
             intExpr.value = 0;
             return intExpr;
@@ -4274,6 +5682,11 @@ operation resolveArgumentDirect(arg : Any) : Any {
             intExpr.value = resolved.intValue();
             return intExpr;
         }
+    }
+    // No resolvedValues entry: parse the literal's own value/valueKind
+    // attributes (T2M mapper) before the caller substitutes anything.
+    if (arg.isKindOf(Spoon!CtLiteral)) {
+        return resolveLiteralValue(arg);
     }
 }
 
@@ -4328,7 +5741,7 @@ operation exprSignature(expr : Any) : String {
 // Map a Java type simple-name to a fresh RoboChart TypeRef.
 //
 // Lookup order:
-//   1. Java primitives  -> PrimitiveType "nat" / "real" / "boolean"
+//   1. Java primitives  -> PrimitiveType "int" / "real" / "boolean"
 //   2. enumTypeMap      -> existing Enumeration (Loc, Status, ...)
 //   3. recordTypeMap    -> existing RecordType  (GasSensor, ...)
 //   4. List<X> with elementType  -> SeqType wrapping a recursive lookup
@@ -4347,7 +5760,11 @@ operation mapJavaTypeToRcTypeRef(javaTypeName : String, elementType : String,
         primName = "boolean";
     } else if (javaTypeName == "int" or javaTypeName == "Integer"
                or javaTypeName == "long" or javaTypeName == "Long") {
-        primName = "nat";
+        // Signed Java integers map to RoboChart's signed core `int`.
+        // The previous `nat` mapping silently changed the value domain:
+        // a Java int field holding -1 (sentinel) or any negative
+        // intermediate became unrepresentable in the formal model.
+        primName = "int";
     } else if (javaTypeName == "double" or javaTypeName == "Double"
                or javaTypeName == "float" or javaTypeName == "Float") {
         primName = "real";

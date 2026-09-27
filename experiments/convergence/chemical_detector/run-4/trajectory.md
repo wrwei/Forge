@@ -157,61 +157,6 @@ proved 10 lemmas in 26 s; vacuity clean. Converged.
   despite the Java `int` declarations; benign here (wait() accepts it), not
   chased.
 
-## Findings (durable lessons for future runs, any study)
-
-**F1 — Named-predicate RHS must be comparison-shaped, never a bare
-boolean-returning method call.** The ETL's guard inliner accepts comparisons,
-boolean combinations, and arithmetic, but explicitly NOT bare method calls.
-A predicate like `boolean ok = sensor.goreq(x, THR);` silently degrades: the
-name leaks into the Sensors interface as a mis-typed variable (here
-`var insAtOrAboveThr : nat`), the constant inside the call never reaches the
-Constants interface, and the failure surfaces far downstream as an FDR4
-"Bool vs Int" type error plus Dafny arity errors on a phantom 1-parameter
-function — three confusing symptoms, one cause. *How to apply:* when a spec
-provides a comparison helper function (like goreq), implement it in Java for
-traceability but write controller predicates as direct comparisons on state
-variables/constants (`ins >= Constants.THR`); reserve sensor-method calls in
-predicates for methods whose *result* is then compared (`sensor.dist(i) > D`).
-
-**F2 — Total guard covers must be propositional (`b` / `!b`), not
-domain-enum splits.** CLAUDE.md recommends total guard covers for
-autonomous-only modes, but the Isabelle `deadlock_free` closer is fixed at
-`by (metis St.exhaust_disc)`, which carries the exhaustiveness fact for the
-*mode* enum `St` only. A cover that is exhaustive via a two-valued *domain*
-enum (`sts == noGas` / `sts == gasD`) leaves a residual disjunction needing
-`Status.exhaust_disc` — metis searches until the 600 s per-goal timeout. The
-diagnostic signature is `isabelle_tactic_timeout` at the deadlock_free lemma
-even though every state "obviously" has an enabled transition. *How to
-apply:* name one branch's condition as a boolean predicate and guard the
-other branch with its negation (`if (p) ... else if (!p) ...`); this is
-exhaustive by propositional logic, which metis proves without any enum facts.
-(The b/!b shape also fixed nothing-to-do for FDR4/Dafny — it is strictly the
-Isabelle-closer constraint.)
-
-**F3 — Preflight rule 4 applies to constants classes.** Every `double` field
-needs `@RoboChartType("real")`, including `static final` members of the
-Constants class — the codegen-rules text reads as if aimed at sensor/state
-fields, but the structural lint enforces it on constants too, as an *error*.
-Annotate constants at codegen time.
-
-**F4 — Verify per-machine tool paths before iter 1; a 127/not-found verifier
-failure is the bridge, not a verdict.** `pipeline.yaml`'s `dafny_path` and
-`wsl_isabelle_bin` are per-machine absolute paths that can point at another
-user's home. The symptoms (`Dafny executable not found`, `bash: ...: No such
-file or directory`, exit 127, `isabelle_other` with no parsed error lines)
-are environment faults: fix the path and re-run the *same* iter (HOWTO §0
-sanctions this); do not snapshot the broken run or burn an iter on it. A
-cheap pre-flight: `ls` the configured Dafny path and
-`wsl.exe -d Ubuntu -- ls <isabelle bin>` before the first pipeline run.
-
-**F5 — A fast FDR4 pass is not inherently suspicious under {0..1} ranges.**
-This two-controller composition was expected to need "tens of minutes", but
-with all type ranges {0..1}, all constants 1, and the determinism assertions
-stripped, the full 9-assertion check legitimately completes in ~2 s. Verify
-authenticity by reading `post_fdr4.md`'s "N assertion(s) checked, N passed"
-and the assertion list in the discovered `*_coreassertions.csp`, not by
-runtime expectations.
-
 ## Cost
 
 **Run-level Claude token total** (source: summed `usage` blocks from the
@@ -244,7 +189,7 @@ RUN_TRAJECTORY §6.3).
 
 1. Check out the base (or any commit with the current pipeline), set
    `pipeline.yaml` `agent.active_case_study: chemical_detector`, fix the
-   per-machine tool paths (F4), confirm
+   per-machine tool paths, confirm
    `forge.dashboard/corrections/type_ranges.json` is all {0..1}.
 2. Stage iter-N: `rm -rf java.generated.project/src/main/java/chemdetector &&
    cp -r experiments/convergence/chemical_detector/run-4/iter-N/java

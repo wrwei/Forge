@@ -101,22 +101,6 @@ verifiers were not consulted at any point during the loop.
   `memory_limit_mb: 65536`, `active_case_study: sranger`) per LAUNCH §C —
   not to be committed.
 
-## Findings
-
-- **F1 — the preflight double-annotation lint includes private
-  constants.** `rule4_double_missing_real_annotation` fires on any
-  `double` field, including `private static final` implementation
-  details never extracted into the model. The codegen rules' examples
-  show only instance fields/parameters; annotate *every* double field at
-  codegen time to pass preflight first-try.
-- **F2 — a single-controller study with disciplined CLAUDE.md-conformant
-  codegen can reach the compile-only stop point in 2 iters**, with the
-  only visible-feedback iteration being a mechanical annotation fix. The
-  eight visible phases exercised none of the behavioural design choices
-  (Halted-vs-Final, self-loop coverage, operation-call encoding) — those
-  are exactly what the withheld verifiers judge, which is the point of
-  the ablation measurement.
-
 ## Run-level cost
 
 - Token total and end-to-end time: this ablation session drove iters 1-2
