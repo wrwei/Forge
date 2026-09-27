@@ -1,0 +1,433 @@
+{
+  "case_study": "LRE",
+  "compiled_from": "forge.assets/case-studies/lre/requirements/requirement_all.json",
+  "scope": "LRE-Beh1..LRE-Beh19 and LRE-Var1..LRE-Var8 ONLY; LRE-GP* hard-excluded; ARCH/DM/SF/OP/FR/DC entries not used",
+  "compiled_at_utc": "2026-09-02T09:20:15.917036+00:00",
+  "semantics_notes": [
+    "Eventless transitions (trigger_event_or_none = null) are condition-triggered and evaluated each controller step.",
+    "No priority among simultaneously-enabled transitions is stated in the Beh prose; the requirements model therefore defines, per (mode, event-or-step, valuation), the SET of enabled transitions, not a deterministic successor.",
+    "Beh19 closes OCM: reqOCM/reqHCM/endTask produce no transition and no output in OCM; in non-OCM modes reqVel/reqHdng are overridden (no pass-through).",
+    "Bounds are kept symbolic (named thresholds) except where Beh prose states a literal (Beh4 uses literal 1; Beh9/Beh11 use literal 1 m/s)."
+  ],
+  "atoms": {
+    "inOpez": {
+      "variable": "inOpez",
+      "comparator": "==",
+      "bound": "true"
+    },
+    "vel_le_1": {
+      "variable": "vel",
+      "comparator": "<=",
+      "bound": "1"
+    },
+    "odist_cdyn_gt_1": {
+      "variable": "odist(cdyn)",
+      "comparator": ">",
+      "bound": "1"
+    },
+    "odist_cstc_gt_1": {
+      "variable": "odist(cstc)",
+      "comparator": ">",
+      "bound": "1"
+    },
+    "cda_lt_minSafe": {
+      "variable": "cda",
+      "comparator": "<",
+      "bound": "minSafeDist"
+    },
+    "tcpa_ge_0": {
+      "variable": "tcpa",
+      "comparator": ">=",
+      "bound": "0"
+    },
+    "hvel_ge_1": {
+      "variable": "hvel",
+      "comparator": ">=",
+      "bound": "1"
+    },
+    "hdist_le_horiz": {
+      "variable": "hdist(cstc)",
+      "comparator": "<=",
+      "bound": "staticObsHorizDist"
+    },
+    "vdist_le_dfltvert": {
+      "variable": "vdist(cstc)",
+      "comparator": "<=",
+      "bound": "staticObsDfltVertDist"
+    },
+    "vvel_ge_1": {
+      "variable": "vvel",
+      "comparator": ">=",
+      "bound": "1"
+    },
+    "vdist_le_vert": {
+      "variable": "vdist(cstc)",
+      "comparator": "<=",
+      "bound": "staticObsVertDist"
+    }
+  },
+  "variables": {
+    "LRE-Var1": "inOpez : bool \u2014 whether the AUV is currently in an Object Proximity Exclusion Zone (OPEZ), calculated by CheckOPEZ each step.",
+    "LRE-Var2": "hvel : real (m/s) \u2014 the AUV's horizontal velocity.",
+    "LRE-Var3": "vvel : real (m/s) \u2014 the AUV's vertical velocity.",
+    "LRE-Var4": "vel : real (m/s) \u2014 the AUV's overall velocity magnitude.",
+    "LRE-Var5": "cstc : nat \u2014 index of the closest static obstacle; -1 means none. Set by CalcCStc each step.",
+    "LRE-Var6": "cdyn : nat \u2014 index of the closest dynamic obstacle; -1 means none. Set by CalcCDyn each step.",
+    "LRE-Var7": "cda : real (m) \u2014 Closest Distance of Approach to the closest dynamic obstacle. Set by CalcCPA each step.",
+    "LRE-Var8": "tcpa : real (s) \u2014 Time at Closest Point of Approach to the closest dynamic obstacle. Set by CalcCPA each step."
+  },
+  "transitions": [
+    {
+      "req_id": "LRE-Beh1",
+      "source_mode": null,
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [],
+      "target_mode": "OCM",
+      "outputs": [],
+      "kind": "initial",
+      "prose": "On power-up, the LRE begins in OCM."
+    },
+    {
+      "req_id": "LRE-Beh2",
+      "source_mode": "OCM",
+      "trigger_event_or_none": "reqVel",
+      "guard_conjuncts": [],
+      "target_mode": "OCM",
+      "outputs": [
+        "advVel(v)"
+      ],
+      "kind": "transition",
+      "prose": "In OCM, when the operator controller sends reqVel with a velocity value v, the LRE passes it through to the autopilot controller as advVel with the same value v. The LRE remains in OCM."
+    },
+    {
+      "req_id": "LRE-Beh3",
+      "source_mode": "OCM",
+      "trigger_event_or_none": "reqHdng",
+      "guard_conjuncts": [],
+      "target_mode": "OCM",
+      "outputs": [
+        "advHdng(h)"
+      ],
+      "kind": "transition",
+      "prose": "In OCM, when the operator controller sends reqHdng with a heading value h, the LRE passes it through to the autopilot controller as advHdng with the same value h. The LRE remains in OCM."
+    },
+    {
+      "req_id": "LRE-Beh4",
+      "source_mode": "OCM",
+      "trigger_event_or_none": "reqMOM",
+      "guard_conjuncts": [
+        {
+          "atom": "vel_le_1",
+          "negated": false,
+          "variable": "vel",
+          "comparator": "<=",
+          "bound": "1",
+          "verbatim_prose_span": "the velocity of the AUV (vel) is less than or equal to 1"
+        },
+        {
+          "atom": "inOpez",
+          "negated": true,
+          "variable": "inOpez",
+          "comparator": "==",
+          "bound": "true",
+          "verbatim_prose_span": "the AUV is not in OPEZ"
+        },
+        {
+          "atom": "odist_cdyn_gt_1",
+          "negated": false,
+          "variable": "odist(cdyn)",
+          "comparator": ">",
+          "bound": "1",
+          "verbatim_prose_span": "the overall Euclidean distance (the odist function) to cdyn is greater than 1"
+        },
+        {
+          "atom": "odist_cstc_gt_1",
+          "negated": false,
+          "variable": "odist(cstc)",
+          "comparator": ">",
+          "bound": "1",
+          "verbatim_prose_span": "the overall Euclidean distance (the odist function) to cstc is greater than 1"
+        }
+      ],
+      "target_mode": "MOM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from OCM to MOM when the operator controller sends reqMOM AND all of the following are true: the velocity of the AUV (vel) is less than or equal to 1, the AUV is not in OPEZ, the overall Euclidean distance (the odist function) to cdyn is greater than 1, and the overall Euclidean distance (the odist function) to cstc is greater than 1."
+    },
+    {
+      "req_id": "LRE-Beh5",
+      "source_mode": "MOM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "inOpez",
+          "negated": false,
+          "variable": "inOpez",
+          "comparator": "==",
+          "bound": "true",
+          "verbatim_prose_span": "when inOpez is true"
+        }
+      ],
+      "target_mode": "OCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from MOM to OCM when inOpez is true. The guard is inOpez alone; the depth and distance conditions are subsumed by CheckOPEZ's definition of inOpez."
+    },
+    {
+      "req_id": "LRE-Beh6",
+      "source_mode": "MOM",
+      "trigger_event_or_none": "reqOCM",
+      "guard_conjuncts": [],
+      "target_mode": "OCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from MOM to OCM when the operator controller sends reqOCM."
+    },
+    {
+      "req_id": "LRE-Beh7",
+      "source_mode": "MOM",
+      "trigger_event_or_none": "endTask",
+      "guard_conjuncts": [],
+      "target_mode": "OCM",
+      "outputs": [
+        "advVel(0)"
+      ],
+      "kind": "transition",
+      "prose": "The LRE transitions from MOM to OCM when endTask is received. On this transition, send advice velocity to 0 (advVel(0))."
+    },
+    {
+      "req_id": "LRE-Beh8",
+      "source_mode": "MOM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "cda_lt_minSafe",
+          "negated": false,
+          "variable": "cda",
+          "comparator": "<",
+          "bound": "minSafeDist",
+          "verbatim_prose_span": "the closest distance of approach (cda) is below the minSafeDist threshold"
+        },
+        {
+          "atom": "tcpa_ge_0",
+          "negated": false,
+          "variable": "tcpa",
+          "comparator": ">=",
+          "bound": "0",
+          "verbatim_prose_span": "the time to closest point of approach (tcpa) is non-negative"
+        }
+      ],
+      "target_mode": "CAM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from MOM to CAM when the closest distance of approach (cda) is below the minSafeDist threshold AND the time to closest point of approach (tcpa) is non-negative."
+    },
+    {
+      "req_id": "LRE-Beh9",
+      "source_mode": "MOM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "hvel_ge_1",
+          "negated": false,
+          "variable": "hvel",
+          "comparator": ">=",
+          "bound": "1",
+          "verbatim_prose_span": "the AUV's horizontal velocity (hvel) is at or above 1 m/s"
+        },
+        {
+          "atom": "hdist_le_horiz",
+          "negated": false,
+          "variable": "hdist(cstc)",
+          "comparator": "<=",
+          "bound": "staticObsHorizDist",
+          "verbatim_prose_span": "the horizontal distance (hdist) to the closest static obstacle (cstc) is at or below the staticObsHorizDist threshold"
+        }
+      ],
+      "target_mode": "HCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from MOM to HCM when the AUV's horizontal velocity (hvel) is at or above 1 m/s AND the horizontal distance (hdist) to the closest static obstacle (cstc) is at or below the staticObsHorizDist threshold."
+    },
+    {
+      "req_id": "LRE-Beh10",
+      "source_mode": "MOM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "vdist_le_dfltvert",
+          "negated": false,
+          "variable": "vdist(cstc)",
+          "comparator": "<=",
+          "bound": "staticObsDfltVertDist",
+          "verbatim_prose_span": "the vertical distance (vdist) to the closest static obstacle (cstc) is at or below the staticObsDfltVertDist threshold"
+        }
+      ],
+      "target_mode": "HCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from MOM to HCM when the vertical distance (vdist) to the closest static obstacle (cstc) is at or below the staticObsDfltVertDist threshold, regardless of velocity."
+    },
+    {
+      "req_id": "LRE-Beh11",
+      "source_mode": "MOM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "vvel_ge_1",
+          "negated": false,
+          "variable": "vvel",
+          "comparator": ">=",
+          "bound": "1",
+          "verbatim_prose_span": "the AUV's vertical velocity (vvel) is at or above 1 m/s"
+        },
+        {
+          "atom": "vdist_le_vert",
+          "negated": false,
+          "variable": "vdist(cstc)",
+          "comparator": "<=",
+          "bound": "staticObsVertDist",
+          "verbatim_prose_span": "the vertical distance (vdist) to the closest static obstacle (cstc) is at or below the staticObsVertDist threshold"
+        }
+      ],
+      "target_mode": "HCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from MOM to HCM when the AUV's vertical velocity (vvel) is at or above 1 m/s AND the vertical distance (vdist) to the closest static obstacle (cstc) is at or below the staticObsVertDist threshold."
+    },
+    {
+      "req_id": "LRE-Beh12",
+      "source_mode": "MOM",
+      "trigger_event_or_none": "reqHCM",
+      "guard_conjuncts": [],
+      "target_mode": "HCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from MOM to HCM when the operator controller sends reqHCM."
+    },
+    {
+      "req_id": "LRE-Beh13",
+      "source_mode": "HCM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "hdist_le_horiz",
+          "negated": true,
+          "variable": "hdist(cstc)",
+          "comparator": "<=",
+          "bound": "staticObsHorizDist",
+          "verbatim_prose_span": "the horizontal distance (hdist) to the closest static obstacle (cstc) exceeds the staticObsHorizDist threshold"
+        },
+        {
+          "atom": "vdist_le_vert",
+          "negated": true,
+          "variable": "vdist(cstc)",
+          "comparator": "<=",
+          "bound": "staticObsVertDist",
+          "verbatim_prose_span": "the vertical distance (vdist) to the closest static obstacle (cstc) exceeds the staticObsVertDist threshold"
+        }
+      ],
+      "target_mode": "MOM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from HCM to MOM when the horizontal distance (hdist) to the closest static obstacle (cstc) exceeds the staticObsHorizDist threshold AND the vertical distance (vdist) to the closest static obstacle (cstc) exceeds the staticObsVertDist threshold."
+    },
+    {
+      "req_id": "LRE-Beh14",
+      "source_mode": "HCM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "cda_lt_minSafe",
+          "negated": false,
+          "variable": "cda",
+          "comparator": "<",
+          "bound": "minSafeDist",
+          "verbatim_prose_span": "the closest distance of approach (cda) is below the minSafeDist threshold"
+        },
+        {
+          "atom": "tcpa_ge_0",
+          "negated": false,
+          "variable": "tcpa",
+          "comparator": ">=",
+          "bound": "0",
+          "verbatim_prose_span": "the time to closest point of approach (tcpa) is non-negative"
+        }
+      ],
+      "target_mode": "CAM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from HCM to CAM when the closest distance of approach (cda) is below the minSafeDist threshold AND the time to closest point of approach (tcpa) is non-negative."
+    },
+    {
+      "req_id": "LRE-Beh15",
+      "source_mode": "HCM",
+      "trigger_event_or_none": "reqOCM",
+      "guard_conjuncts": [],
+      "target_mode": "OCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from HCM to OCM when the operator controller sends reqOCM."
+    },
+    {
+      "req_id": "LRE-Beh16",
+      "source_mode": "HCM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "inOpez",
+          "negated": false,
+          "variable": "inOpez",
+          "comparator": "==",
+          "bound": "true",
+          "verbatim_prose_span": "when inOpez is true"
+        }
+      ],
+      "target_mode": "OCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from HCM to OCM when inOpez is true. The guard is inOpez alone; the depth and distance conditions are subsumed by CheckOPEZ's definition of inOpez."
+    },
+    {
+      "req_id": "LRE-Beh17",
+      "source_mode": "CAM",
+      "trigger_event_or_none": "reqOCM",
+      "guard_conjuncts": [],
+      "target_mode": "OCM",
+      "outputs": [],
+      "kind": "transition",
+      "prose": "The LRE transitions from CAM to OCM when the operator controller sends reqOCM."
+    },
+    {
+      "req_id": "LRE-Beh18",
+      "source_mode": "CAM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [
+        {
+          "atom": "cda_lt_minSafe",
+          "negated": true,
+          "variable": "cda",
+          "comparator": "<",
+          "bound": "minSafeDist",
+          "verbatim_prose_span": "the closest distance of approach (cda) is at or above the minSafeDist threshold"
+        }
+      ],
+      "target_mode": "OCM",
+      "outputs": [
+        "advVel(0)"
+      ],
+      "kind": "transition",
+      "prose": "The LRE transitions from CAM to OCM when the closest distance of approach (cda) is at or above the minSafeDist threshold. On this transition, advise velocity to 0 (advVel(0))."
+    },
+    {
+      "req_id": "LRE-Beh19",
+      "source_mode": "OCM",
+      "trigger_event_or_none": null,
+      "guard_conjuncts": [],
+      "target_mode": null,
+      "outputs": [],
+      "kind": "closure_constraint",
+      "prose": "In OCM, the LRE handles exactly three operator inputs: reqVel (pass through velocity), reqHdng (pass through heading), and reqMOM (transition to MOM if guards allow). OCM does not respond to reqOCM since the LRE is already in OCM. In all other modes, operator velocity and heading inputs are overridden by the LRE."
+    }
+  ]
+}

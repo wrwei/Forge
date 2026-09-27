@@ -1,0 +1,587 @@
+{
+  "requirements": [
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "SystemArchitecture",
+      "id": "SB-V1",
+      "description": "The steam-boiler control program keeps the quantity of water in a steam boiler within safe bounds; a level that is too low or too high endangers the boiler or the turbine placed after it. The physical plant comprises: the steam boiler itself (with an evacuation valve), one water-level measuring device, four pumps that supply water, four pump controllers (one per pump) that report whether water is actually circulating, one device measuring the outgoing quantity of steam, an operator desk, and a message transmission system linking the program to all units.",
+      "priority": "1",
+      "types": [
+        "architecture"
+      ],
+      "source": "sect 1, sect 2"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "OperatingModes",
+      "id": "SB-V2",
+      "description": "The program is always in exactly one of five operating modes: initialization, normal, degraded, rescue, and emergency stop. It starts in initialization mode.",
+      "priority": "1",
+      "types": [
+        "architecture"
+      ],
+      "source": "sect 4"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "CycleStructure",
+      "id": "SB-V3",
+      "description": "The program and the physical units communicate over the transmission system in a rhythm of one cycle every five seconds. Each cycle has three stages: first the program receives the incoming messages, then it analyses the information, then it transmits its outgoing messages. Within one cycle all incoming messages are considered received simultaneously, and all outgoing messages are emitted simultaneously. Transmission time is neglected as a first approximation.",
+      "priority": "1",
+      "types": [
+        "architecture"
+      ],
+      "source": "sect 3"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "ControlObjective",
+      "id": "SB-V4",
+      "description": "The overall control objective is to hold the water level between the two normal bounds N1 and N2. The level must never be allowed to stay beyond the outer limits M1 (minimal) and M2 (maximal): below M1 or above M2 the plant is in danger after five seconds of worst-case evolution, so the program must react before either limit can be reached.",
+      "priority": "1",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 1, sect 2.1, sect 4.2"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_q",
+      "id": "SB-V5",
+      "description": "The program maintains a quantity q (litre) — the water level most recently reported by the level measuring device. Valid readings lie between 0 and the boiler capacity C.",
+      "priority": "1",
+      "types": [
+        "variable"
+      ],
+      "source": "sect 2.2, sect 2.6"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "Variable_v",
+      "id": "SB-V6",
+      "description": "The program maintains a quantity v (litre/sec) — the outgoing steam rate most recently reported by the steam measuring device. Valid readings lie between 0 and the maximal steam rate W.",
+      "priority": "1",
+      "types": [
+        "variable"
+      ],
+      "source": "sect 2.5, sect 2.6"
+    },
+    {
+      "kind": "Derived Requirement",
+      "name": "Variable_p",
+      "id": "SB-V7",
+      "description": "The program maintains a quantity p (litre/sec) — the current throughput of the pumps taken together. No device reports p directly; the program derives it from the reported pump states and pump-controller states together with the nominal per-pump capacity P. (Derived: the chapter lists p among the current measures without naming its source.)",
+      "priority": "1",
+      "types": [
+        "variable"
+      ],
+      "source": "sect 2.6"
+    },
+    {
+      "kind": "Derived Requirement",
+      "name": "Variable_EstimatedLevel",
+      "id": "SB-V8",
+      "description": "While the level measuring device is out of order, the program maintains a computed estimate of the water level in place of q. Because worst-case behaviour must be assumed, the estimate is kept as a lower and an upper bound on the true level, advanced each cycle from the steam and pump information. (Derived: the chapter requires estimation from maximal steam dynamics but leaves its form open.)",
+      "priority": "1",
+      "types": [
+        "variable"
+      ],
+      "source": "sect 4.4"
+    },
+    {
+      "kind": "Derived Requirement",
+      "name": "Variable_UnitStatus",
+      "id": "SB-V9",
+      "description": "For each physical unit — each of the four pumps, each of the four pump controllers, the level measuring device, and the steam measuring device — the program tracks whether that unit is currently believed sound or out of order, and whether a failure detection announced for it has been acknowledged yet. A unit becomes out of order when the program detects its failure, and sound again when the unit reports itself repaired. (Derived: the chapter's failure/repair message protocol presupposes this bookkeeping.)",
+      "priority": "1",
+      "types": [
+        "variable"
+      ],
+      "source": "sect 4, sect 5, sect 6"
+    },
+    {
+      "kind": "Derived Requirement",
+      "name": "Variable_StopCount",
+      "id": "SB-V10",
+      "description": "The program tracks how many successive transmissions have carried the STOP message. The count grows by one on each cycle in which STOP is received and returns to zero on a cycle without STOP. (Derived: the chapter states the three-in-a-row rule without describing the counting.)",
+      "priority": "1",
+      "types": [
+        "variable"
+      ],
+      "source": "sect 6"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "BoilerConstants",
+      "id": "SB-DM1",
+      "description": "The boiler is characterised by five constant quantities of water, all in litres: C, the total capacity; M1, the minimal limit; M2, the maximal limit; N1, the minimal normal level; and N2, the maximal normal level, with M1 below N1 and N2 below M2. If the level stays below M1 while steam continues to escape at its maximum with no water supplied, the boiler is in danger after five seconds; if it stays above M2 while the pumps keep supplying water and no steam leaves, the boiler is likewise in danger after five seconds.",
+      "priority": "2",
+      "types": [
+        "constants"
+      ],
+      "source": "sect 2.1, sect 2.6"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "SteamConstants",
+      "id": "SB-DM2",
+      "description": "The steam exit is characterised by three constants: W (litre/sec), the maximal quantity of steam leaving the boiler per second; U1 (litre/sec/sec), the maximal gradient by which the steam rate can increase; and U2 (litre/sec/sec), the maximal gradient by which it can decrease.",
+      "priority": "2",
+      "types": [
+        "constants"
+      ],
+      "source": "sect 2.1, sect 2.6"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "PumpCharacteristics",
+      "id": "SB-DM3",
+      "description": "There are four pumps. Each pump has the same nominal capacity P (litre/sec), and is at any moment either on or off. After being switched on, a pump needs five seconds — one full cycle — of internal pressure balancing before it actually begins to pour water into the boiler; switching a pump off takes effect instantaneously.",
+      "priority": "2",
+      "types": [
+        "constants"
+      ],
+      "source": "sect 2.3, sect 2.6"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "PumpController",
+      "id": "SB-DM4",
+      "description": "Each pump has an associated controller that observes whether water is actually circulating from that pump into the boiler. The controller reports one of two observations: water flows, or water does not flow.",
+      "priority": "2",
+      "types": [
+        "data_type"
+      ],
+      "source": "sect 2.4"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "LevelDevice",
+      "id": "SB-DM5",
+      "description": "A single device measures the quantity of water currently in the boiler and reports it as the value q.",
+      "priority": "2",
+      "types": [
+        "data_type"
+      ],
+      "source": "sect 2.2"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "SteamDevice",
+      "id": "SB-DM6",
+      "description": "A single device measures the quantity of steam currently leaving the boiler and reports it as the value v.",
+      "priority": "2",
+      "types": [
+        "data_type"
+      ],
+      "source": "sect 2.5"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "EvacuationValve",
+      "id": "SB-DM7",
+      "description": "The boiler has an evacuation valve through which water can be drained. It is used only during the initial phase, to lower an excessive starting level; it plays no role in the other modes.",
+      "priority": "2",
+      "types": [
+        "data_type"
+      ],
+      "source": "sect 2.1, sect 4.1"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "OutputMessages",
+      "id": "SB-DM8",
+      "description": "The program sends the following messages to the physical units: MODE(m) — its current operating mode, sent on every cycle; PROGRAM_READY — sent repeatedly in initialization mode, once the start-up level is achieved, until PHYSICAL_UNITS_READY is received; VALVE — sent in initialization mode to request opening, and later closure, of the evacuation valve; OPEN_PUMP(n) — activate pump n; CLOSE_PUMP(n) — stop pump n; PUMP_FAILURE_DETECTION(n), PUMP_CONTROL_FAILURE_DETECTION(n), LEVEL_FAILURE_DETECTION, and STEAM_FAILURE_DETECTION — announce a detected failure of the named unit, each repeated on every cycle until the matching acknowledgement message arrives; and PUMP_REPAIRED_ACKNOWLEDGEMENT(n), PUMP_CONTROL_REPAIRED_ACKNOWLEDGEMENT(n), LEVEL_REPAIRED_ACKNOWLEDGEMENT, and STEAM_REPAIRED_ACKNOWLEDGEMENT — acknowledge the corresponding repair notifications from the units.",
+      "priority": "2",
+      "types": [
+        "event"
+      ],
+      "source": "sect 5"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "InputMessages",
+      "id": "SB-DM9",
+      "description": "The program receives the following messages from the physical units: STOP — an operator request; when it arrives on three successive transmissions the program must go to emergency stop; STEAM_BOILER_WAITING — in initialization mode, signals that the plant is ready for the program to begin; PHYSICAL_UNITS_READY — in initialization mode, answers PROGRAM_READY; PUMP_STATE(n, b) — the on/off state of pump n, required in every transmission; PUMP_CONTROL_STATE(n, b) — whether the controller of pump n sees water flowing, required in every transmission; LEVEL(v) — the water-level reading, required in every transmission; STEAM(v) — the steam-rate reading, required in every transmission; PUMP_REPAIRED(n), PUMP_CONTROL_REPAIRED(n), LEVEL_REPAIRED, and STEAM_REPAIRED — a unit announces its repair, repeating the message until the program's acknowledgement arrives; and PUMP_FAILURE_ACKNOWLEDGEMENT(n), PUMP_CONTROL_FAILURE_ACKNOWLEDGEMENT(n), LEVEL_FAILURE_ACKNOWLEDGEMENT, and STEAM_OUTCOME_FAILURE_ACKNOWLEDGEMENT — the units acknowledge the program's failure-detection messages.",
+      "priority": "2",
+      "types": [
+        "event"
+      ],
+      "source": "sect 6"
+    },
+    {
+      "kind": "Non-Functional Requirement",
+      "name": "ModeDatatype",
+      "id": "SB-DM10",
+      "description": "The operating mode is a value drawn from exactly five alternatives: initialization, normal, degraded, rescue, and emergency stop. The MODE(m) message carries this value.",
+      "priority": "2",
+      "types": [
+        "data_type"
+      ],
+      "source": "sect 4"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "InitialMode",
+      "id": "SB-Beh1",
+      "description": "On start-up the program is in initialization mode.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4, sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Init_WaitForPlant",
+      "id": "SB-Beh2",
+      "description": "In initialization mode the program first waits for the STEAM_BOILER_WAITING message; nothing else happens until it arrives.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Init_SteamMustBeZero",
+      "id": "SB-Beh3",
+      "description": "Once STEAM_BOILER_WAITING has arrived, the program checks that the steam rate leaving the boiler is really zero. If the reported steam rate is not zero, the steam measuring device is judged defective and the program goes to emergency stop mode.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Init_DrainExcessWater",
+      "id": "SB-Beh4",
+      "description": "In initialization mode, if the water level is above N2, the program activates the evacuation valve so as to empty water from the boiler until the level is no longer excessive.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Init_FillLowWater",
+      "id": "SB-Beh5",
+      "description": "In initialization mode, if the water level is below N1, the program activates a pump so as to fill the boiler.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Init_LevelDeviceFailure",
+      "id": "SB-Beh6",
+      "description": "If, during initialization, the program detects a failure of the water-level measuring device, it goes to emergency stop mode.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Init_ReadyHandshake",
+      "id": "SB-Beh7",
+      "description": "As soon as the level lies between N1 and N2 during initialization, the program announces PROGRAM_READY, and keeps repeating that message on every cycle until it receives PHYSICAL_UNITS_READY, a message the physical units must necessarily send in answer.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Init_to_NormalOrDegraded",
+      "id": "SB-Beh8",
+      "description": "When PHYSICAL_UNITS_READY is received, the program leaves initialization: it enters normal mode if every physical unit is operating correctly, and degraded mode if some physical unit is defective (a defective level measuring device having already forced emergency stop).",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Init_TransmissionFailure",
+      "id": "SB-Beh9",
+      "description": "If a transmission failure occurs during initialization, the program goes to emergency stop mode.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.1"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Normal_LevelRegulation",
+      "id": "SB-Beh10",
+      "description": "Normal mode is the standard operating mode: all physical units are believed sound, and the program keeps the water level between N1 and N2. Whenever the level falls below N1 or rises above N2, the program corrects it by switching pumps on or off, basing its decision on the information received from the physical units.",
+      "priority": "3",
+      "types": [
+        "state"
+      ],
+      "source": "sect 4.2"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Normal_to_Rescue",
+      "id": "SB-Beh11",
+      "description": "The program moves from normal mode to rescue mode as soon as it detects a failure of the water-level measuring device.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.2"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Normal_to_Degraded",
+      "id": "SB-Beh12",
+      "description": "The program moves from normal mode to degraded mode as soon as it detects a failure of any physical unit other than the water-level measuring device.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.2"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Normal_to_Emergency_LevelRisk",
+      "id": "SB-Beh13",
+      "description": "The program moves from normal mode to emergency stop mode if the water level risks reaching one of the limit quantities M1 or M2, this risk being judged against the maximal (worst-case) behaviour the physical units could exhibit.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.2"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Normal_to_Emergency_Transmission",
+      "id": "SB-Beh14",
+      "description": "The program moves from normal mode to emergency stop mode if a transmission failure occurs.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.2"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Degraded_Regulation",
+      "id": "SB-Beh15",
+      "description": "In degraded mode the program keeps maintaining a satisfactory water level despite the presence of some failed physical unit; its regulation functionality is the same as in normal mode. Degraded mode presupposes that the water-level measuring device itself works correctly.",
+      "priority": "3",
+      "types": [
+        "state"
+      ],
+      "source": "sect 4.3"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Degraded_to_Normal",
+      "id": "SB-Beh16",
+      "description": "The program returns from degraded mode to normal mode once every previously failed unit has been repaired.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.3"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Degraded_to_Rescue",
+      "id": "SB-Beh17",
+      "description": "The program moves from degraded mode to rescue mode as soon as it detects a failure of the water-level measuring device.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.3"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Degraded_to_Emergency",
+      "id": "SB-Beh18",
+      "description": "The program moves from degraded mode to emergency stop mode if the water level risks reaching M1 or M2, or if a transmission failure occurs.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.3"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Rescue_LevelEstimation",
+      "id": "SB-Beh19",
+      "description": "In rescue mode the program keeps regulating the water level although the level measuring device has failed. It replaces the missing reading with an estimate computed from the maximal dynamics of the steam outcome (bounded by W, U1 and U2) and from the water known to be supplied by the pumps, under the simplifying assumption that each litre supplied by the pumps becomes exactly one litre of boiler content. This estimate is trustworthy only while the steam measuring device works and the pump-controller information is reliable.",
+      "priority": "3",
+      "types": [
+        "state"
+      ],
+      "source": "sect 4.4"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Rescue_to_DegradedOrNormal",
+      "id": "SB-Beh20",
+      "description": "When the water-level measuring device is repaired, the program leaves rescue mode: it enters normal mode if no other unit is defective, and degraded mode otherwise.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.4"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "Rescue_to_Emergency",
+      "id": "SB-Beh21",
+      "description": "The program moves from rescue mode to emergency stop mode if the steam measuring device fails, if the pump-controller units fail, if the (estimated) water level risks reaching M1 or M2, or if a transmission failure occurs.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.4"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "EmergencyStop_Terminal",
+      "id": "SB-Beh22",
+      "description": "Emergency stop mode is terminal: it is entered when a vital unit has failed, when the water level risks a limit quantity, when a transmission failure is detected, or when the operator demands it. On entering it the program's control task ends — the physical environment then takes responsibility for the plant and the program stops.",
+      "priority": "3",
+      "types": [
+        "state"
+      ],
+      "source": "sect 4.5"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "OperatorStop",
+      "id": "SB-Beh23",
+      "description": "In every mode, when the STOP message has been received on three successive transmissions, the program goes to emergency stop mode.",
+      "priority": "3",
+      "types": [
+        "transition"
+      ],
+      "source": "sect 4.5, sect 6"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "ModeBroadcast",
+      "id": "SB-Beh24",
+      "description": "On every cycle, in whatever mode, the program sends the MODE(m) message carrying its current operating mode.",
+      "priority": "3",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 5"
+    },
+    {
+      "kind": "Derived Requirement",
+      "name": "PumpStartLatency",
+      "id": "SB-Beh25",
+      "description": "When the program orders a pump on, it must account for the pump pouring no water during the five seconds — one cycle — of pressure balancing that follow the order; stopping a pump, by contrast, takes effect at once. Level predictions and failure judgements must respect this latency. (Derived: the chapter states the latency as a physical fact; its consequences for prediction are left implicit.)",
+      "priority": "3",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 2.3"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "PumpFailureDetection",
+      "id": "SB-FR1",
+      "description": "The program judges a pump to have failed in either of two situations: first, when — during the transmission following a start or stop order it sent to that pump — the pump does not indicate having effectively started or stopped; second, when the pump changes its on/off state spontaneously, without having been ordered to.",
+      "priority": "4",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 7"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "PumpControlFailureDetection",
+      "id": "SB-FR2",
+      "description": "The program judges a pump controller to have failed in either of two situations: first, when — during the second transmission after a start or stop order to the associated pump — the controller does not indicate the coming or ceasing of water flow, even though the program knows from elsewhere that the pump itself is working correctly; second, when the controller changes its reported state spontaneously. The extra transmission of delay, compared with pump failure detection, reflects the pump's five-second start-up latency.",
+      "priority": "4",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 7"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "LevelFailureDetection",
+      "id": "SB-FR3",
+      "description": "The program judges the water-level measuring device to have failed when it reports a value outside its valid static range — below 0 or above the capacity C — or a value incompatible with the dynamics of the system, that is, one the level could not have reached from the previous cycle even under extreme behaviour of steam and pumps.",
+      "priority": "4",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 7"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "SteamFailureDetection",
+      "id": "SB-FR4",
+      "description": "The program judges the steam measuring device to have failed when it reports a value outside its valid static range — below 0 or above the maximum W — or a value incompatible with the dynamics of the system, the steam rate being unable to change faster than the gradients U1 (increase) and U2 (decrease) allow.",
+      "priority": "4",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 7"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "TransmissionFailureDetection",
+      "id": "SB-FR5",
+      "description": "The program judges the transmission system to have failed when a message arrives whose presence is aberrant, or when a message that is indispensable does not arrive. In particular the four data messages — the pump states, the pump-controller states, the level reading and the steam reading — must be present in every incoming transmission.",
+      "priority": "4",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 7"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "FailureAnnouncement",
+      "id": "SB-FR6",
+      "description": "Whenever the program has detected the failure of a unit, it announces that detection to the physical units — PUMP_FAILURE_DETECTION(n) for pump n, PUMP_CONTROL_FAILURE_DETECTION(n) for the controller of pump n, LEVEL_FAILURE_DETECTION for the level device, STEAM_FAILURE_DETECTION for the steam device — and repeats the announcement on every cycle until the corresponding acknowledgement message has been received.",
+      "priority": "4",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 5"
+    },
+    {
+      "kind": "Functional Requirement",
+      "name": "RepairHandling",
+      "id": "SB-FR7",
+      "description": "When a unit reports itself repaired — PUMP_REPAIRED(n), PUMP_CONTROL_REPAIRED(n), LEVEL_REPAIRED or STEAM_REPAIRED — the program records that unit as sound again and answers with the matching acknowledgement (PUMP_REPAIRED_ACKNOWLEDGEMENT(n), PUMP_CONTROL_REPAIRED_ACKNOWLEDGEMENT(n), LEVEL_REPAIRED_ACKNOWLEDGEMENT, STEAM_REPAIRED_ACKNOWLEDGEMENT); the unit, for its part, repeats its repair message until that acknowledgement arrives.",
+      "priority": "4",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 5, sect 6"
+    },
+    {
+      "kind": "Derived Requirement",
+      "name": "FailureConsequencePrecedence",
+      "id": "SB-FR8",
+      "description": "When several failure conditions are detected in the same cycle, the most severe consequence prevails: any condition demanding emergency stop (transmission failure, level risking M1 or M2, or — in rescue mode — steam device or pump-controller failure) dominates a change to rescue mode, which in turn dominates a change to degraded mode. (Derived: the chapter states each rule separately and does not order simultaneous detections.)",
+      "priority": "4",
+      "types": [
+        "constraint"
+      ],
+      "source": "sect 4.2, sect 4.3, sect 4.4"
+    }
+  ]
+}
