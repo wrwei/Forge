@@ -1,0 +1,2100 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 28-09-2026 17:18:38
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+module BoilerController
+exports
+	transparent diamond
+	transparent sbisim
+	transparent dbisim
+	transparent chase
+
+	-- Transition identifiers
+	-- declaring identifiers of transitions
+	datatype NIDS = 
+	              NID_INITIALIZATION|
+	              NID_EMERGENCY_STOP|
+	              NID_NORMAL|
+	              NID_RESCUE|
+	              NID_DEGRADED|
+	              NID_i0
+	
+	channel internal__ : NIDS
+	
+	-- Flow channels		
+	channel interrupt
+	channel exited
+	channel exit
+	channel terminate
+	
+	-- Variable channels
+	channel get_transmissionFailed, set_transmissionFailed, setL_transmissionFailed, setR_transmissionFailed: core_boolean
+	channel get_stopThresholdReached, set_stopThresholdReached, setL_stopThresholdReached, setR_stopThresholdReached: core_boolean
+	channel get_initSteamDefect, set_initSteamDefect, setL_initSteamDefect, setR_initSteamDefect: core_boolean
+	channel get_levelDeviceFailed, set_levelDeviceFailed, setL_levelDeviceFailed, setR_levelDeviceFailed: core_boolean
+	channel get_steamDeviceFailed, set_steamDeviceFailed, setL_steamDeviceFailed, setR_steamDeviceFailed: core_boolean
+	channel get_controlUnitFailed, set_controlUnitFailed, setL_controlUnitFailed, setR_controlUnitFailed: core_boolean
+	channel get_nonLevelUnitFailed, set_nonLevelUnitFailed, setL_nonLevelUnitFailed, setR_nonLevelUnitFailed: core_boolean
+	channel get_everyUnitSound, set_everyUnitSound, setL_everyUnitSound, setR_everyUnitSound: core_boolean
+	channel get_levelRiskM1M2, set_levelRiskM1M2, setL_levelRiskM1M2, setR_levelRiskM1M2: core_boolean
+	channel get_levelBelowN1, set_levelBelowN1, setL_levelBelowN1, setR_levelBelowN1: core_boolean
+	channel get_levelAboveN2, set_levelAboveN2, setL_levelAboveN2, setR_levelAboveN2: core_boolean
+	channel get_initDrainNeeded, set_initDrainNeeded, setL_initDrainNeeded, setR_initDrainNeeded: core_boolean
+	channel get_initFillNeeded, set_initFillNeeded, setL_initFillNeeded, setR_initFillNeeded: core_boolean
+	channel get_initReadyPhase, set_initReadyPhase, setL_initReadyPhase, setR_initReadyPhase: core_boolean
+	channel get_initExitAllSound, set_initExitAllSound, setL_initExitAllSound, setR_initExitAllSound: core_boolean
+	channel get_initExitDegraded, set_initExitDegraded, setL_initExitDegraded, setR_initExitDegraded: core_boolean
+	channel get_rescueRepairToDegraded, set_rescueRepairToDegraded, setL_rescueRepairToDegraded, setR_rescueRepairToDegraded: core_boolean
+	channel get_plantWaiting, set_plantWaiting, setL_plantWaiting, setR_plantWaiting: core_boolean
+	channel get_unitsReady, set_unitsReady, setL_unitsReady, setR_unitsReady: core_boolean
+	channel get_projLow, set_projLow, setL_projLow, setR_projLow: core_real
+	channel get_projHigh, set_projHigh, setL_projHigh, setR_projHigh: core_real
+	channel get_levelLow, set_levelLow, setL_levelLow, setR_levelLow: core_real
+	channel get_levelHigh, set_levelHigh, setL_levelHigh, setR_levelHigh: core_real
+	channel get_riskBelowM1, set_riskBelowM1, setL_riskBelowM1, setR_riskBelowM1: core_boolean
+	channel get_riskAboveM2, set_riskAboveM2, setL_riskAboveM2, setR_riskAboveM2: core_boolean
+	channel get_p, set_p, setL_p, setR_p: core_real
+	
+	-- Shared variable channels
+	channel set_EXT_transmissionFailed: core_boolean
+	channel set_EXT_stopThresholdReached: core_boolean
+	channel set_EXT_initSteamDefect: core_boolean
+	channel set_EXT_levelDeviceFailed: core_boolean
+	channel set_EXT_steamDeviceFailed: core_boolean
+	channel set_EXT_controlUnitFailed: core_boolean
+	channel set_EXT_nonLevelUnitFailed: core_boolean
+	channel set_EXT_everyUnitSound: core_boolean
+	channel set_EXT_levelRiskM1M2: core_boolean
+	channel set_EXT_levelBelowN1: core_boolean
+	channel set_EXT_levelAboveN2: core_boolean
+	channel set_EXT_initDrainNeeded: core_boolean
+	channel set_EXT_initFillNeeded: core_boolean
+	channel set_EXT_initReadyPhase: core_boolean
+	channel set_EXT_initExitAllSound: core_boolean
+	channel set_EXT_initExitDegraded: core_boolean
+	channel set_EXT_rescueRepairToDegraded: core_boolean
+	channel set_EXT_plantWaiting: core_boolean
+	channel set_EXT_unitsReady: core_boolean
+	channel set_EXT_projLow: core_real
+	channel set_EXT_projHigh: core_real
+	channel set_EXT_levelLow: core_real
+	channel set_EXT_levelHigh: core_real
+	channel set_EXT_riskBelowM1: core_boolean
+	channel set_EXT_riskAboveM2: core_boolean
+	channel set_EXT_p: core_real
+	
+	-- Local variable channels for defined operations that are required by the state machine
+	
+	-- Declaring state machine events
+	channel modeMessage__: NIDS.InOut
+	channel modeMessage: InOut
+	channel valve__: NIDS.InOut
+	channel valve: InOut
+	channel openPump__: NIDS.InOut.core_int
+	channel openPump: InOut.core_int
+	channel programReady__: NIDS.InOut
+	channel programReady: InOut
+	channel closePump__: NIDS.InOut.core_int
+	channel closePump: InOut.core_int
+	
+	-- Declaring call and ret events for undefined operations
+	
+	enterSS = {|
+	INITIALIZATION::enter,
+	EMERGENCY_STOP::enter,
+	NORMAL::enter,
+	RESCUE::enter,
+	DEGRADED::enter,
+	i0::enter
+	|}
+	
+	enteredSS = 	{|
+	INITIALIZATION::entered,
+	EMERGENCY_STOP::entered,
+	NORMAL::entered,
+	RESCUE::entered,
+	DEGRADED::entered
+	|}
+	
+	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
+	
+	shared_variable_events = {|
+		set_EXT_transmissionFailed,
+		set_EXT_stopThresholdReached,
+		set_EXT_initSteamDefect,
+		set_EXT_levelDeviceFailed,
+		set_EXT_steamDeviceFailed,
+		set_EXT_controlUnitFailed,
+		set_EXT_nonLevelUnitFailed,
+		set_EXT_everyUnitSound,
+		set_EXT_levelRiskM1M2,
+		set_EXT_levelBelowN1,
+		set_EXT_levelAboveN2,
+		set_EXT_initDrainNeeded,
+		set_EXT_initFillNeeded,
+		set_EXT_initReadyPhase,
+		set_EXT_initExitAllSound,
+		set_EXT_initExitDegraded,
+		set_EXT_rescueRepairToDegraded,
+		set_EXT_plantWaiting,
+		set_EXT_unitsReady,
+		set_EXT_projLow,
+		set_EXT_projHigh,
+		set_EXT_levelLow,
+		set_EXT_levelHigh,
+		set_EXT_riskBelowM1,
+		set_EXT_riskAboveM2,
+		set_EXT_p
+	|}
+	
+	-- channel set with all visible events
+	sem__events = {|
+		terminate
+	,	set_EXT_transmissionFailed, set_transmissionFailed,
+		set_EXT_stopThresholdReached, set_stopThresholdReached,
+		set_EXT_initSteamDefect, set_initSteamDefect,
+		set_EXT_levelDeviceFailed, set_levelDeviceFailed,
+		set_EXT_steamDeviceFailed, set_steamDeviceFailed,
+		set_EXT_controlUnitFailed, set_controlUnitFailed,
+		set_EXT_nonLevelUnitFailed, set_nonLevelUnitFailed,
+		set_EXT_everyUnitSound, set_everyUnitSound,
+		set_EXT_levelRiskM1M2, set_levelRiskM1M2,
+		set_EXT_levelBelowN1, set_levelBelowN1,
+		set_EXT_levelAboveN2, set_levelAboveN2,
+		set_EXT_initDrainNeeded, set_initDrainNeeded,
+		set_EXT_initFillNeeded, set_initFillNeeded,
+		set_EXT_initReadyPhase, set_initReadyPhase,
+		set_EXT_initExitAllSound, set_initExitAllSound,
+		set_EXT_initExitDegraded, set_initExitDegraded,
+		set_EXT_rescueRepairToDegraded, set_rescueRepairToDegraded,
+		set_EXT_plantWaiting, set_plantWaiting,
+		set_EXT_unitsReady, set_unitsReady,
+		set_EXT_projLow, set_projLow,
+		set_EXT_projHigh, set_projHigh,
+		set_EXT_levelLow, set_levelLow,
+		set_EXT_levelHigh, set_levelHigh,
+		set_EXT_riskBelowM1, set_riskBelowM1,
+		set_EXT_riskAboveM2, set_riskAboveM2,
+		set_EXT_p, set_p
+	,	modeMessage,
+		valve,
+		openPump,
+		programReady,
+		closePump
+		|}
+	
+	channel clockReset, clockResetL, clockResetR 
+	
+	localClockResets = {||}
+	
+	
+	channel get_CLID_EMERGENCY_STOP : core_clock_type 
+	channel get_CLID_NORMAL : core_clock_type 
+	channel get_CLID_INITIALIZATION : core_clock_type 
+	channel get_CLID_DEGRADED : core_clock_type 
+	channel get_CLID_RESCUE : core_clock_type 
+	--channel increment__
+	
+	CLID_EMERGENCY_STOP_clock_type(id__,
+			          const_BoilerController_m1,
+			          const_BoilerController_m2,
+			          const_BoilerController_stopRepeatLimit,
+			          const_BoilerController_n1,
+			          const_BoilerController_n2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_NORMAL_clock_type(id__,
+			          const_BoilerController_m1,
+			          const_BoilerController_m2,
+			          const_BoilerController_stopRepeatLimit,
+			          const_BoilerController_n1,
+			          const_BoilerController_n2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_INITIALIZATION_clock_type(id__,
+			          const_BoilerController_m1,
+			          const_BoilerController_m2,
+			          const_BoilerController_stopRepeatLimit,
+			          const_BoilerController_n1,
+			          const_BoilerController_n2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_DEGRADED_clock_type(id__,
+			          const_BoilerController_m1,
+			          const_BoilerController_m2,
+			          const_BoilerController_stopRepeatLimit,
+			          const_BoilerController_n1,
+			          const_BoilerController_n2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_RESCUE_clock_type(id__,
+			          const_BoilerController_m1,
+			          const_BoilerController_m2,
+			          const_BoilerController_stopRepeatLimit,
+			          const_BoilerController_n1,
+			          const_BoilerController_n2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	
+
+		-- Nodes --
+		-- declaring all nodes
+		
+		----------------------------------------------------------------------
+		-- State: INITIALIZATION
+		module INITIALIZATION
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: EMERGENCY_STOP
+		module EMERGENCY_STOP
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: NORMAL
+		module NORMAL
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: RESCUE
+		module RESCUE
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: DEGRADED
+		module DEGRADED
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- Initial: i0
+		module i0
+		exports
+		
+			channel enter, interrupt
+			
+			Timed(OneStep) {
+				D__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = 
+					dbisim(let
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= share__choice(interrupt -> SKIP) ; Inactive
+					within
+						Inactive [| {terminate} |> SKIP)
+				
+				VS_O__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) = D__(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2)
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		-- END of Nodes --
+		
+		Timed(OneStep) {
+		-- Operation calls --
+		-- Only the undefined operations are declared here.
+		-- If the state machine is in isolation, all required operations will be undefined.
+		-- If it is in the context of a controller, the required operations not provided by the
+		-- controller will be declared here, and the defined operations will be defined in the
+		-- context of the Controller module, and therefore within scope of the state machine module.
+		
+		-- END of Operation calls --
+	
+		-- STM processes
+		STM(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+		( 
+			(
+				(
+					(IteratedStateful(id__,
+							    const_BoilerController_m1,
+							    const_BoilerController_m2,
+							    const_BoilerController_stopRepeatLimit,
+							    const_BoilerController_n1,
+							    const_BoilerController_n2) \ {terminate} ; share__choice(terminate -> SKIP))
+				 	[[ share__ <- x__ | x__ <- {|set_EXT_transmissionFailed,set_EXT_stopThresholdReached,set_EXT_initSteamDefect,set_EXT_levelDeviceFailed,set_EXT_steamDeviceFailed,set_EXT_controlUnitFailed,set_EXT_nonLevelUnitFailed,set_EXT_everyUnitSound,set_EXT_levelRiskM1M2,set_EXT_levelBelowN1,set_EXT_levelAboveN2,set_EXT_initDrainNeeded,set_EXT_initFillNeeded,set_EXT_initReadyPhase,set_EXT_initExitAllSound,set_EXT_initExitDegraded,set_EXT_rescueRepairToDegraded,set_EXT_plantWaiting,set_EXT_unitsReady,set_EXT_projLow,set_EXT_projHigh,set_EXT_levelLow,set_EXT_levelHigh,set_EXT_riskBelowM1,set_EXT_riskAboveM2,set_EXT_p|} ]]
+				)
+			[| {share__} |]
+			SKIP
+			)
+			[| union(sharedVarSync,{terminate}) |]
+			dbisim(sharedVarMemory(id__,
+					    const_BoilerController_m1,
+					    const_BoilerController_m2,
+					    const_BoilerController_stopRepeatLimit,
+					    const_BoilerController_n1,
+					    const_BoilerController_n2))
+		)\sharedVarHide
+		
+		STM_VS_O(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+		( 
+			(
+				(
+					(IteratedStateful_VS_O(id__,
+							    const_BoilerController_m1,
+							    const_BoilerController_m2,
+							    const_BoilerController_stopRepeatLimit,
+							    const_BoilerController_n1,
+							    const_BoilerController_n2) \ {terminate} ; share__choice(terminate -> SKIP))
+				 	[[ share__ <- x__ | x__ <- {|set_EXT_transmissionFailed,set_EXT_stopThresholdReached,set_EXT_initSteamDefect,set_EXT_levelDeviceFailed,set_EXT_steamDeviceFailed,set_EXT_controlUnitFailed,set_EXT_nonLevelUnitFailed,set_EXT_everyUnitSound,set_EXT_levelRiskM1M2,set_EXT_levelBelowN1,set_EXT_levelAboveN2,set_EXT_initDrainNeeded,set_EXT_initFillNeeded,set_EXT_initReadyPhase,set_EXT_initExitAllSound,set_EXT_initExitDegraded,set_EXT_rescueRepairToDegraded,set_EXT_plantWaiting,set_EXT_unitsReady,set_EXT_projLow,set_EXT_projHigh,set_EXT_levelLow,set_EXT_levelHigh,set_EXT_riskBelowM1,set_EXT_riskAboveM2,set_EXT_p|} ]]
+				)
+			[| {share__} |]
+			SKIP
+			)
+			[| union(sharedVarSync,{terminate}) |]
+			dbisim(sharedVarMemory(id__,
+					    const_BoilerController_m1,
+					    const_BoilerController_m2,
+					    const_BoilerController_stopRepeatLimit,
+					    const_BoilerController_n1,
+					    const_BoilerController_n2))
+		)\sharedVarHide
+		
+		-- Transitions
+		Transitions(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = ((let
+			Trans = share__choice(get_stopThresholdReached?stopThresholdReached -> get_initReadyPhase?initReadyPhase -> get_initExitDegraded?initExitDegraded -> get_everyUnitSound?everyUnitSound -> get_levelAboveN2?levelAboveN2 -> get_rescueRepairToDegraded?rescueRepairToDegraded -> get_initDrainNeeded?initDrainNeeded -> get_steamDeviceFailed?steamDeviceFailed -> get_nonLevelUnitFailed?nonLevelUnitFailed -> get_initSteamDefect?initSteamDefect -> get_levelDeviceFailed?levelDeviceFailed -> get_controlUnitFailed?controlUnitFailed -> get_initFillNeeded?initFillNeeded -> get_levelRiskM1M2?levelRiskM1M2 -> get_levelBelowN1?levelBelowN1 -> get_transmissionFailed?transmissionFailed -> get_initExitAllSound?initExitAllSound -> TimeOut_1(
+				 (share__ -> SKIP
+				 [] dbisim((true)&(internal__!NID_i0 -> SKIP ;  ((SKIP ; INITIALIZATION::enter -> SKIP))))
+				 [] dbisim((transmissionFailed)&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((stopThresholdReached and (not ((transmissionFailed)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((initSteamDefect and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((levelDeviceFailed and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((initSteamDefect)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((((initDrainNeeded and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((initSteamDefect)))) and (not ((levelDeviceFailed)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(valve.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim(((((((initFillNeeded and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((initSteamDefect)))) and (not ((levelDeviceFailed)))) and (not ((initDrainNeeded)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(openPump.out!1 -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim((((((((initReadyPhase and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((initSteamDefect)))) and (not ((levelDeviceFailed)))) and (not ((initDrainNeeded)))) and (not ((initFillNeeded)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(programReady.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim(((((((((initExitAllSound and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((initSteamDefect)))) and (not ((levelDeviceFailed)))) and (not ((initDrainNeeded)))) and (not ((initFillNeeded)))) and (not ((initReadyPhase)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+				 [] dbisim((((((((((initExitDegraded and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((initSteamDefect)))) and (not ((levelDeviceFailed)))) and (not ((initDrainNeeded)))) and (not ((initFillNeeded)))) and (not ((initReadyPhase)))) and (not ((initExitAllSound)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+				 [] dbisim(((((((((((not ((transmissionFailed))) and (not ((stopThresholdReached)))) and (not ((initSteamDefect)))) and (not ((levelDeviceFailed)))) and (not ((initDrainNeeded)))) and (not ((initFillNeeded)))) and (not ((initReadyPhase)))) and (not ((initExitAllSound)))) and (not ((initExitDegraded)))))&(internal__!NID_INITIALIZATION -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim((transmissionFailed)&(internal__!NID_NORMAL -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((stopThresholdReached and (not ((transmissionFailed)))))&(internal__!NID_NORMAL -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((levelRiskM1M2 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))))&(internal__!NID_NORMAL -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((levelDeviceFailed and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))))&(internal__!NID_NORMAL -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+				 [] dbisim((((((nonLevelUnitFailed and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))) and (not ((levelDeviceFailed)))))&(internal__!NID_NORMAL -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+				 [] dbisim(((((((levelBelowN1 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))) and (not ((levelDeviceFailed)))) and (not ((nonLevelUnitFailed)))))&(internal__!NID_NORMAL -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP)) ; NORMAL::enter -> SKIP)))
+				 [] dbisim((((((((levelAboveN2 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))) and (not ((levelDeviceFailed)))) and (not ((nonLevelUnitFailed)))) and (not ((levelBelowN1)))))&(internal__!NID_NORMAL -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP)) ; NORMAL::enter -> SKIP)))
+				 [] dbisim(((((((((not ((transmissionFailed))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))) and (not ((levelDeviceFailed)))) and (not ((nonLevelUnitFailed)))) and (not ((levelBelowN1)))) and (not ((levelAboveN2)))))&(internal__!NID_NORMAL -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+				 [] dbisim((transmissionFailed)&(internal__!NID_DEGRADED -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((stopThresholdReached and (not ((transmissionFailed)))))&(internal__!NID_DEGRADED -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((levelRiskM1M2 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))))&(internal__!NID_DEGRADED -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((levelDeviceFailed and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))))&(internal__!NID_DEGRADED -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+				 [] dbisim((((((everyUnitSound and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))) and (not ((levelDeviceFailed)))))&(internal__!NID_DEGRADED -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+				 [] dbisim(((((((levelBelowN1 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))) and (not ((levelDeviceFailed)))) and (not ((everyUnitSound)))))&(internal__!NID_DEGRADED -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP)) ; DEGRADED::enter -> SKIP)))
+				 [] dbisim((((((((levelAboveN2 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))) and (not ((levelDeviceFailed)))) and (not ((everyUnitSound)))) and (not ((levelBelowN1)))))&(internal__!NID_DEGRADED -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP)) ; DEGRADED::enter -> SKIP)))
+				 [] dbisim(((((((((not ((transmissionFailed))) and (not ((stopThresholdReached)))) and (not ((levelRiskM1M2)))) and (not ((levelDeviceFailed)))) and (not ((everyUnitSound)))) and (not ((levelBelowN1)))) and (not ((levelAboveN2)))))&(internal__!NID_DEGRADED -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+				 [] dbisim((transmissionFailed)&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((stopThresholdReached and (not ((transmissionFailed)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((steamDeviceFailed and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((controlUnitFailed and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((steamDeviceFailed)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((((levelRiskM1M2 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((steamDeviceFailed)))) and (not ((controlUnitFailed)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((((everyUnitSound and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((steamDeviceFailed)))) and (not ((controlUnitFailed)))) and (not ((levelRiskM1M2)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+				 [] dbisim((((((((rescueRepairToDegraded and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((steamDeviceFailed)))) and (not ((controlUnitFailed)))) and (not ((levelRiskM1M2)))) and (not ((everyUnitSound)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+				 [] dbisim(((((((((levelBelowN1 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((steamDeviceFailed)))) and (not ((controlUnitFailed)))) and (not ((levelRiskM1M2)))) and (not ((everyUnitSound)))) and (not ((rescueRepairToDegraded)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP)) ; RESCUE::enter -> SKIP)))
+				 [] dbisim((((((((((levelAboveN2 and (not ((transmissionFailed)))) and (not ((stopThresholdReached)))) and (not ((steamDeviceFailed)))) and (not ((controlUnitFailed)))) and (not ((levelRiskM1M2)))) and (not ((everyUnitSound)))) and (not ((rescueRepairToDegraded)))) and (not ((levelBelowN1)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP)) ; RESCUE::enter -> SKIP)))
+				 [] dbisim(((((((((((not ((transmissionFailed))) and (not ((stopThresholdReached)))) and (not ((steamDeviceFailed)))) and (not ((controlUnitFailed)))) and (not ((levelRiskM1M2)))) and (not ((everyUnitSound)))) and (not ((rescueRepairToDegraded)))) and (not ((levelBelowN1)))) and (not ((levelAboveN2)))))&(internal__!NID_RESCUE -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+				 []
+				 (interrupt -> share__choice(exit -> SKIP) ; share__choice(exited -> terminate -> SKIP))
+				 []
+				 terminate -> SKIP
+				 )
+			,SKIP);Trans
+			)
+		within
+			Trans [|{terminate}|> SKIP
+		)
+		)
+		
+		-- Stateful
+		-- RULE: Stateful(stm:StateMachineBody) : CSPProcess
+		
+		-- Named process definitions
+		MachineBody(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = 
+			dbisim((
+			let
+				finalNodesEntered = {||}
+			within
+				(dbisim((dbisim((let
+					-- IMPLEMENTATION NOTE:
+					-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+					-- modules for defining the semantics of each node.
+					enterSS = {|
+					INITIALIZATION::enter,
+					EMERGENCY_STOP::enter,
+					NORMAL::enter,
+					RESCUE::enter,
+					DEGRADED::enter,
+					i0::enter
+					|}
+					hideSet = union(enterSS,{|exit,exited,internal__|})
+				within 
+					((let
+						-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+						-- because CSPM modules are used for the semantics of Node.
+						flowevts = union(enterSS,{|exit,exited,interrupt|})
+						transSync = {|internal__.NID_i0,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE|}
+					within
+						((
+						 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+						   INITIALIZATION::D__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   EMERGENCY_STOP::D__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   NORMAL::D__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   RESCUE::D__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   DEGRADED::D__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   i0::D__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   )
+						   )
+						   )
+						   )
+						   )
+						 )
+						 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION|}]]
+						 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+						 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL|}]]
+						 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE|}]]
+						 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED|}]]
+						 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+						 )
+						  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+						  [[set_stopThresholdReached <- setL_stopThresholdReached,set_initReadyPhase <- setL_initReadyPhase,set_initExitDegraded <- setL_initExitDegraded,set_everyUnitSound <- setL_everyUnitSound,set_levelAboveN2 <- setL_levelAboveN2,set_rescueRepairToDegraded <- setL_rescueRepairToDegraded,set_initDrainNeeded <- setL_initDrainNeeded,set_steamDeviceFailed <- setL_steamDeviceFailed,set_nonLevelUnitFailed <- setL_nonLevelUnitFailed,set_initSteamDefect <- setL_initSteamDefect,set_levelDeviceFailed <- setL_levelDeviceFailed,set_controlUnitFailed <- setL_controlUnitFailed,set_initFillNeeded <- setL_initFillNeeded,set_levelRiskM1M2 <- setL_levelRiskM1M2,set_levelBelowN1 <- setL_levelBelowN1,set_transmissionFailed <- setL_transmissionFailed,set_initExitAllSound <- setL_initExitAllSound]]
+						 )
+						 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+						 			,setL_stopThresholdReached
+						 			,setL_initReadyPhase
+						 			,setL_initExitDegraded
+						 			,setL_everyUnitSound
+						 			,setL_levelAboveN2
+						 			,setL_rescueRepairToDegraded
+						 			,setL_initDrainNeeded
+						 			,setL_steamDeviceFailed
+						 			,setL_nonLevelUnitFailed
+						 			,setL_initSteamDefect
+						 			,setL_levelDeviceFailed
+						 			,setL_controlUnitFailed
+						 			,setL_initFillNeeded
+						 			,setL_levelRiskM1M2
+						 			,setL_levelBelowN1
+						 			,setL_transmissionFailed
+						 			,setL_initExitAllSound
+						|}) |]
+						 ((i0::enter -> Transitions(id__,
+						 		    const_BoilerController_m1,
+						 		    const_BoilerController_m2,
+						 		    const_BoilerController_stopRepeatLimit,
+						 		    const_BoilerController_n1,
+						 		    const_BoilerController_n2))
+						  [[ share__ <- x__ | x__ <- {| share__,setL_stopThresholdReached,setL_initReadyPhase,setL_initExitDegraded,setL_everyUnitSound,setL_levelAboveN2,setL_rescueRepairToDegraded,setL_initDrainNeeded,setL_steamDeviceFailed,setL_nonLevelUnitFailed,setL_initSteamDefect,setL_levelDeviceFailed,setL_controlUnitFailed,setL_initFillNeeded,setL_levelRiskM1M2,setL_levelBelowN1,setL_transmissionFailed,setL_initExitAllSound |} ]]
+						 )
+						)[[setL_stopThresholdReached <- set_stopThresholdReached,setL_initReadyPhase <- set_initReadyPhase,setL_initExitDegraded <- set_initExitDegraded,setL_everyUnitSound <- set_everyUnitSound,setL_levelAboveN2 <- set_levelAboveN2,setL_rescueRepairToDegraded <- set_rescueRepairToDegraded,setL_initDrainNeeded <- set_initDrainNeeded,setL_steamDeviceFailed <- set_steamDeviceFailed,setL_nonLevelUnitFailed <- set_nonLevelUnitFailed,setL_initSteamDefect <- set_initSteamDefect,setL_levelDeviceFailed <- set_levelDeviceFailed,setL_controlUnitFailed <- set_controlUnitFailed,setL_initFillNeeded <- set_initFillNeeded,setL_levelRiskM1M2 <- set_levelRiskM1M2,setL_levelBelowN1 <- set_levelBelowN1,setL_transmissionFailed <- set_transmissionFailed,setL_initExitAllSound <- set_initExitAllSound]]
+						)
+					)
+					 \ hideSet)
+					[[
+						modeMessage__.x____ <- modeMessage,
+						valve__.x____ <- valve,
+						openPump__.x____ <- openPump,
+						programReady__.x____ <- programReady,
+						closePump__.x____ <- closePump
+						| x____ <- NIDS
+					]]
+				)
+				)
+				 [| union(stateClockSync,{terminate}) |]
+				 StateClocks(id__,
+				 		          const_BoilerController_m1,
+				 		          const_BoilerController_m2,
+				 		          const_BoilerController_stopRepeatLimit,
+				 		          const_BoilerController_n1,
+				 		          const_BoilerController_n2)
+				)\diff(stateClockSync,enteredSS))
+				 [| {| interrupt |} |] SKIP)
+			)
+			)
+		
+		Behaviour(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = 
+			dbisim((let
+				stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered|}
+			 within
+				(MachineBody(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)) \ union(stateClockSync,enteredSS)
+			)
+			)
+		
+		IteratedBehaviour(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = 
+			dbisim((let
+				stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered|}
+			 within
+				(dbisim(
+					sbisim(
+						dbisim(
+							sbisim(
+								dbisim(
+									sbisim(
+										dbisim(
+											sbisim(
+												dbisim(
+													sbisim(
+														MachineBody(id__,
+																    const_BoilerController_m1,
+																    const_BoilerController_m2,
+																    const_BoilerController_stopRepeatLimit,
+																    const_BoilerController_n1,
+																    const_BoilerController_n2)
+														[| {|get_CLID_RESCUE,RESCUE::entered,terminate|} |]
+														dbisim(Clock_CLID_RESCUE(id__,0,
+																          const_BoilerController_m1,
+																          const_BoilerController_m2,
+																          const_BoilerController_stopRepeatLimit,
+																          const_BoilerController_n1,
+																          const_BoilerController_n2))
+													)\{|get_CLID_RESCUE|}
+												)
+												[| {|get_CLID_DEGRADED,DEGRADED::entered,terminate|} |]
+												dbisim(Clock_CLID_DEGRADED(id__,0,
+														          const_BoilerController_m1,
+														          const_BoilerController_m2,
+														          const_BoilerController_stopRepeatLimit,
+														          const_BoilerController_n1,
+														          const_BoilerController_n2))
+											)\{|get_CLID_DEGRADED|}
+										)
+										[| {|get_CLID_INITIALIZATION,INITIALIZATION::entered,terminate|} |]
+										dbisim(Clock_CLID_INITIALIZATION(id__,0,
+												          const_BoilerController_m1,
+												          const_BoilerController_m2,
+												          const_BoilerController_stopRepeatLimit,
+												          const_BoilerController_n1,
+												          const_BoilerController_n2))
+									)\{|get_CLID_INITIALIZATION|}
+								)
+								[| {|get_CLID_NORMAL,NORMAL::entered,terminate|} |]
+								dbisim(Clock_CLID_NORMAL(id__,0,
+										          const_BoilerController_m1,
+										          const_BoilerController_m2,
+										          const_BoilerController_stopRepeatLimit,
+										          const_BoilerController_n1,
+										          const_BoilerController_n2))
+							)\{|get_CLID_NORMAL|}
+						)
+						[| {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,terminate|} |]
+						dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+								          const_BoilerController_m1,
+								          const_BoilerController_m2,
+								          const_BoilerController_stopRepeatLimit,
+								          const_BoilerController_n1,
+								          const_BoilerController_n2))
+					)\{|get_CLID_EMERGENCY_STOP|}
+				)
+				) \ union(stateClockSync,enteredSS)
+			)
+			)
+		
+		Stateful(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = 
+			((let
+				getsetLocalChannels = {||}
+				clockSync = {||}
+			within
+				(Behaviour(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) 
+				 [| union(union(getsetLocalChannels,clockSync),{terminate}) |] 
+				 (varMemory(id__,
+				 		    const_BoilerController_m1,
+				 		    const_BoilerController_m2,
+				 		    const_BoilerController_stopRepeatLimit,
+				 		    const_BoilerController_n1,
+				 		    const_BoilerController_n2) [| {terminate} |] Clocks(id__,
+				 		          const_BoilerController_m1,
+				 		          const_BoilerController_m2,
+				 		          const_BoilerController_stopRepeatLimit,
+				 		          const_BoilerController_n1,
+				 		          const_BoilerController_n2))
+			 	)\union(getsetLocalChannels,clockSync)
+			)
+			)
+		
+		IteratedStateful(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) =
+			(IteratedBehaviour(id__,
+					    const_BoilerController_m1,
+					    const_BoilerController_m2,
+					    const_BoilerController_stopRepeatLimit,
+					    const_BoilerController_n1,
+					    const_BoilerController_n2))
+		
+		-- Visible counterparts
+		MachineBody_VS_O(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = 
+			dbisim((
+			let
+				finalNodesEntered = {||}
+			within
+				(dbisim((dbisim((let
+					-- IMPLEMENTATION NOTE:
+					-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+					-- modules for defining the semantics of each node.
+					enterSS = {|
+					INITIALIZATION::enter,
+					EMERGENCY_STOP::enter,
+					NORMAL::enter,
+					RESCUE::enter,
+					DEGRADED::enter,
+					i0::enter
+					|}
+					hideSet = union(enterSS,{|exit,exited,internal__|})
+				within 
+					((let
+						-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+						-- because CSPM modules are used for the semantics of Node.
+						flowevts = union(enterSS,{|exit,exited,interrupt|})
+						transSync = {|internal__.NID_i0,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE|}
+					within
+						((
+						 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+						   INITIALIZATION::VS_O__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   EMERGENCY_STOP::VS_O__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   NORMAL::VS_O__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   RESCUE::VS_O__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   DEGRADED::VS_O__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   [| { share__, terminate } |] (
+						   i0::VS_O__(id__,
+						   		    const_BoilerController_m1,
+						   		    const_BoilerController_m2,
+						   		    const_BoilerController_stopRepeatLimit,
+						   		    const_BoilerController_n1,
+						   		    const_BoilerController_n2)
+						   )
+						   )
+						   )
+						   )
+						   )
+						 )
+						 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION,internal__.NID_INITIALIZATION|}]]
+						 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+						 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL,internal__.NID_NORMAL|}]]
+						 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE,internal__.NID_RESCUE|}]]
+						 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED,internal__.NID_DEGRADED|}]]
+						 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+						 )
+						  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+						  [[set_stopThresholdReached <- setL_stopThresholdReached,set_initReadyPhase <- setL_initReadyPhase,set_initExitDegraded <- setL_initExitDegraded,set_everyUnitSound <- setL_everyUnitSound,set_levelAboveN2 <- setL_levelAboveN2,set_rescueRepairToDegraded <- setL_rescueRepairToDegraded,set_initDrainNeeded <- setL_initDrainNeeded,set_steamDeviceFailed <- setL_steamDeviceFailed,set_nonLevelUnitFailed <- setL_nonLevelUnitFailed,set_initSteamDefect <- setL_initSteamDefect,set_levelDeviceFailed <- setL_levelDeviceFailed,set_controlUnitFailed <- setL_controlUnitFailed,set_initFillNeeded <- setL_initFillNeeded,set_levelRiskM1M2 <- setL_levelRiskM1M2,set_levelBelowN1 <- setL_levelBelowN1,set_transmissionFailed <- setL_transmissionFailed,set_initExitAllSound <- setL_initExitAllSound]]
+						 )
+						 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+						 			,setL_stopThresholdReached
+						 			,setL_initReadyPhase
+						 			,setL_initExitDegraded
+						 			,setL_everyUnitSound
+						 			,setL_levelAboveN2
+						 			,setL_rescueRepairToDegraded
+						 			,setL_initDrainNeeded
+						 			,setL_steamDeviceFailed
+						 			,setL_nonLevelUnitFailed
+						 			,setL_initSteamDefect
+						 			,setL_levelDeviceFailed
+						 			,setL_controlUnitFailed
+						 			,setL_initFillNeeded
+						 			,setL_levelRiskM1M2
+						 			,setL_levelBelowN1
+						 			,setL_transmissionFailed
+						 			,setL_initExitAllSound
+						|}) |]
+						 ((i0::enter -> Transitions(id__,
+						 		    const_BoilerController_m1,
+						 		    const_BoilerController_m2,
+						 		    const_BoilerController_stopRepeatLimit,
+						 		    const_BoilerController_n1,
+						 		    const_BoilerController_n2))
+						  [[ share__ <- x__ | x__ <- {| share__,setL_stopThresholdReached,setL_initReadyPhase,setL_initExitDegraded,setL_everyUnitSound,setL_levelAboveN2,setL_rescueRepairToDegraded,setL_initDrainNeeded,setL_steamDeviceFailed,setL_nonLevelUnitFailed,setL_initSteamDefect,setL_levelDeviceFailed,setL_controlUnitFailed,setL_initFillNeeded,setL_levelRiskM1M2,setL_levelBelowN1,setL_transmissionFailed,setL_initExitAllSound |} ]]
+						 )
+						)[[setL_stopThresholdReached <- set_stopThresholdReached,setL_initReadyPhase <- set_initReadyPhase,setL_initExitDegraded <- set_initExitDegraded,setL_everyUnitSound <- set_everyUnitSound,setL_levelAboveN2 <- set_levelAboveN2,setL_rescueRepairToDegraded <- set_rescueRepairToDegraded,setL_initDrainNeeded <- set_initDrainNeeded,setL_steamDeviceFailed <- set_steamDeviceFailed,setL_nonLevelUnitFailed <- set_nonLevelUnitFailed,setL_initSteamDefect <- set_initSteamDefect,setL_levelDeviceFailed <- set_levelDeviceFailed,setL_controlUnitFailed <- set_controlUnitFailed,setL_initFillNeeded <- set_initFillNeeded,setL_levelRiskM1M2 <- set_levelRiskM1M2,setL_levelBelowN1 <- set_levelBelowN1,setL_transmissionFailed <- set_transmissionFailed,setL_initExitAllSound <- set_initExitAllSound]]
+						)
+					)
+					 \ hideSet)
+					[[
+						modeMessage__.x____ <- modeMessage,
+						valve__.x____ <- valve,
+						openPump__.x____ <- openPump,
+						programReady__.x____ <- programReady,
+						closePump__.x____ <- closePump
+						| x____ <- NIDS
+					]]
+				)
+				)
+				 [| union(stateClockSync,{terminate}) |]
+				 StateClocks(id__,
+				 		          const_BoilerController_m1,
+				 		          const_BoilerController_m2,
+				 		          const_BoilerController_stopRepeatLimit,
+				 		          const_BoilerController_n1,
+				 		          const_BoilerController_n2)
+				)\diff(stateClockSync,enteredSS))
+				 [| {| interrupt |} |] SKIP)
+			)
+			)
+		
+		Behaviour_VS_O(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = 
+			dbisim((let
+				stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered|}
+			 within
+				(MachineBody_VS_O(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)) \ diff(union(stateClockSync,enteredSS),enteredSS)
+			)
+			)
+		
+		IteratedBehaviour_VS_O(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = 
+			dbisim((let
+				stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered|}
+			 within
+				(dbisim(
+					sbisim(
+						dbisim(
+							sbisim(
+								dbisim(
+									sbisim(
+										dbisim(
+											sbisim(
+												dbisim(
+													sbisim(
+														MachineBody_VS_O(id__,
+																    const_BoilerController_m1,
+																    const_BoilerController_m2,
+																    const_BoilerController_stopRepeatLimit,
+																    const_BoilerController_n1,
+																    const_BoilerController_n2)
+														[| {|get_CLID_RESCUE,RESCUE::entered,terminate|} |]
+														dbisim(Clock_CLID_RESCUE(id__,0,
+																          const_BoilerController_m1,
+																          const_BoilerController_m2,
+																          const_BoilerController_stopRepeatLimit,
+																          const_BoilerController_n1,
+																          const_BoilerController_n2))
+													)\{|get_CLID_RESCUE|}
+												)
+												[| {|get_CLID_DEGRADED,DEGRADED::entered,terminate|} |]
+												dbisim(Clock_CLID_DEGRADED(id__,0,
+														          const_BoilerController_m1,
+														          const_BoilerController_m2,
+														          const_BoilerController_stopRepeatLimit,
+														          const_BoilerController_n1,
+														          const_BoilerController_n2))
+											)\{|get_CLID_DEGRADED|}
+										)
+										[| {|get_CLID_INITIALIZATION,INITIALIZATION::entered,terminate|} |]
+										dbisim(Clock_CLID_INITIALIZATION(id__,0,
+												          const_BoilerController_m1,
+												          const_BoilerController_m2,
+												          const_BoilerController_stopRepeatLimit,
+												          const_BoilerController_n1,
+												          const_BoilerController_n2))
+									)\{|get_CLID_INITIALIZATION|}
+								)
+								[| {|get_CLID_NORMAL,NORMAL::entered,terminate|} |]
+								dbisim(Clock_CLID_NORMAL(id__,0,
+										          const_BoilerController_m1,
+										          const_BoilerController_m2,
+										          const_BoilerController_stopRepeatLimit,
+										          const_BoilerController_n1,
+										          const_BoilerController_n2))
+							)\{|get_CLID_NORMAL|}
+						)
+						[| {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,terminate|} |]
+						dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+								          const_BoilerController_m1,
+								          const_BoilerController_m2,
+								          const_BoilerController_stopRepeatLimit,
+								          const_BoilerController_n1,
+								          const_BoilerController_n2))
+					)\{|get_CLID_EMERGENCY_STOP|}
+				)
+				) \ diff(union(stateClockSync,enteredSS),enteredSS)
+			)
+			)
+		
+		Stateful_VS_O(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = 
+			dbisim((let
+				getsetLocalChannels = {||}
+				clockSync = {||}
+			within
+				(Behaviour_VS_O(id__,
+						    const_BoilerController_m1,
+						    const_BoilerController_m2,
+						    const_BoilerController_stopRepeatLimit,
+						    const_BoilerController_n1,
+						    const_BoilerController_n2) 
+				 [| union(union(getsetLocalChannels,clockSync),{terminate}) |] 
+				 (varMemory(id__,
+				 		    const_BoilerController_m1,
+				 		    const_BoilerController_m2,
+				 		    const_BoilerController_stopRepeatLimit,
+				 		    const_BoilerController_n1,
+				 		    const_BoilerController_n2) [| {terminate} |] Clocks(id__,
+				 		          const_BoilerController_m1,
+				 		          const_BoilerController_m2,
+				 		          const_BoilerController_stopRepeatLimit,
+				 		          const_BoilerController_n1,
+				 		          const_BoilerController_n2))
+			 	)\union(getsetLocalChannels,clockSync)
+			)
+			)
+		
+		IteratedStateful_VS_O(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) =
+			(IteratedBehaviour_VS_O(id__,
+					    const_BoilerController_m1,
+					    const_BoilerController_m2,
+					    const_BoilerController_stopRepeatLimit,
+					    const_BoilerController_n1,
+					    const_BoilerController_n2))
+		
+		-- END
+		
+		-- Memory
+		-- Memory variables
+		
+		-- varMemory process
+		varMemory(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = terminate -> SKIP
+		
+		getsetLocalChannels = {||}
+		
+		-- Definition of the behaviour of state machines (default, optimised, visible, visible and optimised)
+		FVS__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = STM_VS_O(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) \ localClockResets
+		D__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = timed_priority(STM(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) \ union(internal_events,localClockResets))
+		O__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = dbisim(D__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2))
+		VS__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = FVS__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2)
+		VS_O__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = dbisim(FVS__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2))
+		HEXT__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = O__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) [|shared_variable_events|] SKIP
+		FVS_C__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = dbisim(timed_priority(STM(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) \ internal_events))
+		HUP__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = timed_priority(O__(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) [|{share__}|] SKIP)
+		
+		-- Clocks
+		
+		Clocks(id__,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2) = terminate -> SKIP
+		
+		clockSync = {||}
+		
+		Clock_CLID_EMERGENCY_STOP(id__,x__,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2) = 
+			TimeOut_1(
+				EMERGENCY_STOP::entered -> Clock_CLID_EMERGENCY_STOP(id__,0,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				get_CLID_EMERGENCY_STOP!x__ -> Clock_CLID_EMERGENCY_STOP(id__,x__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				terminate -> SKIP,Clock_CLID_EMERGENCY_STOP(id__,clock_type_plus(x__,1,CLID_EMERGENCY_STOP_clock_type(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)),
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2))
+		Clock_CLID_NORMAL(id__,x__,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2) = 
+			TimeOut_1(
+				NORMAL::entered -> Clock_CLID_NORMAL(id__,0,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				get_CLID_NORMAL!x__ -> Clock_CLID_NORMAL(id__,x__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				terminate -> SKIP,Clock_CLID_NORMAL(id__,clock_type_plus(x__,1,CLID_NORMAL_clock_type(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)),
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2))
+		Clock_CLID_INITIALIZATION(id__,x__,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2) = 
+			TimeOut_1(
+				INITIALIZATION::entered -> Clock_CLID_INITIALIZATION(id__,0,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				get_CLID_INITIALIZATION!x__ -> Clock_CLID_INITIALIZATION(id__,x__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				terminate -> SKIP,Clock_CLID_INITIALIZATION(id__,clock_type_plus(x__,1,CLID_INITIALIZATION_clock_type(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)),
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2))
+		Clock_CLID_DEGRADED(id__,x__,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2) = 
+			TimeOut_1(
+				DEGRADED::entered -> Clock_CLID_DEGRADED(id__,0,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				get_CLID_DEGRADED!x__ -> Clock_CLID_DEGRADED(id__,x__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				terminate -> SKIP,Clock_CLID_DEGRADED(id__,clock_type_plus(x__,1,CLID_DEGRADED_clock_type(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)),
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2))
+		Clock_CLID_RESCUE(id__,x__,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2) = 
+			TimeOut_1(
+				RESCUE::entered -> Clock_CLID_RESCUE(id__,0,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				get_CLID_RESCUE!x__ -> Clock_CLID_RESCUE(id__,x__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)
+				[]
+				terminate -> SKIP,Clock_CLID_RESCUE(id__,clock_type_plus(x__,1,CLID_RESCUE_clock_type(id__,
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2)),
+						          const_BoilerController_m1,
+						          const_BoilerController_m2,
+						          const_BoilerController_stopRepeatLimit,
+						          const_BoilerController_n1,
+						          const_BoilerController_n2))
+		
+		StateClocks(id__,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2) = dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_NORMAL(id__,0,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_INITIALIZATION(id__,0,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_DEGRADED(id__,0,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_RESCUE(id__,0,
+				          const_BoilerController_m1,
+				          const_BoilerController_m2,
+				          const_BoilerController_stopRepeatLimit,
+				          const_BoilerController_n1,
+				          const_BoilerController_n2))
+		)
+		)
+		)
+		)
+		
+		stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered|}
+		
+		-- Shared memory
+		-- Shared memory variables
+		Memory_transmissionFailed(transmissionFailed) =
+			get_transmissionFailed!transmissionFailed -> Memory_transmissionFailed(transmissionFailed)
+			[]
+			set_transmissionFailed?x__ -> Memory_transmissionFailed(x__)
+			[]
+			set_EXT_transmissionFailed?x__ -> Memory_transmissionFailed(x__)
+			[]
+			terminate -> SKIP
+		Memory_stopThresholdReached(stopThresholdReached) =
+			get_stopThresholdReached!stopThresholdReached -> Memory_stopThresholdReached(stopThresholdReached)
+			[]
+			set_stopThresholdReached?x__ -> Memory_stopThresholdReached(x__)
+			[]
+			set_EXT_stopThresholdReached?x__ -> Memory_stopThresholdReached(x__)
+			[]
+			terminate -> SKIP
+		Memory_initSteamDefect(initSteamDefect) =
+			get_initSteamDefect!initSteamDefect -> Memory_initSteamDefect(initSteamDefect)
+			[]
+			set_initSteamDefect?x__ -> Memory_initSteamDefect(x__)
+			[]
+			set_EXT_initSteamDefect?x__ -> Memory_initSteamDefect(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelDeviceFailed(levelDeviceFailed) =
+			get_levelDeviceFailed!levelDeviceFailed -> Memory_levelDeviceFailed(levelDeviceFailed)
+			[]
+			set_levelDeviceFailed?x__ -> Memory_levelDeviceFailed(x__)
+			[]
+			set_EXT_levelDeviceFailed?x__ -> Memory_levelDeviceFailed(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamDeviceFailed(steamDeviceFailed) =
+			get_steamDeviceFailed!steamDeviceFailed -> Memory_steamDeviceFailed(steamDeviceFailed)
+			[]
+			set_steamDeviceFailed?x__ -> Memory_steamDeviceFailed(x__)
+			[]
+			set_EXT_steamDeviceFailed?x__ -> Memory_steamDeviceFailed(x__)
+			[]
+			terminate -> SKIP
+		Memory_controlUnitFailed(controlUnitFailed) =
+			get_controlUnitFailed!controlUnitFailed -> Memory_controlUnitFailed(controlUnitFailed)
+			[]
+			set_controlUnitFailed?x__ -> Memory_controlUnitFailed(x__)
+			[]
+			set_EXT_controlUnitFailed?x__ -> Memory_controlUnitFailed(x__)
+			[]
+			terminate -> SKIP
+		Memory_nonLevelUnitFailed(nonLevelUnitFailed) =
+			get_nonLevelUnitFailed!nonLevelUnitFailed -> Memory_nonLevelUnitFailed(nonLevelUnitFailed)
+			[]
+			set_nonLevelUnitFailed?x__ -> Memory_nonLevelUnitFailed(x__)
+			[]
+			set_EXT_nonLevelUnitFailed?x__ -> Memory_nonLevelUnitFailed(x__)
+			[]
+			terminate -> SKIP
+		Memory_everyUnitSound(everyUnitSound) =
+			get_everyUnitSound!everyUnitSound -> Memory_everyUnitSound(everyUnitSound)
+			[]
+			set_everyUnitSound?x__ -> Memory_everyUnitSound(x__)
+			[]
+			set_EXT_everyUnitSound?x__ -> Memory_everyUnitSound(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelRiskM1M2(levelRiskM1M2) =
+			get_levelRiskM1M2!levelRiskM1M2 -> Memory_levelRiskM1M2(levelRiskM1M2)
+			[]
+			set_levelRiskM1M2?x__ -> Memory_levelRiskM1M2(x__)
+			[]
+			set_EXT_levelRiskM1M2?x__ -> Memory_levelRiskM1M2(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelBelowN1(levelBelowN1) =
+			get_levelBelowN1!levelBelowN1 -> Memory_levelBelowN1(levelBelowN1)
+			[]
+			set_levelBelowN1?x__ -> Memory_levelBelowN1(x__)
+			[]
+			set_EXT_levelBelowN1?x__ -> Memory_levelBelowN1(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelAboveN2(levelAboveN2) =
+			get_levelAboveN2!levelAboveN2 -> Memory_levelAboveN2(levelAboveN2)
+			[]
+			set_levelAboveN2?x__ -> Memory_levelAboveN2(x__)
+			[]
+			set_EXT_levelAboveN2?x__ -> Memory_levelAboveN2(x__)
+			[]
+			terminate -> SKIP
+		Memory_initDrainNeeded(initDrainNeeded) =
+			get_initDrainNeeded!initDrainNeeded -> Memory_initDrainNeeded(initDrainNeeded)
+			[]
+			set_initDrainNeeded?x__ -> Memory_initDrainNeeded(x__)
+			[]
+			set_EXT_initDrainNeeded?x__ -> Memory_initDrainNeeded(x__)
+			[]
+			terminate -> SKIP
+		Memory_initFillNeeded(initFillNeeded) =
+			get_initFillNeeded!initFillNeeded -> Memory_initFillNeeded(initFillNeeded)
+			[]
+			set_initFillNeeded?x__ -> Memory_initFillNeeded(x__)
+			[]
+			set_EXT_initFillNeeded?x__ -> Memory_initFillNeeded(x__)
+			[]
+			terminate -> SKIP
+		Memory_initReadyPhase(initReadyPhase) =
+			get_initReadyPhase!initReadyPhase -> Memory_initReadyPhase(initReadyPhase)
+			[]
+			set_initReadyPhase?x__ -> Memory_initReadyPhase(x__)
+			[]
+			set_EXT_initReadyPhase?x__ -> Memory_initReadyPhase(x__)
+			[]
+			terminate -> SKIP
+		Memory_initExitAllSound(initExitAllSound) =
+			get_initExitAllSound!initExitAllSound -> Memory_initExitAllSound(initExitAllSound)
+			[]
+			set_initExitAllSound?x__ -> Memory_initExitAllSound(x__)
+			[]
+			set_EXT_initExitAllSound?x__ -> Memory_initExitAllSound(x__)
+			[]
+			terminate -> SKIP
+		Memory_initExitDegraded(initExitDegraded) =
+			get_initExitDegraded!initExitDegraded -> Memory_initExitDegraded(initExitDegraded)
+			[]
+			set_initExitDegraded?x__ -> Memory_initExitDegraded(x__)
+			[]
+			set_EXT_initExitDegraded?x__ -> Memory_initExitDegraded(x__)
+			[]
+			terminate -> SKIP
+		Memory_rescueRepairToDegraded(rescueRepairToDegraded) =
+			get_rescueRepairToDegraded!rescueRepairToDegraded -> Memory_rescueRepairToDegraded(rescueRepairToDegraded)
+			[]
+			set_rescueRepairToDegraded?x__ -> Memory_rescueRepairToDegraded(x__)
+			[]
+			set_EXT_rescueRepairToDegraded?x__ -> Memory_rescueRepairToDegraded(x__)
+			[]
+			terminate -> SKIP
+		Memory_plantWaiting(plantWaiting) =
+			get_plantWaiting!plantWaiting -> Memory_plantWaiting(plantWaiting)
+			[]
+			set_plantWaiting?x__ -> Memory_plantWaiting(x__)
+			[]
+			set_EXT_plantWaiting?x__ -> Memory_plantWaiting(x__)
+			[]
+			terminate -> SKIP
+		Memory_unitsReady(unitsReady) =
+			get_unitsReady!unitsReady -> Memory_unitsReady(unitsReady)
+			[]
+			set_unitsReady?x__ -> Memory_unitsReady(x__)
+			[]
+			set_EXT_unitsReady?x__ -> Memory_unitsReady(x__)
+			[]
+			terminate -> SKIP
+		Memory_projLow(projLow) =
+			get_projLow!projLow -> Memory_projLow(projLow)
+			[]
+			set_projLow?x__ -> Memory_projLow(x__)
+			[]
+			set_EXT_projLow?x__ -> Memory_projLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_projHigh(projHigh) =
+			get_projHigh!projHigh -> Memory_projHigh(projHigh)
+			[]
+			set_projHigh?x__ -> Memory_projHigh(x__)
+			[]
+			set_EXT_projHigh?x__ -> Memory_projHigh(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelLow(levelLow) =
+			get_levelLow!levelLow -> Memory_levelLow(levelLow)
+			[]
+			set_levelLow?x__ -> Memory_levelLow(x__)
+			[]
+			set_EXT_levelLow?x__ -> Memory_levelLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelHigh(levelHigh) =
+			get_levelHigh!levelHigh -> Memory_levelHigh(levelHigh)
+			[]
+			set_levelHigh?x__ -> Memory_levelHigh(x__)
+			[]
+			set_EXT_levelHigh?x__ -> Memory_levelHigh(x__)
+			[]
+			terminate -> SKIP
+		Memory_riskBelowM1(riskBelowM1) =
+			get_riskBelowM1!riskBelowM1 -> Memory_riskBelowM1(riskBelowM1)
+			[]
+			set_riskBelowM1?x__ -> Memory_riskBelowM1(x__)
+			[]
+			set_EXT_riskBelowM1?x__ -> Memory_riskBelowM1(x__)
+			[]
+			terminate -> SKIP
+		Memory_riskAboveM2(riskAboveM2) =
+			get_riskAboveM2!riskAboveM2 -> Memory_riskAboveM2(riskAboveM2)
+			[]
+			set_riskAboveM2?x__ -> Memory_riskAboveM2(x__)
+			[]
+			set_EXT_riskAboveM2?x__ -> Memory_riskAboveM2(x__)
+			[]
+			terminate -> SKIP
+		Memory_p(p) =
+			get_p!p -> Memory_p(p)
+			[]
+			set_p?x__ -> Memory_p(x__)
+			[]
+			set_EXT_p?x__ -> Memory_p(x__)
+			[]
+			terminate -> SKIP
+		
+		-- sharedVarMemory process
+		sharedVarMemory(id__,
+				    const_BoilerController_m1,
+				    const_BoilerController_m2,
+				    const_BoilerController_stopRepeatLimit,
+				    const_BoilerController_n1,
+				    const_BoilerController_n2) = Memory_transmissionFailed(true)
+		[| { terminate } |] (
+		Memory_stopThresholdReached(true)
+		[| { terminate } |] (
+		Memory_initSteamDefect(true)
+		[| { terminate } |] (
+		Memory_levelDeviceFailed(true)
+		[| { terminate } |] (
+		Memory_steamDeviceFailed(true)
+		[| { terminate } |] (
+		Memory_controlUnitFailed(true)
+		[| { terminate } |] (
+		Memory_nonLevelUnitFailed(true)
+		[| { terminate } |] (
+		Memory_everyUnitSound(true)
+		[| { terminate } |] (
+		Memory_levelRiskM1M2(true)
+		[| { terminate } |] (
+		Memory_levelBelowN1(true)
+		[| { terminate } |] (
+		Memory_levelAboveN2(true)
+		[| { terminate } |] (
+		Memory_initDrainNeeded(true)
+		[| { terminate } |] (
+		Memory_initFillNeeded(true)
+		[| { terminate } |] (
+		Memory_initReadyPhase(true)
+		[| { terminate } |] (
+		Memory_initExitAllSound(true)
+		[| { terminate } |] (
+		Memory_initExitDegraded(true)
+		[| { terminate } |] (
+		Memory_rescueRepairToDegraded(true)
+		[| { terminate } |] (
+		Memory_plantWaiting(true)
+		[| { terminate } |] (
+		Memory_unitsReady(true)
+		[| { terminate } |] (
+		Memory_projLow(0)
+		[| { terminate } |] (
+		Memory_projHigh(0)
+		[| { terminate } |] (
+		Memory_levelLow(0)
+		[| { terminate } |] (
+		Memory_levelHigh(0)
+		[| { terminate } |] (
+		Memory_riskBelowM1(true)
+		[| { terminate } |] (
+		Memory_riskAboveM2(true)
+		[| { terminate } |] (
+		Memory_p(0)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		
+		sharedVarSync = {|get_transmissionFailed,set_transmissionFailed,set_EXT_transmissionFailed,get_stopThresholdReached,set_stopThresholdReached,set_EXT_stopThresholdReached,get_initSteamDefect,set_initSteamDefect,set_EXT_initSteamDefect,get_levelDeviceFailed,set_levelDeviceFailed,set_EXT_levelDeviceFailed,get_steamDeviceFailed,set_steamDeviceFailed,set_EXT_steamDeviceFailed,get_controlUnitFailed,set_controlUnitFailed,set_EXT_controlUnitFailed,get_nonLevelUnitFailed,set_nonLevelUnitFailed,set_EXT_nonLevelUnitFailed,get_everyUnitSound,set_everyUnitSound,set_EXT_everyUnitSound,get_levelRiskM1M2,set_levelRiskM1M2,set_EXT_levelRiskM1M2,get_levelBelowN1,set_levelBelowN1,set_EXT_levelBelowN1,get_levelAboveN2,set_levelAboveN2,set_EXT_levelAboveN2,get_initDrainNeeded,set_initDrainNeeded,set_EXT_initDrainNeeded,get_initFillNeeded,set_initFillNeeded,set_EXT_initFillNeeded,get_initReadyPhase,set_initReadyPhase,set_EXT_initReadyPhase,get_initExitAllSound,set_initExitAllSound,set_EXT_initExitAllSound,get_initExitDegraded,set_initExitDegraded,set_EXT_initExitDegraded,get_rescueRepairToDegraded,set_rescueRepairToDegraded,set_EXT_rescueRepairToDegraded,get_plantWaiting,set_plantWaiting,set_EXT_plantWaiting,get_unitsReady,set_unitsReady,set_EXT_unitsReady,get_projLow,set_projLow,set_EXT_projLow,get_projHigh,set_projHigh,set_EXT_projHigh,get_levelLow,set_levelLow,set_EXT_levelLow,get_levelHigh,set_levelHigh,set_EXT_levelHigh,get_riskBelowM1,set_riskBelowM1,set_EXT_riskBelowM1,get_riskAboveM2,set_riskAboveM2,set_EXT_riskAboveM2,get_p,set_p,set_EXT_p|}
+		
+		sharedVarHide = {|get_transmissionFailed,get_stopThresholdReached,get_initSteamDefect,get_levelDeviceFailed,get_steamDeviceFailed,get_controlUnitFailed,get_nonLevelUnitFailed,get_everyUnitSound,get_levelRiskM1M2,get_levelBelowN1,get_levelAboveN2,get_initDrainNeeded,get_initFillNeeded,get_initReadyPhase,get_initExitAllSound,get_initExitDegraded,get_rescueRepairToDegraded,get_plantWaiting,get_unitsReady,get_projLow,get_projHigh,get_levelLow,get_levelHigh,get_riskBelowM1,get_riskAboveM2,get_p|}
+		}
+endmodule

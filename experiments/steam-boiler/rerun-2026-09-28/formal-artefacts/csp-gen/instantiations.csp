@@ -1,0 +1,57 @@
+-- OPERATION BOUNDS
+
+-- MODULE CONSTANTS
+
+-- CONTROLLER CONSTANTS
+
+-- STATEMACHINE CONSTANTS
+
+-- OPERATION CONSTANTS
+
+-- BASIC TYPES
+-- generate nat
+nametype core_nat = union({0..2},{calc_type_min(Union(
+			{{1},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{2},{4},{1},{3}}))..calc_type_max(Union({{1},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{2},{4},{1},{3}}))})
+-- generate int
+nametype core_int = union({ -2..2},{calc_type_min(Union(
+			{{1},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{ -2..2},{ -2..2},{2},{4},{1},{3}}))..calc_type_max(Union({{1},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{ -2..2},{ -2..2},{2},{4},{1},{3}}))})
+-- generate string
+nametype core_string = LSeq(Char,2)
+-- generate boolean
+nametype core_boolean = Bool
+-- generate real
+nametype core_real = union({ -2..2},{calc_type_min(Union(
+			{{1},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{baseLevelLow(projLow)|projLow <- { -2..2}},{baseLevelHigh(projHigh)|projHigh <- { -2..2}},{Plus(Minus(levelLow, maxSteamOutPerCycle, { -2..2}), minPumpInPerCycle, { -2..2})|maxSteamOutPerCycle <- { -2..2},levelLow <- { -2..2},minPumpInPerCycle <- { -2..2}},{Plus(Minus(levelHigh, minSteamOutPerCycle, { -2..2}), maxPumpInPerCycle, { -2..2})|maxPumpInPerCycle <- { -2..2},levelHigh <- { -2..2},minSteamOutPerCycle <- { -2..2}},{Plus(Plus(Plus(pumpInflow(1), pumpInflow(2), { -2..2}), pumpInflow(3), { -2..2}), pumpInflow(4), { -2..2})},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{150},{ -2..2},{850},{ -2..2},{3},{ -2..2},{400},{ -2..2},{600},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{2},{4},{1},{projLow|projLow <- { -2..2}},{3},{projHigh|projHigh <- { -2..2}}}))..calc_type_max(Union({{1},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{1},{2},{3},{4},{baseLevelLow(projLow)|projLow <- { -2..2}},{baseLevelHigh(projHigh)|projHigh <- { -2..2}},{Plus(Minus(levelLow, maxSteamOutPerCycle, { -2..2}), minPumpInPerCycle, { -2..2})|maxSteamOutPerCycle <- { -2..2},levelLow <- { -2..2},minPumpInPerCycle <- { -2..2}},{Plus(Minus(levelHigh, minSteamOutPerCycle, { -2..2}), maxPumpInPerCycle, { -2..2})|maxPumpInPerCycle <- { -2..2},levelHigh <- { -2..2},minSteamOutPerCycle <- { -2..2}},{Plus(Plus(Plus(pumpInflow(1), pumpInflow(2), { -2..2}), pumpInflow(3), { -2..2}), pumpInflow(4), { -2..2})},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{150},{ -2..2},{850},{ -2..2},{3},{ -2..2},{400},{ -2..2},{600},{ -2..2},{ -2..2},{ -2..2},{ -2..2},{2},{4},{1},{projLow|projLow <- { -2..2}},{3},{projHigh|projHigh <- { -2..2}}}))}) 
+
+-- VECTOR TYPES AND OPERATIONS
+
+
+-- CLOCKS
+-- generate core_clock_type
+nametype core_clock_type = {0..10}
+
+-- BASIC FUNCTIONS			
+-- generate Plus
+Plus(e1,e2,T) = if member(e1+e2,T) then e1+e2 else e1
+
+-- generate Minus
+Minus(e1,e2,T) = if member(e1-e2,T) then e1-e2 else e1
+
+-- generate Mult
+Mult(e1,e2,T) = if member(e1*e2,T) then e1*e2 else e1
+
+-- generate Div
+Div(e1,e2,T) = if member(e1/e2,T) then e1/e2 else e1
+
+-- generate Modulus
+Modulus(e1,e2,T) = if member(e1%e2,T) then e1%e2 else e1
+
+-- generate Neg
+Neg(e1,T) = if member(-e1,T) then -e1 else e1
+
+-- generate baseLevelHigh
+baseLevelHigh(carried) = 0
+-- generate baseLevelLow
+baseLevelLow(carried) = 0
+-- generate pumpInflow
+pumpInflow(pumpId) = 0

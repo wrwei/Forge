@@ -1,0 +1,78 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 28-09-2026 17:18:38
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "BoilerController_Ctrl.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate BoilerController_Ctrl
+P_BoilerController_Ctrl = let
+	id__ = 0
+	
+	const_BoilerController_Ctrl_m1 = 150
+	const_BoilerController_Ctrl_m2 = 850
+	const_BoilerController_Ctrl_stopRepeatLimit = 3
+	const_BoilerController_Ctrl_n1 = 400
+	const_BoilerController_Ctrl_n2 = 600
+	
+	
+		
+within
+	BoilerController_Ctrl::O__(id__,
+			    const_BoilerController_Ctrl_m1,
+			    const_BoilerController_Ctrl_m2,
+			    const_BoilerController_Ctrl_stopRepeatLimit,
+			    const_BoilerController_Ctrl_n1,
+			    const_BoilerController_Ctrl_n2)
+
+assert P_BoilerController_Ctrl :[deadlock-free]	
+assert P_BoilerController_Ctrl;RUN({r__}) :[deadlock-free]
+assert P_BoilerController_Ctrl :[deterministic]
+assert P_BoilerController_Ctrl :[divergence-free]
+
+-- generate BoilerController_Ctrl_stm_ref0
+P_BoilerController_Ctrl_stm_ref0 = let
+	id__ = 0
+	
+	const_BoilerController_m1 = 150
+	const_BoilerController_m2 = 850
+	const_BoilerController_stopRepeatLimit = 3
+	const_BoilerController_n1 = 400
+	const_BoilerController_n2 = 600
+	
+	
+within
+	BoilerController_Ctrl::stm_ref0::O__(
+		id__,
+		const_BoilerController_m1,
+		const_BoilerController_m2,
+		const_BoilerController_stopRepeatLimit,
+		const_BoilerController_n1,
+		const_BoilerController_n2
+	)
+assert P_BoilerController_Ctrl_stm_ref0 :[deadlock-free]	
+assert P_BoilerController_Ctrl_stm_ref0;RUN({r__}) :[deadlock-free]
+assert P_BoilerController_Ctrl_stm_ref0 :[deterministic]
+assert P_BoilerController_Ctrl_stm_ref0 :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_BoilerController_Ctrl_stm_ref0[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_BoilerController_Ctrl_stm_ref0
+-- timed deadlock free
+assert prioritise(P_BoilerController_Ctrl[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_BoilerController_Ctrl

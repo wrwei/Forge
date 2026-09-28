@@ -1,0 +1,395 @@
+diagram BoilerController
+
+datatype PumpReport {
+	statePresent : boolean
+	running : boolean
+	flowPresent : boolean
+	flows : boolean
+	pumpRepaired : boolean
+	controlRepaired : boolean
+	pumpFailureAck : boolean
+	controlFailureAck : boolean
+}
+
+datatype TransmissionData {
+	stopRequest : boolean
+	waiting : boolean
+	unitsReady : boolean
+	levelPresent : boolean
+	level : real
+	steamPresent : boolean
+	steam : real
+	pump1 : PumpReport
+	pump2 : PumpReport
+	pump3 : PumpReport
+	pump4 : PumpReport
+	levelRepaired : boolean
+	steamRepaired : boolean
+	levelFailureAck : boolean
+	steamFailureAck : boolean
+	aberrant : boolean
+}
+
+function baseLevelLow ( carried : real ) : real { }
+function baseLevelHigh ( carried : real ) : real { }
+function pumpInflow ( pumpId : int ) : real { }
+
+interface Inputs {
+}
+
+interface Outputs {
+	event modeMessage
+	event valve
+	event openPump : int
+	event programReady
+	event closePump : int
+}
+
+interface Sensors {
+	var stopRequest : boolean
+	var waiting : boolean
+	var levelPresent : boolean
+	var level : real
+	var steamPresent : boolean
+	var steam : real
+	var pump1 : PumpReport
+	var pump2 : PumpReport
+	var pump3 : PumpReport
+	var pump4 : PumpReport
+	var levelRepaired : boolean
+	var steamRepaired : boolean
+	var levelFailureAck : boolean
+	var steamFailureAck : boolean
+	var aberrant : boolean
+	var maxSteamOutPerCycle : real
+	var minPumpInPerCycle : real
+	var minSteamOutPerCycle : real
+	var maxPumpInPerCycle : real
+	var transmissionBroken : boolean
+	var stopCount : int
+	var initialSteamDefect : boolean
+	var levelDeviceBroken : boolean
+	var steamDeviceBroken : boolean
+	var anyControlUnitBroken : boolean
+	var anyNonLevelUnitBroken : boolean
+	var allUnitsSound : boolean
+	var plantAnnounced : boolean
+	var unitsReadySeen : boolean
+}
+
+interface Actuators {
+}
+
+interface BoilerController_State {
+	var transmissionFailed : boolean
+	var stopThresholdReached : boolean
+	var initSteamDefect : boolean
+	var levelDeviceFailed : boolean
+	var steamDeviceFailed : boolean
+	var controlUnitFailed : boolean
+	var nonLevelUnitFailed : boolean
+	var everyUnitSound : boolean
+	var levelRiskM1M2 : boolean
+	var levelBelowN1 : boolean
+	var levelAboveN2 : boolean
+	var initDrainNeeded : boolean
+	var initFillNeeded : boolean
+	var initReadyPhase : boolean
+	var initExitAllSound : boolean
+	var initExitDegraded : boolean
+	var rescueRepairToDegraded : boolean
+	var plantWaiting : boolean
+	var unitsReady : boolean
+	var projLow : real
+	var projHigh : real
+	var levelLow : real
+	var levelHigh : real
+	var riskBelowM1 : boolean
+	var riskAboveM2 : boolean
+	var p : real
+}
+
+interface Constants {
+	const m1 : real = 150
+	const m2 : real = 850
+	const stopRepeatLimit : real = 3
+	const n1 : real = 400
+	const n2 : real = 600
+}
+
+operation CalcLevelEstimate ( ) {
+	requires BoilerController_State requires Sensors requires Constants
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action levelLow = baseLevelLow ( projLow ) ; levelHigh = baseLevelHigh ( projHigh ) ; projLow = levelLow - maxSteamOutPerCycle + minPumpInPerCycle ; projHigh = levelHigh - minSteamOutPerCycle + maxPumpInPerCycle ; riskBelowM1 = projLow <= m1 ; riskAboveM2 = projHigh >= m2
+	}
+}
+
+operation CalcThroughput ( ) {
+	requires BoilerController_State requires Sensors
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action p = pumpInflow ( 1 ) + pumpInflow ( 2 ) + pumpInflow ( 3 ) + pumpInflow ( 4 )
+	}
+}
+
+operation BoilerController_Refresh ( ) {
+	requires BoilerController_State requires Sensors requires Constants
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action transmissionFailed = transmissionBroken ; stopThresholdReached = stopCount >= stopRepeatLimit ; initSteamDefect = initialSteamDefect ; levelDeviceFailed = levelDeviceBroken ; steamDeviceFailed = steamDeviceBroken ; controlUnitFailed = anyControlUnitBroken ; nonLevelUnitFailed = anyNonLevelUnitBroken ; everyUnitSound = allUnitsSound ; levelRiskM1M2 = ( riskBelowM1 \/ riskAboveM2 ) ; levelBelowN1 = levelLow < n1 ; levelAboveN2 = levelHigh > n2 ; plantWaiting = plantAnnounced ; unitsReady = unitsReadySeen ; initDrainNeeded = ( plantWaiting /\ levelAboveN2 /\ not ( unitsReady ) ) ; initFillNeeded = ( plantWaiting /\ levelBelowN1 /\ not ( unitsReady ) ) ; initReadyPhase = ( plantWaiting /\ not ( levelBelowN1 ) /\ not ( levelAboveN2 ) /\ not ( unitsReady ) ) ; initExitAllSound = ( plantWaiting /\ unitsReady /\ everyUnitSound ) ; initExitDegraded = ( plantWaiting /\ unitsReady /\ not ( everyUnitSound ) ) ; rescueRepairToDegraded = ( not ( levelDeviceFailed ) /\ nonLevelUnitFailed )
+	}
+}
+
+stm BoilerController {
+	uses Inputs uses Outputs requires BoilerController_State requires Constants
+	state INITIALIZATION {
+		entry send modeMessage
+	}
+	state EMERGENCY_STOP {
+		entry send modeMessage
+	}
+	state NORMAL {
+		entry send modeMessage
+	}
+	state RESCUE {
+		entry send modeMessage
+	}
+	state DEGRADED {
+		entry send modeMessage
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		condition transmissionFailed
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		condition stopThresholdReached /\ not ( transmissionFailed )
+	}
+	transition t3 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		condition initSteamDefect /\ not ( transmissionFailed ) /\ not ( stopThresholdReached )
+	}
+	transition t4 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		condition levelDeviceFailed /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( initSteamDefect )
+	}
+	transition t5 {
+		from INITIALIZATION
+		to INITIALIZATION
+		condition initDrainNeeded /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( initSteamDefect ) /\ not ( levelDeviceFailed )
+		action send valve
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION
+		condition initFillNeeded /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( initSteamDefect ) /\ not ( levelDeviceFailed ) /\ not ( initDrainNeeded )
+		action openPump ! 1
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		condition initReadyPhase /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( initSteamDefect ) /\ not ( levelDeviceFailed ) /\ not ( initDrainNeeded ) /\ not ( initFillNeeded )
+		action send programReady
+	}
+	transition t8 {
+		from INITIALIZATION
+		to NORMAL
+		condition initExitAllSound /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( initSteamDefect ) /\ not ( levelDeviceFailed ) /\ not ( initDrainNeeded ) /\ not ( initFillNeeded ) /\ not ( initReadyPhase )
+	}
+	transition t9 {
+		from INITIALIZATION
+		to DEGRADED
+		condition initExitDegraded /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( initSteamDefect ) /\ not ( levelDeviceFailed ) /\ not ( initDrainNeeded ) /\ not ( initFillNeeded ) /\ not ( initReadyPhase ) /\ not ( initExitAllSound )
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		condition not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( initSteamDefect ) /\ not ( levelDeviceFailed ) /\ not ( initDrainNeeded ) /\ not ( initFillNeeded ) /\ not ( initReadyPhase ) /\ not ( initExitAllSound ) /\ not ( initExitDegraded )
+	}
+	transition t11 {
+		from NORMAL
+		to EMERGENCY_STOP
+		condition transmissionFailed
+	}
+	transition t12 {
+		from NORMAL
+		to EMERGENCY_STOP
+		condition stopThresholdReached /\ not ( transmissionFailed )
+	}
+	transition t13 {
+		from NORMAL
+		to EMERGENCY_STOP
+		condition levelRiskM1M2 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached )
+	}
+	transition t14 {
+		from NORMAL
+		to RESCUE
+		condition levelDeviceFailed /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 )
+	}
+	transition t15 {
+		from NORMAL
+		to DEGRADED
+		condition nonLevelUnitFailed /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 ) /\ not ( levelDeviceFailed )
+	}
+	transition t16 {
+		from NORMAL
+		to NORMAL
+		condition levelBelowN1 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 ) /\ not ( levelDeviceFailed ) /\ not ( nonLevelUnitFailed )
+		action openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t17 {
+		from NORMAL
+		to NORMAL
+		condition levelAboveN2 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 ) /\ not ( levelDeviceFailed ) /\ not ( nonLevelUnitFailed ) /\ not ( levelBelowN1 )
+		action closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t18 {
+		from NORMAL
+		to NORMAL
+		condition not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 ) /\ not ( levelDeviceFailed ) /\ not ( nonLevelUnitFailed ) /\ not ( levelBelowN1 ) /\ not ( levelAboveN2 )
+	}
+	transition t19 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		condition transmissionFailed
+	}
+	transition t20 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		condition stopThresholdReached /\ not ( transmissionFailed )
+	}
+	transition t21 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		condition levelRiskM1M2 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached )
+	}
+	transition t22 {
+		from DEGRADED
+		to RESCUE
+		condition levelDeviceFailed /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 )
+	}
+	transition t23 {
+		from DEGRADED
+		to NORMAL
+		condition everyUnitSound /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 ) /\ not ( levelDeviceFailed )
+	}
+	transition t24 {
+		from DEGRADED
+		to DEGRADED
+		condition levelBelowN1 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 ) /\ not ( levelDeviceFailed ) /\ not ( everyUnitSound )
+		action openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t25 {
+		from DEGRADED
+		to DEGRADED
+		condition levelAboveN2 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 ) /\ not ( levelDeviceFailed ) /\ not ( everyUnitSound ) /\ not ( levelBelowN1 )
+		action closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t26 {
+		from DEGRADED
+		to DEGRADED
+		condition not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( levelRiskM1M2 ) /\ not ( levelDeviceFailed ) /\ not ( everyUnitSound ) /\ not ( levelBelowN1 ) /\ not ( levelAboveN2 )
+	}
+	transition t27 {
+		from RESCUE
+		to EMERGENCY_STOP
+		condition transmissionFailed
+	}
+	transition t28 {
+		from RESCUE
+		to EMERGENCY_STOP
+		condition stopThresholdReached /\ not ( transmissionFailed )
+	}
+	transition t29 {
+		from RESCUE
+		to EMERGENCY_STOP
+		condition steamDeviceFailed /\ not ( transmissionFailed ) /\ not ( stopThresholdReached )
+	}
+	transition t30 {
+		from RESCUE
+		to EMERGENCY_STOP
+		condition controlUnitFailed /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( steamDeviceFailed )
+	}
+	transition t31 {
+		from RESCUE
+		to EMERGENCY_STOP
+		condition levelRiskM1M2 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( steamDeviceFailed ) /\ not ( controlUnitFailed )
+	}
+	transition t32 {
+		from RESCUE
+		to NORMAL
+		condition everyUnitSound /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( steamDeviceFailed ) /\ not ( controlUnitFailed ) /\ not ( levelRiskM1M2 )
+	}
+	transition t33 {
+		from RESCUE
+		to DEGRADED
+		condition rescueRepairToDegraded /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( steamDeviceFailed ) /\ not ( controlUnitFailed ) /\ not ( levelRiskM1M2 ) /\ not ( everyUnitSound )
+	}
+	transition t34 {
+		from RESCUE
+		to RESCUE
+		condition levelBelowN1 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( steamDeviceFailed ) /\ not ( controlUnitFailed ) /\ not ( levelRiskM1M2 ) /\ not ( everyUnitSound ) /\ not ( rescueRepairToDegraded )
+		action openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t35 {
+		from RESCUE
+		to RESCUE
+		condition levelAboveN2 /\ not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( steamDeviceFailed ) /\ not ( controlUnitFailed ) /\ not ( levelRiskM1M2 ) /\ not ( everyUnitSound ) /\ not ( rescueRepairToDegraded ) /\ not ( levelBelowN1 )
+		action closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t36 {
+		from RESCUE
+		to RESCUE
+		condition not ( transmissionFailed ) /\ not ( stopThresholdReached ) /\ not ( steamDeviceFailed ) /\ not ( controlUnitFailed ) /\ not ( levelRiskM1M2 ) /\ not ( everyUnitSound ) /\ not ( rescueRepairToDegraded ) /\ not ( levelBelowN1 ) /\ not ( levelAboveN2 )
+	}
+}
+
+controller BoilerController_Ctrl {
+	uses Inputs uses Outputs requires BoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = BoilerController
+	opref op_ref0 = CalcLevelEstimate
+	opref op_ref1 = CalcThroughput
+	opref op_ref2 = BoilerController_Refresh
+	connection stm_ref0 on modeMessage to BoilerController_Ctrl on modeMessage
+	connection stm_ref0 on valve to BoilerController_Ctrl on valve
+	connection stm_ref0 on openPump to BoilerController_Ctrl on openPump
+	connection stm_ref0 on programReady to BoilerController_Ctrl on programReady
+	connection stm_ref0 on closePump to BoilerController_Ctrl on closePump
+}
+
+module BoilerController_Module {
+	robotic platform BoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event modeMessage
+		event valve
+		event openPump : int
+		event programReady
+		event closePump : int
+	}
+	cref ctrl_ref0 = BoilerController_Ctrl
+	connection ctrl_ref0 on modeMessage to BoilerController_Platform on modeMessage
+	connection ctrl_ref0 on valve to BoilerController_Platform on valve
+	connection ctrl_ref0 on openPump to BoilerController_Platform on openPump
+	connection ctrl_ref0 on programReady to BoilerController_Platform on programReady
+	connection ctrl_ref0 on closePump to BoilerController_Platform on closePump
+}
+
