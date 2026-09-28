@@ -57,11 +57,17 @@ run_session() { # $1 arm, $2 session name
   awk -v f="$FREE" -v k="$KILLFREE" 'BEGIN{exit !(f<k)}' && {
     echo "$ARM/$SESS  SKIPPED: ${FREE} GB free < ${KILLFREE}" | tee -a "$OUT/SUMMARY.txt"; return; }
   local LOG=$OUT/${ARM}_${SESS}.log t0=$SECONDS
+  local QD=""
+  case "$SESS" in *_V0_Diag_*|*_V3_Norm_*) QD="-o quick_and_dirty";; esac
   ( perl -e "alarm $BUDGET; exec @ARGV" "$ISA" build -d "$T/$ARM" -v \
-      -o timeout=$GOALTO "$SESS" > "$LOG" 2>&1 )
+      -o timeout=$GOALTO -o threads=${SB_THREADS:-8} $QD "$SESS" > "$LOG" 2>&1 )
   local rc=$? el=$((SECONDS-t0))
   local verdict
-  if grep -qE "^Finished" "$LOG" && [ $rc -eq 0 ]; then verdict="PROVED (session finished)"
+  if grep -qE "^Finished" "$LOG" && [ $rc -eq 0 ]; then
+    case "$SESS" in
+      *_V0_Diag_*|*_V3_Norm_*) verdict="STEPS-BEFORE-SORRY COMPLETED (diagnostic under quick_and_dirty -- NOT a proof)";;
+      *) verdict="PROVED (session finished)";;
+    esac
   elif grep -qE "^\*\*\* Timeout" "$LOG"; then verdict="SESSION TIMEOUT (whole-theory ${GOALTO}s) -- raise SB_GOALTO / fix heap first"
   elif [ $rc -eq 137 ] || grep -q "Killed" "$LOG"; then verdict="EXTERNAL/OOM KILL -- not a verdict (heap vs VM: see the heap note below)"
   elif [ $rc -eq 142 ]; then verdict="WALL BUDGET (${BUDGET}s) -- not a verdict"
@@ -87,8 +93,15 @@ maybe arm1 BoilerController_DlfOnly_Check
 maybe arm1 BoilerController_V0_Diag_Check
 maybe arm1 BoilerController_V1_Script_Check
 maybe arm1 BoilerController_V2_Battery_Check
+maybe arm1 BoilerController_V3_Norm_Check
+maybe arm1 BoilerController_V4_SMT_Check
+maybe arm1 BoilerController_V5_FF_Check
+maybe arm0 BoilerController_Full_Check
+maybe arm1 BoilerController_Full_Check
+maybe arm1 BoilerController_FullSMT_Check
+maybe arm0 BoilerController_NoDlf_Check
 # optional: per-lemma cost (September's ceiling) -- run only if the above finish
-if [ "${SB_ONELEMMA:-0}" = "1" ]; then
+if [ "${SB_ONELEMMA:-0}" = "1" ] || [[ "$ONLY" == *OneLemma* ]]; then
   maybe arm0 BoilerController_OneLemma_Check
   maybe arm1 BoilerController_OneLemma_Check
 else
