@@ -237,11 +237,13 @@ for (de in Spoon!CtEnum.all) {
 datatype [%=dn%] = [%=dvals.concat(" | ")%]
 [%
 }
+// InputEvent is emitted unconditionally: step() and every transitionFrom<Mode>()
+// take `event: InputEvent`, so a controller whose step() has no instanceof
+// branches (an eventless, batch-facade step) still needs the type to resolve.
+// With no events it is the single constructor NoEvent.
 %]
-[% if (eventNames.size() > 0) { %]
 datatype InputEvent = NoEvent[% for (e in eventNames) { %] | [%=e%][% } %]
 
-[% } %]
 [% if (staticConstants.size() > 0) { %]
 
 // Static constants
