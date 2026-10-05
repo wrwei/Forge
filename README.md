@@ -399,6 +399,34 @@ Unlike the previous AutoGen pipeline (which regenerated all files each iteration
 
 ---
 
+### Feedback configurations used in the paper
+
+The code on `main` is the **full-feedback** configuration: the structural
+linter, the code-generation rules and the Phase 7 feedback compilers state the
+diagnosis *and* a prescriptive fix. This is the configuration described in
+Section 3 of the paper, and it produced Table 4 (`experiments/convergence/`), the
+*Reference* experiment of Table 7 (`experiments/convergence-v3-frozen/`) and the
+Steam Boiler run (`experiments/steam-boiler/`).
+
+The *Diagnosis-only* and *All-controller* experiments of Table 7
+(`experiments/ablation-d2-diagnostic/`, `experiments/multicontroller-e/`) used
+the **diagnosis-only** configuration, in which every prescriptive fix
+instruction is removed and only the diagnosis of which obligation failed, and
+where, is kept. It is shipped as a patch over five files:
+
+```
+git apply experiments/ablation-d2-diagnostic/diagnosis-only.patch      # switch to diagnosis-only
+git apply -R experiments/ablation-d2-diagnostic/diagnosis-only.patch   # back to full feedback
+```
+
+The patch touches only `forge.transformations/.../preflight/StructuralLinter.java`,
+`forge.assets/prompts/java_codegen_rules.txt` and
+`forge.dashboard/web/feedback/{gradle,fdr4,isabelle}.py`. The All-controller
+experiment additionally uses the per-controller Dafny and Isabelle generators,
+which are on `main`.
+
+---
+
 ## Installation
 
 ### Prerequisites

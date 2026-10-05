@@ -99,18 +99,58 @@ Controller style:
   priority within that mode.
 - EVERY MODE MUST HAVE AN OUTGOING TRANSITION. A mode block whose body is empty
   (e.g. `} else if (currentMode == FINAL) { }`) or whose transitions are all
-  guarded leaves that mode with nothing enabled, which is a defect in the
-  controller: a reactive controller must be able to make progress from every
-  mode it can reach.
+  guarded leaves that mode with nothing enabled. In the extracted Z-machine that
+  is a genuine deadlock: `z_machine Init Ops = process Init (loop (foldr (box)
+  Ops))` loops forever over the operations' external choice, so a mode enabling
+  no operation offers the empty set — `Vis {}`, which is exactly Isabelle's
+  `deadlock`. The generated `<Machine>_deadlock_free` obligation is then FALSE
+  and no tactic can close it (measured: auto OOM-killed at 978s, metis 1825s,
+  blast 922s, fastforce 923s — all searching for a proof of a false statement).
+  A terminal/sink mode therefore needs an explicit TICK-TRIGGERED SELF-LOOP:
 
-  ABLATION (condition D2). The text that stood here explained the mechanism by
-  which such a mode falsifies the generated deadlock-freedom obligation, gave
-  the Java idiom that repairs it, quoted the operation and invariant the
-  extractor emits for that idiom, and stated which modes should and should not
-  receive one. All of that is removed: it tells the developer what shape the
-  PROVER requires, which is the answer rather than the requirement. How to give
-  a mode an outgoing transition, and which event should trigger it, is a design
-  decision for the developer.
+      } else if (currentMode == Mode.FINAL) {
+          if (event instanceof InputEvent.Tick) {
+              this.currentMode = Mode.FINAL;   // idle; keeps the mode live
+          }
+      }
+
+  Use a tick-TRIGGERED self-loop, never a bare `else { currentMode = <same>; }`.
+  An untriggered self-loop becomes a guard-free, trigger-free .rct transition,
+  which the RoboChart CSP generator emits as a tau-self-loop — an autonomous
+  cycle that FDR4 correctly reports as a divergence. A tick-TRIGGERED loop gives
+  CSP a visible event instead, satisfying Isabelle and FDR4 at once.
+
+  What the current extractor emits for such a loop (measured 2026-09-16, not
+  assumed) is
+
+      zoperation FINALToFINAL = ...
+        pre "st = FINAL /\ tick : offered /\ offered <= listens"
+
+  plus an invariant conjunct `st = FINAL --> listens = {tick}`.
+
+  IMPORTANT, MEASURED 2026-09-16: this self-loop is NECESSARY BUT NOT
+  SUFFICIENT. It gives FINAL a disjunct in the deadlock-freedom goal, but that
+  disjunct is trigger-guarded, and the goal quantifies `offered` UNIVERSALLY:
+
+      st = initial \/ (ALL offered_v.  st = READING /\ gas : offered_v /\ ...
+                                    \/ st = ANALYSIS /\ ...
+                                    \/ st = FINAL /\ tick : offered_v /\ ...)
+
+  At `offered_v = {}` every presence-guarded disjunct is false, so any state
+  whose ONLY outgoing operations are trigger-guarded still falsifies the goal.
+  For chem that is READING as well as FINAL. Adding the self-loop therefore
+  removes the "no disjunct at all" defect but not the falsity (tracked as a
+  generator/encoding issue: see thy_generation_rule.egl). Do NOT expect
+  deadlock_free to discharge from this rule alone.
+
+  The rule still earns its place: without an outgoing transition the state has
+  NO disjunct under ANY offer, which is unconditionally false and also breaks
+  FDR4. With it, the remaining obstacle is the offered-quantification, which is
+  a generator matter and not something the Java can fix.
+
+  Modes that already have an event-triggered bare-precondition transition need
+  no self-loop. Do NOT add self-loops to modes with an autonomous outgoing edge:
+  a self-loop there can extend a one-shot tau-step into an infinite divergence.
 - NAMED BOOLEAN PREDICATES: Before the if-else chain, declare named boolean variables for ALL guard conditions.
   Use descriptive names that encode the sensor/function, reference, and comparison direction
   (e.g., boolean velBelowThreshold = ...; boolean obstaclePresent = ...).

@@ -78,16 +78,21 @@ def _classify_tactic_timeout(context: dict) -> tuple[str, str, str]:
 
     if lemma and lemma.endswith('_deadlock_free'):
         title = f"Tactic timeout in {lemma} (deadlock_free)"
-        # ABLATION (condition D, diagnosis-only feedback). The original text
-        # named the shape `metis St.exhaust_disc` requires and then told the
-        # actor which Java construct to add. Both are removed: stating the
-        # shape a tactic needs IS the answer, so leaving it would make the
-        # ablation inconclusive. The failing lemma, the raw Isabelle output
-        # and the linked Java element are unchanged.
         fix = (
-            "The Z-Machine `deadlock_free` proof for this theory did not "
-            "close within the per-goal timeout. See the raw Isabelle output "
-            "above for the failing lemma and the linked Java element."
+            "Z-Machine `deadlock_free` proof timed out — typically on the "
+            "`by (metis St.exhaust_disc)` step. That tactic requires every "
+            "state in the `St` enum to have at least one bare-precondition "
+            "operation (i.e. a `zoperation` with `pre \"st = X\"` and no "
+            "extra conjuncts). If any mode block in the controller has "
+            "only guarded transitions, the residual disjunction leaves a "
+            "`st = X ∧ <guard>` case that `St.exhaust_disc` cannot match, "
+            "so `metis` searches indefinitely.\n\n"
+            "Fix: inspect every mode block in the controller's step() "
+            "method. Confirm at least one inner branch is either (a) an "
+            "event with no extra guard (e.g. `if (event instanceof X)`), "
+            "or (b) the explicit `else { /* stay */ }` fallback. See "
+            "docs/fixes/I1_deadlock_free_proof.md for the proof tactic "
+            "rationale and the residual-goal shape."
         )
         return ("isabelle_tactic_timeout", title, fix)
 
@@ -491,16 +496,23 @@ def _upgrade_timeout_to_deadlock_free(issue: Issue, lemma_name: str) -> None:
     """
     issue.title = (f"Tactic timeout, suspected in {lemma_name} "
                    "(deadlock_free — inferred from .thy)")
-    # ABLATION (condition D, diagnosis-only feedback). This is the variant
-    # that fired in the recorded runs -- the theory-level-granularity path.
-    # The failing lemma is still named and the provenance caveat kept, since
-    # both are diagnosis; the tactic's required shape and the Java remedy are
-    # removed.
     issue.fix_directive = (
-        f"Z-Machine `deadlock_free` proof timed out on `{lemma_name}`. "
-        f"(Isabelle's build output only provides theory-level granularity, "
-        f"so the lemma name is inferred from the .thy file.) See the raw "
-        f"Isabelle output above and the linked Java element."
+        f"Z-Machine `deadlock_free` proof timed out — most likely on the "
+        f"`by (metis St.exhaust_disc)` step of `{lemma_name}`. (Isabelle's "
+        f"build output only provides theory-level granularity, so the "
+        f"lemma name is inferred from the .thy file.) That tactic requires "
+        f"every state in the `St` enum to have at least one bare-"
+        f"precondition operation. If any mode block in the controller has "
+        f"only guarded transitions, the residual disjunction leaves a "
+        f"`st = X ∧ <guard>` case that `St.exhaust_disc` cannot match, so "
+        f"`metis` searches indefinitely."
+        f"\n\n"
+        f"Fix: inspect every mode block in the controller's step() method. "
+        f"Confirm at least one inner branch is either (a) an event with "
+        f"no extra guard (e.g. `if (event instanceof X)`), or (b) the "
+        f"explicit `else {{ /* stay */ }}` fallback. See "
+        f"docs/fixes/I1_deadlock_free_proof.md for the proof tactic "
+        f"rationale and residual-goal shape."
     )
 
 

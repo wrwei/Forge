@@ -1,0 +1,355 @@
+diff -ruN a/forge.assets/prompts/java_codegen_rules.txt b/forge.assets/prompts/java_codegen_rules.txt
+--- a/forge.assets/prompts/java_codegen_rules.txt
++++ b/forge.assets/prompts/java_codegen_rules.txt
+@@ -99,58 +99,18 @@
+   priority within that mode.
+ - EVERY MODE MUST HAVE AN OUTGOING TRANSITION. A mode block whose body is empty
+   (e.g. `} else if (currentMode == FINAL) { }`) or whose transitions are all
+-  guarded leaves that mode with nothing enabled. In the extracted Z-machine that
+-  is a genuine deadlock: `z_machine Init Ops = process Init (loop (foldr (box)
+-  Ops))` loops forever over the operations' external choice, so a mode enabling
+-  no operation offers the empty set — `Vis {}`, which is exactly Isabelle's
+-  `deadlock`. The generated `<Machine>_deadlock_free` obligation is then FALSE
+-  and no tactic can close it (measured: auto OOM-killed at 978s, metis 1825s,
+-  blast 922s, fastforce 923s — all searching for a proof of a false statement).
+-  A terminal/sink mode therefore needs an explicit TICK-TRIGGERED SELF-LOOP:
++  guarded leaves that mode with nothing enabled, which is a defect in the
++  controller: a reactive controller must be able to make progress from every
++  mode it can reach.
+ 
+-      } else if (currentMode == Mode.FINAL) {
+-          if (event instanceof InputEvent.Tick) {
+-              this.currentMode = Mode.FINAL;   // idle; keeps the mode live
+-          }
+-      }
+-
+-  Use a tick-TRIGGERED self-loop, never a bare `else { currentMode = <same>; }`.
+-  An untriggered self-loop becomes a guard-free, trigger-free .rct transition,
+-  which the RoboChart CSP generator emits as a tau-self-loop — an autonomous
+-  cycle that FDR4 correctly reports as a divergence. A tick-TRIGGERED loop gives
+-  CSP a visible event instead, satisfying Isabelle and FDR4 at once.
+-
+-  What the current extractor emits for such a loop (measured 2026-09-16, not
+-  assumed) is
+-
+-      zoperation FINALToFINAL = ...
+-        pre "st = FINAL /\ tick : offered /\ offered <= listens"
+-
+-  plus an invariant conjunct `st = FINAL --> listens = {tick}`.
+-
+-  IMPORTANT, MEASURED 2026-09-16: this self-loop is NECESSARY BUT NOT
+-  SUFFICIENT. It gives FINAL a disjunct in the deadlock-freedom goal, but that
+-  disjunct is trigger-guarded, and the goal quantifies `offered` UNIVERSALLY:
+-
+-      st = initial \/ (ALL offered_v.  st = READING /\ gas : offered_v /\ ...
+-                                    \/ st = ANALYSIS /\ ...
+-                                    \/ st = FINAL /\ tick : offered_v /\ ...)
+-
+-  At `offered_v = {}` every presence-guarded disjunct is false, so any state
+-  whose ONLY outgoing operations are trigger-guarded still falsifies the goal.
+-  For chem that is READING as well as FINAL. Adding the self-loop therefore
+-  removes the "no disjunct at all" defect but not the falsity (tracked as a
+-  generator/encoding issue: see thy_generation_rule.egl). Do NOT expect
+-  deadlock_free to discharge from this rule alone.
+-
+-  The rule still earns its place: without an outgoing transition the state has
+-  NO disjunct under ANY offer, which is unconditionally false and also breaks
+-  FDR4. With it, the remaining obstacle is the offered-quantification, which is
+-  a generator matter and not something the Java can fix.
+-
+-  Modes that already have an event-triggered bare-precondition transition need
+-  no self-loop. Do NOT add self-loops to modes with an autonomous outgoing edge:
+-  a self-loop there can extend a one-shot tau-step into an infinite divergence.
++  ABLATION (condition D2). The text that stood here explained the mechanism by
++  which such a mode falsifies the generated deadlock-freedom obligation, gave
++  the Java idiom that repairs it, quoted the operation and invariant the
++  extractor emits for that idiom, and stated which modes should and should not
++  receive one. All of that is removed: it tells the developer what shape the
++  PROVER requires, which is the answer rather than the requirement. How to give
++  a mode an outgoing transition, and which event should trigger it, is a design
++  decision for the developer.
+ - NAMED BOOLEAN PREDICATES: Before the if-else chain, declare named boolean variables for ALL guard conditions.
+   Use descriptive names that encode the sensor/function, reference, and comparison direction
+   (e.g., boolean velBelowThreshold = ...; boolean obstaclePresent = ...).
+diff -ruN a/forge.dashboard/web/feedback/fdr4.py b/forge.dashboard/web/feedback/fdr4.py
+--- a/forge.dashboard/web/feedback/fdr4.py
++++ b/forge.dashboard/web/feedback/fdr4.py
+@@ -196,12 +196,12 @@
+     last = trace[-1]
+     handlers = _transitions_on_event(last, trace_data)
+     if not handlers:
++        # ABLATION (condition D, diagnosis-only feedback). The counterexample
++        # trace and the unhandled event are retained; the prescribed Java
++        # construct is removed.
+         body = (
+             f"The counterexample ends with event `{last}`. "
+-            f"No transition in the RoboChart model handles `{last}` — "
+-            f"some mode reaches a state where this event occurs without "
+-            f"a matching branch. Add an `instanceof` check for the "
+-            f"event type in the corresponding mode block of step()."
++            f"No transition in the RoboChart model handles `{last}`."
+         )
+         return (story + "\n\n" + body) if story else body
+     states = sorted({h.get("source_state", "?") for h in handlers})
+@@ -209,10 +209,8 @@
+         f"The counterexample ends with event `{last}`. Transitions "
+         f"handling `{last}` exist (from state(s): {', '.join(states)}), "
+         f"but the counterexample reaches a state where none of them "
+-        f"fire. Check whether the reached state is one of these "
+-        f"source states and, if so, whether the guards block every "
+-        f"branch; otherwise add a branch for `{last}` in the reached "
+-        f"state."
++        # ABLATION (condition D): the diagnosis stops at the trace.
++        f"fire. The reached state is shown in the trace above."
+     )
+     return (story + "\n\n" + body) if story else body
+ 
+@@ -422,11 +420,10 @@
+             kind="structure_empty_channels",
+             title="Generated state machine declares no events",
+             raw="channel declaration in CSP-M is empty",
++            # ABLATION (condition D, diagnosis-only feedback).
+             fix_directive=(
+-                "The controller defines no event types that trigger mode "
+-                "transitions. Add a sealed InputEvent hierarchy with at "
+-                "least one record per triggering event, and use "
+-                "instanceof checks in step()."
++                "The generated CSP-M declares no channels: the controller "
++                "defines no event types that trigger mode transitions."
+             ),
+         ))
+     if stop_states:
+diff -ruN a/forge.dashboard/web/feedback/gradle.py b/forge.dashboard/web/feedback/gradle.py
+--- a/forge.dashboard/web/feedback/gradle.py
++++ b/forge.dashboard/web/feedback/gradle.py
+@@ -327,13 +327,14 @@
+                 kind="deadlock_lint_warning",
+                 title=f"State without unconditional fallback: {state_loc}",
+                 raw=raw,
++                # ABLATION (condition D, diagnosis-only feedback). The original
++                # text spelled the remedy out as code. The structural fact --
++                # which state lacks an unconditional outgoing transition -- is
++                # retained in the title and the raw lint line.
+                 fix_directive=(
+-                    "Add an `else { mode = <SameMode>; }` clause to the inner "
+-                    "if-else chain of this mode block so the state has at "
+-                    "least one bare-precondition outgoing transition. "
+-                    "Without it, the Isabelle deadlock_free proof will fail "
+-                    "(see CLAUDE.md \"Isabelle/UTP Z-Machine `deadlock_free` "
+-                    "proof\" gotcha)."
++                    "The structural lint reports that this state has no "
++                    "unconditional outgoing transition. See the raw lint "
++                    "line above for the state and its source location."
+                 ),
+             ))
+         next_step_by_phase = {
+diff -ruN a/forge.dashboard/web/feedback/isabelle.py b/forge.dashboard/web/feedback/isabelle.py
+--- a/forge.dashboard/web/feedback/isabelle.py
++++ b/forge.dashboard/web/feedback/isabelle.py
+@@ -78,21 +78,16 @@
+ 
+     if lemma and lemma.endswith('_deadlock_free'):
+         title = f"Tactic timeout in {lemma} (deadlock_free)"
++        # ABLATION (condition D, diagnosis-only feedback). The original text
++        # named the shape `metis St.exhaust_disc` requires and then told the
++        # actor which Java construct to add. Both are removed: stating the
++        # shape a tactic needs IS the answer, so leaving it would make the
++        # ablation inconclusive. The failing lemma, the raw Isabelle output
++        # and the linked Java element are unchanged.
+         fix = (
+-            "Z-Machine `deadlock_free` proof timed out — typically on the "
+-            "`by (metis St.exhaust_disc)` step. That tactic requires every "
+-            "state in the `St` enum to have at least one bare-precondition "
+-            "operation (i.e. a `zoperation` with `pre \"st = X\"` and no "
+-            "extra conjuncts). If any mode block in the controller has "
+-            "only guarded transitions, the residual disjunction leaves a "
+-            "`st = X ∧ <guard>` case that `St.exhaust_disc` cannot match, "
+-            "so `metis` searches indefinitely.\n\n"
+-            "Fix: inspect every mode block in the controller's step() "
+-            "method. Confirm at least one inner branch is either (a) an "
+-            "event with no extra guard (e.g. `if (event instanceof X)`), "
+-            "or (b) the explicit `else { /* stay */ }` fallback. See "
+-            "docs/fixes/I1_deadlock_free_proof.md for the proof tactic "
+-            "rationale and the residual-goal shape."
++            "The Z-Machine `deadlock_free` proof for this theory did not "
++            "close within the per-goal timeout. See the raw Isabelle output "
++            "above for the failing lemma and the linked Java element."
+         )
+         return ("isabelle_tactic_timeout", title, fix)
+ 
+@@ -496,23 +491,16 @@
+     """
+     issue.title = (f"Tactic timeout, suspected in {lemma_name} "
+                    "(deadlock_free — inferred from .thy)")
++    # ABLATION (condition D, diagnosis-only feedback). This is the variant
++    # that fired in the recorded runs -- the theory-level-granularity path.
++    # The failing lemma is still named and the provenance caveat kept, since
++    # both are diagnosis; the tactic's required shape and the Java remedy are
++    # removed.
+     issue.fix_directive = (
+-        f"Z-Machine `deadlock_free` proof timed out — most likely on the "
+-        f"`by (metis St.exhaust_disc)` step of `{lemma_name}`. (Isabelle's "
+-        f"build output only provides theory-level granularity, so the "
+-        f"lemma name is inferred from the .thy file.) That tactic requires "
+-        f"every state in the `St` enum to have at least one bare-"
+-        f"precondition operation. If any mode block in the controller has "
+-        f"only guarded transitions, the residual disjunction leaves a "
+-        f"`st = X ∧ <guard>` case that `St.exhaust_disc` cannot match, so "
+-        f"`metis` searches indefinitely."
+-        f"\n\n"
+-        f"Fix: inspect every mode block in the controller's step() method. "
+-        f"Confirm at least one inner branch is either (a) an event with "
+-        f"no extra guard (e.g. `if (event instanceof X)`), or (b) the "
+-        f"explicit `else {{ /* stay */ }}` fallback. See "
+-        f"docs/fixes/I1_deadlock_free_proof.md for the proof tactic "
+-        f"rationale and residual-goal shape."
++        f"Z-Machine `deadlock_free` proof timed out on `{lemma_name}`. "
++        f"(Isabelle's build output only provides theory-level granularity, "
++        f"so the lemma name is inferred from the .thy file.) See the raw "
++        f"Isabelle output above and the linked Java element."
+     )
+ 
+ 
+diff -ruN a/forge.transformations/src/main/java/forge/transformations/preflight/StructuralLinter.java b/forge.transformations/src/main/java/forge/transformations/preflight/StructuralLinter.java
+--- a/forge.transformations/src/main/java/forge/transformations/preflight/StructuralLinter.java
++++ b/forge.transformations/src/main/java/forge/transformations/preflight/StructuralLinter.java
+@@ -225,11 +225,15 @@
+                         m,
+                         owner.getSimpleName() + ".step() has method calls inside if-conditions "
+                                 + "but declares no named boolean predicates above the if-else chain",
+-                        "Extract each guard into a named boolean local variable declared at the top "
+-                        + "of step(), before the outer if-else chain. Use descriptive names that "
+-                        + "encode the sensor function and threshold (e.g. 'boolean velBelowLimit = "
+-                        + "calcVel.speed() <= MAX_SPEED;'). See java_codegen_rules.txt "
+-                        + "'NAMED BOOLEAN PREDICATES'.");
++                        // ABLATION (condition D2, completed 2026-09-22). The original
++                        // directive prescribed extracting each guard into a named boolean
++                        // local above the if-else chain, with a worked example. Removed;
++                        // the extraction diagnosis is retained.
++                        "A method call evaluated inside an if-condition is extracted as part of "
++                        + "the transition guard, so the formal model's guard contains an "
++                        + "uninterpreted application rather than a named condition the verifiers "
++                        + "can reason about: the obligation becomes weaker than the Java's "
++                        + "actual branching.");
+             }
+         }
+     }
+@@ -253,10 +257,13 @@
+             add("rule2_step_outer_ne", "error",
+                     ifStmt,
+                     owner.getSimpleName() + ".step() outer if uses '<modeField> != X'",
+-                    "Replace the '!=' branch with explicit 'currentMode == X' blocks — one block "
+-                    + "per mode. The formal model extraction requires every outer branch to be "
+-                    + "'currentMode == <Mode>' so each mode maps to exactly one source state. "
+-                    + "See java_codegen_rules.txt 'PURE TWO-LEVEL IF-ELSE'.");
++                    // ABLATION (condition D2, completed 2026-09-22). The original directive
++                    // prescribed the exact replacement shape -- one 'currentMode == X' block
++                    // per mode. Removed; the source-state diagnosis is retained.
++                    "An inequality on the mode field does not identify a single source state: "
++                    + "the extraction maps each outer branch to one state machine state, and a "
++                    + "'!=' branch names the complement of a state rather than a state, so the "
++                    + "transitions it produces have no unique source.");
+         }
+     }
+ 
+@@ -265,10 +272,9 @@
+     // Hand-written LRE convention: within a step() if/else-if chain, every
+     // branch below a TRIGGERLESS guarded branch (a guard with no
+     // `instanceof` event test) must textually carry the negation of each
+-    // preceding triggerless guard, e.g.
+-    //     if (camActive) {...}
+-    //     else if (hcmActive && !camActive) {...}
+-    //     else if (inOpez && !camActive && !hcmActive) {...}
++    // preceding triggerless guard. (ABLATION, condition D2: the worked example
++    // that stood here is removed — it is the construct the directive used to
++    // prescribe, and this file is readable from the worktree.)
+     // Sources that rely on the implicit priority of else-if produce formal
+     // models whose operations fire nondeterministically (Tier-B conformance
+     // gap C1). WARNING severity: the M2M track is landing synthesis of the
+@@ -327,22 +333,18 @@
+                                 + condText + "' follows event-triggered branch(es): "
+                                 + String.join(", ", precedingEventBranches)
+                                 + " — in the extracted model both are enabled together",
++                        // ABLATION (condition D2, diagnosis-only preflight). The original
++                        // directive stated the two Java restructurings that close this
++                        // (guard the later branch to exclude the earlier case, or move the
++                        // triggerless branch first) and cited a witness file. Removed: the
++                        // diagnosis stops at what is wrong and why the extracted model is
++                        // wrong. Restoring the removed text restores condition C.
+                         "An event-triggered branch followed by a TRIGGERLESS branch in the "
+                         + "same else-if chain has no counterpart in RoboChart: the Java "
+                         + "takes only the first branch, but the extracted transitions form "
+                         + "an unguarded external choice and the triggerless one is enabled "
+                         + "whenever its data guard holds — including when the event is "
+-                        + "present. Trigger disjointness does NOT close this (it only "
+-                        + "separates two EVENT-triggered branches), and the negation "
+-                        + "synthesis that closes rule6 cannot either, because the "
+-                        + "event-triggered branch contributes no data predicate to negate. "
+-                        + "RoboChart has no event-absence guard, so this must be fixed in "
+-                        + "the Java: either give the later branch an explicit guard that "
+-                        + "excludes the earlier branch's case, or place the triggerless "
+-                        + "branch FIRST so the ordinary priority-negation synthesis applies. "
+-                        + "Witness: LreController.java CAM block (reqOCM then "
+-                        + "cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two "
+-                        + "operations where the Java is deterministic.");
++                        + "present. RoboChart has no event-absence guard.");
+             }
+ 
+             if (!precedingCores.isEmpty()) {
+@@ -358,14 +360,16 @@
+                             owner.getSimpleName() + ".step(): branch guarded by '"
+                                     + condText + "' does not negate preceding triggerless guard(s): "
+                                     + String.join(", ", missing),
+-                            "Branches below a triggerless guarded branch must textually carry "
+-                            + "the negation of each preceding triggerless guard (e.g. "
+-                            + "'else if (hcmActive && !camActive)'). Relying on the implicit "
+-                            + "priority of else-if produces a formal model whose operations "
+-                            + "can fire nondeterministically — the extracted preconditions "
+-                            + "are not mutually exclusive. Conjoin '&& !<guard>' for each "
+-                            + "guard listed above. See the hand-written LRE convention in "
+-                            + "reference-runs/lre/java/controller/LreController.java.");
++                            // ABLATION (condition D2). The original directive named the
++                            // boolean construct to add, gave an example expression, and
++                            // cited a reference implementation to copy the convention
++                            // from. All removed, and deliberately NOT quoted here: this
++                            // file is readable from the worktree, so a note that repeats
++                            // the construct would reinstate it. See the pre-registration
++                            // (review/prereg-ablation-d2.md) for the removed text.
++                            "Relying on the implicit priority of else-if produces a formal "
++                            + "model whose operations can fire nondeterministically — the "
++                            + "extracted preconditions are not mutually exclusive.");
+                 }
+             }
+ 
+@@ -552,12 +556,12 @@
+                 at,
+                 owner.getSimpleName() + ": controller state field '" + fieldName
+                         + "' " + detail,
++                // ABLATION (condition D2). The original directive listed three
++                // alternative encodings to adopt. Removed; the domain-escape
++                // diagnosis is retained.
+                 "Integer controller-state fields historically mapped to RoboChart 'nat', "
+                 + "so a negative sentinel silently leaves the formal type's domain and "
+-                + "the model diverges from the Java. Prefer a non-negative sentinel, an "
+-                + "Optional/enum encoding, or confirm the M2M maps this field to a signed "
+-                + "RoboChart 'int' before relying on negative values. See "
+-                + "java_codegen_rules.txt and the int->nat history in the M2M type map.");
++                + "the model diverges from the Java.");
+     }
+ 
+     /** Field-access match tolerant of `this.` qualification: returns the
+@@ -596,9 +600,11 @@
+         add("rule4_double_missing_real_annotation", "error",
+                 elem,
+                 kind + " '" + qualifiedName + "' is a double without @RoboChartType(\"real\")",
+-                "Annotate with @RoboChartType(\"real\"). Without the annotation, the formal model "
+-                + "extraction cannot confidently map Java double to RoboChart real and may "
+-                + "produce an incorrect model type. See java_codegen_rules.txt.");
++                // ABLATION (condition D2). The original directive opened with the
++                // exact annotation to write. Removed; the mapping diagnosis stays.
++                "Without an explicit RoboChart type, the formal model extraction cannot "
++                + "confidently map Java double to RoboChart real and may produce an "
++                + "incorrect model type.");
+     }
+ 
+     // ── Helpers ────────────────────────────────────────────────────────

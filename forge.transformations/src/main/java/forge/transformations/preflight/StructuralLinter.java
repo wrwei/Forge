@@ -225,15 +225,11 @@ public class StructuralLinter {
                         m,
                         owner.getSimpleName() + ".step() has method calls inside if-conditions "
                                 + "but declares no named boolean predicates above the if-else chain",
-                        // ABLATION (condition D2, completed 2026-09-22). The original
-                        // directive prescribed extracting each guard into a named boolean
-                        // local above the if-else chain, with a worked example. Removed;
-                        // the extraction diagnosis is retained.
-                        "A method call evaluated inside an if-condition is extracted as part of "
-                        + "the transition guard, so the formal model's guard contains an "
-                        + "uninterpreted application rather than a named condition the verifiers "
-                        + "can reason about: the obligation becomes weaker than the Java's "
-                        + "actual branching.");
+                        "Extract each guard into a named boolean local variable declared at the top "
+                        + "of step(), before the outer if-else chain. Use descriptive names that "
+                        + "encode the sensor function and threshold (e.g. 'boolean velBelowLimit = "
+                        + "calcVel.speed() <= MAX_SPEED;'). See java_codegen_rules.txt "
+                        + "'NAMED BOOLEAN PREDICATES'.");
             }
         }
     }
@@ -257,13 +253,10 @@ public class StructuralLinter {
             add("rule2_step_outer_ne", "error",
                     ifStmt,
                     owner.getSimpleName() + ".step() outer if uses '<modeField> != X'",
-                    // ABLATION (condition D2, completed 2026-09-22). The original directive
-                    // prescribed the exact replacement shape -- one 'currentMode == X' block
-                    // per mode. Removed; the source-state diagnosis is retained.
-                    "An inequality on the mode field does not identify a single source state: "
-                    + "the extraction maps each outer branch to one state machine state, and a "
-                    + "'!=' branch names the complement of a state rather than a state, so the "
-                    + "transitions it produces have no unique source.");
+                    "Replace the '!=' branch with explicit 'currentMode == X' blocks — one block "
+                    + "per mode. The formal model extraction requires every outer branch to be "
+                    + "'currentMode == <Mode>' so each mode maps to exactly one source state. "
+                    + "See java_codegen_rules.txt 'PURE TWO-LEVEL IF-ELSE'.");
         }
     }
 
@@ -272,9 +265,10 @@ public class StructuralLinter {
     // Hand-written LRE convention: within a step() if/else-if chain, every
     // branch below a TRIGGERLESS guarded branch (a guard with no
     // `instanceof` event test) must textually carry the negation of each
-    // preceding triggerless guard. (ABLATION, condition D2: the worked example
-    // that stood here is removed — it is the construct the directive used to
-    // prescribe, and this file is readable from the worktree.)
+    // preceding triggerless guard, e.g.
+    //     if (camActive) {...}
+    //     else if (hcmActive && !camActive) {...}
+    //     else if (inOpez && !camActive && !hcmActive) {...}
     // Sources that rely on the implicit priority of else-if produce formal
     // models whose operations fire nondeterministically (Tier-B conformance
     // gap C1). WARNING severity: the M2M track is landing synthesis of the
@@ -333,18 +327,22 @@ public class StructuralLinter {
                                 + condText + "' follows event-triggered branch(es): "
                                 + String.join(", ", precedingEventBranches)
                                 + " — in the extracted model both are enabled together",
-                        // ABLATION (condition D2, diagnosis-only preflight). The original
-                        // directive stated the two Java restructurings that close this
-                        // (guard the later branch to exclude the earlier case, or move the
-                        // triggerless branch first) and cited a witness file. Removed: the
-                        // diagnosis stops at what is wrong and why the extracted model is
-                        // wrong. Restoring the removed text restores condition C.
                         "An event-triggered branch followed by a TRIGGERLESS branch in the "
                         + "same else-if chain has no counterpart in RoboChart: the Java "
                         + "takes only the first branch, but the extracted transitions form "
                         + "an unguarded external choice and the triggerless one is enabled "
                         + "whenever its data guard holds — including when the event is "
-                        + "present. RoboChart has no event-absence guard.");
+                        + "present. Trigger disjointness does NOT close this (it only "
+                        + "separates two EVENT-triggered branches), and the negation "
+                        + "synthesis that closes rule6 cannot either, because the "
+                        + "event-triggered branch contributes no data predicate to negate. "
+                        + "RoboChart has no event-absence guard, so this must be fixed in "
+                        + "the Java: either give the later branch an explicit guard that "
+                        + "excludes the earlier branch's case, or place the triggerless "
+                        + "branch FIRST so the ordinary priority-negation synthesis applies. "
+                        + "Witness: LreController.java CAM block (reqOCM then "
+                        + "cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two "
+                        + "operations where the Java is deterministic.");
             }
 
             if (!precedingCores.isEmpty()) {
@@ -360,16 +358,14 @@ public class StructuralLinter {
                             owner.getSimpleName() + ".step(): branch guarded by '"
                                     + condText + "' does not negate preceding triggerless guard(s): "
                                     + String.join(", ", missing),
-                            // ABLATION (condition D2). The original directive named the
-                            // boolean construct to add, gave an example expression, and
-                            // cited a reference implementation to copy the convention
-                            // from. All removed, and deliberately NOT quoted here: this
-                            // file is readable from the worktree, so a note that repeats
-                            // the construct would reinstate it. See the pre-registration
-                            // (review/prereg-ablation-d2.md) for the removed text.
-                            "Relying on the implicit priority of else-if produces a formal "
-                            + "model whose operations can fire nondeterministically — the "
-                            + "extracted preconditions are not mutually exclusive.");
+                            "Branches below a triggerless guarded branch must textually carry "
+                            + "the negation of each preceding triggerless guard (e.g. "
+                            + "'else if (hcmActive && !camActive)'). Relying on the implicit "
+                            + "priority of else-if produces a formal model whose operations "
+                            + "can fire nondeterministically — the extracted preconditions "
+                            + "are not mutually exclusive. Conjoin '&& !<guard>' for each "
+                            + "guard listed above. See the hand-written LRE convention in "
+                            + "reference-runs/lre/java/controller/LreController.java.");
                 }
             }
 
@@ -556,12 +552,12 @@ public class StructuralLinter {
                 at,
                 owner.getSimpleName() + ": controller state field '" + fieldName
                         + "' " + detail,
-                // ABLATION (condition D2). The original directive listed three
-                // alternative encodings to adopt. Removed; the domain-escape
-                // diagnosis is retained.
                 "Integer controller-state fields historically mapped to RoboChart 'nat', "
                 + "so a negative sentinel silently leaves the formal type's domain and "
-                + "the model diverges from the Java.");
+                + "the model diverges from the Java. Prefer a non-negative sentinel, an "
+                + "Optional/enum encoding, or confirm the M2M maps this field to a signed "
+                + "RoboChart 'int' before relying on negative values. See "
+                + "java_codegen_rules.txt and the int->nat history in the M2M type map.");
     }
 
     /** Field-access match tolerant of `this.` qualification: returns the
@@ -600,11 +596,9 @@ public class StructuralLinter {
         add("rule4_double_missing_real_annotation", "error",
                 elem,
                 kind + " '" + qualifiedName + "' is a double without @RoboChartType(\"real\")",
-                // ABLATION (condition D2). The original directive opened with the
-                // exact annotation to write. Removed; the mapping diagnosis stays.
-                "Without an explicit RoboChart type, the formal model extraction cannot "
-                + "confidently map Java double to RoboChart real and may produce an "
-                + "incorrect model type.");
+                "Annotate with @RoboChartType(\"real\"). Without the annotation, the formal model "
+                + "extraction cannot confidently map Java double to RoboChart real and may "
+                + "produce an incorrect model type. See java_codegen_rules.txt.");
     }
 
     // ── Helpers ────────────────────────────────────────────────────────
