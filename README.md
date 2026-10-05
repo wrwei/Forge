@@ -425,6 +425,28 @@ The patch touches only `forge.transformations/.../preflight/StructuralLinter.jav
 experiment additionally uses the per-controller Dafny and Isabelle generators,
 which are on `main`.
 
+**Pipeline version per experiment.** Each Table 7 experiment ran at a single
+fixed version of the pipeline (development commits given for reference). Apart
+from comment text, `main` differs from each of them only as follows:
+
+| experiment | development commit | difference from `main` |
+|---|---|---|
+| Reference | `b808424c` | no per-controller Dafny/Isabelle generators; Dafny `InputEvent` datatype emitted only when `step()` tests an event |
+| Diagnosis-only | `35f6d557` | as Reference, with `diagnosis-only.patch` applied |
+| All-controller | `99952b9b` | `diagnosis-only.patch` applied; Dafny `InputEvent` datatype emitted only when `step()` tests an event |
+
+The Table 4 runs predate the extractor repairs described in Section 5.5; their
+generated artefacts are kept as recorded under `experiments/convergence/` and
+`reference-runs/`.
+
+**Checks that run from this repository.**
+
+```
+bash scripts/regression_test.sh                    # extraction determinism (RQ1)
+cd forge.dashboard && python -m pytest tests       # includes the Phase 6d positive controls
+python experiments/conformance-tierB/run_tierb.py prefix   # guard-level enumeration (Section 5.5)
+```
+
 ---
 
 ## Installation
