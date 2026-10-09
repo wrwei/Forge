@@ -11,8 +11,8 @@ Inputs, all inside this repository:
       ordering_attestation.txt before anything is run
   reference-runs/lre/formal-artefacts/isabelle/LreController_Beh.thy
       the extracted model of the submitted LRE run
-  experiments/seeded-defects/kill_table_all_backends.csv
-  experiments/seeded-defects/outputs/<mutant>/isabelle/LreController_Beh.thy
+  experiments/mutation-testing/kill_table_all_backends.csv
+  experiments/mutation-testing/outputs/<mutant>/isabelle/LreController_Beh.thy
       the mutation-testing results and each mutant's extracted model
 
 Outputs (written to --out, default: a temporary directory):
@@ -340,7 +340,7 @@ base_ops = [o for o in parse_archived_thy(open(ARCH).read()) if o.get("src") not
 base_ver2 = verdicts2(relation2(base_ops))
 
 # ---- the 62 LRE mutants that survive every verifier, and their extracted models ----
-kt = pd.read_csv(os.path.join(REPO, "experiments/seeded-defects/kill_table_all_backends.csv"))
+kt = pd.read_csv(os.path.join(REPO, "experiments/mutation-testing/kill_table_all_backends.csv"))
 lre_surv = kt[(kt["study"]=="lre") & ~kt["any_killed"] & ~kt["isabelle_killed"]]
 surv_ids = lre_surv["mutant_id"].tolist()
 assert len(lre_surv) == 62, len(lre_surv)
@@ -349,7 +349,7 @@ assert len(lre_surv) == 62, len(lre_surv)
 rows = []
 for _, mrow in lre_surv.iterrows():
     mid = mrow["mutant_id"]
-    thy_path = os.path.join(REPO, "experiments/seeded-defects/outputs", mid, "isabelle", "LreController_Beh.thy")
+    thy_path = os.path.join(REPO, "experiments/mutation-testing/outputs", mid, "isabelle", "LreController_Beh.thy")
     if mrow["model_changed_thy"] != "yes":
         rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], file=mrow["file"], line=mrow["line"],
             thy_changed="no", scoreable=False, killed=False, new_disagree=0, new_outviol=0,

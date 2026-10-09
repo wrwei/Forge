@@ -1,14 +1,14 @@
 #!/bin/bash
 # Diagnose the 11 Isabelle builds that did not close within budget in
-# campaign_isabelle_arm.sh, by ISOLATING which obligation is responsible.
+# isabelle_arm.sh, by ISOLATING which obligation is responsible.
 #
-#   bash scripts/campaign_isabelle_timeouts.sh
+#   bash scripts/isabelle_timeouts.sh
 #
 # Why isolation rather than a bigger budget: `metis` hangs are not reliably
 # bounded, so raising the cap can burn hours and still end in "inconclusive".
 # The question worth answering is narrower and cheap: are the invariant and
 # R1 obligations discharging, with only the deadlock-freedom proof failing to
-# close? If so, the campaign can report the incomplete builds precisely
+# close? If so, the experiment can report the incomplete builds precisely
 # ("the deadlock-freedom obligation did not close; all N invariant
 # obligations did") instead of as an opaque timeout.
 #

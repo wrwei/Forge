@@ -30,7 +30,7 @@ The program first checks the SHA-256 of `requirements_model_lre.json`
 against `ordering_attestation.txt` and stops if they differ, so the
 comparison always runs on the hashed model. It then reads the extracted
 LRE model from `reference-runs/lre/formal-artefacts/isabelle/`, and the
-mutation-testing results and mutant models from `experiments/seeded-defects/`.
+mutation-testing results and mutant models from `experiments/mutation-testing/`.
 With `--check` it compares both outputs byte for byte with the CSVs in
 this directory. A run takes a few seconds and should end with:
 

@@ -1,12 +1,12 @@
 #!/bin/bash
-# Seeded-defect campaign — Isabelle arm (R1-M1).
+# Mutation-testing experiment — Isabelle arm (R1-M1).
 #
 # Run in YOUR terminal (Docker's socket is not reachable from the assistant's
 # sandbox):
 #
-#   bash scripts/campaign_isabelle_arm.sh
+#   bash scripts/isabelle_arm.sh
 #
-# Inputs (staged by the sandbox campaign harness):
+# Inputs (staged by the mutation-testing harness):
 #   /tmp/campaign/outputs/<mutant_id>/isabelle/{<Stm>_Beh.thy, ROOT}
 #   /tmp/campaign/thy_changed.txt   — the mutants whose theory differs from
 #                                     the unmutated baseline (only these need
@@ -37,7 +37,7 @@ RES="$OUT/results.csv"
 log () { echo "$@"; }
 
 [ -x "$ISA" ] || { echo "missing $ISA"; exit 2; }
-[ -f "$LIST" ] || { echo "missing $LIST — stage the campaign first"; exit 2; }
+[ -f "$LIST" ] || { echo "missing $LIST — stage the experiment first"; exit 2; }
 
 log "=== toolchain ==="
 # Docker preflight. isabelle-docker.sh needs a running daemon; without it every

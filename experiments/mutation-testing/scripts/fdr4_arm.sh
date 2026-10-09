@@ -1,12 +1,12 @@
 #!/bin/bash
-# Seeded-defect campaign — FDR4 arm (R1-M1).
+# Mutation-testing experiment — FDR4 arm (R1-M1).
 #
 # Run in YOUR terminal (the FDR licence lives in a TCC-protected store the
 # assistant's sandbox cannot read):
 #
-#   bash scripts/campaign_fdr4_arm.sh
+#   bash scripts/fdr4_arm.sh
 #
-# Inputs (staged by the sandbox campaign harness; csp-gen already run by the
+# Inputs (staged by the mutation-testing harness; csp-gen already run by the
 # vendored RoboChart generator, so this script only needs refines):
 #   /tmp/campaign/outputs/<mutant_id>/csp-gen/defs/*_coreassertions.csp
 #   /tmp/campaign/rct_changed.txt  — mutants whose .rct differs from baseline
@@ -44,7 +44,7 @@ RES="$OUT/results.csv"
 log () { echo "$@"; }
 
 [ -x "$FDR" ] || { echo "no refines binary at $FDR"; exit 2; }
-[ -f "$LIST" ] || { echo "missing $LIST — stage the campaign first"; exit 2; }
+[ -f "$LIST" ] || { echo "missing $LIST — stage the experiment first"; exit 2; }
 
 # ---- licence pre-flight on a real assertion (--version does NOT test it) ---
 PRE="$OUT/preflight.csp"
