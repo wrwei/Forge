@@ -39,7 +39,7 @@ be recomputed from `kill_table_all_backends.csv`.
   including provenance detail.
 
 ## Relation to the paper
-Section 4.8 (RQ6) reports the experiment; Section 5.5 explains why the 44
-invisible mutants fall exactly where the correspondence table (Table 9)
-predicts. The experiment ran on the pre-repair extractor deliberately: it
+Section 4.8 (RQ6) reports the experiment, with the per-class results in
+Table 9; Section 5.5 explains why the 44 invisible mutants fall where the
+correspondence table (Table 10) describes the extraction boundary. The experiment ran on the pre-repair extractor deliberately: it
 measures the system whose runs the paper reports in Table 6.

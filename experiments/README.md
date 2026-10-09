@@ -7,13 +7,14 @@ with a README.
 | Experiment | Paper | Folder |
 | ---------- | ----- | ------ |
 | Convergence: iterations the feedback loop needs per case study | Section 4.6, Table 6 | [`convergence/`](convergence/) |
-| Compile-only ablation of the convergence runs | Section 4.6, Table 8 | [`convergence/ablation/`](convergence/ablation/) |
+| Compile-only ablation of the convergence runs | Section 4.7, Table 8 | [`convergence/ablation/`](convergence/ablation/) |
 | Cold baseline (K=10): single-shot generation without iteration, and best-of-N selection | Section 4.5, Table 5 | [`cold-baseline/`](cold-baseline/) |
 | Reference: convergence at one fixed pipeline version | Section 4.6, Table 7 | [`convergence-v3-frozen/`](convergence-v3-frozen/) |
 | Diagnosis-only: feedback with every prescriptive fix removed | Section 4.6, Table 7 | [`ablation-d2-diagnostic/`](ablation-d2-diagnostic/) |
 | All-controller: both Chemical Detector controllers verified | Section 4.6, Table 7 | [`multicontroller-e/`](multicontroller-e/) |
 | Test-and-static-analysis feedback in place of verifier feedback | Section 4.7 (RQ5) | [`test-feedback/`](test-feedback/) |
-| Mutation testing: 186 mutants through every verifier | Section 4.8 (RQ6) | [`mutation-testing/`](mutation-testing/) |
+| Mutation testing: 186 mutants through every verifier | Section 4.8 (RQ6), Table 9 | [`mutation-testing/`](mutation-testing/) |
+| Final-mode divergence between the CSP and Isabelle chains | Section 4.4 (RQ2) | [`final-mode-divergence/`](final-mode-divergence/) |
 | Requirements-conformance check (LRE) | Section 4.9 (RQ7) | [`requirements-conformance/`](requirements-conformance/) |
 | Independently authored reference specification (LRE) | Section 4.9.1 | [`blind-spec/`](blind-spec/) |
 | Steam Boiler: an independent published specification | Section 4.10 (RQ8) | [`steam-boiler/`](steam-boiler/) |
