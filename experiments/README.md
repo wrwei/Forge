@@ -1,12 +1,26 @@
 # Experiments — Companion Artefacts
 
 This directory contains the **experiment data and reproducibility scripts**
-for the empirical claims in the FORGE paper. Two experiments are documented:
+for the empirical claims in the FORGE paper. Each experiment has its own folder
+with a README.
 
-| Experiment            | Question answered                                                      | Where                        |
-| --------------------- | ---------------------------------------------------------------------- | ---------------------------- |
-| **Convergence**       | How many iterations does the feedback loop need per case study?        | [`convergence/`](convergence/)         |
-| **Cold baseline (K=10)** | How often does a single-shot cold codegen converge without iteration? | [`cold-baseline/`](cold-baseline/)     |
+| Experiment | Paper | Folder |
+| ---------- | ----- | ------ |
+| Convergence: iterations the feedback loop needs per case study | Section 4.6, Table 6 | [`convergence/`](convergence/) |
+| Compile-only ablation of the convergence runs | Section 4.6, Table 8 | [`convergence/ablation/`](convergence/ablation/) |
+| Cold baseline (K=10): single-shot generation without iteration, and best-of-N selection | Section 4.5, Table 5 | [`cold-baseline/`](cold-baseline/) |
+| Reference: convergence at one fixed pipeline version | Section 4.6, Table 7 | [`convergence-v3-frozen/`](convergence-v3-frozen/) |
+| Diagnosis-only: feedback with every prescriptive fix removed | Section 4.6, Table 7 | [`ablation-d2-diagnostic/`](ablation-d2-diagnostic/) |
+| All-controller: both Chemical Detector controllers verified | Section 4.6, Table 7 | [`multicontroller-e/`](multicontroller-e/) |
+| Test-and-static-analysis feedback in place of verifier feedback | Section 4.7 (RQ5) | [`test-feedback/`](test-feedback/) |
+| Mutation testing: 186 mutants through every verifier | Section 4.8 (RQ6) | [`mutation-testing/`](mutation-testing/) |
+| Requirements-conformance check (LRE) | Section 4.9 (RQ7) | [`requirements-conformance/`](requirements-conformance/) |
+| Independently authored reference specification (LRE) | Section 4.9.1 | [`blind-spec/`](blind-spec/) |
+| Steam Boiler: an independent published specification | Section 4.10 (RQ8) | [`steam-boiler/`](steam-boiler/) |
+| Guard-level conformance enumeration | Section 5.5, Figure 2 | [`conformance-tierB/`](conformance-tierB/) |
+
+The headline results of the first two experiments are summarised below; the
+other folders report their own.
 
 > **Running the experiments yourself?** Two run guides live next to this
 > README — both are written so an LLM agent (or a human) can be pointed
@@ -57,18 +71,23 @@ FDR4 + Isabelle all pass with a non-vacuous (D1/I1) result.
 
 ```
 experiments/
-  README.md                              ← this file
-  experiment-protocol.md                 ← convergence criterion + hard constraints + baselines
-  RUN_TRAJECTORY.md                      ← answer-free runbook for driving one convergence trajectory
-  HOWTO_RUN_CONVERGENCE_EXPERIMENT.md     ← convergence run guide (agent or human)
-  HOWTO_RUN_COLD_BASELINE_EXPERIMENT.md   ← cold-baseline (K=10) run guide
-  convergence/
-    README.md                            ← convergence results + per-run index
-    <study>/run-1 ... run-5/             ← per run: trajectory.md + iter-*/ (summary.json, feedback, formal-artefacts, traces, java)
-  cold-baseline/
-    README.md
-    <study>/run-1 ... run-10/            ← raw artefacts per cold run (Java + per-phase post_*.md)
-  scripts/                               ← reproducibility scripts (see scripts/README.md)
+  README.md                              <- this file
+  experiment-protocol.md                 <- convergence criterion + hard constraints + baselines
+  RUN_TRAJECTORY.md                      <- answer-free runbook for driving one convergence trajectory
+  HOWTO_RUN_CONVERGENCE_EXPERIMENT.md     <- convergence run guide (agent or human)
+  HOWTO_RUN_COLD_BASELINE_EXPERIMENT.md   <- cold-baseline (K=10) run guide
+  convergence/                           <- Table 6 runs; ablation/ holds the Table 8 runs
+  cold-baseline/                         <- Table 5 runs and the best-of-N selection
+  convergence-v3-frozen/                 <- Table 7, Reference
+  ablation-d2-diagnostic/                <- Table 7, Diagnosis-only (and diagnosis-only.patch)
+  multicontroller-e/                     <- Table 7, All-controller
+  test-feedback/                         <- RQ5
+  mutation-testing/                      <- RQ6
+  requirements-conformance/              <- RQ7
+  blind-spec/                            <- Section 4.9.1
+  steam-boiler/                          <- RQ8
+  conformance-tierB/                     <- Section 5.5, Figure 2
+  scripts/                               <- reproducibility scripts (see scripts/README.md)
 ```
 
 ## License

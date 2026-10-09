@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """make_thy_variants.py v2 — isolation ladder for a generated *_Beh.thy.
 
-Campaign rule: an anonymous timeout is never evidence. v2 ladder (F9):
+Mutation-testing rule: an anonymous timeout is never evidence. v2 ladder (finding 9):
 
   Skeleton — zstore + records + ALL zoperations + zmachine, ZERO lemmas.
              Times out => the cost is upstream of proofs (record simp setup /

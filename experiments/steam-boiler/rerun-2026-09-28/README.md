@@ -4,7 +4,7 @@ The RQ8 run (Section 4.10) used the frozen September profile. This folder is a
 SUPPLEMENTARY rerun of the generation and verification on the SAME recorded
 Java, using the current pipeline (the extractor with the C1/C2/T1 repairs and
 the terminal-state exemption). It does not replace the RQ8 results; it measures
-whether the repairs transfer to the held-out subject.
+whether the repairs transfer to the Steam Boiler.
 
 ## Results
 

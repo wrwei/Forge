@@ -77,8 +77,8 @@ the survivor scoring measures.
 
 ## 4. Survivor scoring
 
-Survivor set: `kill_table_all_backends.csv` (the campaign's definitive
-table) has **155 mutants killed by no backend (Dafny+FDR4+Isabelle), of
+Survivor set: `kill_table_all_backends.csv` (the mutation-testing experiment's
+definitive table) has **155 mutants killed by no backend (Dafny+FDR4+Isabelle), of
 which 62 are LRE**. (The task brief said 56; no filter of the definitive
 table produces 56 — 56 is the branch_swap class population. All 62 LRE
 survivors were scored; only LRE mutants are scoreable at all, since the
@@ -86,7 +86,7 @@ requirements model exists only for LRE — chemical_detector (71) and
 sranger (22) survivors are out of scope by construction.)
 
 Method: for each LRE survivor, the mutated relation was obtained by
-re-simulating the mutant's `step()` semantics (campaign evidence tree,
+re-simulating the mutant's `step()` semantics (mutation-testing evidence tree,
 `campaign/mutants/<id>/java`) on the concrete grid — licensed by the proven
 baseline Java≡theory equivalence — and diffed against the requirements
 relation. A kill = at least one cell where the mutated relation disagrees
@@ -146,7 +146,7 @@ default constants (Beh10's unconditional vdist disjunct subsumes Beh11's).
 ### Pipeline-path caveat
 
 Of the 23 kills, **16 are visible in the pre-fix extractor's `.thy`**
-(the campaign's extractor); the other 7 (6 relop_flip + 1 off_by_one, all in
+(the extractor the mutation-testing experiment used); the other 7 (6 relop_flip + 1 off_by_one, all in
 the camActive/hcmActive/momReturn definition lines 176–183) are invisible to
 the pre-fix extraction and reach the extracted relation only via the FIXED
 extractor, which emits the flag-definition update formulas (the current
@@ -180,8 +180,8 @@ re-run here). So as a pipeline phase: 16 kills with the shipped extractor,
 ## 6. Verdict on R3-2
 
 The oracle is material: it kills **23 of the 62 LRE all-backend survivors
-(37%)**, including **all 9 scoreable relop_flips** — the class the campaign
-flagged as surviving every backend — and every scoreable trigger_swap. The
+(37%)**, including **all 9 scoreable relop_flips** — the class the mutation-testing
+experiment flagged as surviving every backend — and every scoreable trigger_swap. The
 survivors it cannot kill are (verified) equivalent mutants, below-abstraction
 mutations, or initial-value/constant-value changes that no transition-relation
 oracle over the Beh scope can see. This supports adding a

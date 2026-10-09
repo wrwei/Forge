@@ -3,7 +3,7 @@
 ## Extractor state (provenance)
 
 - Extractor: the WORKING TREE of forge.transformations — this session's
-  uncommitted revision fixes are the system under test for the held-out run.
+  uncommitted revision fixes are the system under test for the Steam Boiler run.
 - `git rev-parse HEAD` = 26fe49fb0049; `git status --porcelain
   forge.transformations | wc -l` = **30** modified/untracked files (16 modified
   incl. java2robochart.etl, robochart2rct.egl, thy_generation_rule.egl,
@@ -17,7 +17,7 @@
   classes compiled to /tmp/steamboiler/forge-classes + repo src/main/resources
   on the classpath. Gradle remains sandbox-blocked (socket bind denied).
 
-## Held-out findings against the FIXED extractor (the point of the experiment)
+## Findings against the FIXED extractor (the point of the experiment)
 
 **E1 (ETL crash, transient trigger — resolved by iteration 3).** The fixed
 extractor's new presence-check simplification (`isPresenceCheckExpr`,
@@ -124,12 +124,12 @@ the terminal-mode deadlock (FDR4 deadlock-freedom into EMERGENCY_STOP;
 Isabelle deadlock_free lemma). Results echo to /tmp/steamboiler/verify/out/.
 
 
-## Verifier-load findings F1/F2 (user's first run of run_sb_verifiers.sh)
+## Verifier-load findings 1 and 2 (user's first run of run_sb_verifiers.sh)
 
 Both verifiers failed at LOAD; neither failure is the prereg deadlock. Fixed
 at the two NON-frozen layers and regenerated (Java untouched):
 
-- **F1 — FDR4**: `closePump.out.2` rejected at BoilerController.csp:707;
+- **Finding 1 — FDR4**: `closePump.out.2` rejected at BoilerController.csp:707;
   core_int={0..1} vs pump ids 1..4. Surveyed every int carrier in the model
   (openPump/closePump payloads 1..4, pumpInflow args 1..4, stopCount 0..3 vs
   stopRepeatLimit=3): per-study corrections/type_ranges.json now sets
@@ -140,7 +140,7 @@ at the two NON-frozen layers and regenerated (Java untouched):
   more). State space: core_int 2->5; openPump/closePump alphabets 4->10
   events each, stopCount domain 2->5 — constant-factor growth in a
   boolean-dominated space.
-- **F2 — Isabelle**: `Undefined type name: boolean` at thy line 45; the
+- **Finding 2 — Isabelle**: `Undefined type name: boolean` at thy line 45; the
   record emission path emitted raw Java type names (scalar path already
   mapped). thy_generation_rule.egl (working tree, not frozen) record fields
   now map through zmType(); regenerated theory has bool/real fields, 37
@@ -148,18 +148,18 @@ at the two NON-frozen layers and regenerated (Java untouched):
   (word-boundary grep clean). First-exercise gap: no admitted study has a
   record field of primitive type.
 
-**Parent note (post-F1):** `forge.dashboard/corrections/type_ranges.json` is a
+**Parent note (post-finding 1):** `forge.dashboard/corrections/type_ranges.json` is a
 GLOBAL file; the int {0..4} widening needed for the boiler was applied there
 transiently for generation and has been REVERTED in the repo (verified {0..1}
 restored). The boiler's shipped `instantiations.csp` (both trees) carries {0..4}
 baked in, so the verifier run is unaffected. If the boiler is ever regenerated,
 the widening must be re-applied transiently — a per-study corrections mechanism
-is the proper fix and is recorded as a held-out infrastructure finding (F1b).
+is the proper fix and is recorded as an infrastructure finding (finding 1b).
 
 
-## Verifier re-run findings F3/F4 (second user run)
+## Verifier re-run findings 3 and 4 (second user run)
 
-- **F3 — Isabelle**: `(*I1-CYCLE:..*)` diagnostic markers inside quoted terms
+- **Finding 3 — Isabelle**: `(*I1-CYCLE:..*)` diagnostic markers inside quoted terms
   (inline-renderer cycle guard; never fired on the acyclic three studies) are
   not legal Isabelle inner syntax. The steam boiler's carried projections
   (levelLow/projLow, levelHigh/projHigh) re-enter the expansion stack; in a
@@ -168,7 +168,7 @@ is the proper fix and is recorded as a held-out infrastructure finding (F1b).
   name and prints the diagnostic at generation time (296 logged). Theory
   regenerated: 37 zops / 77 lemmas, no `(*` in any term, no marker in
   RCT/CSP/Dafny (grep-verified; Dafny 11/11 stands).
-- **F4 — FDR4**: SIGKILL at 1322s compiling under the global int={0..4}
+- **Finding 4 — FDR4**: SIGKILL at 1322s compiling under the global int={0..4}
   widening. Mitigation (a) applied: int back to {0..1}; pump channels
   post-processed to core_pumpid={1..4}, stopCount channels to
   core_stopct={0..3} (14 defs files, documented like _nodet; zero core_int
@@ -178,9 +178,9 @@ is the proper fix and is recorded as a held-out infrastructure finding (F1b).
   generated CSP. _nodet rebuilt; verify-script banner states the mitigation.
 
 
-## Third verifier run: F5/F6
+## Third verifier run: findings 5 and 6
 
-- **F5 — Isabelle**: operation-carried state variables (construct 7) had no
+- **Finding 5 — Isabelle**: operation-carried state variables (construct 7) had no
   zstore lens; the auto-consts fallback shaped them `unit => T` and mis-typed
   projLow as int (Java: double; RCT: real — model typing was correct, the thy
   fallback heuristic was not). thy_generation_rule.egl now collects
@@ -189,7 +189,7 @@ is the proper fix and is recorded as a held-out infrastructure finding (F1b).
   studies' bare-lens reference form; 37 zops / 77 lemmas; new static checker
   verify/thy_term_check.py: 74/74 pre/update strings clean (also clean on the
   three reference theories; fails on the pre-fix theory).
-- **F6 — FDR4 (recorded)**: second SIGKILL (732s, per-channel narrowing;
+- **Finding 6 — FDR4 (recorded)**: second SIGKILL (732s, per-channel narrowing;
   previously 1322s at int={0..4}, whose err stream carried the "Found 2000
   processes including 70 names" compile-phase evidence; the second run's err
   file holds only the 'Killed: 9' line). No statemachine-scope process smaller than
@@ -201,13 +201,13 @@ is the proper fix and is recorded as a held-out infrastructure finding (F1b).
   check behind SB_FORCE_FULL=1.
 
 
-## Fourth verifier run: F7/F8
+## Fourth verifier run: findings 7 and 8
 
-- **F7 — FDR4 load**: duplicate memory-channel definitions in the op machines
+- **Finding 7 — FDR4 load**: duplicate memory-channel definitions in the op machines
   (get_unitsReady at CalcLevelEstimate.csp:51+:61 etc.) — root cause a
   Sensors/Ctrl_State double declaration of `unitsReady` in the RCT (ETL
   promotes every batch-record field into Sensors; the same name is a guard
-  field). The F5 zstore fix is exonerated (thy-only). Fixed in
+  field). The finding 5 zstore fix is exonerated (thy-only). Fixed in
   robochart2rct.egl: state declaration wins, shadowed Sensors entry dropped
   with a notice. Full regeneration; nodets rebuilt. Duplicate evidence
   (corrected after review): naive per-file grep still shows 110-166 repeats
@@ -216,8 +216,8 @@ is the proper fix and is recorded as a held-out infrastructure finding (F1b).
   the authoritative check and reports 0 in-scope duplicates post-fix, and as
   positive control flags the pre-fix v6 tree (unitsReady blocks x2 in
   OP_CalcLevelEstimate and BoilerController_Ctrl). Script rev 5 converts silent 0/0 results into loud
-  '!! LOAD FAILURE' + first error (campaign-arm guard).
-- **F8 — Isabelle**: anonymous 620s timeout recorded as NO EVIDENCE (campaign
+  '!! LOAD FAILURE' + first error (mutation-testing arm guard).
+- **Finding 8 — Isabelle**: anonymous 620s timeout recorded as NO EVIDENCE (mutation-testing
   rule). make_thy_variants.py ships NoDlf / HoareA / HoareB isolation
   variants + per-variant ROOT sessions; rev-5 script runs NoDlf first (exit 0
   => cost localized to deadlock_free => prereg-defensible with the M2M
@@ -235,7 +235,7 @@ studies' op-machine files carry the identical assertion pair. Verdict: all
 operation machines verify under the meaningful assertions; the raw-assertion
 failure is the known semantics of terminating operations, not a defect.
 
-**Isabelle isolation ladder — did not run: session-setup error (F8b).** All
+**Isabelle isolation ladder — did not run: session-setup error (finding 8b).** All
 three variants died in 8-9s with 'Duplicate use of directory' — Isabelle2023
 forbids multiple sessions rooted in one directory. Fixed by the parent:
 per-variant subdirectories (NoDlf/, HoareA/, HoareB/) with `session ... in
@@ -243,14 +243,14 @@ per-variant subdirectories (NoDlf/, HoareA/, HoareB/) with `session ... in
 NO-EVIDENCE pending the ladder.
 
 
-## Sixth verifier run: F9
+## Sixth verifier run: finding 9
 
-- **F9 — Isabelle scale**: all three v1 isolation variants timed out (NoDlf
+- **Finding 9 — Isabelle scale**: all three v1 isolation variants timed out (NoDlf
   1831s, HoareA 1830s, HoareB 1481s) — cost NOT localized to deadlock_free but
   spread across the 76 preservation lemmas. Cost profile: 37 zops x 29 update
   clauses x 30-field zstore + nested records (16-field TransmissionData, 4x
   8-field PumpReport). The invariant is minimal (tr nonempty, no listens-pins
-  — fully autonomous machine), so the campaign's filtered-pin fix does not
+  — fully autonomous machine), so the mutation-testing experiment's filtered-pin fix does not
   apply. Ladder v2 shipped (Skeleton / OneLemma / NoDlf / HoareA / HoareB,
   per-dir ROOT sessions): Skeleton prices elaboration, OneLemma prices one
   zpog_full proof, and the script chooses the rest from the OneLemma timing.
@@ -259,7 +259,7 @@ NO-EVIDENCE pending the ladder.
   ISABELLE_HOME_USER settings to 64-bit ML with --maxheap 12g. Canonical run
   gated behind SB_CANONICAL=1.
 
-## Seventh run interpretation (parent, 4 Sept) — verdict INVALID, script defect F9b
+## Seventh run interpretation (parent, 4 Sept) — verdict INVALID, script defect (finding 9b)
 
 The Skeleton "timeout" is not a Skeleton verdict: `run_variant` invoked
 `isabelle build -D` (select ALL sessions under the directory), so the 1120s
@@ -270,7 +270,7 @@ proofs" interpretation printed by the banner is therefore RETRACTED pending the
 eighth run. Note the ML64 settings write succeeded and heap rebuild happened
 inside the same window, further inflating it.
 
-## Eighth run interpretation (parent, 4 Sept) — F9c: heap vs Docker VM cap
+## Eighth run interpretation (parent, 4 Sept) — finding 9c: heap vs Docker VM cap
 
 The -d fix worked: only Skeleton built this time. But exit 137 (SIGKILL) at
 216s with cpu/elapsed factor 2.21 is the Docker VM's OOM killer, not an

@@ -7,7 +7,7 @@
 # Run in YOUR terminal:   bash /tmp/sb-fdr4/sb_fdr4_full.sh
 # One assertion file, one arm at a time. Paste /tmp/sb-fdr4/out/SUMMARY.txt back.
 #
-# PRE-REGISTERED READINGS (same as the pair campaign):
+# PRE-REGISTERED READINGS (same as the paired runs):
 #   * bare deadlock-free FAIL with trace ending in tick = termination semantics
 #     (benign, matches the op machines); the ;RUN variant and divergence-free
 #     are the substantive assertions.

@@ -44,22 +44,22 @@ tree and extraction.
   resource files under `classes/{transformations,metamodels}` are
   byte-identical to the snapshot's `src/main/resources`. **No rebuild was
   needed; the working tree was never used.**
-- **Runtime classpath:** the campaign's recorded `classpath.txt`; 80 of 652
+- **Runtime classpath:** the mutation-testing experiment's recorded `classpath.txt`; 80 of 652
   jar paths had gone stale (Gradle cache hash-dir churn) and were re-resolved
   by filename against `~/.gradle` and the repo's `.gradle-home`. All
   extraction-critical jars resolved to the same versions (spoon-core-11.3.0,
   Epsilon 2.8.0, EMF). The 80 unresolved names are Spring/testcontainers/
   docker-java — not used by the extraction phases.
 - **Driver:** `TarmVerifyDriver.java` (included in the tarball) — the
-  campaign's `CampaignDriver` phase order (T2M → M2M → Dafny/RCT/Isabelle)
+  mutation-testing driver's (`CampaignDriver`) phase order (T2M → M2M → Dafny/RCT/Isabelle)
   with the pipeline's `LintPhase` run FIRST, mirroring `pipeline.yaml`
   (preflight → t2m → m2m → m2t), gated exactly as
   `bridge._count_lint_errors` gates it: errors fail, warnings pass.
 - **Sanity check (extractor equivalence):** the driver was first run on the
   reference tree `reference-runs/sranger/java`. Lint: 0 violations.
   `SRangerController.dfy`, `robochart_controller.rct`,
-  `constant_defaults.json` reproduced **byte-identically** to the campaign's
-  own `baseline/sranger`. `SRangerController_Beh.thy` differs only in the
+  `constant_defaults.json` reproduced **byte-identically** to the mutation-testing
+  experiment's own `baseline/sranger`. `SRangerController_Beh.thy` differs only in the
   ordering of `triggers'` set literals (e.g. `{endTask, tick, obstacle}` vs
   `{endTask, obstacle, tick}`) — a known JVM `HashSet` iteration-order
   nondeterminism, semantically identical as a set. The `baseline-check/`
@@ -123,10 +123,10 @@ between the pre-fix snapshot and the fixed working tree (the fixes touched
 rule 2's NE-kind handling, rule 6, rule 7, and an empty-model guard). The
 verdict is therefore not an artefact of using the pre-fix extractor.
 
-## Held-out-style constructs (never seen by the pipeline; untested because extraction stopped)
+## Unseen constructs (never seen by the pipeline; untested because extraction stopped)
 
 Had the trees passed preflight, they contain constructs the extraction
-pipeline has not seen in any campaign study; recorded here for completeness:
+pipeline has not seen in any mutation-testing study; recorded here for completeness:
 
 - **Interface-typed collaborators** — run-1: `ActuatorPort`, `ClockPort`
   interfaces implemented by `Actuator`/`Clock`; run-2: `Sensor` and
@@ -217,15 +217,15 @@ behind the admission gate sit three distinct, deeper failures:
    obligation synthesis (priority semantics of else-if chains) is exactly
    the class of question RQ6's rule-6 lint fix addresses — but through the
    PRE-FIX extractor used here, the obligation fails.
-2. **run-2 — ill-formed Dafny program (extractor held-out construct).**
+2. **run-2 — ill-formed Dafny program (extractor: unseen construct).**
    `member 'currentTimeSeconds' does not exist in class 'SRangerController'`
    (dfy:64, 71). Run-2 declares no Clock class and reads time via a private
    Java helper; the extractor pulled `this.currentTimeSeconds()` into the
    spec and body verbatim but never generated the member. Dafny performs no
    verification on an unresolvable program. This is the inline-time-read
-   held-out construct identified in the one-shot section, now with a
+   unseen construct identified in the one-shot section, now with a
    concrete downstream consequence.
-3. **run-1 / run-3 — CSP generation rejected (extractor held-out construct).**
+3. **run-1 / run-3 — CSP generation rejected (extractor: unseen construct).**
    The official RoboChart CSP generator refuses the emitted `.rct`:
    `The feature 'fields' of RecordTypeImpl ... with 0 values must have at
    least 1 values` (3 occurrences each). Cause: the trees' per-event class
@@ -278,7 +278,7 @@ All three variant (annotated) trees, FDR4 + Isabelle columns:
 | 3 | 4 verified / 1 error (branch-order obligation) | no CSP — csp-gen rejected | **build error**: same empty-record outer-syntax error (thy:46) |
 
 Reading:
-- The field-less per-event classes (held-out construct) now have a FOURTH
+- The field-less per-event classes (unseen construct) now have a FOURTH
   manifestation: they break the Isabelle theory generator too (`record X =`
   with no fields is invalid outer syntax), not just the CSP generator. One
   generation idiom, two backend generators rejected it independently.

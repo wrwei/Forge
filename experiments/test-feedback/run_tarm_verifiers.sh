@@ -196,13 +196,13 @@ fi
 #            run-2  DID NOT VERIFY — ill-formed program: 2 resolution errors
 #                   ('member currentTimeSeconds does not exist', dfy:64,71) —
 #                   extractor emitted a spec referencing a Java private helper
-#                   it never generated as a Dafny member (held-out construct:
+#                   it never generated as a Dafny member (unseen construct:
 #                   inline time read, no Clock class)
 #            run-3  4 verified / 1 error  (same obligation as run-1)
 #   CSP-gen: run-1, run-3 REJECTED by the official RoboChart generator —
 #                   'feature fields ... with 0 values must have at least 1
 #                   values': field-less per-event datatypes (EndTaskEvent{},
-#                   TickEvent{}...) map to empty RecordTypes (held-out
+#                   TickEvent{}...) map to empty RecordTypes (unseen
 #                   construct: per-event class hierarchies). No CSP exists.
 #            run-2  csp-gen OK; corrections applied; _nodet sibling written.
 #   Isabelle theories emitted for all three variant runs (not built here).

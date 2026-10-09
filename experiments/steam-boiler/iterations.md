@@ -68,14 +68,14 @@ D1 (no InputEvent datatype for an eventless step()) is a GENERATOR finding,
 post-processed in BoilerController_postprocessed.dfy, raw output preserved.
 
 
-## Iteration 4 (2026-09-03, verifier-load stage — findings F1/F2)
+## Iteration 4 (2026-09-03, verifier-load stage — findings 1 and 2)
 
 User ran run_sb_verifiers.sh: BOTH verifiers failed at LOAD — neither failure
-is the pre-registered deadlock. Two held-out findings, both fixed at the
+is the pre-registered deadlock. Two findings, both fixed at the
 NON-frozen layers (per-study corrections + thy_generation_rule.egl working
 tree); generated Java unchanged.
 
-- **F1 (FDR4 load, corrections layer).** BoilerController.csp:707 rejects
+- **Finding 1 (FDR4 load, corrections layer).** BoilerController.csp:707 rejects
   `closePump.out.2`: openPump/closePump are typed `InOut.core_int` and the
   standard narrowing sets core_int={0..1}, but pump ids run 1..4. Value survey
   of every int carrier: openPump/closePump payloads {1..4}; pumpInflow args
@@ -88,7 +88,7 @@ tree); generated Java unchanged.
   4->10 each; stopCount domain 2->5); boolean-dominated space, so growth is a
   small constant factor, not exponential.
 
-- **F2 (Isabelle load, thy generator).** BoilerController_Beh.thy:45
+- **Finding 2 (Isabelle load, thy generator).** BoilerController_Beh.thy:45
   `Undefined type name: boolean` — the RECORD emission path (PumpReport /
   TransmissionData) emitted raw `type.ref.name`, while the scalar zstore path
   maps through zmType() (boolean->bool). None of the three admitted studies
@@ -100,16 +100,16 @@ tree); generated Java unchanged.
   boolean/double/float/Integer/etc. over the regenerated theory: NONE.
 
 Java unchanged, so lint/scenarios/trace results stand. Iteration count for
-the JAVA remains 3; F1/F2 are extractor/toolchain findings, not code-gen
+the JAVA remains 3; findings 1 and 2 are extractor/toolchain findings, not code-gen
 iterations.
 
 
-## Iteration 5 (2026-09-03, verifier re-run — findings F3/F4)
+## Iteration 5 (2026-09-03, verifier re-run — findings 3 and 4)
 
-Second user run: F1/F2 cured (records parse, CSP loads past the old failure),
+Second user run: findings 1 and 2 cured (records parse, CSP loads past the old failure),
 two NEW load/scale findings. Java again unchanged.
 
-- **F3 (Isabelle parse, thy generator).** `Failed to parse term` at the first
+- **Finding 3 (Isabelle parse, thy generator).** `Failed to parse term` at the first
   zoperation: the emitted terms contained `(*I1-CYCLE:levelLow*)` markers —
   the inline-renderer's cycle guard emits its diagnostic INSIDE the quoted
   term, but Isabelle inner syntax does not accept `(*..*)` comments. Root
@@ -127,7 +127,7 @@ two NEW load/scale findings. Java again unchanged.
   confirm no marker ever leaked into RCT/CSP/Dafny (Dafny's 11/11 verdict
   from the marker-free emission stands).
 
-- **F4 (FDR4 scale).** exit 137 (SIGKILL) at 1322s during compilation
+- **Finding 4 (FDR4 scale).** exit 137 (SIGKILL) at 1322s during compilation
   ("Found 2000 processes including 70 names" repeating, empty verdict list):
   the {0..4} global int widening times the 37-operation machine exhausts
   memory; the three studies never left {0..1}. Mitigations evaluated in the
@@ -153,17 +153,17 @@ two NEW load/scale findings. Java again unchanged.
   outcome for the paper; the prereg target remains a clean deadlock verdict
   into EMERGENCY_STOP.
 
-Java iteration count still 3; F3/F4 are extractor/scale findings.
+Java iteration count still 3; findings 3 and 4 are extractor/scale findings.
 
 
-## Iteration 6 (2026-09-03, third verifier run — findings F5/F6)
+## Iteration 6 (2026-09-03, third verifier run — findings 5 and 6)
 
-- **F5 (Isabelle typing, thy generator).** `Type unification failed:
+- **Finding 5 (Isabelle typing, thy generator).** `Type unification failed:
   Operator baseLevelLow :: R => R, Operand projLow :: unit => Z`. Diagnosis:
   BOTH sub-problems trace to ONE omission — the zstore collector read only the
   Ctrl_State interface, so OPERATION-CARRIED variables (CalcLevelEstimate's
   levelLow/levelHigh/projLow/projHigh — stressed construct 7) got no zstore
-  lens. Their bare pre-state reads (F3's bare-lens emission) then fell through
+  lens. Their bare pre-state reads (finding 3's bare-lens emission) then fell through
   to the auto-consts fallback, which (i) shapes names as zero-arg constants
   `unit => T` instead of lens reads (the admitted studies' theories reference
   zstore variables as plain lens names elaborated by the zstore context — the
@@ -182,17 +182,17 @@ Java iteration count still 3; F3/F4 are extractor/scale findings.
 - **Checker contribution (task requirement).** verify/thy_term_check.py — a
   static checker for generated *_Beh.thy: parses zstore/consts/enumtype/record
   declarations, then checks every zoperation pre/update string for balanced
-  parens/brackets, inner-syntax comments (F3 class), unit-typed constants
+  parens/brackets, inner-syntax comments (finding 3 class), unit-typed constants
   applied to arguments and argument-type disagreement against declared
-  signatures (F5 class), and undeclared identifiers. Steam boiler theory:
+  signatures (finding 5 class), and undeclared identifiers. Steam boiler theory:
   74 pre/update strings, 0 findings. Controls: LRE (32), sranger (16),
   chemical_detector (22) — all 0 findings. The checker fails (exit 1) on the
-  pre-F5 theory and on the pre-F3 marker theory.
+  pre-finding 5 theory and on the pre-finding 3 marker theory.
 
-- **F6 (FDR4 scale — RECORDED OUTCOME).** exit 137 again at 732s with
+- **Finding 6 (FDR4 scale — RECORDED OUTCOME).** exit 137 again at 732s with
   per-channel narrowing (previously 1322s at global int={0..4}). The
   compile-phase evidence "Found 2000 processes including 70 names" repeating
-  is from the FIRST (1322s) run as reported with F4; the second run's err
+  is from the FIRST (1322s) run as reported with finding 4; the second run's err
   stream contains only the shell 'Killed: 9' line (1 line total — verified
   by grep before writing this entry), i.e. the kill left no compile
   progress in the captured stderr. Mitigation survey per instructions: the untimed
@@ -211,16 +211,16 @@ Java iteration count still 3; F3/F4 are extractor/scale findings.
 Java untouched throughout; iteration count for the JAVA remains 3.
 
 
-## Iteration 7 (2026-09-03, fourth verifier run — findings F7/F8)
+## Iteration 7 (2026-09-03, fourth verifier run — findings 7 and 8)
 
-- **F7 (FDR4 op-machine load failures + script defect).** All three
+- **Finding 7 (FDR4 op-machine load failures + script defect).** All three
   operation-machine runs reported 'exit=0 passed=0 failed=0' — actually LOAD
   FAILURES the script mis-reported as neutral (the same silent-zero class that
-  bit the campaign's FDR4 arm). The json errors field shows duplicate memory
+  bit the mutation-testing FDR4 arm). The json errors field shows duplicate memory
   channels, e.g. OP_CalcLevelEstimate::get_unitsReady defined at
-  CalcLevelEstimate.csp:51 AND :61. Diagnosis: NOT the F5 zstore fix (that
+  CalcLevelEstimate.csp:51 AND :61. Diagnosis: NOT the finding 5 zstore fix (that
   touches only thy generation) — the RCT declared `unitsReady` in BOTH
-  BoilerController_State (guard field, F5-era Ctrl_State) and Sensors (the ETL
+  BoilerController_State (guard field, finding 5-era Ctrl_State) and Sensors (the ETL
   promotes every TransmissionData record field); an operation `requires` both
   interfaces, so the vendored CSP generator emitted the whole
   get_/set_/setL_/setR_/set_EXT_ block twice. XMI check: Sensors∩Ctrl_State =
@@ -229,7 +229,7 @@ Java untouched throughout; iteration count for the JAVA remains 3.
   only files whose scope requires both interfaces (op machines + timed tree;
   grep evidence). Fix at the RCT layer (robochart2rct.egl, non-frozen):
   Sensors/Actuators emission now drops any name shadowed by a Ctrl_State
-  declaration, with a generation-time notice ("[rct] F7 dedup: dropping
+  declaration, with a generation-time notice ("[rct] finding 7 dedup: dropping
   Sensors.unitsReady"). Regenerated RCT + full CSP trees; corrections +
   per-channel narrowing reapplied; all four nodet siblings rebuilt.
   DUPLICATE-SCAN EVIDENCE (corrected after review): a naive per-file grep
@@ -239,7 +239,7 @@ Java untouched throughout; iteration count for the JAVA remains 3.
   authoritative check is module-SCOPED (nested-module stack; counts identical
   channel lines within one scope): run on ALL 48 defs files across both
   trees post-fix — 0 files with in-scope duplicates. Positive control: the
-  same scanner on the PRE-fix v6 tarball flags the F7 duplicates
+  same scanner on the PRE-fix v6 tarball flags the finding 7 duplicates
   (OP_CalcLevelEstimate get_/set_/set_EXT_unitsReady x2; also inside
   BoilerController_Ctrl — so pre-fix damage extended beyond the op machines,
   and only the untimed BoilerController.csp among the machine files was
@@ -248,8 +248,8 @@ Java untouched throughout; iteration count for the JAVA remains 3.
   '!! LOAD FAILURE' with the first error — on the op machines AND the gated
   full run.
 
-- **F8 (Isabelle anonymous timeout — isolation, not conclusion).** exit 142,
-  '*** Timeout' after 620s with no lemma named. Per the campaign rule an
+- **Finding 8 (Isabelle anonymous timeout — isolation, not conclusion).** exit 142,
+  '*** Timeout' after 620s with no lemma named. Per the mutation-testing rule, an
   unfinished proof is never evidence of refutation or of the expected failure,
   so nothing is recorded from this run. Isolation variants produced by
   verify/make_thy_variants.py (documented post-processing, sibling of _nodet):
@@ -266,19 +266,19 @@ Java untouched throughout; iteration count for the JAVA remains 3.
 Java untouched; iteration count for the JAVA remains 3.
 
 
-## Iteration 8 (2026-09-03, sixth verifier run — finding F9)
+## Iteration 8 (2026-09-03, sixth verifier run — finding 9)
 
-- **F9 (Isabelle scale — all v1 variants time out).** NoDlf 1831s / HoareA
-  1830s / HoareB 1481s, all exit 142. The F8 hypothesis (cost localized to
+- **Finding 9 (Isabelle scale — all v1 variants time out).** NoDlf 1831s / HoareA
+  1830s / HoareB 1481s, all exit 142. The finding 8 hypothesis (cost localized to
   deadlock_free) is REFUTED: the cost is spread across the 76
-  invariant-preservation lemmas. This is a genuine held-out scale finding: 37
+  invariant-preservation lemmas. This is a genuine scale finding on the Steam Boiler: 37
   zoperations, each update carrying 29 clauses over a 30-field zstore, plus
   the 16-field TransmissionData record embedding 4x 8-field PumpReport records
   — the largest state the pipeline's thy path has ever emitted (chem = the
   previous ceiling). Notably the boiler theory's `where inv` is just
   `tr \<noteq> []` and there are ZERO listens-pins in the invariant (the
   machine is fully autonomous — no event-triggered operations), so the
-  campaign's filtered-pin fix does NOT apply: the cost driver is the
+  mutation-testing experiment's filtered-pin fix does NOT apply: the cost driver is the
   update-clause width times zpog_full's substitution reasoning, not
   invariant conjunct count.
 - **Isolation ladder v2** (make_thy_variants.py v2; per-dir sessions kept per

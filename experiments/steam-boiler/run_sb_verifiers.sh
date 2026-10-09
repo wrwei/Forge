@@ -1,5 +1,5 @@
 #!/bin/bash
-# Steam Boiler held-out run — verifier battery (FDR4 + Isabelle).
+# Steam Boiler run — verifier battery (FDR4 + Isabelle).
 # Run in YOUR terminal (FDR licence lives in a TCC-protected store; Isabelle
 # runs via Docker) :
 #
@@ -36,7 +36,7 @@ mkdir -p "$OUT"
 
 echo "==============================================================="
 echo " Steam boiler verifier battery  (rev 6: isolation ladder)"
-echo " F9: all three v1 variants timed out (NoDlf 1831s / HoareA 1830s /"
+echo " Finding 9: all three v1 variants timed out (NoDlf 1831s / HoareA 1830s /"
 echo "   HoareB 1481s) - cost is NOT localized to deadlock_free; it is spread"
 echo "   across the invariant-preservation lemmas. This run isolates further:"
 echo "   Skeleton (0 lemmas: elaboration only) -> OneLemma (1 inv lemma priced)"
@@ -45,18 +45,18 @@ echo " Heap note: the container ML is x86_64_32-linux (~4GB cap; last run hit"
 echo "   cpu/elapsed factor 2.57). SB_ML64=1 switches ISABELLE_HOME_USER"
 echo "   settings to 64-bit x86_64-linux ML (the dist ships that Poly/ML too):"
 echo "   one-off HOL+Z_Machines heap rebuild on first use, bigger heap after."
-echo " F7 fixed: Sensors/Ctrl_State duplicate declaration (unitsReady) removed"
+echo " Finding 7 fixed: Sensors/Ctrl_State duplicate declaration (unitsReady) removed"
 echo "   at the RCT layer; op machines regenerated - scoped duplicate scan clean."
 echo "   Script now FAILS LOUDLY on FDR4 load errors (non-empty errors field or"
 echo "   zero verdicts => '!! LOAD FAILURE' + first error, never bare 0/0)."
-echo " F8: anonymous Isabelle timeout is NOT evidence (campaign rule). This run"
+echo " Finding 8: anonymous Isabelle timeout is NOT evidence (mutation-testing rule). This run"
 echo "   builds isolation variants: NoDlf (deadlock_free removed) first; if that"
 echo "   times out too, HoareA/HoareB (half the preservation lemmas each)."
-echo " F5 fixed: operation-carried vars (projLow/...) now real-typed zstore"
+echo " Finding 5 fixed: operation-carried vars (projLow/...) now real-typed zstore"
 echo "   lenses; theory statically checked (thy_term_check.py: 74 pre/update"
 echo "   strings clean - balanced parens, no unit-misapplications, no"
 echo "   undeclared identifiers, types consistent)."
-echo " F6 RECORDED OUTCOME: the untimed statemachine process P_BoilerController"
+echo " Finding 6 RECORDED OUTCOME: the untimed statemachine process P_BoilerController"
 echo "   is the SMALLEST statemachine-scope process the generated tree offers"
 echo "   (Ctrl/Module wrap it), and FDR4 was SIGKILLed on it twice on this"
 echo "   machine: 1322s at int={0..4} ('Found 2000 processes including 70"
@@ -66,7 +66,7 @@ echo "   checking at this scale is recorded as infeasible on this hardware;"
 echo "   the Isabelle deadlock_free lemma covers the same property class for"
 echo "   this study. Supplementary FDR4: the three small OPERATION machines"
 echo "   are checked below; set SB_FORCE_FULL=1 to retry the full machine."
-echo " F4 mitigation applied: (a) per-channel narrowing — core_int back to {0..1};"
+echo " Finding 4 mitigation applied: (a) per-channel narrowing — core_int back to {0..1};"
 echo "   pump channels now core_pumpid={1..4}, stopCount channels core_stopct={0..3}"
 echo "   (post-processing of the generated defs, documented like _nodet)."
 echo "   (b) not applicable: the asserted process P_BoilerController is already the"
@@ -112,8 +112,8 @@ if [ "${FDR_OK:-0}" = "1" ]; then
     t1=$(date +%s)
     p=$(grep -o '"result": *1' "$OUT/fdr4_${opbase}.json" | wc -l | tr -d ' ')
     f=$(grep -o '"result": *0' "$OUT/fdr4_${opbase}.json" | wc -l | tr -d ' ')
-    # F7 guard: a run with load errors or zero total verdicts is a LOAD
-    # FAILURE, never a neutral 0/0 (the campaign FDR4 arm was bitten by the
+    # Finding 7 guard: a run with load errors or zero total verdicts is a LOAD
+    # FAILURE, never a neutral 0/0 (the mutation-testing FDR4 arm was bitten by the
     # same silent-zero class).
     haserr=$(perl -ne 'while (/"errors": *\[([^]]*)\]/g) { my $e=$1; print "1" and exit if $e =~ /\S/ }' "$OUT/fdr4_${opbase}.json")
     if [ -n "$haserr" ] || { [ "$p" = "0" ] && [ "$f" = "0" ]; }; then
@@ -123,7 +123,7 @@ if [ "${FDR_OK:-0}" = "1" ]; then
       echo "FDR4 [$opbase]: exit=$rc passed=$p failed=$f ($((t1-t0))s)"
     fi
   done
-  # --- full statemachine check: recorded infeasible-at-this-scale (F6) ---
+  # --- full statemachine check: recorded infeasible-at-this-scale (finding 6) ---
   if [ "${SB_FORCE_FULL:-0}" = "1" ]; then
     if [ ! -f "$NODET" ]; then
       echo "!! missing $NODET — re-stage the formal-artefacts tree";
@@ -147,7 +147,7 @@ if [ "${FDR_OK:-0}" = "1" ]; then
       echo "   is the pre-registered EXPECTED-FAITHFUL outcome)"
     fi
   else
-    echo "--- FDR4 full statemachine check SKIPPED (F6 recorded outcome; SB_FORCE_FULL=1 to retry) ---"
+    echo "--- FDR4 full statemachine check SKIPPED (finding 6 recorded outcome; SB_FORCE_FULL=1 to retry) ---"
   fi
 fi
 
@@ -216,7 +216,7 @@ else
           run_variant BoilerController_HoareB_Check 600 || true
         fi
       else
-        echo "  ONE inv-preservation lemma alone busts the budget => F9 is a"
+        echo "  ONE inv-preservation lemma alone busts the budget => finding 9 is a"
         echo "  per-lemma proof-cost finding (zpog_full over the 30-field zstore"
         echo "  + 29-clause updates); lemma bisection is moot at this heap."
         echo "  Retry with SB_ML64=1 before concluding."
@@ -228,7 +228,7 @@ else
       echo "  factor 2.57 cpu/elapsed in the failed run suggests GC thrash)."
     fi
     echo ""
-    echo "=== F9 ladder verdict table ==="
+    echo "=== finding 9 ladder verdict table ==="
     printf "%-40s %6s %8s\n" "session" "exit" "seconds"
     for i in "${!LADDER_NAMES[@]}"; do
       printf "%-40s %6s %8s\n" "${LADDER_NAMES[$i]}" "${LADDER_RC[$i]}" "${LADDER_SECS[$i]}"
@@ -247,7 +247,7 @@ else
   rc=$?
   t1=$(date +%s)
   echo "isabelle build: exit=$rc ($((t1-t0))s)  log: $OUT/isabelle_boiler.log"
-  # ---- outcome categories (campaign-arm convention) ----
+  # ---- outcome categories (mutation-testing arm convention) ----
   #   verified : session finishes, no failed proof
   #   refuted  : "Failed to apply proof method" / counterexample printed
   #   timeout  : "Timeout" / per-goal timeout exceeded
