@@ -25,8 +25,13 @@ be recomputed from `kill_table_all_backends.csv`.
   model .xmi) produced by the pipeline, diffed against `baseline/` to decide
   `model_changed_*`.
 - `driver/` — the experiment driver (T2M -> M2M -> Dafny/RCT/Isabelle per mutant).
-- `scripts/` — the FDR4 and Isabelle arm runners and the Isabelle timeout
-  re-checks, as run.
+- `scripts/` — the FDR4 and Isabelle runners and the Isabelle timeout
+  re-checks, as run, plus `mutant_generator.py`, the generator itself:
+  run from the repository root (`python3 experiments/mutation-testing/scripts/mutant_generator.py`),
+  it enumerates every injection site over `reference-runs/<study>/java`,
+  samples the capped classes with seed 20260815, and rewrites
+  `mutants_manifest.csv`; the output reproduces the published manifest and
+  mutant trees byte for byte.
 - `prefix-snapshot/` — the extractor exactly as it was when the experiment ran
   (the pipeline sources and templates, staged read-only for the runs). The
   experiment measures THIS extractor, which is the one the paper's Table 6 runs
