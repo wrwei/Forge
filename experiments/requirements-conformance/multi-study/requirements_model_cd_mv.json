@@ -1,0 +1,306 @@
+{
+ "case_study": "ChemicalDetector/MovementController",
+ "compiled_from": "forge.assets/case-studies/chemical_detector/requirements/requirement_all.txt (CD-MV-Beh1..23, CD-MV-FR1..7, CD-MV-Var1..4)",
+ "scope": "mode-level transition relation over 7 modes x 2 boolean guard conditions x a 5-event universe (turn, stop, resume, obstacle, tick)",
+ "compiled_at_utc": "2026-10-12T16:11:00Z",
+ "semantics_notes": [
+  "Set-valued; staying is admitted exactly when no behavioural transition is enabled.",
+  "CD-MV-Beh17/18 are condition-triggered, evaluated each step; their guards partition: makingProgress = elapsedBelowStuckPeriod OR advancedAboveStuckDist, stuck = its negation (both conjuncts false).",
+  "Found is terminal (CD-MV-Beh9, CD-MV-FR3): remaining in Found is the admitted behaviour; no transition leaves Found.",
+  "This relation covers the 7 modes the requirements name; any further mode in an extracted model (e.g. a template Final) is outside the occupiable space and surfaces, if reachable, as a model-only transition.",
+  "MV-A1 (ambiguity log): at Found, the admitted set is {Found, Final} -- the two observably equivalent encodings of 'stays halted'."
+ ],
+ "atoms": {
+  "elapsedBelowStuckPeriod": {
+   "variable": "since(evasion start)",
+   "comparator": "<",
+   "bound": "stuckPeriod",
+   "req": "CD-MV-Beh17"
+  },
+  "advancedAboveStuckDist": {
+   "variable": "d1 - d0",
+   "comparator": ">",
+   "bound": "stuckDist",
+   "req": "CD-MV-Var2"
+  }
+ },
+ "variables": {
+  "a": "The movement subsystem remembers the most recent commanded direction, updating it whenever a turn event arrives, and uses it when starting or restarting motion.",
+  "d0": "The movement subsystem records d0, the distance travelled sampled when the current evasion sequence begins (on entry to Avoiding). It is used by stuck detection (the robot is judged to have advanced when d1 - d0 exceeds stuckDist).",
+  "d1": "The movement subsystem records d1, the distance travelled sampled when a second obstacle is hit during an evasion sequence. Together with d0 it drives stuck detection.",
+  "side": "The movement subsystem remembers the side of the most recent obstacle, updating it on each obstacle event, and uses it when steering away (changeDirection)."
+ },
+ "transitions": [
+  {
+   "req_id": "CD-MV-Beh1",
+   "source_mode": null,
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [],
+   "target_mode": "Waiting",
+   "outputs": [],
+   "kind": "initial",
+   "prose": "On system startup, the movement subsystem transitions from its initial state to Waiting. No guard, no trigger, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh2",
+   "source_mode": "Waiting",
+   "trigger_event_or_none": "turn",
+   "guard_conjuncts": [],
+   "target_mode": "Going",
+   "outputs": [
+    "move(lv,a)"
+   ],
+   "kind": "triggered",
+   "prose": "In Waiting, on a turn event, the movement subsystem begins moving (the Going behaviour) in the carried direction."
+  },
+  {
+   "req_id": "CD-MV-Beh3",
+   "source_mode": "Waiting",
+   "trigger_event_or_none": "resume",
+   "guard_conjuncts": [],
+   "target_mode": "Waiting",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "In Waiting, on receiving the resume event, the movement subsystem self-loops back to Waiting. Trigger: resume. No guard, no action. (Resume in Waiting is effectively a no-op but is permitted so cross-state resume transitions are uniformly handled.)"
+  },
+  {
+   "req_id": "CD-MV-Beh4",
+   "source_mode": "Waiting",
+   "trigger_event_or_none": "stop",
+   "guard_conjuncts": [],
+   "target_mode": "Found",
+   "outputs": [
+    "flag",
+    "halt"
+   ],
+   "kind": "triggered",
+   "prose": "In Waiting, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh5",
+   "source_mode": "Going",
+   "trigger_event_or_none": "turn",
+   "guard_conjuncts": [],
+   "target_mode": "Going",
+   "outputs": [
+    "move(lv,a)"
+   ],
+   "kind": "triggered",
+   "prose": "In Going, on a turn event, the movement subsystem stays in Going and re-issues its move in the newly carried direction."
+  },
+  {
+   "req_id": "CD-MV-Beh6",
+   "source_mode": "Going",
+   "trigger_event_or_none": "stop",
+   "guard_conjuncts": [],
+   "target_mode": "Found",
+   "outputs": [
+    "flag",
+    "halt"
+   ],
+   "kind": "triggered",
+   "prose": "In Going, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh7",
+   "source_mode": "Going",
+   "trigger_event_or_none": "obstacle",
+   "guard_conjuncts": [],
+   "target_mode": "Avoiding",
+   "outputs": [
+    "changeDirection"
+   ],
+   "kind": "triggered",
+   "prose": "In Going, on an obstacle event, the movement subsystem begins avoiding the obstacle (the Avoiding behaviour) and starts timing the new evasion sequence."
+  },
+  {
+   "req_id": "CD-MV-Beh8",
+   "source_mode": "Going",
+   "trigger_event_or_none": "resume",
+   "guard_conjuncts": [],
+   "target_mode": "Waiting",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "In Going, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh9",
+   "source_mode": "Found",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [],
+   "target_mode": "Found",
+   "outputs": [],
+   "kind": "terminal",
+   "prose": "Once in Found, the movement subsystem stays halted; it has already emitted the flag event and stopped the platform on entry.",
+   "also_admits": [
+    "Final"
+   ],
+   "decision": "MV-A1: the generated implementation encodes 'stays halted' as a silent, observably equivalent step into the terminal sink Final; the admitted set is therefore {Found, Final}"
+  },
+  {
+   "req_id": "CD-MV-Beh10",
+   "source_mode": "Avoiding",
+   "trigger_event_or_none": "turn",
+   "guard_conjuncts": [],
+   "target_mode": "TryingAgain",
+   "outputs": [
+    "move(lv,a)"
+   ],
+   "kind": "triggered",
+   "prose": "In Avoiding, on a turn event, the movement subsystem proceeds to TryingAgain (resuming motion)."
+  },
+  {
+   "req_id": "CD-MV-Beh11",
+   "source_mode": "Avoiding",
+   "trigger_event_or_none": "stop",
+   "guard_conjuncts": [],
+   "target_mode": "Found",
+   "outputs": [
+    "flag",
+    "halt"
+   ],
+   "kind": "triggered",
+   "prose": "In Avoiding, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh12",
+   "source_mode": "Avoiding",
+   "trigger_event_or_none": "resume",
+   "guard_conjuncts": [],
+   "target_mode": "Waiting",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "In Avoiding, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh13",
+   "source_mode": "TryingAgain",
+   "trigger_event_or_none": "turn",
+   "guard_conjuncts": [],
+   "target_mode": "TryingAgain",
+   "outputs": [
+    "move(lv,a)"
+   ],
+   "kind": "triggered",
+   "prose": "In TryingAgain, on a turn event, the movement subsystem stays in TryingAgain and re-issues its move in the newly carried direction."
+  },
+  {
+   "req_id": "CD-MV-Beh14",
+   "source_mode": "TryingAgain",
+   "trigger_event_or_none": "stop",
+   "guard_conjuncts": [],
+   "target_mode": "Found",
+   "outputs": [
+    "flag",
+    "halt"
+   ],
+   "kind": "triggered",
+   "prose": "In TryingAgain, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh15",
+   "source_mode": "TryingAgain",
+   "trigger_event_or_none": "resume",
+   "guard_conjuncts": [],
+   "target_mode": "Waiting",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "In TryingAgain, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh16",
+   "source_mode": "TryingAgain",
+   "trigger_event_or_none": "obstacle",
+   "guard_conjuncts": [],
+   "target_mode": "AvoidingAgain",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "In TryingAgain, on a fresh obstacle event, the movement subsystem proceeds to AvoidingAgain, recording the current distance travelled to seed stuck detection."
+  },
+  {
+   "req_id": "CD-MV-Beh17",
+   "source_mode": "AvoidingAgain",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [
+    "makingProgress"
+   ],
+   "target_mode": "Avoiding",
+   "outputs": [],
+   "kind": "condition",
+   "prose": "In AvoidingAgain, when the robot is judged to be making progress (less than stuckPeriod has elapsed since the evasion began, or it has advanced more than stuckDist), the movement subsystem returns to Avoiding and restarts the evasion timer."
+  },
+  {
+   "req_id": "CD-MV-Beh18",
+   "source_mode": "AvoidingAgain",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [
+    "!makingProgress"
+   ],
+   "target_mode": "GettingOut",
+   "outputs": [
+    "shortRandomWalk",
+    "wait(outPeriod)"
+   ],
+   "kind": "condition",
+   "prose": "In AvoidingAgain, when the robot is judged to be stuck (at least stuckPeriod has elapsed since the evasion began and it has advanced no more than stuckDist), the movement subsystem proceeds to GettingOut."
+  },
+  {
+   "req_id": "CD-MV-Beh19",
+   "source_mode": "AvoidingAgain",
+   "trigger_event_or_none": "stop",
+   "guard_conjuncts": [],
+   "target_mode": "Found",
+   "outputs": [
+    "flag",
+    "halt"
+   ],
+   "kind": "triggered",
+   "prose": "In AvoidingAgain, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh20",
+   "source_mode": "AvoidingAgain",
+   "trigger_event_or_none": "resume",
+   "guard_conjuncts": [],
+   "target_mode": "Waiting",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "In AvoidingAgain, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh21",
+   "source_mode": "GettingOut",
+   "trigger_event_or_none": "turn",
+   "guard_conjuncts": [],
+   "target_mode": "Going",
+   "outputs": [
+    "move(lv,a)"
+   ],
+   "kind": "triggered",
+   "prose": "In GettingOut, on a turn event, the movement subsystem resumes moving (the Going behaviour) in the carried direction."
+  },
+  {
+   "req_id": "CD-MV-Beh22",
+   "source_mode": "GettingOut",
+   "trigger_event_or_none": "stop",
+   "guard_conjuncts": [],
+   "target_mode": "Found",
+   "outputs": [
+    "flag",
+    "halt"
+   ],
+   "kind": "triggered",
+   "prose": "In GettingOut, on receiving the stop event, the movement subsystem transitions to Found. Trigger: stop. No guard, no action."
+  },
+  {
+   "req_id": "CD-MV-Beh23",
+   "source_mode": "GettingOut",
+   "trigger_event_or_none": "resume",
+   "guard_conjuncts": [],
+   "target_mode": "Waiting",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "In GettingOut, on receiving the resume event, the movement subsystem transitions to Waiting. Trigger: resume. No guard, no action."
+  }
+ ]
+}

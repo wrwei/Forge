@@ -1,0 +1,116 @@
+{
+ "case_study": "SRanger",
+ "compiled_from": "forge.assets/case-studies/sranger/requirements/requirement_all.txt (SR-Beh1..SR-Beh7, SR-GP1, SR-GP2, SR-Var1, SR-FR1..3, SR-DM3)",
+ "scope": "mode-level transition relation over 3 modes x 2 boolean guard conditions x the 5-event enumeration universe of the published Tier-B study configuration",
+ "compiled_at_utc": "2026-10-12T16:11:00Z",
+ "semantics_notes": [
+  "Set-valued: per (mode, valuation, event) the relation defines the SET of admitted next modes; no priority among simultaneously enabled transitions is stated in the Beh prose.",
+  "Staying in the current mode is admitted exactly when no behavioural transition is enabled in the cell.",
+  "SR-Beh5 is condition-triggered (turnDurationElapsed), evaluated each controller step regardless of the offered event.",
+  "Final is terminal (SR-FR3): no transition leaves Final; remaining in Final is the admitted behaviour.",
+  "Consistency: an offered obstacle event implies obstacleDetected (SR-DM3/SR-GP1: the sensor emits obstacle exactly when distance is at or below the threshold); cells with obstacle offered and obstacleDetected false are outside the occupiable space and reported separately."
+ ],
+ "atoms": {
+  "obstacleDetected": {
+   "variable": "distance()",
+   "comparator": "<=",
+   "bound": "obstacleThreshold",
+   "req": "SR-GP1"
+  },
+  "turnDurationElapsed": {
+   "variable": "since(clockResetTime)",
+   "comparator": ">=",
+   "bound": "turnDuration",
+   "req": "SR-GP2"
+  }
+ },
+ "variables": {
+  "clockResetTime": "The controller maintains a real variable clockResetTime (seconds) recording when the controller most recently entered the Turning state. It is set to the current time as an entry action on the Moving \u2192 Turning transition. The autonomous Turning \u2192 Moving transition fires when the elapsed time since clockResetTime is at or above turnDuration."
+ },
+ "transitions": [
+  {
+   "req_id": "SR-Beh1",
+   "source_mode": null,
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [],
+   "target_mode": "Moving",
+   "outputs": [
+    "Move(moveVel,0)"
+   ],
+   "kind": "initial",
+   "prose": "On power-up, the SRanger controller begins in Moving."
+  },
+  {
+   "req_id": "SR-Beh2",
+   "source_mode": "Moving",
+   "trigger_event_or_none": "obstacle",
+   "guard_conjuncts": [
+    "obstacleDetected"
+   ],
+   "target_mode": "Turning",
+   "outputs": [
+    "Move(0,turnVel)"
+   ],
+   "kind": "triggered",
+   "prose": "The SRanger controller transitions from Moving to Turning when the obstacle event is received. On this transition, set clockResetTime to the current time and issue Move(0, turnVel) as the entry action of Turning (per SR-FR2)."
+  },
+  {
+   "req_id": "SR-Beh3",
+   "source_mode": "Moving",
+   "trigger_event_or_none": "endTask",
+   "guard_conjuncts": [],
+   "target_mode": "Final",
+   "outputs": [
+    "Move(0,0)"
+   ],
+   "kind": "triggered",
+   "prose": "The SRanger controller transitions from Moving to Final when the endTask event is received. On this transition, issue Move(0, 0) as the entry action of Final (per SR-FR3)."
+  },
+  {
+   "req_id": "SR-Beh4",
+   "source_mode": "Moving",
+   "trigger_event_or_none": "tick",
+   "guard_conjuncts": [],
+   "target_mode": "Moving",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "The SRanger controller transitions from Moving to Moving (no mode change) when the tick event is received. The controller performs no action on this transition."
+  },
+  {
+   "req_id": "SR-Beh5",
+   "source_mode": "Turning",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [
+    "turnDurationElapsed"
+   ],
+   "target_mode": "Moving",
+   "outputs": [
+    "Move(moveVel,0)"
+   ],
+   "kind": "condition",
+   "prose": "The SRanger controller transitions from Turning to Moving when the turnDurationElapsed condition becomes true \u2014 i.e., when the time since clockResetTime is at or above turnDuration (autonomous, no event required). On this transition, issue Move(moveVel, 0) as the entry action of Moving (per SR-FR1)."
+  },
+  {
+   "req_id": "SR-Beh6",
+   "source_mode": "Turning",
+   "trigger_event_or_none": "endTask",
+   "guard_conjuncts": [],
+   "target_mode": "Final",
+   "outputs": [
+    "Move(0,0)"
+   ],
+   "kind": "triggered",
+   "prose": "The SRanger controller transitions from Turning to Final when the endTask event is received. On this transition, issue Move(0, 0) as the entry action of Final (per SR-FR3)."
+  },
+  {
+   "req_id": "SR-Beh7",
+   "source_mode": "Turning",
+   "trigger_event_or_none": "tick",
+   "guard_conjuncts": [],
+   "target_mode": "Turning",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "The SRanger controller transitions from Turning to Turning (no mode change) when the tick event is received. The controller performs no action on this transition."
+  }
+ ]
+}

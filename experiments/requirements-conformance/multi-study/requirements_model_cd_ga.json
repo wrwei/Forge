@@ -1,0 +1,118 @@
+{
+ "case_study": "ChemicalDetector/GasAnalysisController",
+ "compiled_from": "forge.assets/case-studies/chemical_detector/requirements/requirement_all.txt (CD-GA-Beh1..7, CD-GA-FR1..4, CD-GA-Var1..4)",
+ "scope": "mode-level transition relation over 5 modes x 2 boolean guard conditions x the 5-event enumeration universe of the published Tier-B study configuration",
+ "compiled_at_utc": "2026-10-12T16:11:00Z",
+ "semantics_notes": [
+  "Set-valued; staying is admitted exactly when no behavioural transition is enabled.",
+  "sts is two-valued (noGas | gasD) per the Status data model; it is represented by the single boolean stsIsGasD as in the published Tier-B configuration.",
+  "CD-GA-Beh3 (NoGas -> Reading) and the two Analysis classifications are condition-triggered, evaluated each step.",
+  "CD-GA-Beh6's 'concludes its search, processing no further readings' is read as the terminal mode Final of the mode enumeration; this is the interpretive decision GA-A1 in the ambiguity log."
+ ],
+ "atoms": {
+  "stsIsGasD": {
+   "variable": "sts",
+   "comparator": "==",
+   "bound": "gasD",
+   "req": "CD-GA-Var2"
+  },
+  "insAboveThr": {
+   "variable": "ins",
+   "comparator": ">=",
+   "bound": "thr",
+   "req": "CD-GA-Var3"
+  }
+ },
+ "variables": {
+  "gs": "The gas-analysis subsystem retains the most recent gas reading, replacing it whenever a new gas event arrives and using it as the input to the analysis, intensity, and location computations. It is initially empty.",
+  "sts": "The gas-analysis subsystem maintains a state variable sts of type Status. sts is assigned in the Analysis state entry action (sts = analysis(gs)) and used as a guard in the transitions leaving Analysis.",
+  "ins": "The gas-analysis subsystem maintains a state variable ins of type Intensity. ins is assigned in the GasDetected state entry action (ins = intensity(gs)) and compared against thr in the transitions leaving GasDetected.",
+  "anl": "The gas-analysis subsystem maintains a state variable anl of type Angle. anl is assigned during the GasDetected -> Reading transition (anl = location(gs)) and immediately sent over the turn event in the same transition action."
+ },
+ "transitions": [
+  {
+   "req_id": "CD-GA-Beh1",
+   "source_mode": null,
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [],
+   "target_mode": "Reading",
+   "outputs": [],
+   "kind": "initial",
+   "prose": "On system startup, the gas-analysis subsystem transitions from its initial state to Reading. No guard, no trigger, no action."
+  },
+  {
+   "req_id": "CD-GA-Beh2",
+   "source_mode": "Reading",
+   "trigger_event_or_none": "gas",
+   "guard_conjuncts": [],
+   "target_mode": "Analysis",
+   "outputs": [],
+   "kind": "triggered",
+   "prose": "In Reading, on receiving a gas event, the gas-analysis subsystem adopts the carried reading and begins classifying it (the Analysis behaviour)."
+  },
+  {
+   "req_id": "CD-GA-Beh3",
+   "source_mode": "NoGas",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [],
+   "target_mode": "Reading",
+   "outputs": [],
+   "kind": "condition",
+   "prose": "In NoGas, the gas-analysis subsystem transitions back to Reading. No guard, no trigger, no action. This is an autonomous transition that allows the next reading to be collected."
+  },
+  {
+   "req_id": "CD-GA-Beh4",
+   "source_mode": "Analysis",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [
+    "!stsIsGasD"
+   ],
+   "target_mode": "NoGas",
+   "outputs": [
+    "resume"
+   ],
+   "kind": "condition",
+   "prose": "In Analysis, when the classification is noGas, the gas-analysis subsystem emits the resume event (so the movement subsystem returns to searching) and proceeds to await the next reading."
+  },
+  {
+   "req_id": "CD-GA-Beh5",
+   "source_mode": "Analysis",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [
+    "stsIsGasD"
+   ],
+   "target_mode": "GasDetected",
+   "outputs": [],
+   "kind": "condition",
+   "prose": "In Analysis, when the classification is gasD, the gas-analysis subsystem proceeds to evaluate the detected signal's intensity (the GasDetected behaviour)."
+  },
+  {
+   "req_id": "CD-GA-Beh6",
+   "source_mode": "GasDetected",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [
+    "insAboveThr"
+   ],
+   "target_mode": "Final",
+   "outputs": [
+    "stop"
+   ],
+   "kind": "condition",
+   "prose": "In GasDetected, when the peak intensity is at or above the threshold thr, the gas-analysis subsystem emits the stop event (so the movement subsystem halts) and concludes its search, processing no further readings."
+  },
+  {
+   "req_id": "CD-GA-Beh7",
+   "source_mode": "GasDetected",
+   "trigger_event_or_none": null,
+   "guard_conjuncts": [
+    "!insAboveThr"
+   ],
+   "target_mode": "Reading",
+   "outputs": [
+    "turn(anl)"
+   ],
+   "kind": "condition",
+   "prose": "In GasDetected, when the peak intensity is below the threshold thr, the gas-analysis subsystem chooses the direction of the strongest signal and emits a turn event carrying that direction, then returns to Reading to continue searching."
+  }
+ ]
+}
