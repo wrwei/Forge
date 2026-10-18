@@ -1,8 +1,8 @@
 #!/bin/bash
 # Mutation-testing experiment — Isabelle arm (R1-M1).
 #
-# Run in YOUR terminal (Docker's socket is not reachable from the assistant's
-# sandbox):
+# Run in a terminal on the host (Docker's socket is not reachable from a
+# sandboxed process):
 #
 #   bash scripts/isabelle_arm.sh
 #
@@ -123,4 +123,4 @@ done < "$LIST"
 
 log ""
 log "==== results: $RES ===="
-log "Done. Tell the assistant results are in $OUT/"
+log "Done. Results are in $OUT/"

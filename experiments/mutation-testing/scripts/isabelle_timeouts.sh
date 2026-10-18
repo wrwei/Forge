@@ -122,4 +122,4 @@ done
 
 log ""
 log "==== results: $RES ===="
-log "Done. Tell the assistant results are in $OUT/"
+log "Done. Results are in $OUT/"

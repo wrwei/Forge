@@ -2,7 +2,7 @@
 
 Scope: maps the symbols and rows of `LRE-reference-spec.md` (drafted 2026-09-08,
 source SHA-256 `aa9a0e2a27b8043e645353d20053789202922432c32ee2024e605e4edf5f149b`,
-artifact vfa5c89c9, READ-ONLY) onto (a) the 11 atomic predicates of the Tier-B
+read-only) onto (a) the 11 atomic predicates of the Tier-B
 abstract enumeration, (b) the shipped Java (`reference-runs/lre/java`). All
 comparisons are static (source parsing + Python re-simulation with Java `double`
 semantics); no Java was executed.

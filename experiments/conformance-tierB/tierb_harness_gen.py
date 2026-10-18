@@ -93,7 +93,7 @@ def model_admits(ops, listens, mode, g, ev_thy, cfg, arm, unknown):
         for a in op['atoms']:
             v = eval_atom(a, g, cfg['atoms'], unknown)
             if v is None:
-                continue
+                raise ValueError(f"unrecognised guard atom {a!r} in operation {op.get('name', '?')}; add it to the atom table")
             if not v:
                 ok = False; break
         if not ok:

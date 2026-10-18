@@ -27,11 +27,15 @@ python experiments/conformance-tierB/run_tierb.py fixed --thy-root /tmp/tierb-th
 `generate_isabelle.sh` needs JDK 21 and a built extractor
 (`cd forge.transformations && ./gradlew classes`).
 
-The two arms differ only in how the triggering event is read from a theory.
+The two settings differ only in how the triggering event is read from a theory.
 The Table 4 extractor puts no event in an operation's precondition, so the
 event is read from the operation's trace update; the current extractor puts it
-in the precondition as `e ∈ offered`. Both arms use the same Java side and the
-same agreement definition.
+in the precondition as `e ∈ offered`. Both settings use the same Java side and the
+same agreement definition. For the LRE the Java side is read from the extracted
+`java_rel` table; for SRanger and the Chemical Detector it is a hand-written
+transcription of the controllers' `step()` bodies (`sr_java_next`, `cd_java_next`
+in `tierb_harness_gen.py`), checked against the reference-run sources. A guard atom
+the harness does not recognise is an error, not a pass.
 
 ## Files
 

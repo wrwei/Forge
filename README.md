@@ -404,7 +404,7 @@ Unlike the previous AutoGen pipeline (which regenerated all files each iteration
 The code on `main` is the **full-feedback** configuration: the structural
 linter, the code-generation rules and the Phase 7 feedback compilers state the
 diagnosis *and* a prescriptive fix. This is the configuration described in
-Section 3 of the paper, and it produced Table 4 (`experiments/convergence/`), the
+Section 3 of the paper, and it produced Table 6 (`experiments/convergence/`), the
 *Reference* experiment of Table 7 (`experiments/convergence-v3-frozen/`) and the
 Steam Boiler run (`experiments/steam-boiler/`).
 
@@ -435,9 +435,17 @@ from comment text, `main` differs from each of them only as follows:
 | Diagnosis-only | `35f6d557` | as Reference, with `diagnosis-only.patch` applied |
 | All-controller | `99952b9b` | `diagnosis-only.patch` applied; Dafny `InputEvent` datatype emitted only when `step()` tests an event |
 
-The Table 4 runs predate the extractor repairs described in Section 5.5; their
+The Table 6 runs predate the extractor repairs described in Section 5.5; their
 generated artefacts are kept as recorded under `experiments/convergence/` and
 `reference-runs/`.
+
+**Comment text in archived artefacts.** After the runs, comment text inside the
+archived Isabelle theories under `experiments/convergence-v3-frozen/`,
+`experiments/ablation-d2-diagnostic/` and `experiments/multicontroller-e/`, and in the
+transformation templates under `forge.transformations/`, was edited to remove
+internal working labels. No lemma, definition, tactic or verdict was changed. A
+byte-level replay at the recorded commit therefore differs from these files only
+inside `(* ... *)` comments; compare after stripping comments.
 
 **Checks that run from this repository.**
 

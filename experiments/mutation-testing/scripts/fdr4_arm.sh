@@ -1,8 +1,8 @@
 #!/bin/bash
 # Mutation-testing experiment — FDR4 arm (R1-M1).
 #
-# Run in YOUR terminal (the FDR licence lives in a TCC-protected store the
-# assistant's sandbox cannot read):
+# Run in a terminal on the host (the FDR licence lives in a TCC-protected store
+# that sandboxed processes cannot read):
 #
 #   bash scripts/fdr4_arm.sh
 #
@@ -153,4 +153,4 @@ done < "$LIST"
 
 log ""
 log "==== results: $RES ===="
-log "Done. Tell the assistant results are in $OUT/"
+log "Done. Results are in $OUT/"

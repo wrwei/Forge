@@ -301,7 +301,7 @@ def collect_event_variants(java_files):
     instanceof usages and nested record/class declarations in *Event files."""
     variants = {}
     for f in java_files:
-        text = f.read_text()
+        text = f.read_text(encoding="utf-8")
         for m in re.finditer(r"instanceof\s+(\w+)\.(\w+)", text):
             variants.setdefault(m.group(1), set()).add(m.group(2))
         if f.stem.endswith("Event"):
@@ -328,9 +328,9 @@ def main():
             "relop_flip", "cmp_swap", "branch_swap", "sentinel_init",
             "trigger_swap", "off_by_one", "drop_negation"]}
         for f in java_files:
-            text = f.read_text()
+            text = f.read_text(encoding="utf-8")
             mask = code_mask(text)
-            rel = str(f.relative_to(jroot))
+            rel = f.relative_to(jroot).as_posix()
             for cls, sites in [
                 ("relop_flip", sites_relop(text, mask)),
                 ("cmp_swap", sites_cmp(text, mask)),
@@ -353,7 +353,7 @@ def main():
             for idx, (rel, site) in enumerate(chosen):
                 mid = f"{study}_{cls}_{idx:03d}"
                 src = jroot / rel
-                text = src.read_text()
+                text = src.read_text(encoding="utf-8")
                 if cls == "branch_swap":
                     new_text = apply_branch_swap(text, site)
                     line = line_of(text, site[0][0])
@@ -373,7 +373,7 @@ def main():
                 if mdir.exists():
                     shutil.rmtree(mdir)
                 shutil.copytree(jroot, mdir)
-                (mdir / rel).write_text(new_text)
+                (mdir / rel).write_text(new_text, encoding="utf-8")
                 manifest.append(dict(
                     mutant_id=mid, study=study, defect_class=cls,
                     file=rel, line=line, before=before, after=after,
@@ -384,8 +384,8 @@ def main():
                       else len(persite[c])) for c in persite}
         print(study, counts)
 
-    out = Path("mutants_manifest.csv")
-    with out.open("w", newline="") as fh:
+    out = STAGE.parent / "mutants_manifest.csv"  # next to the mutants/ folder
+    with out.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(manifest[0].keys()))
         w.writeheader()
         w.writerows(manifest)
