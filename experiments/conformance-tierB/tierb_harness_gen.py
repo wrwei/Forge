@@ -47,7 +47,7 @@ def parse_thy(path):
         if not m_pre or not m_tgt:
             continue
         pre = ' '.join(m_pre.group(1).split())
-        conj = [c.strip() for c in pre.split(AND)]
+        conj = split_top_and(pre)
         state = None
         atoms, presence, absence = [], [], []
         for c in conj:
@@ -71,10 +71,60 @@ def parse_thy(path):
     return ops, listens
 
 
+def split_top_and(s):
+    """Split a rendered conjunction at its TOP-LEVEL `\\<and>` only. Identical to
+    `s.split(AND)` for the encodings up to 2026-10-20 (no nested conjunctions);
+    needed for the environment-model-B `Idle_X` operations (2026-10-20), whose
+    precondition is `not(G_1) /\\ ... /\\ not(G_n)` with each G_i itself a
+    conjunction."""
+    parts, depth, cur = [], 0, ""
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        depth += (ch == "("); depth -= (ch == ")")
+        cur += ch; i += 1
+        if depth == 0 and cur.endswith(AND):
+            parts.append(cur[:-len(AND)].strip()); cur = ""
+    if cur.strip():
+        parts.append(cur.strip())
+    return parts
+
+
+def eval_conjunct(c, g, offered, atom_table, unknown):
+    """Truth value of one top-level conjunct under guard valuation g and offer
+    set `offered`: event presence/absence, a negated conjunction (recursively),
+    or a guard atom from the table. None = unrecognised atom."""
+    m = re.match(r'^(\w+)\s*' + re.escape(IN) + r'\s*(?:offered|triggers)$', c)
+    if m:
+        return m.group(1) in offered
+    m = re.match(r'^' + re.escape(NOT) + r'\s*\(\s*(\w+)\s*' + re.escape(IN) + r'\s*(?:offered|triggers)\s*\)$', c)
+    if m:
+        return m.group(1) not in offered
+    if c.startswith(NOT + "(") and c.endswith(")"):
+        body = c[len(NOT) + 1:-1].strip()
+        inner = split_top_and(body)
+        if len(inner) > 1 or re.search(re.escape(IN) + r'\s*(?:offered|triggers)', body):
+            vals = [eval_conjunct(x, g, offered, atom_table, unknown) for x in inner]
+            if any(v is None for v in vals):
+                return None
+            return not all(vals)
+    return eval_atom(c, g, atom_table, unknown)
+
+
 def eval_atom(a, g, atom_table, unknown):
     neg = False
     if a.startswith(NOT):
         neg, a = True, a[len(NOT):].strip()
+        # the model-B Idle_X chain writes each negated raw guard as `\\<not>(G)`;
+        # strip the enclosing pair when it spans the whole atom
+        if a.startswith("(") and a.endswith(")") and split_top_and(a[1:-1]) == [a[1:-1].strip()]:
+            depth = 0; whole = True
+            for k, ch in enumerate(a):
+                depth += (ch == "("); depth -= (ch == ")")
+                if depth == 0 and k < len(a) - 1:
+                    whole = False; break
+            if whole and a[1:-1].strip() in atom_table:
+                a = a[1:-1].strip()
     if a in atom_table:
         v = bool(atom_table[a](g))
         return (not v) if neg else v
@@ -91,6 +141,8 @@ def model_admits(ops, listens, mode, g, ev_thy, cfg, arm, unknown):
             continue
         ok = True
         for a in op['atoms']:
+            if arm != 'prefix' and a.startswith(NOT + "(") and (AND in a or IN in a):
+                continue   # compound conjunct: evaluated below with the offer in scope
             v = eval_atom(a, g, cfg['atoms'], unknown)
             if v is None:
                 raise ValueError(f"unrecognised guard atom {a!r} in operation {op.get('name', '?')}; add it to the atom table")
@@ -119,6 +171,13 @@ def model_admits(ops, listens, mode, g, ev_thy, cfg, arm, unknown):
             if any(e not in offered for e in op['presence']):
                 continue
             if any(e in offered for e in op['absence']):
+                continue
+            # compound conjuncts (model-B Idle_X): re-evaluate every atom with the
+            # offer in scope; plain atoms give the same value as above.
+            vals = [eval_conjunct(a, g, offered, cfg['atoms'], unknown) for a in op['atoms']]
+            if any(v is None for v in vals):
+                raise ValueError(f"unrecognised conjunct in operation {op.get('name', '?')}")
+            if not all(vals):
                 continue
         out.append(op)
     return out

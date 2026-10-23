@@ -87,7 +87,7 @@ The LRE implements a four-mode safety state machine:
   concurrent choices and the ETL does not encode Java's else-if priority, so the
   extracted model is non-deterministic by construction.
 - Dafny: **8 verified, 0 errors**
-- Isabelle/UTP Z-Machine: `LreController_deadlock_free` proved (~46 s wall-clock) — see [docs/fixes/I1_deadlock_free_proof.md](docs/fixes/I1_deadlock_free_proof.md)
+- Isabelle/UTP Z-Machine: `LreController_deadlock_free` proved — see [experiments/environment-model/](experiments/environment-model/) for the environment model the proof is stated under and the measured build times
 
 ---
 
@@ -266,11 +266,10 @@ Key injected variables: `enumSuffixes`, `stepMethodName`, `modeFieldName`, `trac
 
 **`thy_generation_rule.egl`** — generates the Isabelle/UTP Z-Machine
 theory file (`<Stm>_Beh.thy`) from the RoboChart EMF model. Forked from
-the ICECCS2023 archive's template; see
-[docs/fixes/I1_deadlock_free_proof.md](docs/fixes/I1_deadlock_free_proof.md)
-for the deadlock-freedom proof tactic and
-[docs/fixes/I2_template_fork.md](docs/fixes/I2_template_fork.md) for the
-patch audit against upstream.
+the ICECCS2023 archive's template. The environment model the generated
+invariant encodes, and the deadlock-freedom (totality) proof tactic, are
+described in the template's comments and in
+[experiments/environment-model/README.md](experiments/environment-model/README.md).
 
 #### Traceability chain
 
@@ -468,7 +467,7 @@ python experiments/conformance-tierB/run_tierb.py prefix   # guard-level enumera
 | Python | 3.9+ | System package manager |
 | FDR4 | 4.2.7 | [cocotec.io/fdr](https://cocotec.io/fdr/) |
 | Dafny | 4.11.0 | See below |
-| Isabelle2023-CyPhyAssure | 2023 fork | Linux/WSL only; see [docs/design/isabelle_wsl_setup.md](docs/design/isabelle_wsl_setup.md) |
+| Isabelle2023-CyPhyAssure | 2023 fork | Linux container via `scripts/isabelle-docker.sh` (native Linux or WSL also work) |
 
 ### Installing Dafny (Windows)
 
@@ -515,9 +514,8 @@ python run.py
 #   /gen-trace      — produces result_codegen.json (input to coverage)
 ```
 
-See [docs/design/isabelle_wsl_setup.md](docs/design/isabelle_wsl_setup.md)
-for the WSL setup that the Phase 6c (Isabelle) verifier needs on
-Windows.
+The Phase 6c (Isabelle) verifier runs in the Linux container that
+`scripts/isabelle-docker.sh` starts; on Windows, run it under WSL.
 
 ---
 

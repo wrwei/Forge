@@ -52,6 +52,9 @@ from pathlib import Path
 # Symbolic-tier unreachability (R1/T1) is BLOCKING: it holds in the unnarrowed
 # model, so it is a property of the extracted machine, not of the abstraction.
 ADVISORY_KINDS = frozenset({
+    "idle_unreachable",                # S1 variant: the Java `else` of a mode whose
+                                       # branches are already exhaustive -- dead in the
+                                       # Java too; mirrors it, not a defect
     "mode_unreachable_checked",        # R2
     "transition_unfireable_checked",   # T2
     "singleton_domain",                # E1, when induced by narrowing
@@ -367,6 +370,76 @@ def check_precondition_unsat(model, thy_path: Path, repo_root: Path) -> list[Fin
                     "editing anything."
                 ),
             ))
+    return out
+
+
+def check_precondition_unsat_env(model, thy_path: Path, repo_root: Path) -> list[Finding]:
+    """S1 (environment-aware, 2026-10-20) -- a zoperation whose `pre` is
+    unsatisfiable under EVERY offer the theory's own invariant allows at its
+    source state. `check_precondition_unsat` leaves `offered` free, so it cannot
+    see an operation killed by the environment model; this is the check that
+    would have reported the model-A dead operations (LRE: 9 of 18, incl.
+    MOMToCAM) in September. Under model B (at most one listened event per
+    step) a hit means the branch can never be taken in the extracted model."""
+    out = []
+    em = vsat.environment_model(model)
+    if em == "free":
+        return out
+    env = vsat.Env(checked=False)
+    for op in model.operations:
+        verdict, offers, reasons = vsat.op_sat_under_environment(op, model, env)
+        if verdict != vsat.UNSAT or offers is None:
+            continue
+        if em == "B" and op.name.startswith("Idle_"):
+            # The idle operation is the Java's implicit `else`. It is unsatisfiable
+            # exactly when the mode's branches are exhaustive (e.g. one branch per
+            # value of a two-valued status plus every listened event), so the Java
+            # `else` is unreachable too. Report it, but as advisory.
+            out.append(Finding(
+                signal="S1",
+                kind="idle_unreachable",
+                title=f"Idle operation {op.name} is unreachable: the mode's branches are exhaustive",
+                artifact=_rel(thy_path, repo_root),
+                raw=f'pre "{op.pre_raw}"  -- ' + "; ".join(reasons),
+                fix_directive=(
+                    f"`{op.name}` stands for the Java `else` of this mode and can never "
+                    "fire because the mode's branches cover every case. The Java `else` is "
+                    "unreachable for the same reason. Nothing to fix; recorded so the "
+                    "obligation count for this mode is read correctly."
+                ),
+            ))
+            continue
+        if em == "A":
+            directive = (
+                f"`{op.name}` can never fire in the verified theory: its precondition "
+                "is false under the invariant's environment model `offered = listens` "
+                "(every event the state listens for is always offered, so every "
+                "absence conjunct on a listened event is false). This is an "
+                "INSTRUMENT issue, not a Java defect: the theory was generated with "
+                "the superseded maximal-cooperation encoding . Regenerate with "
+                "the current generator (environment model B). Do NOT edit the Java "
+                "for this finding."
+            )
+        else:
+            directive = (
+                f"`{op.name}` can never fire in the verified theory: under every offer "
+                "the invariant allows at its source state (at most one listened "
+                "event per step) its precondition is false. Either the source branch "
+                "needs two events in one step (not expressible in the Java step "
+                "function either -- check the extraction), or it is dead code in the "
+                "Java (an earlier branch in the same mode subsumes it). Find the "
+                "branch via the traceability entry and compare it with the earlier "
+                "branches in the same mode; reorder or merge per the requirements' "
+                "intent. Do NOT touch any .egl template."
+            )
+        out.append(Finding(
+            signal="S1",
+            kind="precondition_unsat_env",
+            title=f"Precondition of zoperation {op.name} is unsatisfiable under the environment model ({em})",
+            artifact=_rel(thy_path, repo_root),
+            raw=f'pre "{op.pre_raw}"  -- ' + "; ".join(reasons),
+            fix_directive=directive,
+        ))
     return out
 
 
@@ -925,6 +998,8 @@ def audit(t2m_output: Path, repo_root: Path,
         if not model.operations:
             continue
         for f in check_precondition_unsat(model, thy, repo_root):
+            report.add(f)
+        for f in check_precondition_unsat_env(model, thy, repo_root):
             report.add(f)
         for f in check_antecedent_vacuity(model, thy, repo_root):
             report.add(f)

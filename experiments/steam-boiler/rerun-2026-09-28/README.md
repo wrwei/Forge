@@ -44,8 +44,8 @@ decomposition of the mode automaton against the operation machines -- manual
 contracts per component, a verification-engineering effort in its own right,
 and out of scope for this supplementary rerun.
 
-| Isabelle, elaboration | never reached a verdict (32-bit ML heap faults) | **completes in 788 s** under 64-bit ML with a 6 GB heap (`verify/isabelle/arm0_BoilerController_Skeleton_Check.log`). New measurement. |
-| Isabelle, deadlock-freedom | predicted to fail (EMERGENCY_STOP has no outgoing operation) | **pair completed**: the regenerated theory (with `until "st = EMERGENCY_STOP"`) **verifies in full** -- all 38 invariant-preservation lemmas and `BoilerController_deadlock_free` -- in 2051 s wall / 51 min CPU (`verify/isabelle/arm1_BoilerController_Full_Check.log`; no sorry, no quick_and_dirty). The September-encoding baseline proves the same 38 preservation lemmas (NoDlf, 950 s) but its deadlock-freedom obligation is false at the terminal state (exemption predicate `(%s. False)`; residual goal in `verify/isabelle/arm0_BoilerController_DlfOnly_Check.log`), and the stock tactic does not terminate on the false goal within 5400 s (`arm0_BoilerController_Full_Check`, recorded as a non-verdict timeout). |
+| Isabelle, elaboration | never reached a verdict (32-bit ML heap faults) | **completes in 788 s** (`verify/isabelle/arm0_BoilerController_Skeleton_Check.log`). New measurement. |
+| Isabelle, deadlock-freedom | predicted to fail (EMERGENCY_STOP has no outgoing operation) | **pair completed**: the regenerated theory (with `until "st = EMERGENCY_STOP"`) **verifies in full** -- all 38 invariant-preservation lemmas and `BoilerController_deadlock_free` -- in 2051 s wall / 51 min CPU (no sorry, no quick_and_dirty; that run's log was not preserved -- the same theory's full verification is re-measured in `../environment-model/results/2026-10-20-run6-decision/boiler-A0.build.log`: 1221 s, 4 threads). The September-encoding baseline proves the same 38 preservation lemmas (NoDlf, 950 s) but its deadlock-freedom obligation is false at the terminal state (exemption predicate `(%s. False)`; residual goal in `verify/isabelle/arm0_BoilerController_DlfOnly_Check.log`), and the stock tactic does not terminate on the false goal within 5400 s (`arm0_BoilerController_Full_Check`, recorded as a non-verdict timeout). |
 
 ## The headline result, and a correction
 
@@ -63,10 +63,18 @@ an artefact of our isolation variants, which stripped the individually-proved
 no closer could discharge. The unmodified generated theory has the correct
 architecture and verifies. The isolation-ladder theories and their failure
 logs are retained under `verify/isabelle-ladder-*` as the record of that
-detour. Environment requirements for reproduction: 64-bit Poly/ML with a 6 GB
-heap the Docker VM can back (Docker Desktop set to 8 GB / 8 CPUs; threads=8),
-per-goal timeout 5400 s. September's 32-bit runs and the earlier failures in
-this folder were environment faults, not verdicts.
+detour. Environment for reproduction: the distribution's stock 32-bit Poly/ML
+(`polyml-5.9_x86_64_32-linux`), Docker Desktop with 8 GB / 8 CPUs, per-goal
+timeout 5400 s. September's failed runs and the earlier failures in this folder
+were environment faults (memory and time), not verdicts.
+
+Correction (21 October 2026): an earlier version of this README said these runs
+used 64-bit Poly/ML with a 6 GB heap. They did not. `sb_isa_rerun.sh` wrote
+those settings to the directory mounted at `/isabelle-user`, but the
+distribution's `etc/settings` sets `ISABELLE_HOME_USER` to
+`/root/.isabelle/Isabelle2023` inside the container, so the file was never read;
+every log in `verify/isabelle/` that records the ML command line shows
+`polyml-5.9_x86_64_32-linux` and `--minheap 500` with no heap ceiling.
 
 ## Layout
 

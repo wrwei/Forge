@@ -907,3 +907,77 @@ def build_checked_env(inst: Instantiation | None,
             if _NUM_RE.match(v):
                 const_map[k.lower()] = Fraction(v)
     return Env(checked=True, grid=grid, const_map=const_map)
+
+
+# ---------------------------------------------------------------------------
+# Environment model (2026-10-20)
+# ---------------------------------------------------------------------------
+_OFFER_SET_RE = re.compile(r"offered\s*=\s*\{([^{}]*)\}")
+
+
+def environment_model(model: TheoryModel) -> str:
+    """Which environment model the theory's invariant states for `offered`.
+
+    "B"    -- per-state literal disjunction `st = S --> (offered = {} \/ offered = {e} ...)`
+              (generator since 2026-10-20: at most one listened event per step).
+    "A"    -- `offered = listens` (2026-09-16 .. 2026-10-20: maximal cooperation).
+    "free" -- the invariant does not constrain `offered` (pre-split encodings,
+              or a theory without an `offered` lens).
+    """
+    if "offered" not in model.lenses:
+        return "free"
+    for a in model.inv_atoms:
+        if a.kind == "implies" and "offered" in a.cons:
+            return "B"
+    for a in model.inv_atoms:
+        if normalize(a.raw) == normalize("offered = listens"):
+            return "A"
+    return "free"
+
+
+def allowed_offers(model: TheoryModel, state: str) -> list[frozenset] | None:
+    """The offers the invariant allows at `state`, or None when `offered` is
+    unconstrained there. Model B: the literal disjunction for that state (a
+    state the invariant does not mention has no allowed offer but {}). Model A:
+    exactly the pinned listen set (states without a pin: {})."""
+    em = environment_model(model)
+    if em == "free":
+        return None
+    if em == "A":
+        return [frozenset(model.pins.get(state, frozenset()))]
+    for a in model.inv_atoms:
+        if a.kind != "implies" or "offered" not in a.cons:
+            continue
+        if normalize(a.ante) != normalize(f"st = {state}"):
+            continue
+        offers = []
+        for m in _OFFER_SET_RE.finditer(a.cons):
+            offers.append(frozenset(x.strip() for x in m.group(1).split(",") if x.strip()))
+        return offers
+    return [frozenset()]
+
+
+def op_sat_under_environment(op: ZOperation, model: TheoryModel, env: Env):
+    """(verdict, offers_tried, reasons): the operation's precondition checked at
+    its source state under EVERY offer the invariant allows there. UNSAT only
+    when it is UNSAT under all of them -- i.e. the operation can never fire in
+    the verified theory. A None offer list (unconstrained `offered`) falls back
+    to the plain symbolic check."""
+    state = op.source_state
+    if state is None:
+        r = sat_conjunction(op.atoms, model, env)
+        return r.verdict, None, [r.reason]
+    offers = allowed_offers(model, state)
+    if offers is None:
+        r = sat_conjunction(op.atoms, model, env)
+        return r.verdict, None, [r.reason]
+    verdicts, reasons = [], []
+    for off in offers:
+        r = op_sat_at(op, state, model, env, fixed_offered=off)
+        verdicts.append(r.verdict)
+        reasons.append(f"offered={{{', '.join(sorted(off))}}}: {r.verdict} ({r.reason})")
+    if all(v == UNSAT for v in verdicts):
+        return UNSAT, offers, reasons
+    if any(v == SAT for v in verdicts):
+        return SAT, offers, reasons
+    return UNKNOWN, offers, reasons

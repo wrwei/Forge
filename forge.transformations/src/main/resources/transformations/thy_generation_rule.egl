@@ -1129,6 +1129,7 @@ for(svName in stateVarNames){
 // (1m21s / 0m32s), so removing a vacuous pin cannot make them harder --
 // but re-verify after regeneration rather than assuming it.
 var trigInvConjuncts: String = "";
+var offerInvConjuncts: String = "";
 for (invNode in p.machines.at(stm_index).nodes){
 	var invTrigSet: String = "";
 	var invTrigCount = 0;
@@ -1142,6 +1143,11 @@ for (invNode in p.machines.at(stm_index).nodes){
 	if (invTrigCount > 0) {
 		trigInvConjuncts = trigInvConjuncts + "\n   \\<and> (st = " + invNode.zmState() + " \\<longrightarrow> listens = {" + invTrigSet + "})";
 	}
+	// Environment model B (2026-10-20): in state X the environment offers
+	// at most ONE event X listens for, or nothing. Stated per state as a
+	// literal disjunction so that `case_tac st; simp; elim disjE` exposes the
+	// cases to the totality proof (encoding B3 of the pre-registration).
+	offerInvConjuncts = offerInvConjuncts + "\n   \\<and> (st = " + invNode.zmState() + " \\<longrightarrow> (" + invNode.offerDisjunction() + "))";
 }
 %]  st::"St"
   tr :: "(St, Evt) tag list"
@@ -1149,26 +1155,24 @@ for (invNode in p.machines.at(stm_index).nodes){
                             for. Written by every operation's update to the
                             target state's awaited set; pinned per state by the
                             invariant below. A property OF THE AUTOMATON. *)
-  offered :: "Evt set"   (* FORK: DYNAMIC. The events the environment
-                            offers THIS step. Written by no operation, pinned by
-                            no invariant conjunct: a free input. Read by trigger
-                            presence conjuncts (C2) and absence conjuncts.
-                            A property OF THE ENVIRONMENT, not of the automaton. *)
+  offered :: "Evt set"   (* DYNAMIC. The events the environment offers THIS
+                            step. Environment model B (2026-10-20): the
+                            invariant pins, per state, offered = {} or
+                            offered = {e} for one listened e -- the Java step
+                            consumes at most one input event. Every operation
+                            sets offered' to a fresh choice `nxt` drawn from the
+                            target state's allowed offers. Read by trigger
+                            presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
-    "tr \<noteq> [][%=trigInvConjuncts%] \<and> offered = listens"
+    "tr \<noteq> [][%=trigInvConjuncts%][%=offerInvConjuncts%]"
 [%
-// FIX (2026-09-16). The conjunct `offered = listens` is the
-// MAXIMAL-COOPERATION ENVIRONMENT ASSUMPTION: the environment offers exactly
-// the events the machine listens for. Without it, `offered` is a zstore field
-// no operation updates and no invariant pins, so the deadlock-freedom goal
-// universalises it (method deadlock_free's allI, Z_Machine.thy:117) and the
-// obligation reads "enabled under EVERY conceivable offer" -- refuted
-// machine-checked on chem (probe_P2: false at READING for every listens).
-// With the conjunct, the probe run of 2026-09-16 closed ALL obligations:
-// sranger 17/17 (21s), lre 39/39 (119s), chem 17/17 (30s, with the tactic
-// fix at the ddTac fork below). Established by Init (offered ~> {}) and
-// preserved by pairing every listens' update with an offered' update -- both
-// emitted below. The paper must state this as the environment model.
+// History. From 2026-09-16 to 2026-10-20 the invariant pinned `offered = listens`
+// (every listened event offered at once). Under that conjunct every absence
+// conjunct on a listened event is false, so every guard-driven operation out of
+// a state with event triggers was unsatisfiable (LRE: 9 of 18 operations,
+// incl. MOMToCAM). Environment model B above replaced it after the
+// pre-registered probe (experiments/environment-model/preregistration.md in this
+// repository): invariant lemmas and the totality lemma close on all five studies.
 %]
 
 subsection \<open> Operations \<close>
@@ -1179,11 +1183,6 @@ subsection \<open> Operations \<close>
 //zoperations_string is used for zmachine section
 //zoperations_set is used for the lemma of structural invariant section
 var zoperations_string:String;
-// Tactic support: accumulate every emitted precondition so the ddTac fork
-// can compute WHICH enums' exhaust_disc lemmas the deadlock_free proof needs
-// (an enum compared in a pre lands in the residual disjunction).
-var allPreStrings : String;
-allPreStrings = "";
 var zoperations_set: OrderedSet;
 var zop_name: String;
 
@@ -1213,6 +1212,9 @@ indexOfOp++;
 var zop_tuple = new Tuple;
 zop_tuple.name = zop_name;
 zop_tuple.hasPara = false;
+zop_tuple.srcState = tr.source.zmState();
+zop_tuple.preBody = "";
+zop_tuple.hasNxt = false;
 zop_tuple.paras = para_string;
 // FORK: track params that originate from a typed-trigger state-var rebind
 // (Java pattern `case Gas gas -> { this.gs = gas.value(); ... }`). For
@@ -1365,6 +1367,13 @@ zop_tuple.paras.add(tr.target.actions.at(0).action.statements.at(i).communicatio
 
 
 
+var nxtDomain = tr.target.offerDomain();
+if(nxtDomain <> ""){
+	params_string = params_string + "nxt \\<in> \"" + nxtDomain + "\" ";
+	zop_tuple.hasPara = true;
+	zop_tuple.hasNxt = true;
+	zop_tuple.paras.add("nxt");
+}
 if(zop_tuple.hasPara){%]
   params [%=params_string %]
 [%
@@ -1616,8 +1625,8 @@ if(not (tr.trigger.isDefined() and tr.trigger.event.isDefined())){
 }
 pre_string=pre_string+"\"";
 pre_string.println();
+zop_tuple.preBody = pre_string.substring(5, pre_string.length()-1);
 %]
-[% allPreStrings = allPreStrings + pre_string; %]
   [%=pre_string%]
 [%
 
@@ -2022,7 +2031,7 @@ else if  (t.trigger.isDefined()and t.trigger.event.isDefined() and numOfNewTrig>
 triggers_string=triggers_string+", "+t.trigger.event.name;}
 }     
 %]         ,listens\<Zprime> = {[%=triggers_string%]}
-         ,offered\<Zprime> = {[%=triggers_string%]}
+         ,offered\<Zprime> = [%=zop_tuple.offeredNext()%]
          ]"
 [%
 // FORK: the update writes ONLY the static lens — the awaited set
@@ -2061,6 +2070,56 @@ triggers_string=triggers_string+", "+t.trigger.event.name;}
 // pseudo-state has no triggered outgoing transition, so it carries no pin
 // and no conjunct constrains `listens = {}` here. No invariant conjunct
 // mentions `offered` at all, so leaving it arbitrary cannot break Init_inv.
+%]
+[%
+// Environment model B (2026-10-20): the Java `else` branch. For every state
+// X with outgoing transitions and no unconditional one, Idle_X is enabled
+// exactly when no transition's RAW guard holds (priority-chain form: the C1
+// negations an earlier branch contributed to a later branch's precondition
+// are stripped, so the conjunction is not(G_1) /\ ... /\ not(G_n)). It keeps the
+// mode and the trace and draws the next offer. Encoding B3 of the
+// pre-registration; the chain form and the complement form were checked
+// propositionally equivalent on all five studies before adoption.
+for (idleNode in p.machines.at(stm_index).nodes) {
+	var idleState = idleNode.zmState();
+	var outOps = zoperations_set.select(z | z.srcState = idleState);
+	if (outOps.isEmpty()) { continue; }
+	var rawGuards = new Sequence;
+	var unconditional = false;
+	for (z in outOps) {
+		var raw = z.preBody.rawGuardOf(rawGuards);
+		if (raw.isEmpty()) { unconditional = true; }
+		rawGuards.add(raw);
+	}
+	if (unconditional) { continue; }
+	var idlePre = "st= " + idleState;
+	for (raw in rawGuards) {
+		idlePre = idlePre + " \\<and> \\<not>(" + raw.joinAnd() + ")";
+	}
+	var idleDomain = idleNode.offerDomain();
+	var idle_tuple = new Tuple;
+	idle_tuple.name = "Idle_" + idleState;
+	idle_tuple.hasPara = (idleDomain <> "");
+	idle_tuple.hasNxt = (idleDomain <> "");
+	idle_tuple.paras = new OrderedSet;
+	idle_tuple.lensParas = new OrderedSet;
+	if (idleDomain <> "") { idle_tuple.paras.add("nxt"); }
+	idle_tuple.srcState = idleState;
+	idle_tuple.preBody = idlePre;
+	zoperations_set.add(idle_tuple);
+	zoperations_string = zoperations_string + " " + idle_tuple.name;
+%]
+zoperation [%=idle_tuple.name%] =
+  over [%=stm_name%]
+[% if (idleDomain <> "") { %]  params nxt \<in> "[%=idleDomain%]"
+[% } %]  pre "[%=idlePre%]"
+  update "[st\<Zprime>= [%=idleState%]
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = [%=idle_tuple.offeredNext()%]
+         ]"
+
+[%
+}
 %]
 definition Init :: "[%=stm_name%] subst" where
   [z_defs]:
@@ -2309,61 +2368,20 @@ if (not nonSourceStates.isEmpty()) {
 lemma [%=stm_name%]_deadlock_free: "[%=stm_name%]_axioms  \<Longrightarrow> deadlock_free [%=stm_name%]Machine"
   unfolding [%=stm_name%]Machine_def
   apply deadlock_free
-[% // FORK (C2 fix follow-on): event-triggered operations' enabledness
-   // disjuncts now carry `<evt> \<in> offered`; with the invariant pinning
-   // `st = S \<longrightarrow> listens = {..}` and the guards carrying
-   // `offered \<subseteq> listens`, discharging them needs set membership
-   // introduction on top of the enumtype exhaustion lemma. `insertCI`
-   // (a \<in> insert a A) supplies it for the metis path.
-   //
-   // !! UNVERIFIED AFTER THE DYNAMIC-LENS SPLIT — the tactic selection below was
-   // measured against the SINGLE-LENS encoding, where the pin fixed
-   // `triggers` exactly and the trigger conjunct was entailed by it. With
-   // `offered` a free input the residual goal changes shape: enabledness is
-   // now conditional on an unconstrained variable, so the bare `st = X`
-   // disjunct no longer closes every case by exhaustion alone. Whether
-   // `metis`/`auto` still discharge, and whether `deadlock_free` remains
-   // TRUE (not merely provable), could not be checked here: Isabelle is not
-   // runnable in this environment. Re-run the three sessions before
-   // claiming any proof result. The timings and tactic choices recorded
-   // below are PRE-SPLIT measurements, retained as the starting point for
-   // that re-run, NOT as evidence about the current emission.
-   // TACTIC FIX (2026-09-16). With the `offered = listens` invariant
-   // conjunct (see the inv emission above) the residual goal is a finite case
-   // analysis over St PLUS every enum some precondition compares (chem:
-   // `sts = noGas` puts Status in the disjunction). metis needs that enum's
-   // exhaust_disc among its facts or it searches forever -- measured: chem
-   // `metis St.exhaust_disc insertCI` TIMEOUT 900s, adding
-   // Status.exhaust_disc -> ALL CLOSED 30s (probe_iteration3.sh arm M2).
-   // COMPUTED, not hardcoded: an enum's lemma is supplied iff one of its
-   // literals occurs in an accumulated precondition. sranger/lre have no such
-   // enum and keep the bare-St call that closes them (21s/119s measured).
-   // The old hasPayloadDomain->auto fork existed because metis hung on the
-   // payload existential -- measured against a goal that was FALSE;
-   // with the true goal, metis+facts closes the payload machine too.
-   var exhaustFacts = "St.exhaust_disc";
-   for (t in p.types) {
-       if (t.isTypeOf(Enumeration) and t.name <> "St" and t.name <> "Evt") {
-           var used = false;
-           for (lit in t.literals) {
-               if (allPreStrings.indexOf(lit.name) >= 0) { used = true; }
-           }
-           if (used) { exhaustFacts = exhaustFacts + " " + t.name + ".exhaust_disc"; }
-       }
-   }
-   var ddTac; ddTac = "by (metis " + exhaustFacts + " insertCI)"; %]
-  [%=ddTac%]
-  (* TACTIC (2026-09-16, supersedes the hasPayloadDomain fork): the closing
-     call is `by (metis St.exhaust_disc <used-enum>.exhaust_disc ... insertCI)`.
-     Under the invariant conjunct `offered = listens` the residual goal after
-     `apply deadlock_free` is a finite case analysis over St plus every enum a
-     precondition compares (e.g. `sts = noGas` puts Status in the disjunction);
-     each such enum's exhaust_disc lemma is supplied, computed from the emitted
-     preconditions. Measured 2026-09-16: sranger 17/17 obligations (21s), lre
-     39/39 (119s), chem 17/17 (30s -- without Status.exhaust_disc the same call
-     is a >900s timeout). The earlier auto branch existed for a payload
-     existential measured against a goal that was FALSE before this fix; with the true
-     goal, metis with the computed fact list closes the payload machine too. *)
+[%
+   // Environment model B (2026-10-20): under this model the goal left by
+   // `apply deadlock_free` is a totality statement -- in every state, under
+   // every allowed offer, some operation (possibly Idle_X) is enabled. Generic
+   // closers time out on the LRE (auto, metis: >1800 s; blast: stack
+   // exhaustion) because they must do the state split, the offer split, the
+   // membership evaluation and the guard-chain tautology in one search while
+   // carrying the arithmetic atoms. Splitting first makes each branch a small
+   // propositional goal that blast closes without looking inside the atoms.
+   // Measured 2026-10-20 (pre-registration, run 6): LRE 267 s, SRanger 75 s,
+   // Gas 76 s, Movement 296 s, Steam Boiler 1793 s -- all closed.
+   %]
+  apply (case_tac st; (simp)?; (elim disjE)?; (simp)?)
+  by blast+
  [%
 // '}' in the line below is the close end of package scope: if (p.name="Chemical")
 } 
@@ -2371,6 +2389,119 @@ lemma [%=stm_name%]_deadlock_free: "[%=stm_name%]_axioms  \<Longrightarrow> dead
 %]
 end
 [%
+
+//-------------------------------------------------------------------
+//        Environment model B helpers (2026-10-20)
+//-------------------------------------------------------------------
+// The events a state listens for, in transition order (same computation as the
+// invariant pin and the listens' update; duplicates kept the same way).
+operation RC!Node listenEvents(): Sequence {
+	var evs = new Sequence;
+	for (t in self.eContainer().transitions.select(t | t.source = self)) {
+		if (t.trigger.isDefined() and t.trigger.event.isDefined()) {
+			if (not evs.includes(t.trigger.event.name)) { evs.add(t.trigger.event.name); }
+		}
+	}
+	return evs;
+}
+// "{{}, {e1}, {e2}}" -- the parameter domain for the next offer; "" when the
+// state listens for nothing (then offered' = {} is emitted directly).
+operation RC!Node offerDomain(): String {
+	var evs = self.listenEvents();
+	if (evs.isEmpty()) { return ""; }
+	var d = "{{}";
+	for (e in evs) { d = d + ", {" + e + "}"; }
+	return d + "}";
+}
+// "offered = {} \<or> offered = {e1} \<or> ..." -- the per-state invariant conjunct.
+operation RC!Node offerDisjunction(): String {
+	var d = "offered = {}";
+	for (e in self.listenEvents()) { d = d + " \\<or> offered = {" + e + "}"; }
+	return d;
+}
+operation Tuple offeredNext(): String {
+	if (self.hasNxt) { return "nxt"; } else { return "{}"; }
+}
+// Split a rendered conjunction at its TOP-LEVEL \<and> (parenthesis depth 0).
+operation String splitTopAnd(): Sequence {
+	var parts = new Sequence;
+	var depth = 0;
+	var cur = "";
+	var n = self.length();
+	var i = 0;
+	while (i < n) {
+		var ch = self.substring(i, i + 1);
+		i = i + 1;
+		if (ch = "(") { depth = depth + 1; }
+		if (ch = ")") { depth = depth - 1; }
+		cur = cur + ch;
+		if (depth = 0 and cur.endsWith("\\<and>")) {
+			parts.add(cur.substring(0, cur.length() - 6).trim());
+			cur = "";
+		}
+	}
+	if (cur.trim() <> "") { parts.add(cur.trim()); }
+	return parts;
+}
+// If the conjunct is a negation, its positive body; otherwise "".
+operation String negBody(): String {
+	var c = self.trim();
+	if (not c.startsWith("\\<not>")) { return ""; }
+	var b = c.substring(6, c.length()).trim();
+	if (b.startsWith("(") and b.endsWith(")")) {
+		// strip the outer pair only if it encloses the whole body
+		var depth = 0; var closesEarly = false; var k = 0;
+		var bn = b.length();
+		while (k < bn) {
+			var ch = b.substring(k, k + 1);
+			if (ch = "(") { depth = depth + 1; }
+			if (ch = ")") { depth = depth - 1; }
+			if (depth = 0 and k < bn - 1) { closesEarly = true; }
+			k = k + 1;
+		}
+		if (not closesEarly) { b = b.substring(1, b.length() - 1).trim(); }
+	}
+	return b;
+}
+operation Sequence joinAnd(): String {
+	var out = "";
+	var first = true;
+	for (x in self) {
+		if (not first) { out = out + " \\<and> "; }
+		out = out + x;
+		first = false;
+	}
+	return out;
+}
+// Priority-chain decomposition of one precondition body (`st= X \<and> ...`):
+// the top-level conjuncts minus the state test, minus `offered \<subseteq> listens`,
+// minus every conjunct that is the negation of an EARLIER transition's raw guard
+// (C1 negations). What remains is this transition's raw guard G_i.
+operation String rawGuardOf(earlierRaws: Sequence): Sequence {
+	var earlier = new Sequence;       // bodies whose NEGATION a later branch carries
+	var earlierNeg = new Sequence;    // negated single-atom raws: a later branch carries the POSITIVE
+	for (r in earlierRaws) {
+		earlier.add(r.joinAnd());
+		if (r.size() = 1) {
+			earlier.add(r.at(0));
+			var pb = r.at(0).negBody();
+			if (pb <> "") { earlierNeg.add(pb); }
+		}
+	}
+	var keep = new Sequence;
+	var first = true;
+	for (c in self.splitTopAnd()) {
+		if (first) { first = false; continue; }   // the `st= X` test
+		if (c = "offered \\<subseteq> listens") { continue; }
+		var nb = c.negBody();
+		if (nb <> "" and earlier.includes(nb)) { continue; }
+		// the ETL emits the un-negated body when the predecessor guard is itself a
+		// negation (prependNegatedGuards); mirror that so an if/else pair is exhaustive
+		if (nb = "" and earlierNeg.includes(c.trim())) { continue; }
+		keep.add(c);
+	}
+	return keep;
+}
 //-------------------------------------------------------------------
 //                     Operations
 //-------------------------------------------------------------------
