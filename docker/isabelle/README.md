@@ -37,9 +37,15 @@ The image builds itself on first use (~1 min). `pipeline.yaml` points
 dashboard's phase 6c works with no further setup.
 
 Host paths under `$HOME` and `/tmp` are mounted at identical paths inside the
-container, so arguments like `-D <host path>` need no translation. Built
+container, so arguments like `-D <host path>` need no translation.
+On macOS the resolved `/private/tmp` spelling is mounted as well, so paths
+resolved by the Python worker still reach their generated session files. Built
 heaps persist in `~/.isabelle-docker` — without that, every run would rebuild
 the session stack from scratch.
+The wrapper mounts that directory at `/root/.isabelle/Isabelle2023`, where this
+distribution actually reads user settings and writes heaps. Setting an
+`ISABELLE_HOME_USER` environment variable alone does not override its startup
+settings.
 
 ### Environment overrides
 

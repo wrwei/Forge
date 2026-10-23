@@ -40,10 +40,9 @@ RUN apt-get update -qq \
       unzip \
  && rm -rf /var/lib/apt/lists/*
 
-# Isabelle writes user state (heaps it builds, settings) to ISABELLE_HOME_USER.
-# Point it at a fixed path the wrapper bind-mounts to a host directory, so
-# built heaps survive container exit — otherwise every run rebuilds.
-ENV ISABELLE_HOME_USER=/isabelle-user
+# Isabelle2023 computes ISABELLE_HOME_USER from the root user's home and
+# its version identifier, overriding an environment value of the same name.
+# The wrapper mounts /root/.isabelle/Isabelle2023 so settings and heaps persist.
 
 # The distribution mount point. Keep in sync with the wrapper script.
 ENV PATH=/opt/isabelle/bin:$PATH

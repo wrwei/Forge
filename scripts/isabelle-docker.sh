@@ -27,13 +27,6 @@
 set -euo pipefail
 
 ISABELLE_DIST="${ISABELLE_DIST:-$HOME/Isabelle2023-CyPhyAssure}"
-# Heap ceiling. The directory mounted at /isabelle-user is NOT where the
-# Isabelle distribution reads user settings (its etc/settings reassigns
-# ISABELLE_HOME_USER to $USER_HOME/.isabelle/Isabelle2023 inside the
-# container), so an ML_OPTIONS line placed there has no effect and Poly/ML
-# runs with no --maxheap. To cap the heap use
-# experiments/environment-model/mutation-modelB/isabelle-docker-maxheap.sh,
-# which mounts the settings where they are read.
 ISABELLE_IMAGE="${ISABELLE_IMAGE:-forge/isabelle:2023-cyphyassure}"
 # Built heaps live here so they survive container exit. Without this, every
 # invocation rebuilds any session not already in the distribution's heaps.
@@ -59,14 +52,22 @@ fi
 
 mkdir -p "$ISABELLE_USER_DIR"
 
+# macOS resolves /tmp to /private/tmp. The Python phase runner resolves its
+# workspace before passing paths, so both spellings must exist in the container.
+tmp_mounts=(-v /tmp:/tmp)
+resolved_tmp=$(cd /tmp && pwd -P)
+if [[ "$resolved_tmp" != /tmp ]]; then
+  tmp_mounts+=(-v "$resolved_tmp:$resolved_tmp")
+fi
+
 # $HOME and /tmp are mounted at identical paths so host-absolute arguments
 # resolve unchanged inside the container. Note this gives the container
 # read-write access to the home directory; it needs write access because
 # `isabelle build` emits logs and artefacts beside the session it is given.
 exec docker run --rm --platform linux/amd64 \
   -v "$ISABELLE_DIST:/opt/isabelle" \
-  -v "$ISABELLE_USER_DIR:/isabelle-user" \
+  -v "$ISABELLE_USER_DIR:/root/.isabelle/Isabelle2023" \
   -v "$HOME:$HOME" \
-  -v /tmp:/tmp \
+  "${tmp_mounts[@]}" \
   -w "$PWD" \
   "$ISABELLE_IMAGE" "$@"

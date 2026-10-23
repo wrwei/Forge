@@ -2,6 +2,11 @@
 # isabelle-docker-maxheap.sh -- scripts/isabelle-docker.sh with a Poly/ML heap
 # ceiling that actually takes effect.
 #
+# NOTE (2026-10-23): scripts/isabelle-docker.sh now mounts the user directory at
+# /root/.isabelle/Isabelle2023, where Isabelle reads it, so an ML_OPTIONS line in
+# ~/.isabelle-docker/etc/settings takes effect through the base wrapper too. This
+# script remains for runs that need a ceiling different from that file's.
+#
 # Why: the base wrapper sets ISABELLE_HOME_USER=/isabelle-user in the image, but
 # the distribution's etc/settings reassigns ISABELLE_HOME_USER to
 # $USER_HOME/.isabelle/$ISABELLE_IDENTIFIER (= /root/.isabelle/Isabelle2023 in
