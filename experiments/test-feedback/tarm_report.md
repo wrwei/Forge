@@ -29,7 +29,7 @@ anything about whether the artefacts verify.
 
 ## Fixed instruments
 
-- **JUnit suite** (byte-frozen, coauthor-authored, blindness-attested):
+- **JUnit suite** (unchanged across runs, written by a student from the requirements alone, declaration in the zip):
   `SrangerRequirementsTest.java` + `SrangerTestAdapter.java`, SHA-256 verified
   against the intake SHA256SUMS before the runs
   (d40af275… / 0ddf3901… — both MATCH). Baseline gate re-confirmed in this
@@ -93,7 +93,7 @@ A final re-scan of every feedback directory after the runs confirms:
 
 ## Suite coverage note
 
-Per the intake COVERAGE.md (coauthor's attested table): **20 of 23
+Per the suite's COVERAGE.md (the student author's coverage table): **20 of 23
 requirements tested** at the adapter interface; SR-DM5, SR-DM6 and SR-DC1
 declared not-testable-at-interface with reasons (sensor-default provisioning
 and actuator storage are behind the boundary; transition-uniqueness is a
