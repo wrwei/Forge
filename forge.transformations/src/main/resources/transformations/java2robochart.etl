@@ -3951,7 +3951,11 @@ operation isPresenceCheckExpr(expr : Any) : Boolean {
     if (expr.isKindOf(RoboChart!CallExp)) {
         var funcExpr = getRcFeature(expr, "function");
         if (funcExpr.isDefined() and funcExpr.isKindOf(RoboChart!StringExp)) {
-            return funcExpr.value.endsWith("Present");
+            // Read through getRcFeature, as every other site in this file does: a direct
+            // `.value` on this dynamic EObject fails ("Property 'value' not found") for
+            // some call shapes and crashed the M2M phase on them.
+            var fname = getRcFeature(funcExpr, "value");
+            return fname.isDefined() and fname.endsWith("Present");
         }
     }
     return false;
