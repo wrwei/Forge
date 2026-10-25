@@ -1,0 +1,338 @@
+{
+  "phase": "preflight",
+  "label": "2c — Preflight (Structural Lint)",
+  "status": "passed",
+  "summary": "2c — Preflight (Structural Lint): no structural errors.",
+  "new_count": 18,
+  "recurring_count": 0,
+  "resolved_count": 0,
+  "resolved_issue_titles": [],
+  "issues": [
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'inOpez' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'inOpez' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:116",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 116,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'cdaBelowMinSafe && tcpaNonNegative' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'cdaBelowMinSafe && tcpaNonNegative' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:118",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 118,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by 'cdaBelowMinSafe && tcpaNonNegative' does not negate preceding triggerless guard(s): inOpez",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by 'cdaBelowMinSafe && tcpaNonNegative' does not negate preceding triggerless guard(s): inOpez\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:118",
+      "fix_directive": "Branches below a triggerless guarded branch must textually carry the negation of each preceding triggerless guard (e.g. 'else if (hcmActive && !camActive)'). Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive. Conjoin '&& !<guard>' for each guard listed above. See the hand-written LRE convention in reference-runs/lre/java/controller/LreController.java.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 118,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by 'event instanceof lre.event.InputEvent.ReqHCM' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by 'event instanceof lre.event.InputEvent.ReqHCM' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:120",
+      "fix_directive": "Branches below a triggerless guarded branch must textually carry the negation of each preceding triggerless guard (e.g. 'else if (hcmActive && !camActive)'). Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive. Conjoin '&& !<guard>' for each guard listed above. See the hand-written LRE convention in reference-runs/lre/java/controller/LreController.java.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 120,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'hvelAtLeastOne && hdistCstcAtMostHoriz' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask, event instanceof lre.event.InputEvent.ReqHCM — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'hvelAtLeastOne && hdistCstcAtMostHoriz' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask, event instanceof lre.event.InputEvent.ReqHCM — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:123",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 123,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by 'hvelAtLeastOne && hdistCstcAtMostHoriz' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by 'hvelAtLeastOne && hdistCstcAtMostHoriz' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:123",
+      "fix_directive": "Branches below a triggerless guarded branch must textually carry the negation of each preceding triggerless guard (e.g. 'else if (hcmActive && !camActive)'). Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive. Conjoin '&& !<guard>' for each guard listed above. See the hand-written LRE convention in reference-runs/lre/java/controller/LreController.java.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 123,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'vdistCstcAtMostDfltVert' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask, event instanceof lre.event.InputEvent.ReqHCM — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'vdistCstcAtMostDfltVert' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask, event instanceof lre.event.InputEvent.ReqHCM — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:126",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 126,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by 'vdistCstcAtMostDfltVert' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative, hvelAtLeastOne&&hdistCstcAtMostHoriz",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by 'vdistCstcAtMostDfltVert' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative, hvelAtLeastOne&&hdistCstcAtMostHoriz\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:126",
+      "fix_directive": "Branches below a triggerless guarded branch must textually carry the negation of each preceding triggerless guard (e.g. 'else if (hcmActive && !camActive)'). Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive. Conjoin '&& !<guard>' for each guard listed above. See the hand-written LRE convention in reference-runs/lre/java/controller/LreController.java.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 126,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'vvelAtLeastOne && vdistCstcAtMostVert' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask, event instanceof lre.event.InputEvent.ReqHCM — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'vvelAtLeastOne && vdistCstcAtMostVert' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM, event instanceof lre.event.InputEvent.EndTask, event instanceof lre.event.InputEvent.ReqHCM — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:129",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 129,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by 'vvelAtLeastOne && vdistCstcAtMostVert' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative, hvelAtLeastOne&&hdistCstcAtMostHoriz, vdistCstcAtMostDfltVert",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by 'vvelAtLeastOne && vdistCstcAtMostVert' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative, hvelAtLeastOne&&hdistCstcAtMostHoriz, vdistCstcAtMostDfltVert\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:129",
+      "fix_directive": "Branches below a triggerless guarded branch must textually carry the negation of each preceding triggerless guard (e.g. 'else if (hcmActive && !camActive)'). Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive. Conjoin '&& !<guard>' for each guard listed above. See the hand-written LRE convention in reference-runs/lre/java/controller/LreController.java.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 129,
+          "line_end": 132,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'inOpez' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'inOpez' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:137",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 137,
+          "line_end": 144,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'cdaBelowMinSafe && tcpaNonNegative' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'cdaBelowMinSafe && tcpaNonNegative' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:139",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 139,
+          "line_end": 144,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by 'cdaBelowMinSafe && tcpaNonNegative' does not negate preceding triggerless guard(s): inOpez",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by 'cdaBelowMinSafe && tcpaNonNegative' does not negate preceding triggerless guard(s): inOpez\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:139",
+      "fix_directive": "Branches below a triggerless guarded branch must textually carry the negation of each preceding triggerless guard (e.g. 'else if (hcmActive && !camActive)'). Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive. Conjoin '&& !<guard>' for each guard listed above. See the hand-written LRE convention in reference-runs/lre/java/controller/LreController.java.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 139,
+          "line_end": 144,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'hdistCstcAboveHoriz && vdistCstcAboveVert' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'hdistCstcAboveHoriz && vdistCstcAboveVert' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:141",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 141,
+          "line_end": 144,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule6_missing_priority_negation",
+      "title": "LreController.step(): branch guarded by 'hdistCstcAboveHoriz && vdistCstcAboveVert' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative",
+      "raw": "Rule: rule6_missing_priority_negation\nSeverity: warning\nMessage: LreController.step(): branch guarded by 'hdistCstcAboveHoriz && vdistCstcAboveVert' does not negate preceding triggerless guard(s): inOpez, cdaBelowMinSafe&&tcpaNonNegative\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:141",
+      "fix_directive": "Branches below a triggerless guarded branch must textually carry the negation of each preceding triggerless guard (e.g. 'else if (hcmActive && !camActive)'). Relying on the implicit priority of else-if produces a formal model whose operations can fire nondeterministically — the extracted preconditions are not mutually exclusive. Conjoin '&& !<guard>' for each guard listed above. See the hand-written LRE convention in reference-runs/lre/java/controller/LreController.java.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 141,
+          "line_end": 144,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule8_event_branch_precedes_triggerless",
+      "title": "LreController.step(): triggerless branch guarded by 'cdaAtLeastMinSafe' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM — in the extracted model both are enabled together",
+      "raw": "Rule: rule8_event_branch_precedes_triggerless\nSeverity: warning\nMessage: LreController.step(): triggerless branch guarded by 'cdaAtLeastMinSafe' follows event-triggered branch(es): event instanceof lre.event.InputEvent.ReqOCM — in the extracted model both are enabled together\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:149",
+      "fix_directive": "An event-triggered branch followed by a TRIGGERLESS branch in the same else-if chain has no counterpart in RoboChart: the Java takes only the first branch, but the extracted transitions form an unguarded external choice and the triggerless one is enabled whenever its data guard holds — including when the event is present. Trigger disjointness does NOT close this (it only separates two EVENT-triggered branches), and the negation synthesis that closes rule6 cannot either, because the event-triggered branch contributes no data predicate to negate. RoboChart has no event-absence guard, so this must be fixed in the Java: either give the later branch an explicit guard that excludes the earlier branch's case, or place the triggerless branch FIRST so the ordinary priority-negation synthesis applies. Witness: LreController.java CAM block (reqOCM then cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two operations where the Java is deterministic.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 149,
+          "line_end": 152,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule7_signed_sentinel_on_controller_state",
+      "title": "LreController: controller state field 'cstc' assigned negative literal -1",
+      "raw": "Rule: rule7_signed_sentinel_on_controller_state\nSeverity: warning\nMessage: LreController: controller state field 'cstc' assigned negative literal -1\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:56",
+      "fix_directive": "Integer controller-state fields historically mapped to RoboChart 'nat', so a negative sentinel silently leaves the formal type's domain and the model diverges from the Java. Prefer a non-negative sentinel, an Optional/enum encoding, or confirm the M2M maps this field to a signed RoboChart 'int' before relying on negative values. See java_codegen_rules.txt and the int->nat history in the M2M type map.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 56,
+          "line_end": 56,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "lint_rule7_signed_sentinel_on_controller_state",
+      "title": "LreController: controller state field 'cdyn' assigned negative literal -1",
+      "raw": "Rule: rule7_signed_sentinel_on_controller_state\nSeverity: warning\nMessage: LreController: controller state field 'cdyn' assigned negative literal -1\nLocation: /Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java:57",
+      "fix_directive": "Integer controller-state fields historically mapped to RoboChart 'nat', so a negative sentinel silently leaves the formal type's domain and the model diverges from the Java. Prefer a non-negative sentinel, an Optional/enum encoding, or confirm the M2M maps this field to a signed RoboChart 'int' before relying on negative values. See java_codegen_rules.txt and the int->nat history in the M2M type map.",
+      "java_trace": [
+        {
+          "file": "/Users/ranwei/Git/Forge/java.generated.project/src/main/java/lre/controller/LreController.java",
+          "line_start": 57,
+          "line_end": 57,
+          "element": "",
+          "robochart_type": "",
+          "robochart_element": "",
+          "requirement_ids": []
+        }
+      ],
+      "seen_in_runs": 1
+    }
+  ],
+  "files_to_review": [],
+  "next_step": "Proceed to Phase 3 (T2M — Spoon Discovery)."
+}

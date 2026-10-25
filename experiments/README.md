@@ -6,14 +6,17 @@ with a README.
 
 | Experiment | Paper | Folder |
 | ---------- | ----- | ------ |
-| Convergence: iterations the feedback loop needs per case study | Section 4.6, Table 6 | [`convergence/`](convergence/) |
-| Compile-only ablation of the convergence runs | Section 4.7, Table 8 | [`convergence/ablation/`](convergence/ablation/) |
-| Cold baseline (K=10): single-shot generation without iteration, and best-of-N selection | Section 4.5, Table 5 | [`cold-baseline/`](cold-baseline/) |
-| Reference: convergence at one fixed pipeline version | Section 4.6, Table 7 | [`convergence-v3-frozen/`](convergence-v3-frozen/) |
-| Diagnosis-only: feedback with every prescriptive fix removed | Section 4.6, Table 7 | [`ablation-d2-diagnostic/`](ablation-d2-diagnostic/) |
-| All-controller: both Chemical Detector controllers verified | Section 4.6, Table 7 | [`multicontroller-e/`](multicontroller-e/) |
+| Convergence: iterations the feedback loop needs per case study | Section 4.6, Table 7 | [`convergence/`](convergence/) |
+| Compile-only ablation of the convergence runs (as collected and scored at submission) | response letter | [`convergence/ablation/`](convergence/ablation/) |
+| Compile-only stop points re-scored by the published extractor | Section 4.7 (RQ5), Table 9 | [`convergence/ablation-replay/`](convergence/ablation-replay/) |
+| Cold baseline (K=10): the 30 single-shot sources, as collected and scored at submission | response letter | [`cold-baseline/`](cold-baseline/) |
+| Cold baseline re-scored by the published extractor; best-of-N selection | Section 4.5 (RQ3), Tables 5 and 6 | [`cold-baseline-replay/`](cold-baseline-replay/) |
+| Reference: convergence at one fixed pipeline version | Section 4.6, Table 8 | [`convergence-v3-frozen/`](convergence-v3-frozen/) |
+| Diagnosis-only: feedback with every prescriptive fix removed | Section 4.6, Table 8 | [`ablation-d2-diagnostic/`](ablation-d2-diagnostic/) |
+| Diagnosis-only feedback, Chemical Detector, both controllers (condition E): five cold runs | Section 4.6, Table 8 (Diagnosis-only Chemical Detector row) | [`multicontroller-e/`](multicontroller-e/) |
+| Reference feedback, Chemical Detector, both controllers (condition F): five cold runs | Section 4.6, Table 8 (Reference Chemical Detector row); Section 5.6 (f), (m) | [`reference-multicontroller-f/`](reference-multicontroller-f/) |
 | Test-and-static-analysis feedback in place of verifier feedback | Section 4.7 (RQ5) | [`test-feedback/`](test-feedback/) |
-| Mutation testing: 186 mutants through every verifier | Section 4.8 (RQ6), Table 9 | [`mutation-testing/`](mutation-testing/) |
+| Mutation testing: 186 mutants through every verifier | Section 4.8 (RQ6), Table 10 | [`mutation-testing/`](mutation-testing/) |
 | Final-mode divergence between the CSP and Isabelle chains | Section 4.4 (RQ2) | [`final-mode-divergence/`](final-mode-divergence/) |
 | Requirements-conformance check (LRE) | Section 4.9 (RQ7) | [`requirements-conformance/`](requirements-conformance/) |
 | Independently authored reference specification (LRE) | Section 4.9.1 | [`blind-spec/`](blind-spec/) |
@@ -66,7 +69,7 @@ FDR4 + Isabelle all pass with a non-vacuous (D1/I1) result.
 | SRanger            | 10/10    | 10/10        | **0/10**       |
 | **Total**          | 19/30    | 30/30        | **0/30**       |
 
-\* Chemical Detector cold runs fail Java compile but the pipeline continues into FDR4 against the partial output. Per-run logs in [`cold-baseline/<study>/run-N/`](cold-baseline/).
+\* At submission time the Chemical Detector cold runs failed Java compile (a JVM memory error on the Windows host that ran them; nine of the ten compile in `cold-baseline-replay/`) and the pipeline continued into FDR4 against the partial output. Per-run logs in [`cold-baseline/<study>/run-N/`](cold-baseline/).
 
 ## Layout
 
@@ -77,11 +80,13 @@ experiments/
   RUN_TRAJECTORY.md                      <- answer-free runbook for driving one convergence trajectory
   HOWTO_RUN_CONVERGENCE_EXPERIMENT.md     <- convergence run guide (agent or human)
   HOWTO_RUN_COLD_BASELINE_EXPERIMENT.md   <- cold-baseline (K=10) run guide
-  convergence/                           <- Table 6 runs; ablation/ holds the Table 8 runs
-  cold-baseline/                         <- Table 5 runs and the best-of-N selection
-  convergence-v3-frozen/                 <- Table 7, Reference
-  ablation-d2-diagnostic/                <- Table 7, Diagnosis-only (and diagnosis-only.patch)
-  multicontroller-e/                     <- Table 7, All-controller
+  convergence/                           <- Table 7 runs; ablation/ holds the Table 9 runs
+  cold-baseline/                         <- the 30 cold sources, with the submission-time extractor's verdicts
+  cold-baseline-replay/                  <- the same sources re-scored by the published extractor: Tables 5 and 6
+  convergence-v3-frozen/                 <- Table 8, Reference
+  ablation-d2-diagnostic/                <- Table 8, Diagnosis-only (and diagnosis-only.patch)
+  multicontroller-e/                     <- Table 8, Diagnosis-only Chemical Detector row (condition E)
+  reference-multicontroller-f/           <- Table 8, Reference Chemical Detector row (condition F)
   test-feedback/                         <- RQ5
   mutation-testing/                      <- RQ6
   requirements-conformance/              <- RQ7

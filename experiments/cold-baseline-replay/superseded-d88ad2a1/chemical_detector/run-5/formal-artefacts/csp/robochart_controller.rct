@@ -1,0 +1,176 @@
+diagram GasAnalysisController
+
+enumeration Angle { Left Right Back Front }
+enumeration Loc { left right front }
+enumeration Status { noGas gasD }
+
+datatype Chem {
+	id : int
+}
+
+datatype GasSensor {
+	c : Chem
+	i : Intensity
+}
+
+datatype Intensity {
+	value : real
+}
+
+function analysis ( gs : Seq(GasSensor) ) : Status { }
+function intensity ( gs : Seq(GasSensor) ) : Intensity { }
+function location ( gs : Seq(GasSensor) ) : Angle { }
+
+interface Inputs {
+	event gas : Seq(GasSensor)
+}
+
+interface Outputs {
+	event setReading : Seq(GasSensor)
+	event resume
+	event stop
+	event turn : Angle
+}
+
+interface Sensors {
+	var peakAboveThr : boolean
+}
+
+interface Actuators {
+}
+
+interface Ctrl_State_Shared {
+	var a : Angle
+	var d0 : real
+	var d1 : real
+	var l : Loc
+	var lastOdometer : real = 0
+}
+
+interface GasAnalysisController_State {
+	var gs : Seq(GasSensor)
+	var sts : Status
+	var ins : Intensity
+	var anl : Angle
+}
+
+interface MovementController_State {
+}
+
+interface Constants {
+}
+
+stm GasAnalysisController {
+	uses Inputs uses Outputs requires GasAnalysisController_State requires Constants requires Sensors
+	var v : real
+	state GasDetected {
+		entry ins = intensity ( gs )
+	}
+	state NoGas {
+		entry send resume
+	}
+	state Analysis {
+		entry setReading ! gs ; sts = analysis ( gs )
+	}
+	state Reading {
+	}
+	state Final {
+		entry send stop
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to Reading
+	}
+	transition t1 {
+		from Reading
+		to Analysis
+		trigger gas ? gs
+	}
+	transition t2 {
+		from Analysis
+		to NoGas
+		condition sts == noGas
+	}
+	transition t3 {
+		from Analysis
+		to GasDetected
+		condition sts == gasD /\ not ( sts == noGas )
+	}
+	transition t4 {
+		from NoGas
+		to Reading
+	}
+	transition t5 {
+		from GasDetected
+		to Final
+		condition peakAboveThr
+	}
+	transition t6 {
+		from GasDetected
+		to Reading
+		condition not ( peakAboveThr )
+		action anl = location ( gs ) ; turn ! anl
+	}
+}
+
+controller GasAnalysisController_Ctrl {
+	uses Inputs uses Outputs requires GasAnalysisController_State requires Constants requires Sensors
+	sref stm_ref0 = GasAnalysisController
+	connection GasAnalysisController_Ctrl on gas to stm_ref0 on gas
+	connection stm_ref0 on setReading to GasAnalysisController_Ctrl on setReading
+	connection stm_ref0 on resume to GasAnalysisController_Ctrl on resume
+	connection stm_ref0 on stop to GasAnalysisController_Ctrl on stop
+	connection stm_ref0 on turn to GasAnalysisController_Ctrl on turn
+}
+
+stm MovementController {
+	uses Inputs uses Outputs requires MovementController_State requires Constants
+	clock T
+	state GettingOut {
+	}
+	state Final {
+	}
+	state Going {
+	}
+	state Avoiding {
+	}
+	state AvoidingAgain {
+	}
+	state Waiting {
+	}
+	state TryingAgain {
+	}
+	state Found {
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to Waiting
+	}
+}
+
+controller MovementController_Ctrl {
+	uses Inputs uses Outputs requires MovementController_State requires Constants
+	sref stm_ref0 = MovementController
+	connection stm_ref0 on odometer to MovementController_Ctrl on odometer
+}
+
+module GasAnalysisController_System_Module {
+	robotic platform GasAnalysisController_System_Platform {
+		provides Sensors provides Actuators provides Constants
+		event gas : Seq(GasSensor)
+		event setReading : Seq(GasSensor)
+		event resume
+		event stop
+		event turn : Angle
+	}
+	cref ctrl_ref0 = GasAnalysisController_Ctrl
+	cref ctrl_ref1 = MovementController_Ctrl
+	connection GasAnalysisController_System_Platform on gas to ctrl_ref0 on gas
+	connection ctrl_ref0 on setReading to GasAnalysisController_System_Platform on setReading
+	connection ctrl_ref0 on resume to GasAnalysisController_System_Platform on resume
+	connection ctrl_ref0 on stop to GasAnalysisController_System_Platform on stop
+	connection ctrl_ref0 on turn to GasAnalysisController_System_Platform on turn
+}
+

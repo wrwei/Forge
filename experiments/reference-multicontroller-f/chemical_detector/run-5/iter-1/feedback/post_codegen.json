@@ -1,0 +1,164 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Two controllers (GasAnalysis, Movement) implement all 81 requirements; issues list invented defaults and design choices for review.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Constant values are placeholders",
+      "raw": "thr=5.0, lv=1.0, evadeTime=1, stuckPeriod=3, stuckDist=2.0, outPeriod=2 (clock units). The spec says they are configured at startup but gives no values; small integral values keep the timed model tractable and avoid the CSP-gen ceiling of fractional constants.",
+      "fix_directive": "Replace with the deployment's configured values if known.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/constants/DetectorConstants.java",
+          "line_start": 6,
+          "line_end": 36,
+          "element": "DetectorConstants",
+          "requirement_ids": [
+            "CD-Const1",
+            "CD-Const2",
+            "CD-Const3",
+            "CD-Const4",
+            "CD-Const5",
+            "CD-Const6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Initial values of state variables",
+      "raw": "gs=[] (spec), sts=noGas, ins=0.0, anl=Front, a=Front, l=front, d0=d1=0.0, T=0. Only gs's initial value is specified.",
+      "fix_directive": "Confirm or supply initial values.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/controller/GasAnalysis.java",
+          "line_start": 18,
+          "line_end": 31,
+          "element": "GasAnalysis",
+          "requirement_ids": [
+            "CD-GA-Var1",
+            "CD-GA-Var2",
+            "CD-GA-Var3",
+            "CD-GA-Var4"
+          ]
+        },
+        {
+          "java_file": "src/main/java/chemical_detector/controller/Movement.java",
+          "line_start": 19,
+          "line_end": 42,
+          "element": "Movement",
+          "requirement_ids": [
+            "CD-MV-Var1",
+            "CD-MV-Var2",
+            "CD-MV-Var3",
+            "CD-MV-Var4",
+            "CD-MV-Clock1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor position to Angle mapping and target-chemical detection rule",
+      "raw": "angle(x) maps 1-based position x to Left, Right, Back, Front cyclically; analysis reports gasD when a sensor reports the target chemical with intensity > 0. Neither rule is given by the spec. Empty readings default to noGas / 0.0 / Front.",
+      "fix_directive": "Confirm the sensor layout and the presence criterion.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/sensor/VehicleSensors.java",
+          "line_start": 39,
+          "line_end": 88,
+          "element": "VehicleSensors",
+          "requirement_ids": [
+            "CD-Fn1",
+            "CD-Fn3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Terminal modes carry a tick-triggered self-loop",
+      "raw": "GasAnalysis reaches CONCLUDED (the spec's final state) and Movement stays in FOUND; both idle on an invented InputEvent.Tick so that no mode is left without an outgoing transition, per java_codegen_rules.txt. The flag/halt actions are on the stop transitions, so the self-loop does not re-emit flag.",
+      "fix_directive": "None unless the verifiers reject the encoding.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/controller/GasAnalysis.java",
+          "line_start": 87,
+          "line_end": 91,
+          "element": "step",
+          "requirement_ids": [
+            "CD-GA-Beh6"
+          ]
+        },
+        {
+          "java_file": "src/main/java/chemical_detector/controller/Movement.java",
+          "line_start": 115,
+          "line_end": 119,
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-Beh9",
+            "CD-MV-FR3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Odometer modelled as a sensor sample, not an input event",
+      "raw": "d0/d1 are sampled from VehicleSensors.odometer() inside the transitions (CD-Evt3 says the subsystem 'samples this distance'); the platform pushes reports via updateOdometer.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/sensor/VehicleSensors.java",
+          "line_start": 28,
+          "line_end": 36,
+          "element": "odometer",
+          "requirement_ids": [
+            "CD-Evt3",
+            "CD-MV-Var2",
+            "CD-MV-Var3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Intensity is a real; threshold guard is ins >= thr",
+      "raw": "Intensity is represented as double. goreq is implemented (and used by intensity/location) but the GasDetected guards use the equivalent ins >= THR comparison directly, as complementary named predicates.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/controller/GasAnalysis.java",
+          "line_start": 61,
+          "line_end": 62,
+          "element": "step",
+          "requirement_ids": [
+            "CD-Fn4",
+            "CD-GA-Beh6",
+            "CD-GA-Beh7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "location() over all chemicals",
+      "raw": "CD-Fn2/Fn3 take the peak over the whole sequence, not only over sensors reporting the target chemical; implemented as specified.",
+      "fix_directive": "Clarify whether non-target chemicals should be excluded.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/sensor/VehicleSensors.java",
+          "line_start": 50,
+          "line_end": 73,
+          "element": "intensity",
+          "requirement_ids": [
+            "CD-Fn2",
+            "CD-Fn3"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (scripts/run_claude_iteration.sh) and act on the first failing phase."
+}

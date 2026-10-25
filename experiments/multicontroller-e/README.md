@@ -1,6 +1,6 @@
-# All-controller experiment (Table 7)
+# Diagnosis-only feedback, Chemical Detector, both controllers (condition E; Table 8)
 
-Per-run records of the *All-controller* experiment in Table 7 of the paper:
+Per-run records of the Diagnosis-only Chemical Detector row of Table 8 of the paper:
 five Chemical Detector runs in which Dafny and Isabelle check both of the
 system's controllers (GasAnalysis and Movement), not only the first.
 

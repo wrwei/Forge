@@ -1,0 +1,226 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Cold codegen for chemical_detector: two controllers (GasAnalysisController, MovementController) plus leaves; all 81 requirements traced. No requirement is unimplemented; the issues below are invented defaults and design choices for review.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Constant values are not given by the specification",
+      "raw": "CD-Const1..6 say the values are configured at start-up but give none.",
+      "fix_directive": "Chose small values so the extracted model stays small: THR=2.0, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=2, STUCK_DIST=1.0, OUT_PERIOD=1. Replace with deployment values if they are known.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/constants/ChemConstants.java",
+          "line_start": 13,
+          "line_end": 33,
+          "element": "ChemConstants",
+          "requirement_ids": [
+            "CD-Const1",
+            "CD-Const2",
+            "CD-Const3",
+            "CD-Const4",
+            "CD-Const5",
+            "CD-Const6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "What 'indicates the target chemical' means in analysis()",
+      "raw": "CD-Fn1 says analysis returns gasD if a reading indicates the target chemical but names neither the target nor the test.",
+      "fix_directive": "analysis() returns gasD iff some GasSensor has c == TARGET_CHEM (=1, invented) and i > 0. Confirm the target identity and the detection test.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/sensor/ChemSensors.java",
+          "line_start": 33,
+          "line_end": 41,
+          "element": "analysis",
+          "requirement_ids": [
+            "CD-Fn1"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/constants/ChemConstants.java",
+          "line_start": 37,
+          "line_end": 37,
+          "element": "TARGET_CHEM",
+          "requirement_ids": [
+            "CD-Fn1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor position to Angle mapping",
+      "raw": "CD-Fn3 says location returns angle(x) for the strongest sensor x, but angle() is not defined.",
+      "fix_directive": "1-based position p maps to Front, Right, Back, Left for (p-1) mod 4 = 0,1,2,3. Ties choose the first peak. An empty reading returns Front and intensity() returns 0.0 (safe defaults; both functions have a non-empty precondition).",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/sensor/ChemSensors.java",
+          "line_start": 44,
+          "line_end": 84,
+          "element": "location",
+          "requirement_ids": [
+            "CD-Fn2",
+            "CD-Fn3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Sink states keep an event-triggered self-loop",
+      "raw": "CD-GA-Beh6 says the analysis 'concludes ... processing no further readings'. CD-MV-Beh9 says Found 'stays halted'. The spec has no tick event.",
+      "fix_directive": "GA FINAL self-loops on gas, storing the reading in gs (CD-GA-Var1) without analysing it. MV FOUND self-loops on obstacle, recording l (CD-MV-Var4) without moving or re-sending flag. No separate Final state was added after Found.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "line_start": 79,
+          "line_end": 86,
+          "element": "step",
+          "requirement_ids": [
+            "CD-GA-Beh6",
+            "CD-GA-Var1"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "line_start": 93,
+          "line_end": 99,
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-Beh9",
+            "CD-MV-FR3",
+            "CD-MV-Var4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Complementary guards on the autonomous decisions",
+      "raw": "Analysis is guarded by sts. GasDetected is guarded by ins vs thr. AvoidingAgain is guarded by the progress/stuck rule.",
+      "fix_directive": "Analysis uses sts == noGas and its negation, which equals sts == gasD because Status has exactly two values. GasDetected uses ins >= THR and its negation. AvoidingAgain uses (since < stuckPeriod || d1-d0 > stuckDist) and its De Morgan complement. Each mode's guards therefore cover every case.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "line_start": 57,
+          "line_end": 77,
+          "element": "step",
+          "requirement_ids": [
+            "CD-GA-Beh4",
+            "CD-GA-Beh5",
+            "CD-GA-Beh6",
+            "CD-GA-Beh7"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "line_start": 134,
+          "line_end": 151,
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-Beh17",
+            "CD-MV-Beh18"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "goreq is implemented but the threshold guard uses >=",
+      "raw": "CD-Fn4 says goreq is used in the threshold check intensity(gs) >= thr.",
+      "fix_directive": "Intensity is real (double), so the guard is written ins >= THR, which is the meaning of goreq, rather than an opaque goreq(ins, THR) call. ChemSensors.goreq realises CD-Fn4 and is used inside intensity() and location().",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/sensor/ChemSensors.java",
+          "line_start": 69,
+          "line_end": 71,
+          "element": "goreq",
+          "requirement_ids": [
+            "CD-Fn4",
+            "CD-DM5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Odometer is sampled through the sensor service",
+      "raw": "CD-Evt3 is typed 'event' but describes sampling the current distance into d0/d1.",
+      "fix_directive": "Modelled as the zero-argument sensor method ChemSensors.odometer(), read in actions (d0 on entry to Avoiding, d1 on TryingAgain -> AvoidingAgain), not as an input event.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/sensor/ChemSensors.java",
+          "line_start": 28,
+          "line_end": 30,
+          "element": "odometer",
+          "requirement_ids": [
+            "CD-Evt3",
+            "CD-MV-Var2",
+            "CD-MV-Var3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Operations live on the Vehicle",
+      "raw": "CD-OP1..3 are Vehicle-provided. CD-OP4 changeDirection has specified behaviour.",
+      "fix_directive": "move, randomWalk, shortRandomWalk and changeDirection are Vehicle methods. changeDirection is built on move(LV, Right/Left/Back). There are no compute()-style operation classes because the spec has no computed-quantity operations. Chem is modelled as nat and Intensity as real.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/actuator/Vehicle.java",
+          "line_start": 44,
+          "line_end": 52,
+          "element": "changeDirection",
+          "requirement_ids": [
+            "CD-OP1",
+            "CD-OP4",
+            "CD-DM4",
+            "CD-DM5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Peak intensity ignores chemical identity",
+      "raw": "CD-Fn2 defines intensity as the maximum over the whole reading, so a strong non-target chemical in a reading already classified gasD can reach thr.",
+      "fix_directive": "Followed the spec literally. If only the target's intensity should count, intensity/location must filter on c.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/sensor/ChemSensors.java",
+          "line_start": 44,
+          "line_end": 55,
+          "element": "intensity",
+          "requirement_ids": [
+            "CD-Fn2",
+            "CD-GA-Beh6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Cycle semantics of step()",
+      "raw": "Autonomous transitions (Analysis, NoGas, GasDetected, AvoidingAgain) need a step() call to fire.",
+      "fix_directive": "step(null) means no event arrived in this cycle. ChemicalDetector runs two extra analysis cycles after each gas reading and one settling movement cycle after each delivered event. Waiting's during action randomWalk() runs at the head of the WAITING block on every cycle.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/chemical_detector/system/ChemicalDetector.java",
+          "line_start": 40,
+          "line_end": 101,
+          "element": "ChemicalDetector",
+          "requirement_ids": [
+            "CD-ARCH2",
+            "CD-MV-FR1"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> t2m -> m2m -> m2t -> verifiers) and fix from feedback."
+}

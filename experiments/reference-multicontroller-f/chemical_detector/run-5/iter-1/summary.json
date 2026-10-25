@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 5,
+  "iteration": 1,
+  "recorded_utc": "2026-10-25 12:34:53",
+  "infrastructure_sha": "5f403301f0e9f469d79dcaf9dc4b421adc885625",
+  "worktree": "/Users/ranwei/Gitee/forge-rmf-run5-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run5",
+  "files": {
+    "java": 20,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 647,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 1 \u2014 chemical_detector, run 5 (condition F), cold codegen\n\n**What I wrote.** A fresh tree in `java.generated.project/src/main/java/chemical_detector/` (20 files) plus `result_codegen.json` (110 rows; all 81 requirements covered, every file cited). Nothing was deleted: `src/` did not exist.\n\nThere are two mode-nested controllers:\n- `GasAnalysis`: READING, ANALYSIS, NO_GAS, GAS_DETECTED, CONCLUDED.\n- `Movement`: WAITING, GOING, FOUND, AVOIDING, TRYING_AGAIN, AVOIDING_AGAIN, GETTING_OUT.\n\nThey communicate only through turn/stop/resume, which GasAnalysis emits as `OutputEvent` records and Movement consumes as `InputEvent` records. The functions are on `@SensorService VehicleSensors`. move, randomWalk, shortRandomWalk and pause (for wait) are on `Vehicle`. changeDirection is an operation class. Clock `T` is reset on both entries to AVOIDING, and the stuck guards are complementary.\n\n**Decisions the spec left open:**\n- The terminal modes CONCLUDED (the spec's Final) and FOUND each self-loop on an invented `Tick` event, per `java_codegen_rules.txt`. flag and the halt sit on the stop transitions, so they are not re-emitted.\n- Analysis and GasDetected guards are complementary pairs. The threshold guard is `ins >= THR` rather than a `goreq` call.\n- The odometer is a sensor sample, not an input event.\n- Constants and initial values are placeholders; the constants are small integers so the timed model stays tractable.\n- `angle(x)` cycles Left, Right, Back, Front. \"Target present\" means the target chemical with intensity > 0.\n\n**Unresolved:**\n- The spec takes the intensity/location peak over all chemicals, not just the target. Implemented as written and flagged in `post_codegen.md`.\n- `java_codegen_rules.txt` warns that Isabelle deadlock-freedom may be false for trigger-only states, and calls this a generator matter. If that still holds at this SHA, no Java can fix it.\n- I only compile-checked and smoke-tested in the scratchpad. I ran no pipeline phase myself."
+}

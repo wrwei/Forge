@@ -1,0 +1,122 @@
+{
+  "phase": "codegen",
+  "status": "complete",
+  "summary": "Iteration 1 cold codegen: two controllers (GasAnalysisController, MovementController) communicating through turn/stop/resume, flag to the Vehicle; 20 Java files, result_codegen.json with 116 rows covering all 81 requirements.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "requirement_ids": [
+        "CD-GA-Beh6",
+        "CD-MV-Beh9"
+      ],
+      "description": "Terminal behaviour modelled without a Final mode: gas analysis enters Concluded and movement stays in Found, each with a Tick-triggered self-loop so the mode keeps an outgoing transition.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "element": "step"
+        },
+        {
+          "java_file": "src/main/java/chemical_detector/controller/MovementController.java",
+          "element": "step"
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "requirement_ids": [
+        "CD-GA-FR3",
+        "CD-GA-FR4",
+        "CD-MV-Beh17",
+        "CD-MV-Beh18"
+      ],
+      "description": "Complementary guards written as p / !p (sts == noGas vs its negation; goreq(ins, THR) vs its negation; progress vs its De Morgan complement) so each autonomous choice is a total cover.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "element": "step"
+        },
+        {
+          "java_file": "src/main/java/chemical_detector/controller/MovementController.java",
+          "element": "step"
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "requirement_ids": [
+        "CD-Evt3"
+      ],
+      "description": "Odometer modelled as a zero-arg sensor reading (ChemSensor.odometer) sampled into d0/d1, not as an input event.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/sensor/ChemSensor.java",
+          "element": "odometer"
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "requirement_ids": [
+        "CD-Const1",
+        "CD-Const2",
+        "CD-Const3",
+        "CD-Const4",
+        "CD-Const5",
+        "CD-Const6"
+      ],
+      "description": "Constant values are not given by the spec: THR=3.0, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=2, STUCK_DIST=1.0, OUT_PERIOD=1 (small integers to keep the timed model small).",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/constants/Constants.java",
+          "element": "Constants"
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "requirement_ids": [
+        "CD-DM4",
+        "CD-Fn1",
+        "CD-Fn3"
+      ],
+      "description": "Chem is an enum {TARGET, OTHER}; analysis = some value with c == TARGET and i > 0; angle(x) maps 1-based position to Angle in declaration order (Left, Right, Back, Front), cyclically; ties in location go to the first peak.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/sensor/ChemSensor.java",
+          "element": "analysis"
+        },
+        {
+          "java_file": "src/main/java/chemical_detector/types/Chem.java",
+          "element": "Chem"
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "requirement_ids": [
+        "CD-Fn2"
+      ],
+      "description": "intensity is the maximum over all values in the reading, including non-target chemicals, as the spec literally states.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/sensor/ChemSensor.java",
+          "element": "intensity"
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "requirement_ids": [
+        "CD-MV-FR6"
+      ],
+      "description": "AvoidingAgain has no turn transition in the spec; a turn arriving there is not consumed.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/chemical_detector/controller/MovementController.java",
+          "element": "step"
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (iteration 1) and act on the first failing phase's post_<phase>.md."
+}

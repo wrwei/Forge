@@ -1,0 +1,143 @@
+// Auto-generated Dafny verification code from Java source
+// Source: GasAnalysisController.java (Spoon EMF model)
+
+datatype Mode = Reading | Analysis | NoGas | GasDetected | Final
+
+datatype Angle = Left | Right | Back | Front
+datatype Loc = left | right | front
+datatype Status = noGas | gasD
+datatype InputEvent = NoEvent | Gas
+
+// Static constants
+const stuckDist: real := 2.0
+const TARGET_CHEM: real := 1
+const lv: real := 1.0
+const evadeTime: int := 5
+const stuckPeriod: int := 10
+const thr: real := 80.0
+const outPeriod: int := 5
+
+class GasAnalysisController {
+    var mode: Mode
+
+    // State variables (updated from sensor each step)
+    var gs: real
+    var sts: Status
+    var ins: real
+    var anl: Angle
+
+    // Abstracted functions (from dependency objects -- uninterpreted)
+    function goreq(p0: real, p1: real): bool
+        reads this
+
+    // Guard predicates (inlined from Java local variables in step())
+    //   intensityAboveThr := goreq(ins, thr)
+    //   stsIsNoGas := sts == noGas
+    //   stsIsGasD := sts == gasD
+    //   intensityBelowThr := !goreq(ins, thr)
+
+    ghost predicate Valid()
+        reads this
+    {
+        true  // Extend with domain invariants
+    }
+
+    constructor()
+        ensures mode == Reading
+        ensures Valid()
+    {
+        mode := Reading;
+        gs := 0.0;  // SUBSTITUTED: Java initialiser did not resolve to a literal; type default emitted
+        sts := noGas;
+        ins := 0.0;  // SUBSTITUTED: Java initialiser did not resolve to a literal; type default emitted
+        anl := Front;
+    }
+
+    method transitionFromReading(event: InputEvent)
+        requires mode == Reading
+        requires Valid()
+        modifies this
+        ensures Valid()
+    {
+        if (event == Gas) {
+            mode := Analysis;
+        }
+    }
+
+    method transitionFromAnalysis(event: InputEvent)
+        requires mode == Analysis
+        requires Valid()
+        modifies this
+        ensures old(sts == noGas) ==> mode == NoGas
+        ensures old(!(sts == noGas) && sts == gasD) ==> mode == GasDetected
+        ensures Valid()
+    {
+        if (sts == noGas) {
+            mode := NoGas;
+        }
+        else if (sts == gasD) {
+            mode := GasDetected;
+        }
+    }
+
+    method transitionFromNoGas(event: InputEvent)
+        requires mode == NoGas
+        requires Valid()
+        modifies this
+        ensures mode == Reading
+        ensures Valid()
+    {
+        mode := Reading;
+    }
+
+    method transitionFromGasDetected(event: InputEvent)
+        requires mode == GasDetected
+        requires Valid()
+        modifies this
+        ensures old(goreq(ins, thr)) ==> mode == Final
+        ensures old(!(goreq(ins, thr)) && !goreq(ins, thr)) ==> mode == Reading
+        ensures Valid()
+    {
+        if (goreq(ins, thr)) {
+            mode := Final;
+        }
+        else if (!goreq(ins, thr)) {
+            mode := Reading;
+        }
+    }
+
+    method step(event: InputEvent)
+        requires Valid()
+        modifies this
+        ensures Valid()
+    {
+        if (mode == Reading) {
+            transitionFromReading(event);
+        }
+        else if (mode == Analysis) {
+            transitionFromAnalysis(event);
+        }
+        else if (mode == NoGas) {
+            transitionFromNoGas(event);
+        }
+        else if (mode == GasDetected) {
+            transitionFromGasDetected(event);
+        }
+    }
+}
+
+// Lemma: transitions from Analysis are deterministic by if-else priority
+lemma Analysis_deterministic()
+    ensures true  // The if-else chain guarantees exactly one branch executes
+{
+    // Determinism follows from the sequential if-else structure.
+    // Each guard is only evaluated when all prior guards are false.
+}
+
+// Lemma: transitions from GasDetected are deterministic by if-else priority
+lemma GasDetected_deterministic()
+    ensures true  // The if-else chain guarantees exactly one branch executes
+{
+    // Determinism follows from the sequential if-else structure.
+    // Each guard is only evaluated when all prior guards are false.
+}

@@ -1,0 +1,26 @@
+# Coverage (Requirement ↔ Java) — FAILED
+
+## Summary
+Coverage check could not run — input artifacts missing.
+
+## Run history
+- New this run: 1
+- Recurring from previous run: 0
+- Resolved since previous run: 0
+
+## Issues
+### Issue 1: missing_codegen_trace — result_codegen.json not found
+
+**Raw**
+```
+Expected: /Users/ranwei/Git/Forge/java.generated.project/result_codegen.json
+```
+
+**Fix directive**
+Run /gen-trace to produce result_codegen.json before this phase. The skill consumes the requirements file + Java source and writes the requirement → Java mapping.
+
+## Files to review
+(none identified)
+
+## Next step
+Resolve the input issue above (most commonly: run /gen-trace to produce result_codegen.json), then re-run this phase.

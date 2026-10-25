@@ -34,7 +34,7 @@ be recomputed from `kill_table_all_backends.csv`.
   mutant trees byte for byte.
 - `prefix-snapshot/` — the extractor exactly as it was when the experiment ran
   (the pipeline sources and templates, staged read-only for the runs). The
-  experiment measures THIS extractor, which is the one the paper's Table 6 runs
+  experiment measures THIS extractor, which is the one the paper's Table 7 runs
   used; it predates the C1/C2/T1 repairs described in Section 5.5.
 - `fdr4-arm/`, `isabelle-arm/`, `isabelle-timeouts/` — per-backend logs and
   verdicts.
@@ -45,6 +45,6 @@ be recomputed from `kill_table_all_backends.csv`.
 
 ## Relation to the paper
 Section 4.8 (RQ6) reports the experiment, with the per-class results in
-Table 9; Section 5.5 explains why the 44 invisible mutants fall where the
+Table 10; Section 5.5 explains why the 44 invisible mutants fall where the
 correspondence table (Table 11) describes the extraction boundary. The experiment ran on the pre-repair extractor deliberately: it
-measures the system whose runs the paper reports in Table 7.
+measures the system whose runs the paper reports in Table 8.

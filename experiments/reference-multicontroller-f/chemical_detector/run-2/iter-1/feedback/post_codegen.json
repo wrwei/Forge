@@ -1,0 +1,81 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Initial Java for chemical_detector: two controllers (GasAnalysisController, MovementController) communicating via turn/stop/resume. All 81 requirements traced. Several defaults were invented and three deviations from the literal state structure were made for verifiability; listed below for review.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "GA Final pseudo-state realised as terminal mode Concluded with a tick-triggered self-loop",
+      "raw": "CD-GA-Beh6 targets a Final state. The codegen rules require every mode to have an outgoing transition and a terminal mode to carry a tick-triggered self-loop; a mode named Final is avoided.",
+      "fix_directive": "Confirm a terminal mode with a Tick self-loop is an acceptable realisation of 'concludes its search, processing no further readings'.",
+      "java_trace": [
+        {"java_file": "src/main/java/chemical_detector/controller/GasAnalysisController.java", "line_start": 76, "line_end": 80, "element": "step", "requirement_ids": ["CD-GA-Beh6", "CD-GA-FR4"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Found 'stays halted' (CD-MV-Beh9) realised as a tick-triggered self-loop; Tick is an invented input event",
+      "raw": "The specification has no tick event. Tick exists only to keep the two terminal modes live (Found, Concluded).",
+      "fix_directive": "Confirm an extra boundary input event 'tick' is acceptable.",
+      "java_trace": [
+        {"java_file": "src/main/java/chemical_detector/controller/MovementController.java", "line_start": 93, "line_end": 97, "element": "step", "requirement_ids": ["CD-MV-Beh9", "CD-MV-FR3"]},
+        {"java_file": "src/main/java/chemical_detector/event/InputEvent.java", "line_start": 30, "line_end": 30, "element": "Tick", "requirement_ids": ["CD-MV-Beh9"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Odometer modelled as a sampled sensor value, not an input event",
+      "raw": "CD-Evt3 calls the odometer an event but describes sampling it into d0/d1 inside entry/transition actions. Implemented as Sensor.odometer() read in those actions.",
+      "fix_directive": "None unless the odometer must be a channel.",
+      "java_trace": [
+        {"java_file": "src/main/java/chemical_detector/sensor/Sensor.java", "line_start": 27, "line_end": 30, "element": "odometer", "requirement_ids": ["CD-Evt3", "CD-MV-Var2", "CD-MV-Var3"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Complementary guards written as negations of one named predicate",
+      "raw": "Analysis -> GasDetected is guarded by !stsIsNoGas (equivalent to sts == gasD for the two-valued Status) and GasDetected -> Reading by !insAtOrAboveThr, so each mode's guards syntactically cover all cases. The threshold check uses ins >= THR directly; goreq is the same order and is used inside intensity/location.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {"java_file": "src/main/java/chemical_detector/controller/GasAnalysisController.java", "line_start": 43, "line_end": 61, "element": "step", "requirement_ids": ["CD-GA-Beh5", "CD-GA-Beh6", "CD-GA-Beh7", "CD-Fn4"]}
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Constant values",
+      "raw": "The specification gives no values. Chosen: thr=2.0, lv=1.0, evadeTime=1, stuckPeriod=3, stuckDist=1.0, outPeriod=1 (clock units). They are kept small so the time bounds stay small in the formal model, and stuckPeriod > evadeTime so that both stuck outcomes are reachable.",
+      "fix_directive": "Replace with platform values if known.",
+      "java_trace": [
+        {"java_file": "src/main/java/chemical_detector/constants/Constants.java", "line_start": 10, "line_end": 32, "element": "Constants", "requirement_ids": ["CD-Const1", "CD-Const2", "CD-Const3", "CD-Const4", "CD-Const5", "CD-Const6"]}
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Chem values, analysis rule, and sensor-position-to-Angle mapping",
+      "raw": "Chem = {target, other}. analysis returns gasD iff some sensor reports Chem.target (Chem equality only). Position k (1-based) maps to Angle.values()[(k-1) mod 4] = Left, Right, Back, Front. Intensity is a double (real).",
+      "fix_directive": "Confirm or supply the real direction mapping and chemical identities.",
+      "java_trace": [
+        {"java_file": "src/main/java/chemical_detector/sensor/Sensor.java", "line_start": 33, "line_end": 79, "element": "Sensor", "requirement_ids": ["CD-DM4", "CD-DM5", "CD-Fn1", "CD-Fn3"]}
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "intensity is the maximum over all sensors, not only target-chemical sensors",
+      "raw": "CD-Fn2 says maximum intensity across the sequence; followed literally, so a strong non-target chemical in a reading that also contains the target could trigger stop.",
+      "fix_directive": "Clarify whether intensity/location should be restricted to the target chemical.",
+      "java_trace": [
+        {"java_file": "src/main/java/chemical_detector/sensor/Sensor.java", "line_start": 44, "line_end": 54, "element": "intensity", "requirement_ids": ["CD-Fn2"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Waiting's during-action randomWalk() placed at the head of the Waiting mode block",
+      "raw": "Executed every cycle while Waiting, which is the Java analogue of a during action.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {"java_file": "src/main/java/chemical_detector/controller/MovementController.java", "line_start": 56, "line_end": 57, "element": "step", "requirement_ids": ["CD-MV-FR1", "CD-OP2"]}
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile -> coverage -> preflight -> T2M -> M2M -> M2T -> verifiers)."
+}

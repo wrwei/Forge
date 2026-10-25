@@ -1,0 +1,60 @@
+{
+  "study": "chemical_detector",
+  "run": 1,
+  "iteration": 1,
+  "recorded_utc": "2026-10-25 09:28:18",
+  "infrastructure_sha": "6b78ebe8f3325aa1d8bd815c66337a807e3bd344",
+  "worktree": "/Users/ranwei/Gitee/forge-rmf-run1-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run1",
+  "files": {
+    "java": 20,
+    "java_test": 0,
+    "formal_artefacts": 0,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 5,
+    "feedback_json": 5
+  },
+  "java_loc": 693,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "no_verdict",
+    "t2m": "no_verdict",
+    "m2m": "no_verdict",
+    "m2t": "no_verdict",
+    "dafny_gen": "no_verdict",
+    "isabelle_gen": "no_verdict",
+    "fdr4": "no_verdict",
+    "dafny_verify": "no_verdict",
+    "isabelle_verify": "failed",
+    "vacuity": "failed"
+  },
+  "phases_without_verdict": [
+    "preflight",
+    "t2m",
+    "m2m",
+    "m2t",
+    "dafny_gen",
+    "isabelle_gen",
+    "fdr4",
+    "dafny_verify"
+  ],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 1 \u2014 chemical_detector, condition F, run 1 (cold codegen)\n\n**What I changed.** The tree started cold, with no Java present, so nothing was deleted. I wrote 20 files under `chemical_detector/`, plus `result_codegen.json` (81/81 requirements, every file traced) and `post_codegen.{md,json}`. There are two controllers in one package, `GasAnalysis` and `Movement`, each with a mode-nested `step()`. Turn, stop and resume go from GasAnalysis to Movement (same-named OutputEvent/InputEvent records). Flag goes to the Vehicle. `ChemicalDetector` wires the two together. I checked compilation with plain `javac` and ran a smoke driver, both in the scratchpad only. No pipeline phase was run outside the runner.\n\n**Decisions the spec did not settle:**\n- *Terminal modes.* I added a `Tick` input, which is the cycle with no event. `CONCLUDED` (used instead of a state named \"Final\") and `FOUND` self-loop on Tick only, so the flag is sent once.\n- *Odometer (CD-Evt3).* I made it a sensor query, `Sensor.odometer()`, sampled into d0/d1 inside the actions, not an event.\n- *Guard pairs.* Analysis, GasDetected and AvoidingAgain each use explicit complements `p`/`!p`, so the pair always covers every case. The gasD branch is written `!(sts == noGas)`.\n- *Types.* Intensity is a `double`, so `thr` is numeric. Chem is a record with a nat id.\n- *analysis.* A reading indicates gas iff it has the target Chem with i > 0. `intensity` and `location` take the maximum over all values. `angle(x)` maps positions 1..4 to Left, Right, Back, Front.\n- *Defaults I invented.* All constants are 1, all reals and positions start at 0/Front, and all durations are in Clock units.\n\n**Unresolved.** The spec gives no constant values. CD-Fn1 does not define what it means for a reading to \"indicate\" the target. These are listed in `post_codegen.md` for human review."
+}

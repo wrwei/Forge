@@ -1,0 +1,106 @@
+// Auto-generated Dafny verification code from Java source
+// Source: SRangerController.java (Spoon EMF model)
+
+datatype Mode = Moving | Turning | Final
+
+datatype InputEvent = NoEvent | endTask | obstacle | tick
+
+// Static constants
+const moveVel: real := 1.0
+const turnVel: real := 2.0
+const obstacleThreshold: real := 0.5
+const turnDuration: real := 2.0
+
+class SRangerController {
+    var mode: Mode
+
+    // State variables (updated from sensor each step)
+    var clockResetTime: real
+
+    // Abstracted functions (from dependency objects -- uninterpreted)
+    function distance(): real
+        reads this
+    function nowMs(): int
+        reads this
+
+    // Guard predicates (inlined from Java local variables in step())
+    //   obstacleDetected := distance() <= 0.5
+    //   turnDurationElapsed := nowMs() / 1000.0 - clockResetTime >= 2.0
+
+    ghost predicate Valid()
+        reads this
+    {
+        true  // Extend with domain invariants
+    }
+
+    constructor()
+        ensures mode == Moving
+        ensures Valid()
+    {
+        mode := Moving;
+        clockResetTime := 0.0;
+    }
+
+    method transitionFromMoving(event: InputEvent)
+        requires mode == Moving
+        requires Valid()
+        modifies this
+        ensures Valid()
+    {
+        if (event == endTask) {
+            mode := Final;
+            // action: Move(0.0)
+        }
+        else if (event == obstacle) {
+            mode := Turning;
+            // action: Move(0.0)
+        }
+        else if (event == tick) {
+            mode := Moving;
+        }
+    }
+
+    method transitionFromTurning(event: InputEvent)
+        requires mode == Turning
+        requires Valid()
+        modifies this
+        ensures old(!(event == endTask) && nowMs() / 1000.0 - clockResetTime >= 2.0) ==> mode == Moving
+        ensures Valid()
+    {
+        if (event == endTask) {
+            mode := Final;
+            // action: Move(0.0)
+        }
+        else if (nowMs() / 1000.0 - clockResetTime >= 2.0) {
+            mode := Moving;
+            // action: Move(1.0)
+        }
+        else if (event == tick) {
+            mode := Turning;
+        }
+    }
+
+    method transitionFromFinal(event: InputEvent)
+        requires mode == Final
+        requires Valid()
+        modifies this
+        ensures Valid()
+    {
+    }
+
+    method step(event: InputEvent)
+        requires Valid()
+        modifies this
+        ensures Valid()
+    {
+        if (mode == Moving) {
+            transitionFromMoving(event);
+        }
+        else if (mode == Turning) {
+            transitionFromTurning(event);
+        }
+        else if (mode == Final) {
+            transitionFromFinal(event);
+        }
+    }
+}

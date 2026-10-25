@@ -24,7 +24,7 @@ Section 5.5 of the TOSEM revision.
   theories the repaired generator extracts: 100% on all three studies, and
   exactly one operation enabled in every one of the 7,328 cells.
 - `mutation-modelB/` — the mutation campaign's Isabelle column (Section 4.8,
-  Table 9) re-run under model B: 131 builds, every one a verdict; the 11
+  Table 10) re-run under model B: 131 builds, every one a verdict; the 11
   archived timeouts all verify; the one archived kill is the one kill; no
   verdict changed.
 

@@ -1,12 +1,19 @@
-# Reference experiment (Table 7)
+# Reference experiment (Table 8)
 
-Per-run records of the *Reference* experiment in Table 7 of the paper: five
+Per-run records of the *Reference* experiment in Table 8 of the paper: five
 runs per case study, each driven from a cold start until every verifier
 passed or the iteration cap was reached.
 
 All 15 runs used one fixed version of the pipeline, development commit
 `b808424c` (see "Pipeline version per experiment" in the repository README for
 how it differs from `main`). The runs are not pooled with any other experiment.
+
+Of these, the SRanger and LRE runs are the Reference rows of Table 8. The
+Chemical Detector runs here verified the first controller only; Table 8's
+Reference Chemical Detector row is instead `../reference-multicontroller-f/`,
+collected on the published pipeline with both controllers verified. The five
+Chemical Detector runs here are kept as recorded and are not reported in the
+paper.
 
 ## Layout
 

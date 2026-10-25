@@ -1,0 +1,30 @@
+{
+  "phase": "vacuity",
+  "label": "6d — Vacuity Audit (Dafny + Isabelle)",
+  "status": "passed",
+  "summary": "No blocking vacuity signals detected (syntactic D1/I1 and semantic satisfiability/reachability/constant-consistency checks). Any `0 errors` from Dafny / Isabelle / FDR is at least potentially load-bearing for the checked signals. 2 ADVISORY finding(s) recorded and NOT blocking: R2/mode_unreachable_checked, T2/transition_unfireable_checked. These follow from the deliberate narrowing of the CSP data domains that FDR4's finiteness requirement imposes, not from the Java under test; they bound what the passing FDR4 assertions are evidence about and must be reported with any verdict drawn from them.",
+  "new_count": 2,
+  "recurring_count": 0,
+  "resolved_count": 0,
+  "resolved_issue_titles": [],
+  "issues": [
+    {
+      "kind": "mode_unreachable_checked",
+      "title": "[ADVISORY] Mode(s) unreachable under the CHECKED CSP instantiation: FINAL",
+      "raw": "checked-reachable = {ANALYSIS, GAS_DETECTED, NO_GAS, READING, initial} (narrowed ranges + constant stubs from instantiations.csp)",
+      "fix_directive": "ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.",
+      "java_trace": [],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "transition_unfireable_checked",
+      "title": "[ADVISORY] 3 transition(s) can never fire under the checked CSP instantiation",
+      "raw": "GAS_DETECTEDToFINAL: no value of `ins` in the checked domain [0..1] satisfies its constraints; FINALToFINAL: source mode FINAL is unreachable; Idle_FINAL: source mode FINAL is unreachable",
+      "fix_directive": "ADVISORY — no action for the codegen agent. This follows from the deliberate CSP domain narrowing (FDR4 finiteness), not from the Java. Record it with any verdict drawn from the CSP checks.",
+      "java_trace": [],
+      "seen_in_runs": 1
+    }
+  ],
+  "files_to_review": [],
+  "next_step": "Nothing to do. Re-run after each iteration to catch regressions."
+}

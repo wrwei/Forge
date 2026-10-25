@@ -1,4 +1,4 @@
-# Diagnosis-only feedback configuration (Table 7)
+# Diagnosis-only feedback configuration (Table 8)
 
 Per-run records of the *Diagnosis-only* experiment. The runs used the
 diagnosis-only feedback configuration, which is shipped here as
@@ -12,7 +12,7 @@ git apply -R experiments/ablation-d2-diagnostic/diagnosis-only.patch   # back to
 The patch removes every prescriptive fix instruction from the structural linter,
 the code-generation rules the model reads and the three Phase 7 feedback
 compilers (`gradle.py`, `fdr4.py`, `isabelle.py`), and keeps each diagnosis. The
-*All-controller* experiment (`../multicontroller-e/`) ran with the same patch
+condition-E Chemical Detector runs (`../multicontroller-e/`) ran with the same patch
 applied, together with the per-controller generators on `main`.
 
 With the patch applied, linting the recorded Java of

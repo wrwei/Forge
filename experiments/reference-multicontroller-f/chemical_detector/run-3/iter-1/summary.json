@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 3,
+  "iteration": 1,
+  "recorded_utc": "2026-10-25 11:34:30",
+  "infrastructure_sha": "5f403301f0e9f469d79dcaf9dc4b421adc885625",
+  "worktree": "/Users/ranwei/Gitee/forge-rmf-run3-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run3",
+  "files": {
+    "java": 20,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 661,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# chemical_detector run 3 \u2014 iteration 1 (cold codegen)\n\n**Changed.** Wrote a new tree under `java.generated.project/src/main/java/chemical_detector/` (20 files; nothing pre-existed, nothing deleted) plus `result_codegen.json` (116 rows, all 81 requirements, every file traced). Two mode-nested controllers: `GasAnalysisController` (Reading, Analysis, NoGas, GasDetected, Concluded) and `MovementController` (Waiting, Going, Found, Avoiding, TryingAgain, AvoidingAgain, GettingOut). GA emits `turn`/`stop`/`resume` as `OutputEvent`s that MV consumes as same-named `InputEvent`s; MV emits `flag`. Functions `analysis`/`intensity`/`location`/`goreq` and `odometer()` live on the `@SensorService` `ChemSensor`; `move`/`randomWalk`/`shortRandomWalk`/`pause` are on `Vehicle`; `changeDirection(l)` is an operation class. Clock `evasionStart` is reset on entry to Avoiding; stuck test is `nowMs() - evasionStart < STUCK_PERIOD || d1 - d0 > STUCK_DIST`.\n\n**Decisions the spec did not settle.**\n- No `Final` mode: GA ends in `Concluded`, MV stays in `Found`; both self-loop on a `Tick` input so every mode has an outgoing transition. The flag/halt actions sit on the incoming `stop` transitions, so the self-loop does not re-emit `flag`.\n- Complementary guards written as `p` / `!p` (total covers).\n- Odometer is a sensor reading, not an input event.\n- Invented values: THR=3.0, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=2, STUCK_DIST=1.0, OUT_PERIOD=1. `Chem` = enum {TARGET, OTHER}. `analysis` = some value with `c == TARGET` and `i > 0`. `angle(x)` maps 1-based positions to Left, Right, Back, Front cyclically.\n\n**Unresolved / for review.**\n- `intensity` takes the maximum over all chemicals, as the spec literally says.\n- AvoidingAgain has no `turn` transition, so a turn arriving there is dropped.\n- I checked syntax with plain `javac` into the scratchpad (not a pipeline phase). I wrote no unit tests.\n- An additional working directory attached to this session points at another study's LRE Java tree. I did not read it."
+}

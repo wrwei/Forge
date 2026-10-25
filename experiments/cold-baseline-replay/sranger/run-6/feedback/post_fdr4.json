@@ -1,0 +1,39 @@
+{
+  "phase": "fdr4",
+  "label": "6b — Formal Verification (FDR4)",
+  "status": "failed",
+  "summary": "FDR4: 3 assertion(s) checked, 1 passed, 2 failed.",
+  "new_count": 2,
+  "recurring_count": 0,
+  "resolved_count": 0,
+  "resolved_issue_titles": [],
+  "issues": [
+    {
+      "kind": "deadlock",
+      "title": "Deadlock-freedom violated",
+      "raw": "P_SRangerController :[deadlock free]\nCounterexample: SRangerController::move.out.1 -> SRangerController::endTask.in -> SRangerController::move.out.0",
+      "fix_directive": "Trace: event `SRangerController::move.out.1` fires; then event `SRangerController::endTask.in` fires; then event `SRangerController::move.out.0` fires.\n\nThe counterexample ends with event `SRangerController::move.out.0`. No transition in the RoboChart model handles `SRangerController::move.out.0` — some mode reaches a state where this event occurs without a matching branch. Add an `instanceof` check for the event type in the corresponding mode block of step().\n\nOne or more states have no reachable outgoing transition. Every mode in the controller's step() method must have at least one reachable branch out.",
+      "java_trace": [],
+      "seen_in_runs": 1
+    },
+    {
+      "kind": "deadlock",
+      "title": "Deadlock-freedom violated",
+      "raw": "P_SRangerController ; RUN({r__}) :[deadlock free]\nCounterexample: SRangerController::move.out.1 -> SRangerController::endTask.in -> SRangerController::move.out.0",
+      "fix_directive": "Trace: event `SRangerController::move.out.1` fires; then event `SRangerController::endTask.in` fires; then event `SRangerController::move.out.0` fires.\n\nThe counterexample ends with event `SRangerController::move.out.0`. No transition in the RoboChart model handles `SRangerController::move.out.0` — some mode reaches a state where this event occurs without a matching branch. Add an `instanceof` check for the event type in the corresponding mode block of step().\n\nOne or more states have no reachable outgoing transition. Every mode in the controller's step() method must have at least one reachable branch out.",
+      "java_trace": [],
+      "seen_in_runs": 1
+    }
+  ],
+  "files_to_review": [
+    {
+      "file": "SRangerController.java",
+      "requirement_ids": []
+    },
+    {
+      "file": "SRangerMode.java",
+      "requirement_ids": []
+    }
+  ],
+  "next_step": "Read each issue above, follow the fix directive, edit the linked Java file, and re-run Phase 6a (FDR4 Verification)."
+}

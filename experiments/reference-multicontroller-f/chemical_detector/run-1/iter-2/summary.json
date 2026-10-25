@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 1,
+  "iteration": 2,
+  "recorded_utc": "2026-10-25 10:20:32",
+  "infrastructure_sha": "5f403301f0e9f469d79dcaf9dc4b421adc885625",
+  "worktree": "/Users/ranwei/Gitee/forge-rmf-run1-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run1",
+  "files": {
+    "java": 18,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 627,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 1 \u2014 chemical_detector, condition F, run 1 (cold codegen)\n\n**Changed.** Wrote 18 Java files under `chemical_detector/`. No earlier Java existed, so nothing was deleted.\n- Mode-nested controllers: `GasAnalysisController` and `MovementController`.\n- Turn, Stop and Resume share names across `InputEvent` and `OutputEvent`, so they unify as inter-controller events.\n- Functions and the odometer are on `@SensorService ChemSensors`. Operations are on `Vehicle`. Clock T is `evasionStart`, reset from `Clock.nowMs()`.\n- `ChemicalDetector` wires the two controllers together.\n\nAlso wrote `result_codegen.json` (81/81 requirements) and `post_codegen.{md,json}`. Checked with `javac` and a scratch harness, not via any phase.\n\n**Decisions the spec left open:**\n- The spec has no tick event. GA FINAL self-loops on `gas` (keeps `gs`, no analysis). MV FOUND self-loops on `obstacle` (records `l`, stays halted, no re-flag).\n- Autonomous decisions use complementary guards: `sts == noGas` and its negation, `ins >= THR` and its negation, progress and its De Morgan complement.\n- Odometer is a zero-argument sensor method.\n- Invented: constants (THR=2, LV=1, EVADE_TIME=1, STUCK_PERIOD=2, STUCK_DIST=1, OUT_PERIOD=1), TARGET_CHEM=1, \"indicates\" means c==target and i>0, and the position\u2192Angle map.\n\n**Outcome.** 11/12 phases passed (FDR4 9/9, Dafny both controllers, vacuity 0 blocking). `isabelle_verify` failed outside my theories: building the upstream `ITrees` session's document hit `lualatex: command not found` / `Failed to build document \"document\"`. This is an environment or instrument defect. Java cannot address it, so I made no change and **stopped to report** rather than spend iterations on identical reruns. Fix: install a TeX distribution or prebuild the `ITrees`/`Z_Machine` heaps, then resume at iteration 2.\n\n**For human review:** CD-Fn2's peak ignores the chemical's identity, and CD-Evt3 is typed as an event but describes sampling."
+}

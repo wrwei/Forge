@@ -403,11 +403,12 @@ Unlike the previous AutoGen pipeline (which regenerated all files each iteration
 The code on `main` is the **full-feedback** configuration: the structural
 linter, the code-generation rules and the Phase 7 feedback compilers state the
 diagnosis *and* a prescriptive fix. This is the configuration described in
-Section 3 of the paper, and it produced Table 6 (`experiments/convergence/`), the
-*Reference* experiment of Table 7 (`experiments/convergence-v3-frozen/`) and the
+Section 3 of the paper, and it produced Table 7 (`experiments/convergence/`), the
+*Reference* experiment of Table 8 (`experiments/convergence-v3-frozen/`;
+its Chemical Detector row is `experiments/reference-multicontroller-f/`) and the
 Steam Boiler run (`experiments/steam-boiler/`).
 
-The *Diagnosis-only* and *All-controller* experiments of Table 7
+The *Diagnosis-only* experiment of Table 8 (both of its Chemical Detector blocks)
 (`experiments/ablation-d2-diagnostic/`, `experiments/multicontroller-e/`) used
 the **diagnosis-only** configuration, in which every prescriptive fix
 instruction is removed and only the diagnosis of which obligation failed, and
@@ -420,11 +421,11 @@ git apply -R experiments/ablation-d2-diagnostic/diagnosis-only.patch   # back to
 
 The patch touches only `forge.transformations/.../preflight/StructuralLinter.java`,
 `forge.assets/prompts/java_codegen_rules.txt` and
-`forge.dashboard/web/feedback/{gradle,fdr4,isabelle}.py`. The All-controller
-experiment additionally uses the per-controller Dafny and Isabelle generators,
+`forge.dashboard/web/feedback/{gradle,fdr4,isabelle}.py`. The condition-E Chemical Detector runs (`multicontroller-e/`)
+additionally use the per-controller Dafny and Isabelle generators,
 which are on `main`.
 
-**Pipeline version per experiment.** Each Table 7 experiment ran at a single
+**Pipeline version per experiment.** Each Table 8 row ran at a single
 fixed version of the pipeline (development commits given for reference). Apart
 from comment text, `main` differs from each of them only as follows:
 
@@ -432,9 +433,10 @@ from comment text, `main` differs from each of them only as follows:
 |---|---|---|
 | Reference | `b808424c` | no per-controller Dafny/Isabelle generators; Dafny `InputEvent` datatype emitted only when `step()` tests an event |
 | Diagnosis-only | `35f6d557` | as Reference, with `diagnosis-only.patch` applied |
-| All-controller | `99952b9b` | `diagnosis-only.patch` applied; Dafny `InputEvent` datatype emitted only when `step()` tests an event |
+| Diagnosis-only, Chemical Detector (condition E) | `99952b9b` | `diagnosis-only.patch` applied; Dafny `InputEvent` datatype emitted only when `step()` tests an event |
+| Reference, Chemical Detector (condition F) | `09e67fca` (this repository, plus the executable-bit fix `d88ad2a1`) | none; the runs used these trees byte-for-byte |
 
-The Table 6 runs predate the extractor repairs described in Section 5.5; their
+The Table 7 runs predate the extractor repairs described in Section 5.5; their
 generated artefacts are kept as recorded under `experiments/convergence/` and
 `reference-runs/`.
 
