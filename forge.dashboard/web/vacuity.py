@@ -339,7 +339,14 @@ def check_precondition_unsat(model, thy_path: Path, repo_root: Path) -> list[Fin
     inv` for such an operation is vacuously discharged."""
     out = []
     env = vsat.Env(checked=False)
+    em = vsat.environment_model(model)
     for op in model.operations:
+        if em == "B" and op.name.startswith("Idle_"):
+            # The idle operation (the Java's implicit `else`) is reported by
+            # check_precondition_unsat_env, as advisory, when the mode's
+            # branches are exhaustive; reporting it here as well would block
+            # the iteration on a condition that is not a defect.
+            continue
         r = vsat.sat_conjunction(op.atoms, model, env)
         if r.verdict == vsat.UNSAT:
             out.append(Finding(

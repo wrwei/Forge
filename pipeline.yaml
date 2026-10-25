@@ -173,7 +173,10 @@ phases:
     # the dashboard's python-side memory monitor polls the process RSS
     # and kills the run when it exceeds this cap. Raise locally if you
     # need more state-space headroom (and grow the page file to match).
-    memory_limit_mb: 4096
+    # 16 GB, the same cap as Isabelle: a Chemical Detector cold source was killed at
+    # the former 4 GB cap on a 48 GB machine (a memory kill is an environment
+    # outcome, not a verdict). Lower it on smaller machines.
+    memory_limit_mb: 16384
     expected_failures: []
       # Determinism is no longer checked: run_fdr4 strips the official
       # generator's :[deterministic] assertions before invoking FDR, because

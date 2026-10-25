@@ -183,6 +183,15 @@ definition Init :: "F subst" where
 """
 
 
+def test_model_b_dead_idle_not_blocked_by_plain_check(tmp_path):
+    # The symbolic S1 check must not report the exhaustive-mode idle operation as
+    # blocking; only the environment-aware check reports it, as advisory.
+    thy = tmp_path / "G_Beh.thy"
+    thy.write_text(GAS_EXHAUSTIVE_THY)
+    m = vsat.parse_theory(GAS_EXHAUSTIVE_THY)
+    assert [f.kind for f in vacuity.check_precondition_unsat(m, thy, tmp_path)] == []
+
+
 def test_model_b_dead_idle_is_advisory(tmp_path):
     thy = tmp_path / "G_Beh.thy"
     thy.write_text(GAS_EXHAUSTIVE_THY)
