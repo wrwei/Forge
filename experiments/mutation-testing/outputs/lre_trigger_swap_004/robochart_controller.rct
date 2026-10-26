@@ -9,12 +9,14 @@ datatype Obstacle {
 	obs_roc : real
 }
 
-function odist ( index : nat ) : real { }
+function odist ( index : int ) : real { }
+function nsRelDist ( index : int ) : real { }
+function obsNsVel ( index : int ) : real { }
+function ewRelDist ( index : int ) : real { }
+function obsEwVel ( index : int ) : real { }
 function sqrt ( x : real ) : real { }
-function nsRelDist ( x : real ) : real { }
-function obsNsVel ( x : real ) : real { }
-function ewRelDist ( x : real ) : real { }
-function obsEwVel ( x : real ) : real { }
+function hdist ( index : int ) : real { }
+function vdist ( index : int ) : real { }
 
 interface Inputs {
 	event reqVel : real
@@ -34,29 +36,32 @@ interface Sensors {
 	var ns_vel : real
 	var ew_vel : real
 	var rate_of_climb : real
-	var closestDynamicIndex : nat
-	var closestStaticIndex : nat
+	var closestDynamicIndex : int
+	var closestStaticIndex : int
 }
 
 interface Actuators {
 }
 
 interface LreController_State {
-	var inOpez : boolean
-	var vel : real
-	var cstc : nat
-	var cdyn : nat
+	var inOpez : boolean = false
+	var vel : real = 0
+	var cstc : int = -1
+	var cdyn : int = -1
 	var cda : real
-	var camActive : boolean
-	var hcmActive : boolean
-	var momReturn : boolean
-	var hvel : real
-	var vvel : real
-	var tcpa : real
+	var camActive : boolean = false
+	var hcmActive : boolean = false
+	var momReturn : boolean = false
+	var hvel : real = 0
+	var vvel : real = 0
+	var tcpa : real = -1
 }
 
 interface Constants {
 	const minsafedist : real = 1
+	const staticobshorizdist : real = 1
+	const staticobsdfltvertdist : real = 1
+	const staticobsvertdist : real = 1
 }
 
 operation CalcCDyn ( ) {
@@ -71,13 +76,13 @@ operation CalcCDyn ( ) {
 }
 
 operation CalcCPA ( ) {
-	requires LreController_State requires Sensors requires Constants
+	requires LreController_State requires Sensors
 	initial i0
 	final f0
 	transition t0 {
 		from i0
 		to f0
-		action cda = sqrt ( nsRelDist ( cdyn ) + obsNsVel ( cdyn ) - ns_vel * tcpa * nsRelDist ( cdyn ) + obsNsVel ( cdyn ) - ns_vel * tcpa + ewRelDist ( cdyn ) + obsEwVel ( cdyn ) - ew_vel * tcpa * ewRelDist ( cdyn ) + obsEwVel ( cdyn ) - ew_vel * tcpa ) ; tcpa = -nsRelDist ( cdyn ) * obsNsVel ( cdyn ) - ns_vel + ewRelDist ( cdyn ) * obsEwVel ( cdyn ) - ew_vel / obsNsVel ( cdyn ) - ns_vel * obsNsVel ( cdyn ) - ns_vel + obsEwVel ( cdyn ) - ew_vel * obsEwVel ( cdyn ) - ew_vel
+		action tcpa = -(nsRelDist ( cdyn ) * (obsNsVel ( cdyn ) - ns_vel) + ewRelDist ( cdyn ) * (obsEwVel ( cdyn ) - ew_vel)) / ((obsNsVel ( cdyn ) - ns_vel) * (obsNsVel ( cdyn ) - ns_vel) + (obsEwVel ( cdyn ) - ew_vel) * (obsEwVel ( cdyn ) - ew_vel)) ; cda = sqrt ( (nsRelDist ( cdyn ) + (obsNsVel ( cdyn ) - ns_vel) * tcpa) * (nsRelDist ( cdyn ) + (obsNsVel ( cdyn ) - ns_vel) * tcpa) + (ewRelDist ( cdyn ) + (obsEwVel ( cdyn ) - ew_vel) * tcpa) * (ewRelDist ( cdyn ) + (obsEwVel ( cdyn ) - ew_vel) * tcpa) )
 	}
 }
 
@@ -114,18 +119,29 @@ operation CheckOPEZ ( ) {
 	}
 }
 
+operation LreController_Refresh ( ) {
+	requires LreController_State requires Sensors requires Constants
+	initial i0
+	final f0
+	transition t0 {
+		from i0
+		to f0
+		action camActive = ( cda < minsafedist /\ tcpa >= 0 ) ; hcmActive = ( hvel >= 1 /\ hdist ( cstc ) <= staticobshorizdist \/ vdist ( cstc ) <= staticobsdfltvertdist \/ vvel >= 1 /\ vdist ( cstc ) <= staticobsvertdist ) ; momReturn = ( hdist ( cstc ) > staticobshorizdist /\ vdist ( cstc ) > staticobsvertdist )
+	}
+}
+
 stm LreController {
 	uses Inputs uses Outputs requires LreController_State requires Constants
 	var v : real
-	state CAM {
+	state HCM {
+		entry advVel ! 0
 	}
-	state MOM {
-		entry advVel ! 1
+	state CAM {
 	}
 	state OCM {
 	}
-	state HCM {
-		entry advVel ! 0
+	state MOM {
+		entry advVel ! 1
 	}
 	initial i0
 	transition t_init {
@@ -169,17 +185,20 @@ stm LreController {
 		from MOM
 		to OCM
 		trigger reqOCM
+		condition not ( camActive ) /\ not ( hcmActive ) /\ not ( inOpez )
 	}
 	transition t8 {
 		from MOM
 		to OCM
 		trigger endTask
+		condition not ( camActive ) /\ not ( hcmActive ) /\ not ( inOpez )
 		action advVel ! 0
 	}
 	transition t9 {
 		from MOM
 		to HCM
 		trigger reqHCM
+		condition not ( camActive ) /\ not ( hcmActive ) /\ not ( inOpez )
 	}
 	transition t10 {
 		from HCM
@@ -200,6 +219,7 @@ stm LreController {
 		from HCM
 		to OCM
 		trigger reqOCM
+		condition not ( camActive ) /\ not ( inOpez ) /\ not ( momReturn )
 	}
 	transition t14 {
 		from CAM
@@ -222,6 +242,7 @@ controller LreController_Ctrl {
 	opref op_ref2 = CalcCStc
 	opref op_ref3 = CalcVel
 	opref op_ref4 = CheckOPEZ
+	opref op_ref5 = LreController_Refresh
 	connection LreController_Ctrl on reqVel to stm_ref0 on reqVel
 	connection LreController_Ctrl on reqHdng to stm_ref0 on reqHdng
 	connection LreController_Ctrl on reqOCM to stm_ref0 on reqOCM

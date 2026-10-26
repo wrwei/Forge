@@ -52,10 +52,10 @@ class LreController {
         hvel := 0.0;
         vvel := 0.0;
         vel := 0.0;
-        cstc := 0;
-        cdyn := 0;
-        cda := 0.0;
-        tcpa := 0.0;
+        cstc := -1;
+        cdyn := -1;
+        cda := 0.0;  // SUBSTITUTED: Java initialiser did not resolve to a literal; type default emitted
+        tcpa := -1.0;
         camActive := false;
         hcmActive := false;
         momReturn := false;
@@ -65,7 +65,7 @@ class LreController {
         requires mode == OCM
         requires Valid()
         modifies this
-        ensures event == ReqMOM && vel <= 1.0 && !(inOpez) && odist(cdyn) > 1.0 && odist(cstc) > 1.0 ==> mode == MOM
+        ensures old(!(event == ReqHdng) && !(event == ReqVel) && event == ReqMOM && vel <= 1.0 && !(inOpez) && odist(cdyn) > 1.0 && odist(cstc) > 1.0) ==> mode == MOM
         ensures Valid()
     {
         if (event == ReqVel) {
@@ -86,9 +86,9 @@ class LreController {
         requires mode == MOM
         requires Valid()
         modifies this
-        ensures camActive ==> mode == CAM
-        ensures hcmActive && !(camActive) ==> mode == HCM
-        ensures inOpez && !(camActive) && !(hcmActive) ==> mode == OCM
+        ensures old(camActive) ==> mode == CAM
+        ensures old(!(camActive) && hcmActive && !(camActive)) ==> mode == HCM
+        ensures old(!(event == ReqOCM) && !(hcmActive && !(camActive)) && !(camActive) && inOpez && !(camActive) && !(hcmActive)) ==> mode == OCM
         ensures Valid()
     {
         if (camActive) {
@@ -118,9 +118,9 @@ class LreController {
         requires mode == HCM
         requires Valid()
         modifies this
-        ensures camActive ==> mode == CAM
-        ensures inOpez && !(camActive) ==> mode == OCM
-        ensures momReturn && !(camActive) && !(inOpez) ==> mode == MOM
+        ensures old(camActive) ==> mode == CAM
+        ensures old(!(camActive) && inOpez && !(camActive)) ==> mode == OCM
+        ensures old(!(inOpez && !(camActive)) && !(camActive) && momReturn && !(camActive) && !(inOpez)) ==> mode == MOM
         ensures Valid()
     {
         if (camActive) {
@@ -142,7 +142,7 @@ class LreController {
         requires mode == CAM
         requires Valid()
         modifies this
-        ensures cda >= 1.0 ==> mode == OCM
+        ensures old(!(event == ReqOCM) && cda >= 1.0) ==> mode == OCM
         ensures Valid()
     {
         if (event == ReqOCM) {

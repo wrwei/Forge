@@ -10,7 +10,7 @@ One pipeline pass per recorded stop-point Java (the last iteration of each archi
 | sranger | 3 | yes | passed | passed | passed | passed | no |
 | sranger | 4 | yes | passed | passed | passed | passed | no |
 | sranger | 5 | yes | passed | passed | passed | passed | no |
-| lre | 1 | yes | absent | passed | failed | passed | yes |
+| lre | 1 | yes | passed | passed | passed | passed | no |
 | lre | 2 | yes | passed | passed | passed | passed | no |
 | lre | 3 | yes | passed | passed | passed | passed | no |
 | lre | 4 | yes | passed | passed | passed | passed | no |
@@ -24,6 +24,6 @@ One pipeline pass per recorded stop-point Java (the last iteration of each archi
 | Study | Ships broken |
 |---|---:|
 | sranger | 0 of 5 |
-| lre | 1 of 5 |
+| lre | 0 of 5 |
 | chemical_detector | 2 of 5 |
-| **Total** | **3 of 15** |
+| **Total** | **2 of 15** |

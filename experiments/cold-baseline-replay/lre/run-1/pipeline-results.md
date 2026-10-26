@@ -1,7 +1,7 @@
 # Replay pass (lre) with the published extractor
 
 Source: `experiments/cold-baseline/lre/run-1/src/main/java/lre` (15 Java files, package `lre`).
-Driver exit `1`, 10 s.
+Driver exit `1`, 59 s.
 
 | Phase | Status |
 |---|---|
@@ -9,11 +9,11 @@ Driver exit `1`, 10 s.
 | coverage | failed |
 | preflight | passed |
 | t2m | passed |
-| m2m | failed |
-| m2t | failed |
+| m2m | passed |
+| m2t | passed |
 | dafny_gen | passed |
-| isabelle_gen | failed |
-| fdr4 | absent |
+| isabelle_gen | passed |
+| fdr4 | passed |
 | dafny_verify | passed |
 | isabelle_verify | failed |
 | vacuity | passed |

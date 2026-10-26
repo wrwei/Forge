@@ -16,10 +16,10 @@ with a README.
 | Diagnosis-only feedback, Chemical Detector, both controllers (condition E): five cold runs | Section 4.6, Table 8 (Diagnosis-only Chemical Detector row) | [`multicontroller-e/`](multicontroller-e/) |
 | Reference feedback, Chemical Detector, both controllers (condition F): five cold runs | Section 4.6, Table 8 (Reference Chemical Detector row); Section 5.6 (f), (m) | [`reference-multicontroller-f/`](reference-multicontroller-f/) |
 | Test-and-static-analysis feedback in place of verifier feedback | Section 4.7 (RQ5) | [`test-feedback/`](test-feedback/) |
-| Mutation testing: 186 mutants through every verifier | Section 4.8 (RQ6), Table 10 | [`mutation-testing/`](mutation-testing/) |
+| Mutation testing: 186 mutants through every verifier (34 outside the boundary, 3 killed, 15 rejected, 134 survived) | Section 4.8 (RQ6), Table 10 | [`mutation-testing/`](mutation-testing/) |
 | Final-mode divergence between the CSP and Isabelle chains | Section 4.4 (RQ2) | [`final-mode-divergence/`](final-mode-divergence/) |
-| Requirements-conformance check (LRE) | Section 4.9 (RQ7) | [`requirements-conformance/`](requirements-conformance/) |
-| Independently authored reference specification (LRE) | Section 4.9.1 | [`blind-spec/`](blind-spec/) |
+| Requirements-conformance checks: compiled relations for all three studies, survivor scoring | Section 4.9 (RQ7) | [`requirements-conformance/`](requirements-conformance/) |
+| Independently authored reference specification (LRE), survivor scoring | Section 4.9.1 | [`blind-spec/`](blind-spec/) |
 | Steam Boiler: an independent published specification | Section 4.10 (RQ8) | [`steam-boiler/`](steam-boiler/) |
 | Guard-level conformance enumeration | Section 5.5, Figure 2 | [`conformance-tierB/`](conformance-tierB/) |
 

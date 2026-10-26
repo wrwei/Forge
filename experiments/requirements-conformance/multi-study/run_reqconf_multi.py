@@ -10,6 +10,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import tierb_harness_gen as lib
 import tierb_studies as cfgs
 
+# The extractor emits one Idle_<State> operation per state: the Java else branch, "no
+# transition from State".  The relations represent "no transition" as "no enabled
+# operation" (M = {targets of enabled ops} or {mode}), so Idle operations are not
+# transitions and leave the operation list here.  They are kept in IDLE_OPS for the
+# complement check in score_survivors.py --idle-check.
+_orig_parse_thy = lib.parse_thy
+IDLE_OPS = {}
+def _parse_thy_no_idle(path):
+    ops, listens = _orig_parse_thy(path)
+    IDLE_OPS[os.path.realpath(path)] = [o for o in ops if o["name"].startswith("Idle_")]
+    return [o for o in ops if not o["name"].startswith("Idle_")], listens
+lib.parse_thy = _parse_thy_no_idle
+
+CAMPAIGN_OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "mutation-testing", "outputs")
+
+def theory_path(root, study, thyname):
+    """<root>/baseline-<study>/isabelle/<thy> (the campaign layout) or <root>/<study>/isabelle/<thy>."""
+    for cand in (os.path.join(root, f"baseline-{study}", "isabelle", thyname), os.path.join(root, study, "isabelle", thyname)):
+        if os.path.exists(cand): return cand
+    return os.path.join(root, f"baseline-{study}", "isabelle", thyname)
+
 LE, GE, NOT, OR = '\\<le>', '\\<ge>', '\\<not>', '\\<or>'
 
 MP = '(since(clockResetTime())<stuckperiod() ' + OR + ' (d1 - d0)>stuckdist())'
@@ -219,7 +240,7 @@ def enumerate_arm(arm, thy_path, here):
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--thy-root", required=True, help="dir holding <study>/isabelle/*_Beh.thy")
+    ap.add_argument("--thy-root", default=CAMPAIGN_OUT, help="dir holding baseline-<study>/isabelle/*_Beh.thy (default: the campaign outputs)")
     ap.add_argument("--out", default="multi_conformance.csv")
     ap.add_argument("--check", action="store_true",
                     help="compare the freshly computed rows against the shipped multi_conformance_baseline.csv")
@@ -228,7 +249,7 @@ if __name__ == "__main__":
     allrows = []
     for arm, (relf, cfg, thyname, evals) in ARMS.items():
         st = "sranger" if arm == "sranger" else "chemical_detector"
-        tp = os.path.join(a.thy_root, st, "isabelle", thyname)
+        tp = theory_path(a.thy_root, st, thyname)
         rows, unknown, foreign = enumerate_arm(arm, tp, here)
         allrows += rows
         dis = [r for r in rows if r["verdict"] != "member"]

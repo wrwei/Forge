@@ -1,0 +1,154 @@
+
+===== compile =====
+  [sys] 2a — Compile (gradle build): starting...
+  [sys] Feedback written: forge.assets/corrections/post_compile.md
+  -> phase_complete: status=completed
+===== compile: passed (2.8s) [authoritative post_compile.json; execution status was 'completed'] =====
+
+===== coverage =====
+  [sys] 2b — Coverage (Requirement ↔ Java trace): starting...
+  [sys] Feedback written: forge.assets/corrections/post_coverage.md
+  -> phase_complete: status=failed
+===== coverage: failed (0.0s) =====
+
+===== preflight =====
+  [sys] 2c — Preflight (Structural Lint) starting...
+  [sys] 2c — Preflight (Structural Lint) completed successfully.
+  [sys] Output (1 file(s) in output/):
+  lint_report.json (19.9 KB)
+  [sys] Feedback written: forge.assets/corrections/post_preflight.md
+  -> phase_complete: status=completed
+===== preflight: passed (1.0s) [authoritative post_preflight.json; execution status was 'completed'] =====
+
+===== t2m =====
+  [sys] 3 — Text-to-Model (Spoon Discovery) starting...
+  [sys] 3 — Text-to-Model (Spoon Discovery) completed successfully.
+  [sys] Output (3 file(s) in output/):
+  discovered_model.xmi (510.5 KB)
+  lint_report.json (19.9 KB)
+  trace_t2m.json (43.1 KB)
+  [sys] Feedback written: forge.assets/corrections/post_t2m.md
+  -> phase_complete: status=completed
+===== t2m: passed (1.1s) [authoritative post_t2m.json; execution status was 'completed'] =====
+
+===== m2m =====
+  [sys] 4 — Model-to-Model (ETL Transformation) starting...
+  [sys] 4 — Model-to-Model (ETL Transformation) failed with exit code 1.
+> Task :run FAILED
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+Discovering Java sources in: /Users/ranwei/Git/Forge/java.generated.project/src/main/java
+Model saved to: /Users/ranwei/Git/Forge/forge.transformations/output/discovered_model.xmi
+Extracting RoboChart state machine...
+Exception in thread "main" java.lang.RuntimeException: ETL transformation failed
+	at forge.transformations.m2m.Java2RoboChartTransformer.transform(Java2RoboChartTransformer.java:188)
+	at forge.transformations.m2m.Java2RoboChartTransformer.transform(Java2RoboChartTransformer.java:108)
+	at forge.transformations.m2m.TransformPhase.run(TransformPhase.java:81)
+	at forge.transformations.core.App.main(App.java:68)
+Caused by: Property 'value' not found in object org.eclipse.emf.ecore.impl.DynamicEObjectImpl@780ee3ad (eClass: org.eclipse.emf.ecore.impl.EClassImpl@56f9de3b (name: StringExp) (instanceClassName: null) (abstract: false, interface: false))
+	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3954:19-3954:33)
+	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3954:19-3954:53)
+	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3954:12-3954:54)
+	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3953:77-3955:9)
+	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3953:8-3955:9)
+	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3951:42-3956:5)
+	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3951:4-3956:5)
+  [sys] Feedback written: forge.assets/corrections/post_m2m.md
+  -> phase_complete: status=failed
+===== m2m: failed (1.5s) =====
+
+===== m2t =====
+  [sys] 5b — CSP Generation (RoboChart) starting...
+  [sys] 5b — CSP Generation (RoboChart)...
+  [sys] 5b — CSP Generation (RoboChart) failed with exit code 1.
+> Task :run FAILED
+Exception in thread "main" java.io.IOException: robochart_model.xmi not found at /Users/ranwei/Git/Forge/forge.transformations/output/robochart_model.xmi. Run 'transform' first.
+	at forge.transformations.m2t.RctPhase.loadRoboChartModel(RctPhase.java:112)
+	at forge.transformations.m2t.RctPhase.run(RctPhase.java:42)
+	at forge.transformations.core.App.main(App.java:68)
+FAILURE: Build failed with an exception.
+* What went wrong:
+Execution failed for task ':run'.
+* Try:
+BUILD FAILED in 362ms
+3 actionable tasks: 1 executed, 2 up-to-date
+  [sys] Feedback written: forge.assets/corrections/post_m2t.md
+  -> phase_complete: status=failed
+===== m2t: failed (0.4s) =====
+
+===== dafny_gen =====
+  [sys] 5a — Dafny Generation starting...
+  [sys] 5a — Dafny Generation completed successfully.
+  [sys] Output (5 file(s) in output/):
+  LreController.dfy (6.7 KB)
+  discovered_model.xmi (510.5 KB)
+  lint_report.json (19.9 KB)
+  trace_dafny.json (4.8 KB)
+  trace_t2m.json (43.1 KB)
+  [sys] Feedback written: forge.assets/corrections/post_dafny_gen.md
+  -> phase_complete: status=completed
+===== dafny_gen: passed (1.5s) [authoritative post_dafny_gen.json; execution status was 'completed'] =====
+
+===== isabelle_gen =====
+  [sys] 5c — Isabelle Theory Generation starting...
+  [sys] 5c — Isabelle Theory Generation failed with exit code 1.
+> Task :run FAILED
+Exception in thread "main" java.io.IOException: robochart_model.xmi not found at /Users/ranwei/Git/Forge/forge.transformations/output/robochart_model.xmi. Run 'transform' first.
+	at forge.transformations.m2t.IsabellePhase.loadRoboChartModel(IsabellePhase.java:70)
+	at forge.transformations.m2t.IsabellePhase.run(IsabellePhase.java:50)
+	at forge.transformations.core.App.main(App.java:68)
+FAILURE: Build failed with an exception.
+* What went wrong:
+Execution failed for task ':run'.
+* Try:
+BUILD FAILED in 369ms
+3 actionable tasks: 1 executed, 2 up-to-date
+  [sys] Feedback written: forge.assets/corrections/post_isabelle_gen.md
+  -> phase_complete: status=failed
+===== isabelle_gen: failed (0.4s) =====
+
+===== fdr4 =====
+  [pre-fdr4] no csp corrections applied (file missing?)
+  [sys] FDR4 CSP file not found. Auto-discovery looked under /Users/ranwei/Git/Forge/forge.transformations/output/csp-gen/defs for *_System_Module_coreassertions.csp, *_Module_coreassertions.csp, or *_coreassertions.csp; nothing matched. Either the m2t phase did not produce csp-gen output, or pin a path explicitly in phases.fdr4.csp_file.
+  -> phase_complete: status=failed
+===== fdr4: failed (0.0s) [execution status — no post file] =====
+
+===== dafny_verify =====
+  [sys] Verifying LreController.dfy...
+  [sys] Feedback written: forge.assets/corrections/post_dafny_verify.md
+  [sys] 6a — Dafny Verification completed — all files verified.
+  -> phase_complete: status=completed
+===== dafny_verify: passed (0.8s) [authoritative post_dafny_verify.json; execution status was 'completed'] =====
+
+===== isabelle_verify =====
+  [sys] Isabelle session directory not found: /Users/ranwei/Git/Forge/forge.transformations/output/isabelle. Run phase 5c (Isabelle Theory Generation) first.
+  [sys] Feedback written: forge.assets/corrections/post_isabelle_verify.md
+  -> phase_complete: status=failed
+===== isabelle_verify: failed (0.0s) =====
+
+===== vacuity =====
+  [sys] 6d — Vacuity Audit (Dafny + Isabelle): scanning /Users/ranwei/Git/Forge/forge.transformations/output...
+  [sys] Feedback written: forge.assets/corrections/post_vacuity.md
+  [sys] 6d — Vacuity Audit (Dafny + Isabelle): passed (0 blocking, 0 advisory)
+  -> phase_complete: status=completed
+===== vacuity: passed (0.0s) [authoritative post_vacuity.json; execution status was 'completed'] =====
+
+===== SUMMARY (authoritative post_<phase>.json verdicts) =====
+       compile           passed          2.8s
+  FAIL coverage          failed          0.0s
+       preflight         passed          1.0s
+       t2m               passed          1.1s
+  FAIL m2m               failed          1.5s
+  FAIL m2t               failed          0.4s
+       dafny_gen         passed          1.5s
+  FAIL isabelle_gen      failed          0.4s
+  FAIL fdr4              failed          0.0s
+       dafny_verify      passed          0.8s
+  FAIL isabelle_verify   failed          0.0s
+       vacuity           passed          0.0s
+
+FAILED phases (authoritative): coverage, m2m, m2t, isabelle_gen, fdr4, isabelle_verify
+
+--- stderr ---
+instantiations.csp not found

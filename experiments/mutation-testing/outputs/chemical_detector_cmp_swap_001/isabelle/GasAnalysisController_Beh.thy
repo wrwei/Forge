@@ -48,7 +48,7 @@ instantiation real :: "show"
 begin
   instance ..
 end
-record GasSensor = chemId :: nat intensityValue :: real
+record GasSensor = chemId :: int intensityValue :: real
 record_default GasSensor
 show_record GasSensor
 
@@ -59,11 +59,11 @@ show_record Intensity
 
 text \<open> function definition \<close>
 
-consts location :: " GasSensor list \<Rightarrow> Angle"
-consts analysis :: " GasSensor list \<Rightarrow> Status"
 consts peakIntensity :: " GasSensor list \<Rightarrow> real"
+consts analysis :: " GasSensor list \<Rightarrow> Status"
+consts location :: " GasSensor list \<Rightarrow> Angle"
 consts since :: "'a \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts clockResetTime :: "unit \<Rightarrow> nat"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+consts clockResetTime :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts stuckperiod :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts stuckdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 
@@ -76,34 +76,62 @@ zstore GasAnalysisController =
   anl :: "Angle"
   st::"St"
   tr :: "(St, Evt) tag list"
-  triggers:: "Evt set"
+  listens :: "Evt set"   (* FORK: STATIC. The events state `st` listens
+                            for. Written by every operation's update to the
+                            target state's awaited set; pinned per state by the
+                            invariant below. A property OF THE AUTOMATON. *)
+  offered :: "Evt set"   (* DYNAMIC. The events the environment offers THIS
+                            step. Environment model B (2026-10-20): the
+                            invariant pins, per state, offered = {} or
+                            offered = {e} for one listened e -- the Java step
+                            consumes at most one input event. Every operation
+                            sets offered' to a fresh choice `nxt` drawn from the
+                            target state's allowed offers. Read by trigger
+                            presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
-    "tr \<noteq> []"
+    "tr \<noteq> []
+                      \<and> (st = Reading \<longrightarrow> listens = {gas, tick})
+                      \<and> (st = Analysis \<longrightarrow> listens = {tick})
+                      \<and> (st = GasDetected \<longrightarrow> listens = {tick})
+                      \<and> (st = Final \<longrightarrow> listens = {tick})
+                                                                               \<and> (st = Reading \<longrightarrow> (offered = {} \<or> offered = {gas} \<or> offered = {tick}))
+                                                                               \<and> (st = Analysis \<longrightarrow> (offered = {} \<or> offered = {tick}))
+                                                                               \<and> (st = NoGas \<longrightarrow> (offered = {}))
+                                                                               \<and> (st = GasDetected \<longrightarrow> (offered = {} \<or> offered = {tick}))
+                                                                               \<and> (st = Final \<longrightarrow> (offered = {} \<or> offered = {tick}))
+                                                                               \<and> (st = initial \<longrightarrow> (offered = {}))"
 
 subsection \<open> Operations \<close>
 
 zoperation InitialToReading =
   over GasAnalysisController
+  params nxt \<in> "{{}, {gas}, {tick}}" 
   pre "st= initial"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,triggers\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {gas, tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation ReadingToAnalysis =
   over GasAnalysisController
-  pre "st= Reading"
+  params nxt \<in> "{{}, {tick}}" 
+  pre "st= Reading \<and> gas \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Analysis
+         ,sts\<Zprime> = analysis(gs)
          ,tr\<Zprime> =tr @ [Event gas] @ [State Analysis]
-         ,triggers\<Zprime> = {tick}
+         ,listens\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation ReadingToReading =
   over GasAnalysisController
-  pre "st= Reading"
+  params nxt \<in> "{{}, {gas}, {tick}}" 
+  pre "st= Reading \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr @ [Event tick] @ [State Reading]
-         ,triggers\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {gas, tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AnalysisToNoGas =
@@ -111,88 +139,110 @@ zoperation AnalysisToNoGas =
   pre "st= Analysis \<and> sts= (noGas)"
   update "[st\<Zprime>= NoGas
          ,tr\<Zprime> =tr @ [Event resume] @ [State NoGas]
-         ,triggers\<Zprime> = {}
+         ,listens\<Zprime> = {}
+         ,offered\<Zprime> = {}
          ]"
         
 zoperation AnalysisToGasDetected =
   over GasAnalysisController
-  pre "st= Analysis \<and> sts= (gasD)"
+  params nxt \<in> "{{}, {tick}}" 
+  pre "st= Analysis \<and> sts= (gasD) \<and> \<not>sts= (noGas)"
   update "[st\<Zprime>= GasDetected
+         ,insVal\<Zprime> = peakIntensity(gs)
          ,tr\<Zprime> =tr  @ [State GasDetected]
-         ,triggers\<Zprime> = {tick}
+         ,listens\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AnalysisToAnalysis =
   over GasAnalysisController
-  pre "st= Analysis"
+  params nxt \<in> "{{}, {tick}}" 
+  pre "st= Analysis \<and> \<not>sts= (noGas) \<and> \<not>sts= (gasD) \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Analysis
          ,tr\<Zprime> =tr @ [Event tick] @ [State Analysis]
-         ,triggers\<Zprime> = {tick}
+         ,listens\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation ReadingToReading_1 =
   over GasAnalysisController
-  pre "st= Reading"
+  params nxt \<in> "{{}, {gas}, {tick}}" 
+  pre "st= Reading \<and> \<not>(gas \<in> offered) \<and> \<not>(tick \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,triggers\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {gas, tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AnalysisToReading =
   over GasAnalysisController
-  pre "st= Analysis"
+  params nxt \<in> "{{}, {gas}, {tick}}" 
+  pre "st= Analysis \<and> \<not>(tick \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,triggers\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {gas, tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GasDetectedToReading =
   over GasAnalysisController
+  params nxt \<in> "{{}, {gas}, {tick}}" 
   pre "st= GasDetected"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,triggers\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {gas, tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation FinalToReading =
   over GasAnalysisController
+  params nxt \<in> "{{}, {gas}, {tick}}" 
   pre "st= Final"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,triggers\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {gas, tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GasDetectedToFinal =
   over GasAnalysisController
+  params nxt \<in> "{{}, {tick}}" 
   pre "st= GasDetected \<and> insVal\<ge>10.0"
   update "[st\<Zprime>= Final
          ,tr\<Zprime> =tr @ [Event stop] @ [State Final]
-         ,triggers\<Zprime> = {tick}
+         ,listens\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GasDetectedToReading_1 =
   over GasAnalysisController
+  params nxt \<in> "{{}, {gas}, {tick}}" 
   pre "st= GasDetected \<and> \<not>insVal\<ge>10.0"
   update "[st\<Zprime>= Reading
          ,anl\<Zprime> = location(gs)
          ,tr\<Zprime> =tr @ [Event turn] @ [State Reading]
-         ,triggers\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {gas, tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GasDetectedToGasDetected =
   over GasAnalysisController
-  pre "st= GasDetected"
+  params nxt \<in> "{{}, {tick}}" 
+  pre "st= GasDetected \<and> \<not>insVal\<ge>10.0 \<and> insVal\<ge>10.0 \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= GasDetected
          ,tr\<Zprime> =tr @ [Event tick] @ [State GasDetected]
-         ,triggers\<Zprime> = {tick}
+         ,listens\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation FinalToFinal =
   over GasAnalysisController
-  pre "st= Final"
+  params nxt \<in> "{{}, {tick}}" 
+  pre "st= Final \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Final
          ,tr\<Zprime> =tr @ [Event tick] @ [State Final]
-         ,triggers\<Zprime> = {tick}
+         ,listens\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 
@@ -202,7 +252,8 @@ definition Init :: "GasAnalysisController subst" where
   "Init =
   [st\<leadsto> initial
   ,tr\<leadsto> [State initial]
-  ,triggers\<leadsto> {}
+  ,listens\<leadsto> {}
+  ,offered\<leadsto> {}
   ]"
 (* FORK: defaults emitted by template; edit to match intended initial state if needed. *)
   
@@ -210,55 +261,60 @@ definition Init :: "GasAnalysisController subst" where
 zmachine GasAnalysisControllerMachine =
   init Init
   invariant GasAnalysisController_inv
-  operations  InitialToReading ReadingToAnalysis ReadingToReading AnalysisToNoGas AnalysisToGasDetected AnalysisToAnalysis ReadingToReading_1 AnalysisToReading GasDetectedToReading FinalToReading GasDetectedToFinal GasDetectedToReading_1 GasDetectedToGasDetected FinalToFinal 
-
+  operations  InitialToReading ReadingToAnalysis ReadingToReading AnalysisToNoGas AnalysisToGasDetected AnalysisToAnalysis ReadingToReading_1 AnalysisToReading GasDetectedToReading FinalToReading GasDetectedToFinal GasDetectedToReading_1 GasDetectedToGasDetected FinalToFinal
+  until "st = NoGas"
+(* `until` marks states exempt from deadlock-freedom (deadlock_free_z_machine's
+   End parameter). These are states that are the source of no transition, so the
+   machine has terminated there and is not required to offer an event. Without this
+   clause End defaults to False and the obligation is FALSE at such a state --
+   machine-checked, see scripts/test_f17_probe.sh. *)
 
 subsection \<open> Structural Invariants \<close>
 
 lemma Init_inv [hoare_lemmas]: "Init establishes GasAnalysisController_inv"
   by zpog_full
 
-lemma InitialToReading_inv [hoare_lemmas]: "InitialToReading() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma InitialToReading_inv [hoare_lemmas]: "InitialToReading (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma ReadingToAnalysis_inv [hoare_lemmas]: "ReadingToAnalysis() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma ReadingToAnalysis_inv [hoare_lemmas]: "ReadingToAnalysis (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma ReadingToReading_inv [hoare_lemmas]: "ReadingToReading() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma ReadingToReading_inv [hoare_lemmas]: "ReadingToReading (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
 lemma AnalysisToNoGas_inv [hoare_lemmas]: "AnalysisToNoGas() preserves GasAnalysisController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
 
-lemma AnalysisToGasDetected_inv [hoare_lemmas]: "AnalysisToGasDetected() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma AnalysisToGasDetected_inv [hoare_lemmas]: "AnalysisToGasDetected (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma AnalysisToAnalysis_inv [hoare_lemmas]: "AnalysisToAnalysis() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma AnalysisToAnalysis_inv [hoare_lemmas]: "AnalysisToAnalysis (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma ReadingToReading_1_inv [hoare_lemmas]: "ReadingToReading_1() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma ReadingToReading_1_inv [hoare_lemmas]: "ReadingToReading_1 (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma AnalysisToReading_inv [hoare_lemmas]: "AnalysisToReading() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma AnalysisToReading_inv [hoare_lemmas]: "AnalysisToReading (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma GasDetectedToReading_inv [hoare_lemmas]: "GasDetectedToReading() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma GasDetectedToReading_inv [hoare_lemmas]: "GasDetectedToReading (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma FinalToReading_inv [hoare_lemmas]: "FinalToReading() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma FinalToReading_inv [hoare_lemmas]: "FinalToReading (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma GasDetectedToFinal_inv [hoare_lemmas]: "GasDetectedToFinal() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma GasDetectedToFinal_inv [hoare_lemmas]: "GasDetectedToFinal (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma GasDetectedToReading_1_inv [hoare_lemmas]: "GasDetectedToReading_1() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma GasDetectedToReading_1_inv [hoare_lemmas]: "GasDetectedToReading_1 (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma GasDetectedToGasDetected_inv [hoare_lemmas]: "GasDetectedToGasDetected() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma GasDetectedToGasDetected_inv [hoare_lemmas]: "GasDetectedToGasDetected (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma FinalToFinal_inv [hoare_lemmas]: "FinalToFinal() preserves GasAnalysisController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma FinalToFinal_inv [hoare_lemmas]: "FinalToFinal (nxt) preserves GasAnalysisController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
 
 subsection \<open> Safety Requirements \<close>
@@ -268,72 +324,64 @@ zexpr R1 is "True"
 lemma  "Init establishes R1"
   by zpog_full
 
-lemma "InitialToReading() preserves R1 under GasAnalysisController_inv"
+lemma "InitialToReading (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "ReadingToAnalysis() preserves R1 under GasAnalysisController_inv"
+lemma "ReadingToAnalysis (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "ReadingToReading() preserves R1 under GasAnalysisController_inv"
+lemma "ReadingToReading (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
 lemma "AnalysisToNoGas() preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "AnalysisToGasDetected() preserves R1 under GasAnalysisController_inv"
+lemma "AnalysisToGasDetected (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "AnalysisToAnalysis() preserves R1 under GasAnalysisController_inv"
+lemma "AnalysisToAnalysis (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "ReadingToReading_1() preserves R1 under GasAnalysisController_inv"
+lemma "ReadingToReading_1 (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "AnalysisToReading() preserves R1 under GasAnalysisController_inv"
+lemma "AnalysisToReading (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "GasDetectedToReading() preserves R1 under GasAnalysisController_inv"
+lemma "GasDetectedToReading (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "FinalToReading() preserves R1 under GasAnalysisController_inv"
+lemma "FinalToReading (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "GasDetectedToFinal() preserves R1 under GasAnalysisController_inv"
+lemma "GasDetectedToFinal (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "GasDetectedToReading_1() preserves R1 under GasAnalysisController_inv"
+lemma "GasDetectedToReading_1 (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "GasDetectedToGasDetected() preserves R1 under GasAnalysisController_inv"
+lemma "GasDetectedToGasDetected (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
-lemma "FinalToFinal() preserves R1 under GasAnalysisController_inv"
+lemma "FinalToFinal (nxt) preserves R1 under GasAnalysisController_inv"
   by (zpog_full; auto)
   
 
 definition [z_defs]: "GasAnalysisController_axioms = True"
 
+(* WARNING -- THIS OBLIGATION IS FALSE AS EMITTED.
+   State(s) with no outgoing transition: NoGas.
+   Under `loop` semantics such a state offers Vis {} = deadlock, so
+   deadlock_free does not hold. This is a MODEL defect (a missing tick-triggered
+   self-loop in the Java), not a proof-search problem: no tactic can close it.
+   Measured on chemical_detector v2 -- auto OOM 978s, metis 1825s, blast 922s,
+   fastforce 923s; refuted by probe_Y3_obligation_refuted with witness
+   st = NoGas.
+   Fix the Java per forge.assets/prompts/java_codegen_rules.txt ("EVERY MODE
+   MUST HAVE AN OUTGOING TRANSITION"), re-extract, and this marker disappears. *)
 lemma GasAnalysisController_deadlock_free: "GasAnalysisController_axioms  \<Longrightarrow> deadlock_free GasAnalysisControllerMachine"
   unfolding GasAnalysisControllerMachine_def
   apply deadlock_free
-  by (metis St.exhaust_disc)
-  (* FORK: the deadlock_free closing tactic is selected by `hasPayloadDomain`
-     (set in PART 2 when this machine emits a typed-payload domain set such as
-     `SeqGs`). The residual goal after `apply deadlock_free` is
-       \<And>st. st = M\<^sub>1 \<or> ... \<or> guarded-disjuncts
-     and St.exhaust_disc is the enumtype discriminator exhaustion lemma that
-     matches the bare `st = X` disjunct for each state. Two cases:
-       * has payload domain -> `using St.exhaust_disc by auto`. metis HANGS
-         (>10 min) when a state's ONLY transition consumes a typed payload
-         (e.g. gas-analysis Reading: `params gs_input \<in> SeqGs`), because the
-         enabledness disjunct is `\<exists>gs_input \<in> SeqGs. ...`. With the set
-         emitted as a [simp] `= UNIV` definition (PART 2), `auto` discharges the
-         existential and closes via the bare disjunct. Verified on
-         chemical_detector (gas-analysis, ~15s).
-       * no payload domain -> `by (metis St.exhaust_disc)` (the ICECCS2023 LRE
-         tactic). `auto` TIMES OUT (>6 min) on LRE's real-arithmetic guards --
-         confirmed by regression -- so LRE-style machines keep metis.
-     Tried and rejected: `(cases st; simp_all)` / `(cases st; auto)` leave the
-     guarded disjunct (e.g. `thr() \<le> ins`) open because the split selects the
-     guarded disjunct instead of the bare one. *)
+  apply (case_tac st; (simp)?; (elim disjE)?; (simp)?)
+  by blast+
 end

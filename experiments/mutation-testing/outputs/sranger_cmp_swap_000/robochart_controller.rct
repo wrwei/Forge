@@ -18,7 +18,7 @@ interface Actuators {
 }
 
 interface SRangerController_State {
-	var turnDurationElapsed : boolean
+	var turnDurationElapsed : boolean = false
 	var resetTime : real
 	var elapsed : boolean
 }
@@ -39,13 +39,13 @@ operation TurnTimer ( ) {
 
 stm SRangerController {
 	uses Inputs uses Outputs requires SRangerController_State requires Constants
-	state Moving {
-		entry move ! 1
+	state Turning {
 	}
 	state Final {
 		entry move ! 0
 	}
-	state Turning {
+	state Moving {
+		entry move ! 1
 	}
 	initial i0
 	transition t_init {
@@ -61,11 +61,13 @@ stm SRangerController {
 		from Turning
 		to Final
 		trigger endTask
+		condition not ( turnDurationElapsed )
 	}
 	transition t3 {
 		from Turning
 		to Turning
 		trigger tick
+		condition not ( turnDurationElapsed )
 	}
 	transition t4 {
 		from Final

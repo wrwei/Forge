@@ -1,392 +1,258 @@
 #!/usr/bin/env python3
-"""Requirements-conformance check for the LRE (paper Section 4.9, RQ7).
+"""Requirements-conformance scoring of the LRE mutants (paper Section 4.9, RQ7).
 
-Compares the LRE's behavioural requirements, compiled into a transition
-relation (requirements_model_lre.json), with the extracted Isabelle model,
-and scores the 62 LRE mutants that survive every verifier (Section 4.8).
+Scores the LRE mutants that survive every verifier of the mutation campaign
+(experiments/mutation-testing, kill_table.csv rows with study == lre and
+disposition == survived) against the compiled LRE requirements relation.
 
-Inputs, all inside this repository:
-  experiments/requirements-conformance/requirements_model_lre.json
-      the compiled requirements; its SHA-256 is checked against
-      ordering_attestation.txt before anything is run
-  reference-runs/lre/formal-artefacts/isabelle/LreController_Beh.thy
-      the extracted model of the submitted LRE run
-  experiments/mutation-testing/kill_table_all_backends.csv
-  experiments/mutation-testing/outputs/<mutant>/isabelle/LreController_Beh.thy
-      the mutation-testing results and each mutant's extracted model
+The relation code lives in reqconf_relation.py and is executed here unchanged:
+its hash check of requirements_model_lre.json against ordering_attestation.txt,
+REQ_TRANS (17 transitions), the hybrid concrete/abstract grid, tok_eval,
+relation2 and verdicts2.  Only the theory PARSER is defined here, because the
+extractor's theories carry three precondition conjunct forms the relation code
+does not evaluate itself:
+    <ev> \\<in> offered          the triggering event
+    \\<not>(<ev> \\<in> offered)   a sibling-priority negation of a trigger
+    offered \\<subseteq> listens  always true in the relation's abstraction
+The precondition is split at top-level \\<and> only, a conjunct of the form
+\\<not>( c1 \\<and> ... \\<and> cn ) is evaluated as the negation of the
+conjunction, and the Idle_<State> operations (the Java else branch, "no
+transition from State") are excluded, because the relation represents "no
+transition" as "no enabled operation".  For every theory the script verifies
+that each Idle_<State> precondition equals the complement of the union of the
+enabled sets of that state's other operations (idle_check.csv).
 
-Outputs (written to --out, default: a temporary directory):
-  archived_conformance_diff.csv    per-cell verdicts, 458,752 rows
-  archived_survivor_scoring.csv    one row per surviving mutant, 62 rows
+Kill rule: a mutant is killed when, at some grid cell, it has a disagreement
+with the requirements (requirements demand a transition the theory does not
+take, or the theory takes a transition the requirements do not admit) or an
+output violation that the unmutated theory does not have.  A mutant whose
+theory is identical to the unmutated one cannot be scored (scoreable = False).
 
-With --check, both outputs are compared byte for byte with the copies
-shipped in this directory.
-
-Usage:
-  python3 experiments/requirements-conformance/run_reqconf.py [--out DIR] [--check]
-Requires Python 3 with numpy and pandas.
+Usage (from the repository root; needs numpy and pandas):
+  python3 experiments/requirements-conformance/run_reqconf.py [--out FILE] [--check]
+With --check the result is compared row by row with the shipped survivor_scoring.csv.
 """
-import argparse, hashlib, json, os, re, sys, tempfile, itertools, filecmp
+import argparse, hashlib, json, os, re, sys, itertools
 import numpy as np, pandas as pd
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-ap.add_argument("--out", default=None, help="output directory (default: a new temporary directory)")
-ap.add_argument("--check", action="store_true", help="compare outputs with the shipped CSVs")
+HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+MT = os.path.join(REPO, "experiments", "mutation-testing")
+ap.add_argument("--forge", default=REPO, help="repository root (default: derived from this file)")
+ap.add_argument("--pool", default=os.path.join(MT, "kill_table.csv"), help="the campaign's kill table (LRE rows with disposition == survived)")
+ap.add_argument("--baseline-thy", default=os.path.join(MT, "outputs", "baseline-lre", "isabelle", "LreController_Beh.thy"))
+ap.add_argument("--mutant-root", default=os.path.join(MT, "outputs"), help="<root>/<mutant_id>/isabelle/LreController_Beh.thy")
+ap.add_argument("--exclude", default="", help="comma-separated mutant ids to drop from the pool")
+ap.add_argument("--out", default=os.path.join(HERE, "survivor_scoring.csv"))
+ap.add_argument("--idle-check", default=os.path.join(HERE, "idle_check.csv"), help="CSV with the Idle_<State> complement check per theory")
+ap.add_argument("--check", action="store_true", help="compare the result with the shipped survivor_scoring.csv row by row")
 args = ap.parse_args()
-OUT = args.out or tempfile.mkdtemp(prefix="reqconf-")
-os.makedirs(OUT, exist_ok=True)
 
-# ---- the compiled requirements model, checked against the recorded hash ----
-MODEL = os.path.join(HERE, "requirements_model_lre.json")
-digest = hashlib.sha256(open(MODEL, "rb").read()).hexdigest()
-m = re.search(r"sha256\(requirements_model_lre\.json\)\s*=\s*([0-9a-f]{64})", open(os.path.join(HERE, "ordering_attestation.txt")).read())
-if not m or m.group(1) != digest:
-    sys.exit(f"requirements_model_lre.json does not match the hash in ordering_attestation.txt ({digest})")
-print("requirements model hash matches the ordering record:", digest[:16])
-_model = json.load(open(MODEL))
-ATOMS = {k: {kk: v[kk] for kk in ("variable", "comparator", "bound")} for k, v in _model["atoms"].items()}
-TRANSITIONS = _model["transitions"]
+RC = os.path.join(args.forge, "experiments", "requirements-conformance")
+SRC = open(os.path.join(RC, "reqconf_relation.py")).read()
 
-# ================= part 1: conformance of the extracted model =================
-ATOM_KEY = {"inOpez":"inOpez","vel_le_1":"vel_le_1","odist_cdyn_gt_1":"odc_gt_1","odist_cstc_gt_1":"ocs_gt_1",
- "cda_lt_minSafe":"cda_lt_ms","tcpa_ge_0":"tcpa_ge_0","hvel_ge_1":"hvel_ge_1",
- "hdist_le_horiz":"hdist_le_h","vdist_le_dfltvert":"vdist_le_dv","vvel_ge_1":"vvel_ge_1","vdist_le_vert":"vdist_le_v"}
+def slice_between(s, a, b):
+    i = s.index(a); j = s.index(b, i); return s[i:j]
 
-REQ_TRANS = []
-for t in TRANSITIONS:
-    if t["kind"] != "transition": continue
-    REQ_TRANS.append({"req_id": t["req_id"], "src": t["source_mode"], "ev": t["trigger_event_or_none"],
-        "tgt": t["target_mode"], "outputs": t["outputs"],
-        "conjs": [(ATOM_KEY[c["atom"]], c["negated"]) for c in t["guard_conjuncts"]]})
+# ---- execute Forge's own relation code, unchanged, in a private namespace ----
+hash_block = slice_between(SRC, "# ---- the compiled requirements model", "# ================= part 1")
+part2 = slice_between(SRC, "# ================= part 2", "# ---- load baseline theory ----")
+ns = dict(HERE=RC, np=np, pd=pd, re=re, json=json, hashlib=hashlib, os=os, sys=sys, itertools=itertools)
+exec(hash_block, ns)     # verifies sha256(requirements_model_lre.json) against ordering_attestation.txt
+exec(part2, ns)          # REQ_TRANS, grid, req_sets2, tok_eval, parse_archived_thy, op_enabled2, relation2, verdicts2
+print("relation code executed from", os.path.join(RC, "reqconf_relation.py"),
+      "(part 2: %d lines)" % part2.count("\n"), "| REQ_TRANS =", len(ns["REQ_TRANS"]))
 
-INPUT_EVTS = {"reqVel","reqHdng","reqMOM","reqOCM","endTask","reqHCM"}
-OUTPUT_EVTS = {"advVel","advHdng"}
-MODES = ["OCM","MOM","HCM","CAM"]
-EVENTS = ["reqVel","reqHdng","reqMOM","reqOCM","endTask","reqHCM","tick"]
-MBIT = {m: 1<<i for i,m in enumerate(MODES)}
+NV2, tok_eval, parse_archived_thy = ns["NV2"], ns["tok_eval"], ns["parse_archived_thy"]
+relation2, verdicts2, MODES, EVENTS = ns["relation2"], ns["verdicts2"], ns["MODES"], ns["EVENTS"]
 
-ATOM14 = ["inOpez","vel_le_1","odc_gt_1","ocs_gt_1","cda_lt_ms","tcpa_ge_0",
-           "hvel_ge_1","hdist_le_h","vdist_le_dv","vvel_ge_1","vdist_le_v",
-           "camActive","hcmActive","momReturn"]
-NV = 1 << len(ATOM14)
-idx = np.arange(NV, dtype=np.uint32)
-B = {a: ((idx >> i) & 1).astype(bool) for i, a in enumerate(ATOM14)}
+# ---- adaptation 1: the published precondition conjunct forms ----
+RE_IN = re.compile(r"(\w+)\\<in>offered$")
+RE_NOT_IN = re.compile(r"\\<not>\((\w+)\\<in>offered\)$")
+SUBSET = "offered\\<subseteq>listens"
 
-cam_def = B["cda_lt_ms"] & B["tcpa_ge_0"]
-hcm_def = (B["hvel_ge_1"] & B["hdist_le_h"]) | B["vdist_le_dv"] | (B["vvel_ge_1"] & B["vdist_le_v"])
-mom_def = (~B["hdist_le_h"]) & (~B["vdist_le_v"])
-consistent = (B["camActive"]==cam_def) & (B["hcmActive"]==hcm_def) & (B["momReturn"]==mom_def)
+# ---- precondition evaluation over the grid (published conjunct forms) ----
+def split_top(s, sep="\\<and>"):
+    parts, depth, cur, i = [], 0, "", 0
+    while i < len(s):
+        if s.startswith(sep, i) and depth == 0:
+            parts.append(cur); cur = ""; i += len(sep); continue
+        ch = s[i]
+        depth += (ch == "("); depth -= (ch == ")")
+        cur += ch; i += 1
+    parts.append(cur)
+    return [p for p in parts if p]
 
-def req_sets(mode, ev):
-    mask = np.zeros(NV, dtype=np.uint8); det = []
-    for r in REQ_TRANS:
-        if r["src"] != mode: continue
-        if r["ev"] is not None and r["ev"] != ev: continue
-        en = np.ones(NV, dtype=bool)
-        for a, neg in r["conjs"]:
-            en &= (~B[a]) if neg else B[a]
-        mask |= np.where(en, MBIT[r["tgt"]], 0).astype(np.uint8)
-        det.append((r["req_id"], r["tgt"], r["outputs"], en))
-    return mask, det
+def balanced_wrap(s):
+    """True when s is `(...)` with the outer parens matching each other."""
+    if not (s.startswith("(") and s.endswith(")")): return False
+    depth = 0
+    for k, ch in enumerate(s):
+        depth += (ch == "("); depth -= (ch == ")")
+        if depth == 0 and k < len(s) - 1: return False
+    return True
 
-def parse_archived_thy(txt):
-    ops = []
-    for om in re.finditer(r'zoperation\s+(\w+)\s*=\s*over\s+\w+\s*(?:params[^\n]*\n)?\s*pre\s+"(.*?)"\s*update\s+"\[(.*?)\]"', txt, re.S):
-        name, pre, upd = om.group(1), om.group(2), om.group(3)
-        pn = re.sub(r'\s+','', pre)
-        ms = re.match(r'st=(\w+)', pn)
-        if not ms:
-            ops.append({"name":name,"src":None,"raw_pre":pn}); continue
-        src = ms.group(1)
-        rest = pn[ms.end():]
-        conjs = [c for c in rest.split("\\<and>") if c]
-        mt = re.search(r'st\\<Zprime>=\s*(\w+)', upd)
-        tgt = mt.group(1)
-        evs = re.findall(r'\[Event\s+(\w+)\]', upd)
-        in_evs = [e for e in evs if e in INPUT_EVTS]
-        out_evs = {e for e in evs if e in OUTPUT_EVTS}
-        ev_bound = in_evs[0] if (not conjs and in_evs) else None
-        ops.append({"name":name,"src":src,"tgt":tgt,"conjs":conjs,
-                    "ev_bound":ev_bound,"trace_in":in_evs,"outputs":out_evs})
-    return ops
+def eval_conj(c, ev):
+    """One whitespace-free precondition conjunct over the grid for event ev."""
+    if c.startswith("\\<not>") and balanced_wrap(c[len("\\<not>"):]):
+        inner = c[len("\\<not>") + 1:-1]
+        return ~eval_conjs(split_top(inner), ev)
+    m = RE_IN.match(c)
+    if m: return np.full(NV2, m.group(1) == ev)          # the triggering event, now in `pre`
+    m = RE_NOT_IN.match(c)
+    if m: return np.full(NV2, m.group(1) != ev)          # sibling-priority negation of a trigger
+    if c == SUBSET: return np.ones(NV2, dtype=bool)      # always true in this abstraction
+    neg = c.startswith("\\<not>")
+    tok = c[len("\\<not>"):] if neg else c
+    if balanced_wrap(tok): tok = tok[1:-1]
+    arr = tok_eval(tok)
+    return (~arr) if neg else arr
 
-GTOK = {
- "vel\\<le>1.0": lambda: B["vel_le_1"],
- "odist(cdyn)>1.0": lambda: B["odc_gt_1"],
- "odist(cstc)>1.0": lambda: B["ocs_gt_1"],
- "cda\\<ge>minsafedist()": lambda: ~B["cda_lt_ms"],
- "inOpez": lambda: B["inOpez"],
- "camActive": lambda: B["camActive"],
- "hcmActive": lambda: B["hcmActive"],
- "momReturn": lambda: B["momReturn"],
-}
-
-def op_enabled(o, ev):
-    if o["ev_bound"] is not None and o["ev_bound"] != ev:
-        return np.zeros(NV, dtype=bool)
-    en = np.ones(NV, dtype=bool)
-    for c in o["conjs"]:
-        neg = c.startswith("\\<not>")
-        tok = c[len("\\<not>"):] if neg else c
-        arr = GTOK[tok]()
-        en &= (~arr) if neg else arr
+def eval_conjs(conjs, ev):
+    en = np.ones(NV2, dtype=bool)
+    for c in conjs: en &= eval_conj(c, ev)
     return en
 
-ARCH = os.path.join(REPO, "reference-runs/lre/formal-artefacts/isabelle/LreController_Beh.thy")
-arch_ops = [o for o in parse_archived_thy(open(ARCH).read()) if o.get("src") not in (None, "initial")]
-
-rows = []
-counts = {}
-for mode in MODES:
-    for ev in EVENTS:
-        rmask, rdet = req_sets(mode, ev)
-        tmask = np.zeros(NV, dtype=np.uint8)
-        opnames_enabled = {}
-        for o in arch_ops:
-            if o["src"] != mode: continue
-            en = op_enabled(o, ev)
-            if en.any():
-                tmask |= np.where(en, MBIT[o["tgt"]], 0).astype(np.uint8)
-                opnames_enabled[o["name"]] = (en, o)
-        both_empty = (rmask==0) & (tmask==0)
-        exact = (rmask==tmask) & (rmask!=0)
-        subset = ((tmask & ~rmask)==0)
-        refin = subset & (tmask!=0) & (tmask!=rmask)
-        req_only = (tmask==0) & (rmask!=0)
-        code_extra = (tmask & ~rmask) != 0
-        verdict = np.full(NV, "", dtype=object)
-        verdict[both_empty] = "agree_stay"
-        verdict[exact] = "agree_exact"
-        verdict[refin] = "agree_refinement"
-        verdict[req_only] = "REQ_transition_CODE_none"
-        verdict[code_extra] = "CODE_transition_REQ_none"
-        dis = req_only | code_extra
-        mech = np.full(NV, "", dtype=object)
-        mech[dis & ~consistent] = "frozen_data_plane"
-        cons_dis = dis & consistent
-        if cons_dis.any():
-            c2 = np.zeros(NV, dtype=bool)
-            if mode=="OCM" and ev!="reqMOM" and "OCMToMOM" in opnames_enabled:
-                en_o = opnames_enabled["OCMToMOM"][0]
-                only_mom_extra = ((tmask & ~rmask) == MBIT["MOM"])
-                c2 = cons_dis & en_o & only_mom_extra
-            mech[cons_dis & c2] = "C2_trigger_not_in_pre"
-            mech[cons_dis & ~c2] = "UNMAPPED"
-        outviol = np.zeros(NV, dtype=bool)
-        for (rid, tgt, routs, en) in rdet:
-            if not routs: continue
-            same_tgt = [d for d in rdet if d[1]==tgt]
-            if len(same_tgt) != 1: continue
-            need = {re.match(r'(\w+)\(', o).group(1) for o in routs}
-            got_ok = np.zeros(NV, dtype=bool); any_tgt = np.zeros(NV, dtype=bool)
-            for nm,(eno,o) in opnames_enabled.items():
-                if o["tgt"]==tgt:
-                    any_tgt |= eno
-                    if need <= o["outputs"]: got_ok |= eno
-            outviol |= en & any_tgt & ~got_ok & ~dis
-        counts.setdefault("outviol", 0); counts["outviol"] += int(outviol.sum())
-        for v in ("agree_stay","agree_exact","agree_refinement","REQ_transition_CODE_none","CODE_transition_REQ_none"):
-            counts[v] = counts.get(v,0) + int((verdict==v).sum())
-        for m in ("frozen_data_plane","C2_trigger_not_in_pre","UNMAPPED"):
-            counts[m] = counts.get(m,0) + int((mech==m).sum())
-        dfp = pd.DataFrame({a: B[a] for a in ATOM14})
-        dfp.insert(0,"mode",mode); dfp.insert(1,"event",ev)
-        dfp["flags_consistent"]=consistent
-        dfp["req_targets"]=[ "|".join(m2 for m2 in MODES if rm & MBIT[m2]) for rm in rmask ]
-        dfp["thy_targets"]=[ "|".join(m2 for m2 in MODES if tm & MBIT[m2]) for tm in tmask ]
-        dfp["verdict"]=verdict; dfp["mechanism"]=mech; dfp["output_violation"]=outviol
-        rows.append(dfp)
-
-adf = pd.concat(rows, ignore_index=True)
-adf.to_csv(os.path.join(OUT, "archived_conformance_diff.csv"), index=False)
-print("wrote archived_conformance_diff.csv:", len(adf), "rows")
-
-# ================= part 2: scoring the surviving mutants =================
-ATOM_KEY = {"inOpez":"inOpez","vel_le_1":"vel_le_1","odist_cdyn_gt_1":"odc_gt_1","odist_cstc_gt_1":"ocs_gt_1",
- "cda_lt_minSafe":"cda_lt_ms","tcpa_ge_0":"tcpa_ge_0","hvel_ge_1":"hvel_ge_1",
- "hdist_le_horiz":"hdist_le_h","vdist_le_dfltvert":"vdist_le_dv","vvel_ge_1":"vvel_ge_1","vdist_le_vert":"vdist_le_v"}
-
-REQ_TRANS = []
-for t in TRANSITIONS:
-    if t["kind"] != "transition": continue
-    REQ_TRANS.append({"req_id": t["req_id"], "src": t["source_mode"], "ev": t["trigger_event_or_none"],
-        "tgt": t["target_mode"], "outputs": t["outputs"],
-        "conjs": [(ATOM_KEY[c["atom"]], c["negated"]) for c in t["guard_conjuncts"]]})
-assert len(REQ_TRANS) == 17
-
-INPUT_EVTS = {"reqVel","reqHdng","reqMOM","reqOCM","endTask","reqHCM"}
-OUTPUT_EVTS = {"advVel","advHdng"}
-MODES = ["OCM","MOM","HCM","CAM"]
-EVENTS = ["reqVel","reqHdng","reqMOM","reqOCM","endTask","reqHCM","tick"]
-MBIT = {m: 1<<i for i,m in enumerate(MODES)}
-
-# ---- hybrid concrete/abstract space ----
-GVALS = np.array([0.5,1.0,1.5,2.0,2.5])
-BITNAMES = ["inOpez","cda_lt_ms","tcpa_ge_0","hvel_ge_1","hdist_le_h","vdist_le_dv","vvel_ge_1","vdist_le_v",
-            "camActive","hcmActive","momReturn"]
-g = np.meshgrid(GVALS, GVALS, GVALS, np.arange(1<<len(BITNAMES)), indexing="ij")
-VELc, ODCc, OCSc, bidx = [x.ravel() for x in g]
-NV2 = VELc.size
-Bh = {a: ((bidx.astype(np.uint32) >> i) & 1).astype(bool) for i, a in enumerate(BITNAMES)}
-
-REQ_ATOM = {
- "inOpez": lambda: Bh["inOpez"], "vel_le_1": lambda: VELc<=1.0,
- "odc_gt_1": lambda: ODCc>1.0, "ocs_gt_1": lambda: OCSc>1.0,
- "cda_lt_ms": lambda: Bh["cda_lt_ms"], "tcpa_ge_0": lambda: Bh["tcpa_ge_0"],
- "hvel_ge_1": lambda: Bh["hvel_ge_1"], "hdist_le_h": lambda: Bh["hdist_le_h"],
- "vdist_le_dv": lambda: Bh["vdist_le_dv"], "vvel_ge_1": lambda: Bh["vvel_ge_1"],
- "vdist_le_v": lambda: Bh["vdist_le_v"],
-}
-
-def req_sets2(mode, ev):
-    mask = np.zeros(NV2, dtype=np.uint8); det = []
-    for r in REQ_TRANS:
-        if r["src"] != mode: continue
-        if r["ev"] is not None and r["ev"] != ev: continue
-        en = np.ones(NV2, dtype=bool)
-        for a, neg in r["conjs"]:
-            arr = REQ_ATOM[a]()
-            en &= (~arr) if neg else arr
-        mask |= np.where(en, MBIT[r["tgt"]], 0).astype(np.uint8)
-        det.append((r["req_id"], r["tgt"], r["outputs"], en))
-    return mask, det
-
-CMP = {"\\<le>": np.less_equal, "\\<ge>": np.greater_equal, "<": np.less, ">": np.greater, "=": np.equal}
-
-def tok_eval(tok):
-    if tok in ("inOpez","camActive","hcmActive","momReturn"): return Bh[tok]
-    m = re.match(r'cda(\\<ge>|\\<le>|<|>)minsafedist\(\)$', tok)
-    if m:
-        op = m.group(1)
-        if op in ("\\<ge>",">"): return ~Bh["cda_lt_ms"]
-        else: return Bh["cda_lt_ms"]
-    m = re.match(r'(vel|odist\(cdyn\)|odist\(cstc\))(\\<le>|\\<ge>|<|>)([\d.]+)$', tok)
-    if m:
-        var = {"vel":VELc,"odist(cdyn)":ODCc,"odist(cstc)":OCSc}[m.group(1)]
-        return CMP[m.group(2)](var, float(m.group(3)))
-    raise KeyError(tok)
-
-def parse_archived_thy(txt):
-    ops = []
-    for om in re.finditer(r'zoperation\s+(\w+)\s*=\s*over\s+\w+\s*(?:params[^\n]*\n)?\s*pre\s+"(.*?)"\s*update\s+"\[(.*?)\]"', txt, re.S):
-        name, pre, upd = om.group(1), om.group(2), om.group(3)
-        pn = re.sub(r'\s+','', pre)
-        ms = re.match(r'st=(\w+)', pn)
-        if not ms:
-            ops.append({"name":name,"src":None,"raw_pre":pn}); continue
-        src = ms.group(1)
-        rest = pn[ms.end():]
-        conjs = [c for c in rest.split("\\<and>") if c]
-        mt = re.search(r'st\\<Zprime>=\s*(\w+)', upd)
-        tgt = mt.group(1)
-        evs = re.findall(r'\[Event\s+(\w+)\]', upd)
-        in_evs = [e for e in evs if e in INPUT_EVTS]
-        out_evs = {e for e in evs if e in OUTPUT_EVTS}
-        ev_bound = in_evs[0] if (not conjs and in_evs) else None
-        ops.append({"name":name,"src":src,"tgt":tgt,"conjs":conjs,
-                    "ev_bound":ev_bound,"trace_in":in_evs,"outputs":out_evs})
-    return ops
-
-def op_enabled2(o, ev):
-    if o["ev_bound"] is not None and o["ev_bound"] != ev: return np.zeros(NV2, dtype=bool)
+def op_enabled2_published(o, ev):
+    if o["ev_bound"] is not None and o["ev_bound"] != ev:
+        return np.zeros(NV2, dtype=bool)
     en = np.ones(NV2, dtype=bool)
     for c in o["conjs"]:
-        neg = c.startswith("\\<not>")
-        tok = c[len("\\<not>"):] if neg else c
-        arr = tok_eval(tok)
-        en &= (~arr) if neg else arr
+        en &= eval_conj(c, ev)
+        if not en.any(): break
     return en
 
-def relation2(ops):
-    rel = {}
-    for mode in MODES:
+ns["op_enabled2"] = op_enabled2_published      # relation2 looks op_enabled2 up in its globals
+
+# ---- adaptation 2: Idle_<State> operations are "no transition" and leave the operation set ----
+def is_idle(o):
+    return o["name"].startswith("Idle_")
+
+def parse_published_thy(txt):
+    """parse_archived_thy (reqconf_relation.py) with ONE change: the precondition is split
+    at top-level \\<and> only (depth-aware), so a sibling-priority negation of a compound
+    guard, \\<not>(a \\<and> b), stays one conjunct instead of being fragmented."""
+    ops = []
+    for om in re.finditer(r'zoperation\s+(\w+)\s*=\s*over\s+\w+\s*(?:params[^\n]*\n)?\s*pre\s+"(.*?)"\s*update\s+"\[(.*?)\]"', txt, re.S):
+        name, pre, upd = om.group(1), om.group(2), om.group(3)
+        pn = re.sub(r'\s+', '', pre)
+        ms = re.match(r'st=(\w+)', pn)
+        if not ms:
+            ops.append({"name": name, "src": None, "raw_pre": pn}); continue
+        src = ms.group(1)
+        rest = pn[ms.end():]
+        conjs = [c for c in split_top(rest) if c]          # <- was: rest.split("\\<and>")
+        mt = re.search(r'st\\<Zprime>=\s*(\w+)', upd)
+        tgt = mt.group(1)
+        evs = re.findall(r'\[Event\s+(\w+)\]', upd)
+        in_evs = [e for e in evs if e in ns["INPUT_EVTS"]]
+        out_evs = {e for e in evs if e in ns["OUTPUT_EVTS"]}
+        ev_bound = in_evs[0] if (not conjs and in_evs) else None
+        ops.append({"name": name, "src": src, "tgt": tgt, "conjs": conjs,
+                    "ev_bound": ev_bound, "trace_in": in_evs, "outputs": out_evs, "raw_pre": pn})
+    return ops
+
+def load_ops(path):
+    allops = parse_published_thy(open(path).read())
+    ops = [o for o in allops if o.get("src") not in (None, "initial") and not is_idle(o)]
+    idle = [o for o in allops if o.get("src") not in (None, "initial") and is_idle(o)]
+    return ops, idle
+
+def idle_check(thy_id, path, ops, idle):
+    rows = []
+    for o in idle:
+        pn = o["raw_pre"]
+        conjs = split_top(pn)
+        assert conjs[0] == "st=" + o["src"], conjs[0]
+        ok = True; bad = []
         for ev in EVENTS:
-            tmask = np.zeros(NV2, dtype=np.uint8); ens = []
-            for o in ops:
-                if o["src"] != mode: continue
-                en = op_enabled2(o, ev)
-                if en.any():
-                    tmask |= np.where(en, MBIT[o["tgt"]], 0).astype(np.uint8)
-                    ens.append((en, o))
-            rel[(mode,ev)] = (tmask, ens)
-    return rel
+            try:
+                idle_en = eval_conjs(conjs[1:], ev)
+            except KeyError as e:
+                ok = False; bad.append(f"{ev}:unevaluable({e})"); continue
+            union = np.zeros(NV2, dtype=bool)
+            for s in ops:
+                if s["src"] == o["src"]: union |= op_enabled2_published(s, ev)
+            if not np.array_equal(idle_en, ~union):
+                ok = False; bad.append(f"{ev}:{int((idle_en != ~union).sum())}cells")
+        rows.append(dict(theory=thy_id, idle_op=o["name"], state=o["src"], target=o["tgt"],
+                         self_loop=(o["tgt"] == o["src"]), complement_of_siblings=ok, detail=";".join(bad)))
+    return rows
 
-def verdicts2(rel):
-    out = {}
-    for mode in MODES:
-        for ev in EVENTS:
-            rmask, rdet = req_sets2(mode, ev)
-            tmask, ens = rel[(mode,ev)]
-            dis = ((tmask==0) & (rmask!=0)) | ((tmask & ~rmask) != 0)
-            outviol = np.zeros(NV2, dtype=bool)
-            for (rid, tgt, routs, en) in rdet:
-                if not routs: continue
-                if sum(1 for d in rdet if d[1]==tgt) != 1: continue
-                need = {re.match(r'(\w+)\(', o).group(1) for o in routs}
-                got_ok = np.zeros(NV2, dtype=bool); any_tgt = np.zeros(NV2, dtype=bool)
-                for eno, o in ens:
-                    if o["tgt"]==tgt:
-                        any_tgt |= eno
-                        if need <= o["outputs"]: got_ok |= eno
-                outviol |= en & any_tgt & ~got_ok & ~dis
-            out[(mode,ev)] = (dis, outviol)
-    return out
+# ---- baseline ----
+base_ops, base_idle = load_ops(args.baseline_thy)
+base_ver = verdicts2(relation2(base_ops))
+idle_rows = idle_check("baseline", args.baseline_thy, base_ops, base_idle)
+nb_dis = sum(int(d.sum()) for d, _ in base_ver.values()); nb_ov = sum(int(o.sum()) for _, o in base_ver.values())
+print(f"baseline: {len(base_ops)} transition operations, {len(base_idle)} Idle operations excluded; "
+      f"baseline disagreement cells={nb_dis} output-violation cells={nb_ov}")
 
-# ---- load baseline theory ----
-ARCH = os.path.join(REPO, "reference-runs/lre/formal-artefacts/isabelle/LreController_Beh.thy")
-base_ops = [o for o in parse_archived_thy(open(ARCH).read()) if o.get("src") not in (None,"initial")]
-base_ver2 = verdicts2(relation2(base_ops))
+# ---- the pool ----
+kt = pd.read_csv(args.pool)
+pool = kt[(kt["study"] == "lre") & (kt["disposition"] == "survived")].copy()
+pool["model_changed_thy"] = pool["theory_changed"].map(lambda v: "yes" if str(v).strip().lower() in ("true", "yes", "1") else "no")
+excl = {x for x in args.exclude.split(",") if x}
+dropped = [m for m in pool["mutant_id"] if m in excl]
+pool = pool[~pool["mutant_id"].isin(excl)]
+print(f"pool: {len(pool)} LRE survivors ({len(dropped)} excluded: {', '.join(dropped) or 'none'})")
 
-# ---- the 62 LRE mutants that survive every verifier, and their extracted models ----
-kt = pd.read_csv(os.path.join(REPO, "experiments/mutation-testing/kill_table_all_backends.csv"))
-lre_surv = kt[(kt["study"]=="lre") & ~kt["any_killed"] & ~kt["isabelle_killed"]]
-surv_ids = lre_surv["mutant_id"].tolist()
-assert len(lre_surv) == 62, len(lre_surv)
-
-# ---- score each survivor ----
+REASON_UNCHANGED = "not scoreable: theory identical to the unmutated one (the defect changes only the Dafny program or the RoboChart model)"
 rows = []
-for _, mrow in lre_surv.iterrows():
+for _, mrow in pool.iterrows():
     mid = mrow["mutant_id"]
-    thy_path = os.path.join(REPO, "experiments/mutation-testing/outputs", mid, "isabelle", "LreController_Beh.thy")
+    thy_path = os.path.join(args.mutant_root, mid, "isabelle", "LreController_Beh.thy")
     if mrow["model_changed_thy"] != "yes":
-        rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], file=mrow["file"], line=mrow["line"],
-            thy_changed="no", scoreable=False, killed=False, new_disagree=0, new_outviol=0,
-            # reason text kept verbatim so the output matches the shipped CSV byte for byte
-            reason="extraction-invisible on shipped extractor: .thy identical to baseline (frozen data plane / value-only / below abstraction)")); continue
+        rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], thy_changed="no", scoreable=False,
+                         killed=False, new_disagree=0, new_outviol=0, reason=REASON_UNCHANGED)); continue
     if not os.path.exists(thy_path):
-        rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], file=mrow["file"], line=mrow["line"],
-            thy_changed=mrow["model_changed_thy"], scoreable=False, killed=False, new_disagree=0, new_outviol=0,
-            reason="mutant theory missing from evidence tree")); continue
+        rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], thy_changed=mrow["model_changed_thy"],
+                         scoreable=False, killed=False, new_disagree=0, new_outviol=0,
+                         reason="mutant theory missing from evidence tree")); continue
     try:
-        mops = [o for o in parse_archived_thy(open(thy_path).read()) if o.get("src") not in (None,"initial")]
+        mops, midle = load_ops(thy_path)
+        idle_rows += idle_check(mid, thy_path, mops, midle)
         mver = verdicts2(relation2(mops))
         nd = nov = 0; where = []
         for key in mver:
-            d_m, o_m = mver[key]; d_b, o_b = base_ver2[key]
+            d_m, o_m = mver[key]; d_b, o_b = base_ver[key]
             new_d = d_m & ~d_b; new_o = o_m & ~o_b
             if new_d.any() or new_o.any():
                 nd += int(new_d.sum()); nov += int(new_o.sum())
                 where.append(f"{key[0]}/{key[1]}:{int(new_d.sum())}d+{int(new_o.sum())}o")
         killed = (nd + nov) > 0
-        rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], file=mrow["file"], line=mrow["line"],
-            thy_changed="yes", scoreable=True, killed=killed, new_disagree=nd, new_outviol=nov,
-            reason=("KILLED: " + "; ".join(where[:5])) if killed else "thy changed but relation verdicts vs requirements unchanged"))
+        rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], thy_changed="yes", scoreable=True,
+                         killed=killed, new_disagree=nd, new_outviol=nov,
+                         reason=("KILLED: " + "; ".join(where[:5])) if killed
+                                else "thy changed but relation verdicts vs requirements unchanged"))
     except Exception as e:
-        rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], file=mrow["file"], line=mrow["line"],
-            thy_changed="yes", scoreable=False, killed=False, new_disagree=0, new_outviol=0,
-            reason=f"PARSE FAILURE: {e}"))
+        rows.append(dict(mutant_id=mid, defect_class=mrow["defect_class"], thy_changed="yes", scoreable=False,
+                         killed=False, new_disagree=0, new_outviol=0, reason=f"PARSE FAILURE: {e}"))
 
-asc = pd.DataFrame(rows)
-asc.to_csv(os.path.join(OUT, "archived_survivor_scoring.csv"), index=False)
-print("wrote archived_survivor_scoring.csv:", len(asc), "rows,", int(asc["scoreable"].sum()), "scoreable,", int(asc["killed"].sum()), "killed")
+out = pd.DataFrame(rows, columns=["mutant_id", "defect_class", "thy_changed", "scoreable", "killed",
+                                  "new_disagree", "new_outviol", "reason"])
+os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+out.to_csv(args.out, index=False)
+print(f"wrote {args.out}: {len(out)} rows, {int(out.scoreable.sum())} scoreable, {int(out.killed.sum())} killed")
 
-# ---- optional byte-for-byte check against the shipped outputs ----
+if args.idle_check:
+    idf = pd.DataFrame(idle_rows, columns=["theory", "idle_op", "state", "target", "self_loop", "complement_of_siblings", "detail"])
+    idf.to_csv(args.idle_check, index=False)
+    print(f"Idle check: {len(idf)} Idle operations over {idf.theory.nunique()} theories; "
+          f"complement property holds for {int(idf.complement_of_siblings.sum())}/{len(idf)}")
+
 if args.check:
-    bad = [f for f in ("archived_conformance_diff.csv", "archived_survivor_scoring.csv")
-           if not filecmp.cmp(os.path.join(OUT, f), os.path.join(HERE, f), shallow=False)]
-    if bad:
-        sys.exit("differs from the shipped copy: " + ", ".join(bad))
-    print("both outputs are byte-identical to the shipped copies")
-print("outputs in", OUT)
+    SHIP = os.path.join(HERE, "survivor_scoring.csv")
+    ship = pd.read_csv(SHIP)
+    m = ship.merge(out, on="mutant_id", how="outer", suffixes=("_shipped", "_new"), indicator=True)
+    only = m[m["_merge"] != "both"]
+    diff = m[(m["_merge"] == "both") & (m["killed_shipped"] != m["killed_new"])]
+    diff2 = m[(m["_merge"] == "both") & ((m["new_disagree_shipped"] != m["new_disagree_new"]) |
+                                         (m["new_outviol_shipped"] != m["new_outviol_new"]) |
+                                         (m["scoreable_shipped"] != m["scoreable_new"]))]
+    print(f"CHECK vs {SHIP}: {len(m[m['_merge']=='both'])} common rows; "
+          f"killed differs on {len(diff)}; counts/scoreable differ on {len(diff2)}; rows only on one side: {len(only)}")
+    for _, r in diff.iterrows():
+        print("  DIFF", r["mutant_id"], "shipped killed =", r["killed_shipped"], "new killed =", r["killed_new"])
+    for _, r in only.iterrows():
+        print("  ONLY", r["_merge"], r["mutant_id"])
+    sys.exit(0 if (len(diff) == 0 and len(only) == 0) else 1)

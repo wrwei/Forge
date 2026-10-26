@@ -44,7 +44,7 @@ class SRangerController {
         requires mode == Turning
         requires Valid()
         modifies this
-        ensures turnDurationElapsed ==> mode == Moving
+        ensures old(turnDurationElapsed) ==> mode == Moving
         ensures Valid()
     {
         if (turnDurationElapsed) {

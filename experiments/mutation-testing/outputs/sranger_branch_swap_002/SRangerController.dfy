@@ -44,7 +44,7 @@ class SRangerController {
         requires mode == Moving
         requires Valid()
         modifies this
-        ensures event == Obstacle && distance() <= 0.5 ==> mode == Turning
+        ensures old(event == Obstacle && distance() <= 0.5) ==> mode == Turning
         ensures Valid()
     {
         if (event == Obstacle && distance() <= 0.5) {
@@ -64,7 +64,7 @@ class SRangerController {
         requires mode == Turning
         requires Valid()
         modifies this
-        ensures turnDurationElapsed ==> mode == Moving
+        ensures old(turnDurationElapsed) ==> mode == Moving
         ensures Valid()
     {
         if (turnDurationElapsed) {

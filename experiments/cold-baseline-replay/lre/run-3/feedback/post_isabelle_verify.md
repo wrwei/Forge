@@ -1,7 +1,7 @@
-# Isabelle Verification — FAILED
+# Isabelle Verification — PASSED
 
 ## Summary
-Isabelle session directory not found: /Users/ranwei/Git/Forge/forge.transformations/output/isabelle. Run phase 5c (Isabelle Theory Generation) first.
+Isabelle: 1 theory, 47 lemma(s) verified, elapsed 0:02:14, peak 29 MB.
 
 ## Run history
 - New this run: 1
@@ -9,18 +9,25 @@ Isabelle session directory not found: /Users/ranwei/Git/Forge/forge.transformati
 - Resolved since previous run: 0
 
 ## Issues
-### Issue 1: isabelle_other — Isabelle reported a failure but no error lines parsed
+### Issue 1: isabelle_summary — Verification summary
 
 **Raw**
 ```
-Isabelle session directory not found: /Users/ranwei/Git/Forge/forge.transformations/output/isabelle. Run phase 5c (Isabelle Theory Generation) first.
+Runtime: elapsed **0:02:14**, peak memory **29 MB**.
+
+**Theories built (1), 24 lemma(s) proven total:**
+
+**`LreController_Beh.thy`** — 24 lemmas:
+- *Deadlock-freedom* (1 lemma):
+  - `LreController_deadlock_free`
+- *Invariant preservation* (23 lemmas): `Init_inv`, `InitialToOCM_inv`, `OCMToOCM_inv`, `OCMToOCM_1_inv`, `OCMToMOM_inv`, `MOMToOCM_inv`, `MOMToOCM_1_inv`, `MOMToHCM_inv`, `MOMToCAM_inv`, `MOMToOCM_2_inv`, `MOMToHCM_1_inv`, `MOMToHCM_2_inv`, `MOMToHCM_3_inv`, `HCMToOCM_inv`, `HCMToCAM_inv`, `HCMToOCM_1_inv`, `HCMToMOM_inv`, `CAMToOCM_inv`, `CAMToOCM_1_inv`, `Idle_OCM_inv`, `Idle_MOM_inv`, `Idle_HCM_inv`, `Idle_CAM_inv`
 ```
 
 **Fix directive**
-The runner exited non-zero but the output didn't match any known error pattern. Read the raw text above; consider extending the classifier in forge.dashboard/web/feedback/isabelle.py if this becomes common.
+No action — informational.
 
 ## Files to review
 (none identified)
 
 ## Next step
-Fix the issues above. If a specific lemma did not close, either change the Java code so the auto tactic can dispatch, or hand-write a proof script in the Z-Machine session theory.
+Z-Machine deadlock-freedom (and any R-series lemmas) verified. Continue refinement in Phase 1; Isabelle is the slowest backend, so re-run only on milestones.

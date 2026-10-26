@@ -1,0 +1,73 @@
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/.tmp
+Discovering Java sources in: /Users/ranwei/Git/Forge/experiments/mutation-testing/mutants/sranger_cmp_swap_000/java
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Model saved to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/discovered_model.xmi
+Summary: 11 types, 26 methods, 20 fields
+Extracting RoboChart state machine...
+[deadlock-lint] SRangerController.Moving: no outgoing transitions (Isabelle deadlock_free proof will fail)
+[deadlock-lint] SRangerController.Turning: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+[i1-op] TurnTimer.resetTime: declared an operation output (private field with a zero-arg getter) but compute() does not assign it — stubbed INDIVIDUALLY; the outputs compute() does assign keep their real expressions
+[i1-op] TurnTimer.elapsed: compute() assigns it, but its RHS reads stubbed output(s) resetTime — emitting the real expression would splice a stub placeholder in as if it were the Java's value — stubbed too
+[i1-ctrl] SRangerController.turnDurationElapsed: RHS reads stubbed operation output(s) elapsed whose compute() body did not lift — lifting would propagate the stub placeholder as if it were the Java's value — not lifted
+Canonicalized 3 duplicate PrimitiveType(s)
+RoboChart model saved to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/robochart_model.xmi
+M2M trace written to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/trace_m2m.json (11 entries)
+RoboChart: 3 states, 6 transitions, 3 events
+Generating Dafny verification code (EGL) for SRangerController...
+Dafny written to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/SRangerController.dfy
+Dafny trace written to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/trace_dafny.json (9 entries)
+Generating RoboChart textual notation...
+RCT written to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/robochart_controller.rct
+RCT trace written to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/trace_m2t_rct.json (19 entries)
+Generating Isabelle Z-Machine theory...
+Query the states
+print out the event names
+move
+print out the event names
+endTask
+print out the event names
+tick
+--------------------------------------------------------------
+Query the types
+--------------------------------------------------------------
+PrimitiveType
+e.name: boolean
+PrimitiveType
+e.name: move_Type_lv_double_av_double
+PrimitiveType
+e.name: real
+type_synonym move_Type_lv_double_av_double= "nat"
+query for record type
+query for constants definition
+variable query TO generate zstore
+transitions query TO generate zoperations
+START NEW TRANSITION QUERY
+tr.name: t_init
+InitialToMoving
+pre "st= initial"
+START NEW TRANSITION QUERY
+tr.name: t1
+TurningToMoving
+tr.condition: org.eclipse.emf.ecore.impl.DynamicEObjectImpl@2a4f8009 (eClass: org.eclipse.emf.ecore.impl.EClassImpl@75023c53 (name: CallExp) (instanceClassName: null) (abstract: false, interface: false))
+pre "st= Turning \<and> turnDurationElapsed"
+START NEW TRANSITION QUERY
+tr.name: t2
+TurningToFinal
+tr.condition: org.eclipse.emf.ecore.impl.DynamicEObjectImpl@8054fe2 (eClass: org.eclipse.emf.ecore.impl.EClassImpl@5a97b17c (name: Not) (instanceClassName: null) (abstract: false, interface: false))
+pre "st= Turning \<and> \<not>turnDurationElapsed \<and> endTask \<in> offered \<and> offered \<subseteq> listens"
+START NEW TRANSITION QUERY
+tr.name: t3
+TurningToTurning
+tr.condition: org.eclipse.emf.ecore.impl.DynamicEObjectImpl@1e3f0aea (eClass: org.eclipse.emf.ecore.impl.EClassImpl@5a97b17c (name: Not) (instanceClassName: null) (abstract: false, interface: false))
+pre "st= Turning \<and> \<not>turnDurationElapsed \<and> tick \<in> offered \<and> offered \<subseteq> listens"
+START NEW TRANSITION QUERY
+tr.name: t4
+FinalToFinal
+pre "st= Final \<and> tick \<in> offered \<and> offered \<subseteq> listens"
+  emitting `until` for terminal state(s): Moving
+  !! states with NO outgoing transition in SRangerController: Moving -- deadlock_free is FALSE for this machine (loop semantics: a state enabling no operation offers Vis {} = deadlock). Add a tick-triggered self-loop in the Java for each. Emitting the lemma with an explicit marker rather than a silent unprovable goal.
+Isabelle theory written to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/isabelle/SRangerController_Beh.thy
+Isabelle trace written to: /Users/ranwei/.claude-science/orgs/deb33bd4-6935-472a-b150-0132d240f35e/workspaces/a4ad63d5-6d12-4391-8946-5de069bf3033/mutgen/out/sranger_cmp_swap_000/trace_isabelle.json (16 entries)
+CAMPAIGN_DRIVER_OK

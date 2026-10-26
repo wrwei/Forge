@@ -1,22 +1,20 @@
-# Round-3 blind LRE reference spec — conformance of the shipped system and scoring of the 62 survivors
+# Round-3 blind LRE reference spec — conformance of the shipped system and scoring of the 54 survivors
 
-Inputs: `LRE-reference-spec.md` (artifact vfa5c89c9, drafted 2026-09-08,
-READ-ONLY, never modified); shipped Java `reference-runs/lre/java` (read-only);
-the 62-row survivor population and the archived compiled oracle's per-mutant
-verdicts from `archived_survivor_scoring.csv` (artifact v8cbaf1f7, 23/62
-killed); the round-2 spec's verdicts from `blindspec2_survivor_scoring.csv`
-(internal comparison only). Method: the spec's SET-VALUED relation
-`R(m,e,x) = {(destination(t), outputs(t)) : t ∈ E(m,e,x)}` with explicit hold
-row, implemented directly from the document and validated against 11
-boundary/overlap consequences from the spec's own tables before any comparison
-(all pass, including the CAM/reqOCM two-member set, the MOM triple overlap, the
-tcpa<0 CAM-stuck case, and the D>V alternation). The Java `step()` chain and
-every mutant's chain parsed statically (brace-matching + guard ASTs) — no Java
-executed; data-plane edits re-simulated with Java `double` semantics
-(`Double.MAX_VALUE` sentinels, 0/0 = NaN, all-comparisons-false on NaN).
-Machinery reused from the round-2 run (same parser, same enumeration scaffold);
-the relation, kill rule, and attribution were re-implemented for this spec's
-set-valued, no-priority semantics.
+Inputs: `LRE-reference-spec.md` (drafted 2026-09-08, READ-ONLY, never modified);
+the LRE Java `reference-runs/lre/java` (read-only); the 54 LRE mutants that survive
+every verifier of the mutation-testing experiment (`../mutation-testing/kill_table.csv`,
+`study == lre`, `disposition == survived`), with their sources under
+`../mutation-testing/mutants/`; and, for the complementarity columns, the compiled
+oracle's per-mutant verdicts (`../requirements-conformance/survivor_scoring.csv`).
+Method: the spec's SET-VALUED relation `R(m,e,x) = {(destination(t), outputs(t)) : t ∈
+E(m,e,x)}` with explicit hold row, implemented directly from the document and
+validated against 11 boundary/overlap consequences from the spec's own tables
+before any comparison (all pass, including the CAM/reqOCM two-member set, the MOM
+triple overlap, the tcpa<0 CAM-stuck case, and the D>V alternation). The Java
+`step()` chain and every mutant's chain parsed statically (brace-matching + guard
+ASTs) — no Java executed; data-plane edits re-simulated with Java `double`
+semantics (`Double.MAX_VALUE` sentinels, 0/0 = NaN, all-comparisons-false on NaN).
+The program is `blindspec3_score.py`; `--check` reproduces the shipped scoring.
 
 ## 1. Conformance of the shipped system
 
@@ -37,10 +35,9 @@ R's structure over these cells: 20,576 hold cells (E empty; Java falls off the
 chain and holds — the unique allowed outcome), 20,968 singleton cells, 15,800
 multi-row cells (Java's priority chain picks one member). On the realizable
 subspace (14,112 cells) likewise 100%, 0 violations. **The shipped controller
-refines the round-3 spec's relation exactly: membership-agreement 100%, with
-no priority substitution needed** — the round-2 spec's 16.96% A03
-(priority-order) disagreement class is eliminated by this spec's explicitly
-nondeterministic A02 resolution.
+refines the spec's relation exactly: membership-agreement 100%, with
+no priority substitution needed** — the spec's explicitly nondeterministic A02
+resolution leaves no priority-order disagreement class.
 
 **Concrete grid** (8,928 sensor scenarios × 28 mode-event pairs = 249,984
 cells; quantities derived independently on each side — spec state/observation
@@ -68,88 +65,62 @@ system and the round-3 spec, and hence no paper-grade defect findings against
 the shipped controller.** T01 startup also conforms (Java initializes
 `currentMode = LreMode.OCM`, LreController.java:70, constructor emits nothing).
 
-## 2. Survivor scoring (62 all-backend survivors)
+## 2. Survivor scoring (54 all-backend survivors)
 
-Population: exactly the 62 `mutant_id` rows of `archived_survivor_scoring.csv`
-(verified: the 62 mutant source trees each differ from the baseline in exactly
-the manifest-named file). Kill rule for a set-valued R: the mutant's
-`(dest, outs)` is NOT a member of `R(m,e,x)` at a concrete cell where the
-baseline's outcome IS a member. Attribution: a kill cell is *ledger-attributed*
-when the deciding difference is a ledger choice (A07/A08/A14 CPA-edge cells,
-incl. all NaN cells, and A12 threshold binding); *unambiguous* when the mutant's
-outcome is outside every enabled row and the hold case under both the spec's own
-and the Java-convention-substituted atom derivations, on a non-NaN cell.
+Population: the 54 `mutant_id` rows of `../mutation-testing/kill_table.csv` with
+`study == lre` and `disposition == survived` (verified: each mutant source tree
+differs from the unmutated one in exactly the manifest-named file). Kill rule for a
+set-valued R: the mutant's `(dest, outs)` is NOT a member of `R(m,e,x)` at a concrete
+cell where the baseline's outcome IS a member. Attribution: a kill cell is
+*ledger-attributed* when the deciding difference is a ledger choice (A07/A08/A14
+CPA-edge cells, incl. all NaN cells, and A12 threshold binding); *unambiguous* when
+the mutant's outcome is outside every enabled row and the hold case under both the
+spec's own and the Java-convention-substituted atom derivations, on a non-NaN cell.
 
-| class | n | spec3 kills | unambiguous | ledger-attr | archived oracle | both | spec3-only | oracle-only |
+| class | n | spec kills | unambiguous | ledger-attr | compiled oracle | both | spec-only | oracle-only |
 |---|---|---|---|---|---|---|---|---|
-| relop_flip | 10 | 10 | 10 | 0 | 9 | 9 | 1 | 0 |
-| cmp_swap | 10 | 10 | 10 | 0 | 3 | 3 | 7 | 0 |
-| trigger_swap | 8 | 6 | 6 | 0 | 6 | 6 | 0 | 0 |
-| off_by_one | 10 | 5 | 5 | 0 | 4 | 4 | 1 | 0 |
+| relop_flip | 10 | 10 | 10 | 0 | 3 | 3 | 7 | 0 |
+| cmp_swap | 3 | 3 | 3 | 0 | 3 | 3 | 0 | 0 |
+| trigger_swap | 7 | 7 | 7 | 0 | 7 | 7 | 0 | 0 |
+| off_by_one | 10 | 5 | 5 | 0 | 3 | 3 | 2 | 0 |
 | branch_swap | 14 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| drop_negation | 2 | 2 | 2 | 0 | 1 | 1 | 1 | 0 |
-| sentinel_init | 8 | 2 | 2 | 0 | 0 | 0 | 2 | 0 |
-| **total** | **62** | **35** | **35** | **0** | **23** | **23** | **12** | **0** |
+| drop_negation | 7 | 7 | 7 | 0 | 7 | 7 | 0 | 0 |
+| sentinel_init | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| **total** | **54** | **32** | **32** | **0** | **23** | **23** | **9** | **0** |
 
 **Every kill is unambiguous** — each killed mutant has at least one non-NaN
 concrete cell where its outcome lies outside the entire requirements-eligible
 set (all enabled rows + hold) under BOTH atom-derivation conventions, while the
 baseline's outcome is a member. Zero kills depend on a ledger choice.
 
-**Complementarity vs the archived compiled oracle (15/62 — paper-facing):**
-union **35**, intersection **15**, spec3-only **20**, oracle-only **0** — the
-round-3 spec's kills strictly contain the archived oracle's. (CORRECTION,
-parent-verified: the delegate's `archived_oracle_killed` column carried the
-CURRENT-TREE oracle verdicts (23), not the archived arm's; the archived
-scoring CSV itself records 15 kills, and the paper reports 15. Recomputed
-from the primary CSVs.) The 20 spec3-only kills are mutants below the
-compiled oracle's abstraction, reached because the spec's
+**Complementarity vs the compiled oracle (23/54, `../requirements-conformance`):**
+union **32**, intersection **23**, spec-only **9**, oracle-only **0** — the spec's
+kills strictly contain the compiled oracle's. The 9 spec-only kills are mutants
+below the compiled oracle's abstraction (relational-operator flips and off-by-one
+changes inside the computation of a guard value), reached because the spec's
 State-and-observations section fixes the sensor-to-guard semantics that the
-Beh-prose model leaves uninterpreted. Spec3-only ids:
-lre_cmp_swap_003, lre_cmp_swap_004, lre_cmp_swap_005, lre_cmp_swap_006, lre_cmp_swap_007, lre_cmp_swap_008, lre_cmp_swap_009, lre_drop_negation_007, lre_off_by_one_004, lre_off_by_one_009, lre_relop_flip_000, lre_relop_flip_001, lre_relop_flip_002, lre_relop_flip_003, lre_relop_flip_004, lre_relop_flip_005, lre_relop_flip_009, lre_sentinel_init_006, lre_sentinel_init_007, lre_trigger_swap_004.
+compiled relation leaves uninterpreted. Spec-only ids:
+lre_off_by_one_004, lre_off_by_one_009, lre_relop_flip_000, lre_relop_flip_001, lre_relop_flip_002, lre_relop_flip_003, lre_relop_flip_004, lre_relop_flip_005, lre_relop_flip_009.
 
-**Comparison vs the round-2 blind spec (40/62 — INTERNAL, not for the paper):**
-intersection 35, spec2-only 5, spec3-only 0. The 5 mutants the round-2 spec
-killed and this one does not are exactly the priority/threshold cases:
-- `branch_swap_014` (CAM exit-priority swap): both CAM exits target OCM; under
-  set semantics both `(OCM,[])` and `(OCM,[advVel(0)])` are members whenever
-  T17 and T18 are both enabled, and where only one is enabled the mutant takes
-  that one. 0 membership violations — the spec's own closing section discloses
-  this: "Priority-only differences may therefore remain undetected."
-- `off_by_one_000..003` (`LreConstants` thresholds 1→2): scored with the spec
-  bound to the mutant's declared constants (DM4 default-as-configuration
+**Misses (22):**
+- 14 branch_swaps (001, 002, 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 013, 014): guard-reorderings that are relation-equivalent
+  (disjoint guards) or priority-only — no behavioural difference reaches a
+  set-valued R with no priority. The spec's own closing section discloses this:
+  "Priority-only differences may therefore remain undetected."
+- 5 off_by_one non-kills: 000–003 (`LreConstants` thresholds 1→2) are scored with
+  the spec bound to the mutant's declared constants (DM4 default-as-configuration
   reading, per A12's "no added ordering precondition"); the mutant then refines
   its own re-bound relation — 0 violations. Sensitivity under the alternative
-  literal-default binding (spec thresholds fixed at 1): all four become kills
-  with 144–18,178 outside-eligible-set cells each (off_by_one_000: 22,084
-  violation cells / 18,178 unambiguous; _001: 576/144; _002: 2,268/660;
-  _003: 1,728/396). We report the conservative attribution.
-
-**Misses (27):**
-- 13 branch_swaps (001–012, 014): guard-reorderings the round-2 run verified
-  relation-equivalent (disjoint guards) or, for 014, priority-only — no
-  behavioural difference reaches a set-valued R with no priority.
-- 5 off_by_one non-kills: 000–003 threshold-binding (above) and 005
-  (`vvel>=1`→`vvel>=2` in T11's disjunct, subsumed by T10's `vs ≤ D` disjunct
-  under default constants D=V — relation-equivalent; no behavioural oracle can
-  kill it).
-- 6 sentinel_init (000–005): constructor/field initializations overwritten by
-  the `compute()`/`step()` refresh before any guard read; T01 fixes only the
-  initial mode, and A09 leaves initial actuator records unspecified.
-- 3 actuator-internal (branch_swap_000, trigger_swap_000/001): storage of
-  received advice inside `Actuator`; R records emitted advice events, and the
-  spec states the mode relation does not depend on the `lastVel`/`lastHdng`
-  records (A09) — below the relation's interface.
+  literal-default binding (spec thresholds fixed at 1): all four become kills.
+  We report the conservative attribution. 005 (`vvel>=1`→`vvel>=2` in T11's
+  disjunct) is subsumed by T10's `vs ≤ D` disjunct under default constants D=V —
+  relation-equivalent; no behavioural oracle can kill it.
+- 3 sentinel_init (000–002): constructor/field initialisations overwritten by the
+  `compute()`/`step()` refresh before any guard read; T01 fixes only the initial
+  mode, and A09 leaves initial actuator records unspecified.
 
 **Representative unambiguous witnesses** (full list in
 `blindspec3_survivor_scoring.csv`):
-- **lre_cmp_swap_003** (`isStatic`: `vn==0 && ve==0` → `vn!=0 && ve==0`):
-  MOM/reqVel, depth=-0.5, v=(1,0), roc=-1.5, one static obstacle 0.3m ahead
-  (`s_close`). Mutant classifies it dynamic → CPA against it → `camActive` →
-  CAM; R's enabled set is {T05 (OPEZ, depth≤0), T09/T10 (static caution)} —
-  CAM ∉ R; baseline takes HCM+advVel(0) ∈ R.
-- **lre_sentinel_init_007** (`closestDynamicIndex` best=-1→0): same cell;
-  mutant computes CPA against the static obstacle id 0 → CAM ∉ R.
 - **lre_relop_flip_009** (`CheckOPEZ`: `depth<=0` → `depth>0`): OCM/reqMOM,
   depth=-0.5 (surfaced), approaching dynamic obstacle at safe range
   (`d_approach`). Mutant: `inOpez=false` → T04 accepted → MOM+advVel(1);
@@ -159,19 +130,13 @@ killed and this one does not are exactly the priority/threshold cases:
   depth=0.5, `d_approach`: mutant rejects a request whose T04 guard holds;
   R = {(MOM,[advVel(1)])} and hold ∉ R ("no optional stuttering when a row is
   enabled") — violation; baseline enters MOM ∈ R.
-- **lre_cmp_swap_009** (`obsEwVel` accessor zeroed): MOM/reqVel, depth=-0.5,
-  v=(1,1), roc=-1.5, side-crossing dynamic obstacle (`d_side_t0`): mutant's
-  corrupted relative velocity yields `camActive` → CAM ∉ R = {(OCM,[]) via
-  T05}; baseline OCM ∈ R.
-
 ## 3. Method notes and limitations
 
-1. Static analysis throughout; identical parser and grid machinery as the
-   round-2 run (restored from its transcript), with the relation, kill rule,
-   and attribution re-implemented for set-valued membership semantics. The
-   concrete grid was extended (8,928 scenarios: +2 equidistant-obstacle tie
-   configurations for A05; 29→31 obstacle configs) — ties produced no
-   divergence (Java's strict-< ascending scan = spec's smallest-id rule).
+1. Static analysis throughout; the relation, kill rule and attribution are
+   implemented for set-valued membership semantics. The concrete grid has
+   8,928 scenarios, including 2 equidistant-obstacle tie configurations for
+   A05 (31 obstacle configurations) — ties produced no divergence (Java's
+   strict-< ascending scan = spec's smallest-id rule).
 2. Kill verdicts rest on the concrete grid straddling every threshold at 1 and
    2 including equality points, CPA geometries with tcpa <0/=0/>0, cda
    <1/=1/<2/=2/>2, absence, zero-relative-velocity, and tie/ordering cases.
@@ -224,7 +189,8 @@ verifier result, or measured kill rate was consulted during drafting.
 - `blindspec3_conformance.csv` — all 57,344 abstract cells: atoms, the full
   R set (destinations|outputs), enabled row ids, Java destination/output,
   membership verdict.
-- `blindspec3_survivor_scoring.csv` — 62 rows: killed, attribution, mechanism,
-  witness, archived-oracle verdict + overlap class (paper-facing), round-2
-  spec verdict (internal).
+- `blindspec3_survivor_scoring.csv` — 54 rows: killed, attribution, mechanism,
+  witness.
+- `blindspec3_score.py` — the program that produces it (`--check` reproduces the
+  shipped file).
 - `blindspec3_report.md` — this report.

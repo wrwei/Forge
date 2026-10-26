@@ -5,7 +5,7 @@ enumeration Loc { left right front }
 enumeration Status { noGas gasD }
 
 datatype GasSensor {
-	chemId : nat
+	chemId : int
 	intensityValue : real
 }
 
@@ -81,13 +81,13 @@ operation ChangeDirection ( ) {
 stm GasAnalysisController {
 	uses Inputs uses Outputs uses Shared requires GasAnalysisController_State requires Constants
 	var v : real
-	state Analysis {
-		entry sts = analysis ( gs )
+	state Reading {
 	}
 	state Final {
 		entry send stop
 	}
-	state Reading {
+	state Analysis {
+		entry sts = analysis ( gs )
 	}
 	state NoGas {
 		entry send resume
@@ -118,12 +118,13 @@ stm GasAnalysisController {
 	transition t4 {
 		from Analysis
 		to GasDetected
-		condition sts == gasD
+		condition sts == gasD /\ not ( sts == noGas )
 	}
 	transition t5 {
 		from Analysis
 		to Analysis
 		trigger tick
+		condition not ( sts == noGas ) /\ not ( sts == gasD )
 	}
 	transition t6 {
 		from NoGas
@@ -137,13 +138,14 @@ stm GasAnalysisController {
 	transition t8 {
 		from GasDetected
 		to Reading
-		condition insVal >= 10
+		condition insVal >= 10 /\ not ( insVal >= 10 )
 		action anl = location ( gs ) ; turn ! anl
 	}
 	transition t9 {
 		from GasDetected
 		to GasDetected
 		trigger tick
+		condition not ( insVal >= 10 )
 	}
 	transition t10 {
 		from Final
@@ -167,28 +169,28 @@ stm MovementController {
 	uses Inputs uses Outputs uses Shared requires MovementController_State requires Constants requires LOperations
 	var v : real
 	clock clockResetTime
-	state GettingOut {
-		entry send shortRandomWalk ; wait ( outperiod )
-	}
-	state Waiting {
-		entry send randomWalk
+	state Found {
+		entry send flag ; move ( 0 , Front )
 	}
 	state Avoiding {
 		entry d0 = 0 ; compute ! l ; wait ( evadetime )
 	}
-	state Found {
-		entry send flag ; move ( 0 , Front )
+	state TryingAgain {
+		entry move ( lv , a )
 	}
-	state AvoidingAgain {
-		entry d1 = 0
-	}
-	state Final {
+	state Waiting {
+		entry send randomWalk
 	}
 	state Going {
 		entry move ( lv , a )
 	}
-	state TryingAgain {
-		entry move ( lv , a )
+	state Final {
+	}
+	state AvoidingAgain {
+		entry d1 = 0
+	}
+	state GettingOut {
+		entry send shortRandomWalk ; wait ( outperiod )
 	}
 	initial i0
 	transition t_init {
@@ -289,7 +291,7 @@ stm MovementController {
 	transition t19 {
 		from AvoidingAgain
 		to GettingOut
-		condition since ( clockResetTime ) >= stuckperiod /\ d1 - d0 <= stuckdist
+		condition since ( clockResetTime ) >= stuckperiod /\ d1 - d0 <= stuckdist /\ not ( since ( clockResetTime ) < stuckperiod \/ d1 - d0 > stuckdist )
 	}
 	transition t20 {
 		from GettingOut

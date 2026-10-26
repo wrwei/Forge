@@ -51,11 +51,30 @@ subsection \<open> State Space \<close>
 
 zstore SRangerController =
   turnDurationElapsed :: "bool"
+  resetTime :: "real"
+  elapsed :: "bool"
   st::"St"
   tr :: "(St, Evt) tag list"
-  triggers:: "Evt set"
+  listens :: "Evt set"   (* FORK: STATIC. The events state `st` listens
+                            for. Written by every operation's update to the
+                            target state's awaited set; pinned per state by the
+                            invariant below. A property OF THE AUTOMATON. *)
+  offered :: "Evt set"   (* DYNAMIC. The events the environment offers THIS
+                            step. Environment model B (2026-10-20): the
+                            invariant pins, per state, offered = {} or
+                            offered = {e} for one listened e -- the Java step
+                            consumes at most one input event. Every operation
+                            sets offered' to a fresh choice `nxt` drawn from the
+                            target state's allowed offers. Read by trigger
+                            presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
-    "tr \<noteq> []"
+    "tr \<noteq> []
+                      \<and> (st = Turning \<longrightarrow> listens = {tick, endTask})
+                      \<and> (st = Final \<longrightarrow> listens = {tick})
+                                                                               \<and> (st = Moving \<longrightarrow> (offered = {}))
+                                                                               \<and> (st = Turning \<longrightarrow> (offered = {} \<or> offered = {tick} \<or> offered = {endTask}))
+                                                                               \<and> (st = Final \<longrightarrow> (offered = {} \<or> offered = {tick}))
+                                                                               \<and> (st = initial \<longrightarrow> (offered = {}))"
 
 subsection \<open> Operations \<close>
 
@@ -63,50 +82,87 @@ zoperation InitialToMoving =
   over SRangerController
   pre "st= initial"
   update "[st\<Zprime>= Moving
+         ,resetTime\<Zprime> = 0
+         ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr  @ [State Moving]
-         ,triggers\<Zprime> = {}
+         ,listens\<Zprime> = {}
+         ,offered\<Zprime> = {}
          ]"
         
 zoperation TurningToMoving =
   over SRangerController
   pre "st= Turning \<and> turnDurationElapsed"
   update "[st\<Zprime>= Moving
+         ,resetTime\<Zprime> = 0
+         ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr @ [Event move] @ [State Moving]
-         ,triggers\<Zprime> = {}
+         ,listens\<Zprime> = {}
+         ,offered\<Zprime> = {}
          ]"
         
 zoperation TurningToFinal =
   over SRangerController
-  pre "st= Turning"
+  params nxt \<in> "{{}, {tick}}" 
+  pre "st= Turning \<and> \<not>turnDurationElapsed \<and> endTask \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Final
+         ,resetTime\<Zprime> = 0
+         ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr @ [Event endTask]@ [Event move] @ [State Final]
-         ,triggers\<Zprime> = {tick}
+         ,listens\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation TurningToTurning =
   over SRangerController
-  pre "st= Turning"
+  params nxt \<in> "{{}, {tick}, {endTask}}" 
+  pre "st= Turning \<and> \<not>turnDurationElapsed \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Turning
+         ,resetTime\<Zprime> = 0
+         ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr @ [Event tick] @ [State Turning]
-         ,triggers\<Zprime> = {tick, endTask}
+         ,listens\<Zprime> = {tick, endTask}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation FinalToFinal =
   over SRangerController
-  pre "st= Final"
+  params nxt \<in> "{{}, {tick}}" 
+  pre "st= Final \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Final
+         ,resetTime\<Zprime> = 0
+         ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr @ [Event tick] @ [State Final]
-         ,triggers\<Zprime> = {tick}
+         ,listens\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 
   
+zoperation Idle_Turning =
+  over SRangerController
+  params nxt \<in> "{{}, {tick}, {endTask}}"
+  pre "st= Turning \<and> \<not>(turnDurationElapsed) \<and> \<not>(endTask \<in> offered) \<and> \<not>(tick \<in> offered)"
+  update "[st\<Zprime>= Turning
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_Final =
+  over SRangerController
+  params nxt \<in> "{{}, {tick}}"
+  pre "st= Final \<and> \<not>(tick \<in> offered)"
+  update "[st\<Zprime>= Final
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
 definition Init :: "SRangerController subst" where
   [z_defs]:
   "Init =
   [st\<leadsto> initial
   ,tr\<leadsto> [State initial]
-  ,triggers\<leadsto> {}
+  ,listens\<leadsto> {}
+  ,offered\<leadsto> {}
   ]"
 (* FORK: defaults emitted by template; edit to match intended initial state if needed. *)
   
@@ -114,8 +170,13 @@ definition Init :: "SRangerController subst" where
 zmachine SRangerControllerMachine =
   init Init
   invariant SRangerController_inv
-  operations  InitialToMoving TurningToMoving TurningToFinal TurningToTurning FinalToFinal 
-
+  operations  InitialToMoving TurningToMoving TurningToFinal TurningToTurning FinalToFinal Idle_Turning Idle_Final
+  until "st = Moving"
+(* `until` marks states exempt from deadlock-freedom (deadlock_free_z_machine's
+   End parameter). These are states that are the source of no transition, so the
+   machine has terminated there and is not required to offer an event. Without this
+   clause End defaults to False and the obligation is FALSE at such a state --
+   machine-checked, see scripts/test_f17_probe.sh. *)
 
 subsection \<open> Structural Invariants \<close>
 
@@ -128,14 +189,20 @@ lemma InitialToMoving_inv [hoare_lemmas]: "InitialToMoving() preserves SRangerCo
 lemma TurningToMoving_inv [hoare_lemmas]: "TurningToMoving() preserves SRangerController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
 
-lemma TurningToFinal_inv [hoare_lemmas]: "TurningToFinal() preserves SRangerController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma TurningToFinal_inv [hoare_lemmas]: "TurningToFinal (nxt) preserves SRangerController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma TurningToTurning_inv [hoare_lemmas]: "TurningToTurning() preserves SRangerController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma TurningToTurning_inv [hoare_lemmas]: "TurningToTurning (nxt) preserves SRangerController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma FinalToFinal_inv [hoare_lemmas]: "FinalToFinal() preserves SRangerController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma FinalToFinal_inv [hoare_lemmas]: "FinalToFinal (nxt) preserves SRangerController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_Turning_inv [hoare_lemmas]: "Idle_Turning (nxt) preserves SRangerController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_Final_inv [hoare_lemmas]: "Idle_Final (nxt) preserves SRangerController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
 
 subsection \<open> Safety Requirements \<close>
@@ -151,39 +218,37 @@ lemma "InitialToMoving() preserves R1 under SRangerController_inv"
 lemma "TurningToMoving() preserves R1 under SRangerController_inv"
   by (zpog_full; auto)
   
-lemma "TurningToFinal() preserves R1 under SRangerController_inv"
+lemma "TurningToFinal (nxt) preserves R1 under SRangerController_inv"
   by (zpog_full; auto)
   
-lemma "TurningToTurning() preserves R1 under SRangerController_inv"
+lemma "TurningToTurning (nxt) preserves R1 under SRangerController_inv"
   by (zpog_full; auto)
   
-lemma "FinalToFinal() preserves R1 under SRangerController_inv"
+lemma "FinalToFinal (nxt) preserves R1 under SRangerController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_Turning (nxt) preserves R1 under SRangerController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_Final (nxt) preserves R1 under SRangerController_inv"
   by (zpog_full; auto)
   
 
 definition [z_defs]: "SRangerController_axioms = True"
 
+(* WARNING -- THIS OBLIGATION IS FALSE AS EMITTED.
+   State(s) with no outgoing transition: Moving.
+   Under `loop` semantics such a state offers Vis {} = deadlock, so
+   deadlock_free does not hold. This is a MODEL defect (a missing tick-triggered
+   self-loop in the Java), not a proof-search problem: no tactic can close it.
+   Measured on chemical_detector v2 -- auto OOM 978s, metis 1825s, blast 922s,
+   fastforce 923s; refuted by probe_Y3_obligation_refuted with witness
+   st = Moving.
+   Fix the Java per forge.assets/prompts/java_codegen_rules.txt ("EVERY MODE
+   MUST HAVE AN OUTGOING TRANSITION"), re-extract, and this marker disappears. *)
 lemma SRangerController_deadlock_free: "SRangerController_axioms  \<Longrightarrow> deadlock_free SRangerControllerMachine"
   unfolding SRangerControllerMachine_def
   apply deadlock_free
-  by (metis St.exhaust_disc)
-  (* FORK: the deadlock_free closing tactic is selected by `hasPayloadDomain`
-     (set in PART 2 when this machine emits a typed-payload domain set such as
-     `SeqGs`). The residual goal after `apply deadlock_free` is
-       \<And>st. st = M\<^sub>1 \<or> ... \<or> guarded-disjuncts
-     and St.exhaust_disc is the enumtype discriminator exhaustion lemma that
-     matches the bare `st = X` disjunct for each state. Two cases:
-       * has payload domain -> `using St.exhaust_disc by auto`. metis HANGS
-         (>10 min) when a state's ONLY transition consumes a typed payload
-         (e.g. gas-analysis Reading: `params gs_input \<in> SeqGs`), because the
-         enabledness disjunct is `\<exists>gs_input \<in> SeqGs. ...`. With the set
-         emitted as a [simp] `= UNIV` definition (PART 2), `auto` discharges the
-         existential and closes via the bare disjunct. Verified on
-         chemical_detector (gas-analysis, ~15s).
-       * no payload domain -> `by (metis St.exhaust_disc)` (the ICECCS2023 LRE
-         tactic). `auto` TIMES OUT (>6 min) on LRE's real-arithmetic guards --
-         confirmed by regression -- so LRE-style machines keep metis.
-     Tried and rejected: `(cases st; simp_all)` / `(cases st; auto)` leave the
-     guarded disjunct (e.g. `thr() \<le> ins`) open because the split selects the
-     guarded disjunct instead of the bare one. *)
+  apply (case_tac st; (simp)?; (elim disjE)?; (simp)?)
+  by blast+
 end

@@ -6,9 +6,9 @@ column, as in the paper. A pass without verdict (driver timeout) is excluded fro
 | Study | Passes | With verdict | Compiled (2a) | Failing phase (runs) | Converged |
 |---|---:|---:|---:|---|---:|
 | sranger | 10 | 10 | 10 | FDR4 6b (6) | **4** |
-| lre | 10 | 10 | 9 | M2M 4 (2); compile 2a (1) | **7** |
+| lre | 10 | 10 | 9 | Isabelle 6c (1); compile 2a (1) | **8** |
 | chemical_detector | 10 | 10 | 9 | Isabelle 6c (2); Dafny 6a (2); M2T 5b (2); preflight 2c (2); compile 2a (1); FDR4 6b (1) | **0** |
-| **Total** | 30 | 30 | 28 | — | **11** |
+| **Total** | 30 | 30 | 28 | — | **12** |
 
 ## Best-of-N over the replayed cold runs
 

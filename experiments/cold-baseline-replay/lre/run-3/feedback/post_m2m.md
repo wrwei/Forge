@@ -1,46 +1,56 @@
-# 4 — Model-to-Model (ETL Transformation) — FAILED
+# 4 — Model-to-Model (ETL Transformation) — PASSED
 
 ## Summary
-4 — Model-to-Model (ETL Transformation) failed.
+4 — Model-to-Model (ETL Transformation) completed successfully.
 
 ## Run history
-- New this run: 1
+- New this run: 4
 - Recurring from previous run: 0
 - Resolved since previous run: 0
 
 ## Issues
-### Issue 1: egl_template_error — EGL template runtime error
+### Issue 1: deadlock_lint_warning — State without unconditional fallback: LreController.OCM
 
 **Raw**
 ```
-4 — Model-to-Model (ETL Transformation) failed with exit code 1.
-> Task :run FAILED
-SLF4J(W): No SLF4J providers were found.
-SLF4J(W): Defaulting to no-operation (NOP) logger implementation
-SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
-Discovering Java sources in: /Users/ranwei/Git/Forge/java.generated.project/src/main/java
-Model saved to: /Users/ranwei/Git/Forge/forge.transformations/output/discovered_model.xmi
-Extracting RoboChart state machine...
-Exception in thread "main" java.lang.RuntimeException: ETL transformation failed
-	at forge.transformations.m2m.Java2RoboChartTransformer.transform(Java2RoboChartTransformer.java:188)
-	at forge.transformations.m2m.Java2RoboChartTransformer.transform(Java2RoboChartTransformer.java:108)
-	at forge.transformations.m2m.TransformPhase.run(TransformPhase.java:81)
-	at forge.transformations.core.App.main(App.java:68)
-Caused by: Property 'value' not found in object org.eclipse.emf.ecore.impl.DynamicEObjectImpl@3c4059a (eClass: org.eclipse.emf.ecore.impl.EClassImpl@1bbb42b4 (name: StringExp) (instanceClassName: null) (abstract: false, interface: false))
-	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3954:19-3954:33)
-	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3954:19-3954:53)
-	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3954:12-3954:54)
-	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3953:77-3955:9)
-	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3953:8-3955:9)
-	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3951:42-3956:5)
-	at (/Users/ranwei/Git/Forge/forge.transformations/build/resources/main/transformations/java2robochart.etl@3951:4-3956:5)
+[deadlock-lint] LreController.OCM: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
 ```
 
 **Fix directive**
-The EGL template raised a runtime error while generating output from the RoboChart model. This is not a Java compile error. Inspect the .egl@<line> reference in the trace and the model element at that point to identify the missing or malformed structure.
+Add an `else { mode = <SameMode>; }` clause to the inner if-else chain of this mode block so the state has at least one bare-precondition outgoing transition. Without it, the Isabelle deadlock_free proof will fail (see CLAUDE.md "Isabelle/UTP Z-Machine `deadlock_free` proof" gotcha).
+
+### Issue 2: deadlock_lint_warning — State without unconditional fallback: LreController.MOM
+
+**Raw**
+```
+[deadlock-lint] LreController.MOM: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+```
+
+**Fix directive**
+Add an `else { mode = <SameMode>; }` clause to the inner if-else chain of this mode block so the state has at least one bare-precondition outgoing transition. Without it, the Isabelle deadlock_free proof will fail (see CLAUDE.md "Isabelle/UTP Z-Machine `deadlock_free` proof" gotcha).
+
+### Issue 3: deadlock_lint_warning — State without unconditional fallback: LreController.HCM
+
+**Raw**
+```
+[deadlock-lint] LreController.HCM: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+```
+
+**Fix directive**
+Add an `else { mode = <SameMode>; }` clause to the inner if-else chain of this mode block so the state has at least one bare-precondition outgoing transition. Without it, the Isabelle deadlock_free proof will fail (see CLAUDE.md "Isabelle/UTP Z-Machine `deadlock_free` proof" gotcha).
+
+### Issue 4: deadlock_lint_warning — State without unconditional fallback: LreController.CAM
+
+**Raw**
+```
+[deadlock-lint] LreController.CAM: all outgoing transitions are guarded or event-triggered (no unconditional fallback — Isabelle deadlock_free proof will fail). Add an unconditional else-branch in the Java mode block.
+```
+
+**Fix directive**
+Add an `else { mode = <SameMode>; }` clause to the inner if-else chain of this mode block so the state has at least one bare-precondition outgoing transition. Without it, the Isabelle deadlock_free proof will fail (see CLAUDE.md "Isabelle/UTP Z-Machine `deadlock_free` proof" gotcha).
 
 ## Files to review
 (none identified)
 
 ## Next step
-Read the issue above, follow the fix directive, edit the Java source, and re-run this phase.
+Proceed to Phase 5a (CSP Generation) and/or 5b (Dafny Generation).

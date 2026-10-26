@@ -5,7 +5,7 @@ enumeration Loc { left right front }
 enumeration Status { noGas gasD }
 
 datatype GasSensor {
-	chemId : nat
+	chemId : int
 	intensityValue : real
 }
 
@@ -81,19 +81,19 @@ operation ChangeDirection ( ) {
 stm GasAnalysisController {
 	uses Inputs uses Outputs uses Shared requires GasAnalysisController_State requires Constants
 	var v : real
-	state NoGas {
-		entry send resume
-	}
 	state Analysis {
 		entry sts = analysis ( gs )
 	}
 	state GasDetected {
 		entry insVal = peakIntensity ( gs )
 	}
-	state Reading {
-	}
 	state Final {
 		entry send stop
+	}
+	state NoGas {
+		entry send resume
+	}
+	state Reading {
 	}
 	initial i0
 	transition t_init {
@@ -118,12 +118,13 @@ stm GasAnalysisController {
 	transition t4 {
 		from Analysis
 		to GasDetected
-		condition sts == gasD
+		condition sts == gasD /\ not ( sts == noGas )
 	}
 	transition t5 {
 		from Analysis
 		to Analysis
 		trigger tick
+		condition not ( sts == noGas ) /\ not ( sts == gasD )
 	}
 	transition t6 {
 		from NoGas
@@ -144,6 +145,7 @@ stm GasAnalysisController {
 		from GasDetected
 		to GasDetected
 		trigger gas ? v
+		condition not ( insVal >= 10 ) /\ insVal >= 10
 	}
 	transition t10 {
 		from Final
@@ -167,28 +169,28 @@ stm MovementController {
 	uses Inputs uses Outputs uses Shared requires MovementController_State requires Constants requires LOperations
 	var v : real
 	clock clockResetTime
-	state Avoiding {
-		entry d0 = 0 ; compute ! l ; wait ( evadetime )
+	state TryingAgain {
+		entry move ( lv , a )
+	}
+	state Waiting {
+		entry send randomWalk
 	}
 	state Found {
 		entry send flag ; move ( 0 , Front )
 	}
-	state GettingOut {
-		entry send shortRandomWalk ; wait ( outperiod )
+	state AvoidingAgain {
+		entry d1 = 0
 	}
-	state TryingAgain {
-		entry move ( lv , a )
+	state Final {
 	}
 	state Going {
 		entry move ( lv , a )
 	}
-	state Final {
+	state GettingOut {
+		entry send shortRandomWalk ; wait ( outperiod )
 	}
-	state AvoidingAgain {
-		entry d1 = 0
-	}
-	state Waiting {
-		entry send randomWalk
+	state Avoiding {
+		entry d0 = 0 ; compute ! l ; wait ( evadetime )
 	}
 	initial i0
 	transition t_init {
@@ -289,7 +291,7 @@ stm MovementController {
 	transition t19 {
 		from AvoidingAgain
 		to GettingOut
-		condition since ( clockResetTime ) >= stuckperiod /\ d1 - d0 <= stuckdist
+		condition since ( clockResetTime ) >= stuckperiod /\ d1 - d0 <= stuckdist /\ not ( since ( clockResetTime ) < stuckperiod \/ d1 - d0 > stuckdist )
 	}
 	transition t20 {
 		from GettingOut

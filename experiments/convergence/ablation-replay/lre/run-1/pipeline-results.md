@@ -1,7 +1,7 @@
 # Replay pass (lre) with the published extractor
 
 Source: `experiments/convergence/ablation/lre/run-1/iter-2/java` (15 Java files, package `lre`).
-Driver exit `1`, 13 s.
+Driver exit `1`, 185 s.
 
 | Phase | Status |
 |---|---|
@@ -9,11 +9,11 @@ Driver exit `1`, 13 s.
 | coverage | failed |
 | preflight | passed |
 | t2m | passed |
-| m2m | failed |
-| m2t | failed |
+| m2m | passed |
+| m2t | passed |
 | dafny_gen | passed |
-| isabelle_gen | failed |
-| fdr4 | absent |
+| isabelle_gen | passed |
+| fdr4 | passed |
 | dafny_verify | passed |
-| isabelle_verify | failed |
+| isabelle_verify | passed |
 | vacuity | passed |
