@@ -20,3 +20,13 @@ With the patch applied, linting the recorded Java of
 directives recorded in that iteration's `feedback/post_preflight.json`; without
 it, linting `../convergence-v3-frozen/sranger/run-4/iter-1/java` reproduces the
 Reference directives recorded there.
+
+## Isabelle theories
+
+In each run's converged iteration, `formal-artefacts/isabelle/` holds the theory
+the published generator produces from that iteration's `robochart_model.xmi`,
+with its Isabelle build log under `build-logs/` (all verify; see
+`../environment-model/results/2026-10-26-tables7-8-regenerated/`). The theory
+collected while the run was in progress is kept beside it in
+`formal-artefacts/isabelle-collected/`; the run's recorded verdict in
+`feedback/post_isabelle_verify.md` refers to that collected theory.

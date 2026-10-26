@@ -30,3 +30,13 @@ chemical_detector/run-<n>/
 | Case study | Iterations to converge (runs 1-5) |
 | ---------- | --------------------------------- |
 | Chemical Detector | 1, 1, 3, 2, 1 |
+
+## Isabelle theories
+
+In each run's converged iteration, `formal-artefacts/isabelle/` holds the theory
+the published generator produces from that iteration's `robochart_model.xmi`,
+with its Isabelle build log under `build-logs/` (all verify; see
+`../environment-model/results/2026-10-26-tables7-8-regenerated/`). The theory
+collected while the run was in progress is kept beside it in
+`formal-artefacts/isabelle-collected/`; the run's recorded verdict in
+`feedback/post_isabelle_verify.md` refers to that collected theory.

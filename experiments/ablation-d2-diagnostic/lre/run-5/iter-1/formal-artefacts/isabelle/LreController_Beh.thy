@@ -49,14 +49,14 @@ show_record Obstacle
 
 text \<open> function definition \<close>
 
-consts obsNsVel :: " int \<Rightarrow> real"
-consts obsEwVel :: " int \<Rightarrow> real"
-consts ewRelDist :: " int \<Rightarrow> real"
 consts odist :: " int \<Rightarrow> real"
-consts sqrt :: " real \<Rightarrow> real"
-consts vdist :: " int \<Rightarrow> real"
-consts nsRelDist :: " int \<Rightarrow> real"
+consts obsNsVel :: " int \<Rightarrow> real"
+consts ewRelDist :: " int \<Rightarrow> real"
 consts hdist :: " int \<Rightarrow> real"
+consts nsRelDist :: " int \<Rightarrow> real"
+consts sqrt :: " real \<Rightarrow> real"
+consts obsEwVel :: " int \<Rightarrow> real"
+consts vdist :: " int \<Rightarrow> real"
 consts minSafeDist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts staticObsHorizDist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts staticObsDfltVertDist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
@@ -91,22 +91,31 @@ zstore LreController =
                             for. Written by every operation's update to the
                             target state's awaited set; pinned per state by the
                             invariant below. A property OF THE AUTOMATON. *)
-  offered :: "Evt set"   (* FORK: DYNAMIC. The events the environment
-                            offers THIS step. Written by no operation, pinned by
-                            no invariant conjunct: a free input. Read by trigger
-                            presence conjuncts (C2) and absence conjuncts.
-                            A property OF THE ENVIRONMENT, not of the automaton. *)
+  offered :: "Evt set"   (* DYNAMIC. The events the environment offers THIS
+                            step. Environment model B (2026-10-20): the
+                            invariant pins, per state, offered = {} or
+                            offered = {e} for one listened e -- the Java step
+                            consumes at most one input event. Every operation
+                            sets offered' to a fresh choice `nxt` drawn from the
+                            target state's allowed offers. Read by trigger
+                            presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
     "tr \<noteq> []
-                      \<and> (st = OCM \<longrightarrow> listens = {reqVel, reqHdng, reqMOM})
-                      \<and> (st = MOM \<longrightarrow> listens = {reqOCM, endTask, reqHCM})
+                      \<and> (st = OCM \<longrightarrow> listens = {reqMOM, reqHdng, reqVel})
+                      \<and> (st = MOM \<longrightarrow> listens = {endTask, reqHCM, reqOCM})
                       \<and> (st = HCM \<longrightarrow> listens = {reqOCM})
-                      \<and> (st = CAM \<longrightarrow> listens = {reqOCM}) \<and> offered = listens"
+                      \<and> (st = CAM \<longrightarrow> listens = {reqOCM})
+                                                                               \<and> (st = OCM \<longrightarrow> (offered = {} \<or> offered = {reqMOM} \<or> offered = {reqHdng} \<or> offered = {reqVel}))
+                                                                               \<and> (st = MOM \<longrightarrow> (offered = {} \<or> offered = {endTask} \<or> offered = {reqHCM} \<or> offered = {reqOCM}))
+                                                                               \<and> (st = HCM \<longrightarrow> (offered = {} \<or> offered = {reqOCM}))
+                                                                               \<and> (st = CAM \<longrightarrow> (offered = {} \<or> offered = {reqOCM}))
+                                                                               \<and> (st = initial \<longrightarrow> (offered = {}))"
 
 subsection \<open> Operations \<close>
 
 zoperation InitialToOCM =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= initial"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -124,12 +133,13 @@ zoperation InitialToOCM =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr  @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation OCMToOCM =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= OCM \<and> reqVel \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -147,12 +157,13 @@ zoperation OCMToOCM =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event reqVel]@ [Event advVel] @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation OCMToOCM_1 =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= OCM \<and> reqHdng \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -170,12 +181,13 @@ zoperation OCMToOCM_1 =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event reqHdng]@ [Event advHdng] @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation OCMToMOM =
   over LreController
+  params nxt \<in> "{{}, {endTask}, {reqHCM}, {reqOCM}}" 
   pre "st= OCM \<and> vel\<le>1.0 \<and> \<not>inOpez \<and> odist(cdyn)>1.0 \<and> odist(cstc)>1.0 \<and> reqMOM \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= MOM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -193,12 +205,13 @@ zoperation OCMToMOM =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event reqMOM]@ [Event advVel] @ [State MOM]
-         ,listens\<Zprime> = {reqOCM, endTask, reqHCM}
-         ,offered\<Zprime> = {reqOCM, endTask, reqHCM}
+         ,listens\<Zprime> = {endTask, reqHCM, reqOCM}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation MOMToOCM =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= MOM \<and> reqOCM \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -216,12 +229,13 @@ zoperation MOMToOCM =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event reqOCM] @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation MOMToOCM_1 =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= MOM \<and> endTask \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -239,12 +253,13 @@ zoperation MOMToOCM_1 =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event endTask]@ [Event advVel] @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation MOMToHCM =
   over LreController
+  params nxt \<in> "{{}, {reqOCM}}" 
   pre "st= MOM \<and> reqHCM \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= HCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -263,11 +278,12 @@ zoperation MOMToHCM =
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event reqHCM]@ [Event advVel] @ [State HCM]
          ,listens\<Zprime> = {reqOCM}
-         ,offered\<Zprime> = {reqOCM}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation MOMToOCM_2 =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= MOM \<and> inOpez \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(endTask \<in> offered) \<and> \<not>(reqHCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -285,12 +301,13 @@ zoperation MOMToOCM_2 =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr  @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation MOMToCAM =
   over LreController
+  params nxt \<in> "{{}, {reqOCM}}" 
   pre "st= MOM \<and> cda<minSafeDist() \<and> tcpa\<ge>0.0 \<and> \<not>inOpez \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(endTask \<in> offered) \<and> \<not>(reqHCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= CAM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -309,11 +326,12 @@ zoperation MOMToCAM =
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr  @ [State CAM]
          ,listens\<Zprime> = {reqOCM}
-         ,offered\<Zprime> = {reqOCM}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation MOMToHCM_1 =
   over LreController
+  params nxt \<in> "{{}, {reqOCM}}" 
   pre "st= MOM \<and> hvel\<ge>1.0 \<and> hdist(cstc)\<le>staticObsHorizDist() \<and> \<not>inOpez \<and> \<not>(cda<minSafeDist() \<and> tcpa\<ge>0.0) \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(endTask \<in> offered) \<and> \<not>(reqHCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= HCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -332,11 +350,12 @@ zoperation MOMToHCM_1 =
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event advVel] @ [State HCM]
          ,listens\<Zprime> = {reqOCM}
-         ,offered\<Zprime> = {reqOCM}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation MOMToHCM_2 =
   over LreController
+  params nxt \<in> "{{}, {reqOCM}}" 
   pre "st= MOM \<and> vdist(cstc)\<le>staticObsDfltVertDist() \<and> \<not>inOpez \<and> \<not>(cda<minSafeDist() \<and> tcpa\<ge>0.0) \<and> \<not>(hvel\<ge>1.0 \<and> hdist(cstc)\<le>staticObsHorizDist()) \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(endTask \<in> offered) \<and> \<not>(reqHCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= HCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -355,11 +374,12 @@ zoperation MOMToHCM_2 =
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event advVel] @ [State HCM]
          ,listens\<Zprime> = {reqOCM}
-         ,offered\<Zprime> = {reqOCM}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation MOMToHCM_3 =
   over LreController
+  params nxt \<in> "{{}, {reqOCM}}" 
   pre "st= MOM \<and> vvel\<ge>1.0 \<and> vdist(cstc)\<le>staticObsVertDist() \<and> \<not>inOpez \<and> \<not>(cda<minSafeDist() \<and> tcpa\<ge>0.0) \<and> \<not>(hvel\<ge>1.0 \<and> hdist(cstc)\<le>staticObsHorizDist()) \<and> \<not>vdist(cstc)\<le>staticObsDfltVertDist() \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(endTask \<in> offered) \<and> \<not>(reqHCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= HCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -378,11 +398,12 @@ zoperation MOMToHCM_3 =
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event advVel] @ [State HCM]
          ,listens\<Zprime> = {reqOCM}
-         ,offered\<Zprime> = {reqOCM}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation HCMToOCM =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= HCM \<and> reqOCM \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -400,12 +421,13 @@ zoperation HCMToOCM =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event reqOCM] @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation HCMToOCM_1 =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= HCM \<and> inOpez \<and> \<not>(reqOCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -423,12 +445,13 @@ zoperation HCMToOCM_1 =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr  @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation HCMToCAM =
   over LreController
+  params nxt \<in> "{{}, {reqOCM}}" 
   pre "st= HCM \<and> cda<minSafeDist() \<and> tcpa\<ge>0.0 \<and> \<not>inOpez \<and> \<not>(reqOCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= CAM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -447,11 +470,12 @@ zoperation HCMToCAM =
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr  @ [State CAM]
          ,listens\<Zprime> = {reqOCM}
-         ,offered\<Zprime> = {reqOCM}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation HCMToMOM =
   over LreController
+  params nxt \<in> "{{}, {endTask}, {reqHCM}, {reqOCM}}" 
   pre "st= HCM \<and> \<not>hdist(cstc)\<le>staticObsHorizDist() \<and> \<not>vdist(cstc)\<le>staticObsVertDist() \<and> \<not>inOpez \<and> \<not>(cda<minSafeDist() \<and> tcpa\<ge>0.0) \<and> \<not>(reqOCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= MOM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -469,12 +493,13 @@ zoperation HCMToMOM =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event advVel] @ [State MOM]
-         ,listens\<Zprime> = {reqOCM, endTask, reqHCM}
-         ,offered\<Zprime> = {reqOCM, endTask, reqHCM}
+         ,listens\<Zprime> = {endTask, reqHCM, reqOCM}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation CAMToOCM =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= CAM \<and> reqOCM \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -492,12 +517,13 @@ zoperation CAMToOCM =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event reqOCM] @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation CAMToOCM_1 =
   over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}" 
   pre "st= CAM \<and> \<not>cda<minSafeDist() \<and> \<not>(reqOCM \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= OCM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -515,12 +541,48 @@ zoperation CAMToOCM_1 =
          ,closestStatic\<Zprime> = (closestStaticIndex())
          ,inOpez\<Zprime> = (odist(((closestStaticIndex())))\<le>minSafeDist() \<or> depth_fn()\<le>0.0)
          ,tr\<Zprime> =tr @ [Event advVel] @ [State OCM]
-         ,listens\<Zprime> = {reqVel, reqHdng, reqMOM}
-         ,offered\<Zprime> = {reqVel, reqHdng, reqMOM}
+         ,listens\<Zprime> = {reqMOM, reqHdng, reqVel}
+         ,offered\<Zprime> = nxt
          ]"
         
 
   
+zoperation Idle_OCM =
+  over LreController
+  params nxt \<in> "{{}, {reqMOM}, {reqHdng}, {reqVel}}"
+  pre "st= OCM \<and> \<not>(reqVel \<in> offered) \<and> \<not>(reqHdng \<in> offered) \<and> \<not>(vel\<le>1.0 \<and> \<not>inOpez \<and> odist(cdyn)>1.0 \<and> odist(cstc)>1.0 \<and> reqMOM \<in> offered)"
+  update "[st\<Zprime>= OCM
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_MOM =
+  over LreController
+  params nxt \<in> "{{}, {endTask}, {reqHCM}, {reqOCM}}"
+  pre "st= MOM \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(endTask \<in> offered) \<and> \<not>(reqHCM \<in> offered) \<and> \<not>(inOpez) \<and> \<not>(cda<minSafeDist() \<and> tcpa\<ge>0.0) \<and> \<not>(hvel\<ge>1.0 \<and> hdist(cstc)\<le>staticObsHorizDist()) \<and> \<not>(vdist(cstc)\<le>staticObsDfltVertDist()) \<and> \<not>(vvel\<ge>1.0 \<and> vdist(cstc)\<le>staticObsVertDist())"
+  update "[st\<Zprime>= MOM
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_HCM =
+  over LreController
+  params nxt \<in> "{{}, {reqOCM}}"
+  pre "st= HCM \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(inOpez) \<and> \<not>(cda<minSafeDist() \<and> tcpa\<ge>0.0) \<and> \<not>(\<not>hdist(cstc)\<le>staticObsHorizDist() \<and> \<not>vdist(cstc)\<le>staticObsVertDist())"
+  update "[st\<Zprime>= HCM
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_CAM =
+  over LreController
+  params nxt \<in> "{{}, {reqOCM}}"
+  pre "st= CAM \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(\<not>cda<minSafeDist())"
+  update "[st\<Zprime>= CAM
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
 definition Init :: "LreController subst" where
   [z_defs]:
   "Init =
@@ -535,7 +597,7 @@ definition Init :: "LreController subst" where
 zmachine LreControllerMachine =
   init Init
   invariant LreController_inv
-  operations  InitialToOCM OCMToOCM OCMToOCM_1 OCMToMOM MOMToOCM MOMToOCM_1 MOMToHCM MOMToOCM_2 MOMToCAM MOMToHCM_1 MOMToHCM_2 MOMToHCM_3 HCMToOCM HCMToOCM_1 HCMToCAM HCMToMOM CAMToOCM CAMToOCM_1
+  operations  InitialToOCM OCMToOCM OCMToOCM_1 OCMToMOM MOMToOCM MOMToOCM_1 MOMToHCM MOMToOCM_2 MOMToCAM MOMToHCM_1 MOMToHCM_2 MOMToHCM_3 HCMToOCM HCMToOCM_1 HCMToCAM HCMToMOM CAMToOCM CAMToOCM_1 Idle_OCM Idle_MOM Idle_HCM Idle_CAM
 
 
 subsection \<open> Structural Invariants \<close>
@@ -543,59 +605,71 @@ subsection \<open> Structural Invariants \<close>
 lemma Init_inv [hoare_lemmas]: "Init establishes LreController_inv"
   by zpog_full
 
-lemma InitialToOCM_inv [hoare_lemmas]: "InitialToOCM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma InitialToOCM_inv [hoare_lemmas]: "InitialToOCM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma OCMToOCM_inv [hoare_lemmas]: "OCMToOCM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma OCMToOCM_inv [hoare_lemmas]: "OCMToOCM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma OCMToOCM_1_inv [hoare_lemmas]: "OCMToOCM_1() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma OCMToOCM_1_inv [hoare_lemmas]: "OCMToOCM_1 (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma OCMToMOM_inv [hoare_lemmas]: "OCMToMOM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma OCMToMOM_inv [hoare_lemmas]: "OCMToMOM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma MOMToOCM_inv [hoare_lemmas]: "MOMToOCM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma MOMToOCM_inv [hoare_lemmas]: "MOMToOCM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma MOMToOCM_1_inv [hoare_lemmas]: "MOMToOCM_1() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma MOMToOCM_1_inv [hoare_lemmas]: "MOMToOCM_1 (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma MOMToHCM_inv [hoare_lemmas]: "MOMToHCM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma MOMToHCM_inv [hoare_lemmas]: "MOMToHCM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma MOMToOCM_2_inv [hoare_lemmas]: "MOMToOCM_2() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma MOMToOCM_2_inv [hoare_lemmas]: "MOMToOCM_2 (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma MOMToCAM_inv [hoare_lemmas]: "MOMToCAM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma MOMToCAM_inv [hoare_lemmas]: "MOMToCAM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma MOMToHCM_1_inv [hoare_lemmas]: "MOMToHCM_1() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma MOMToHCM_1_inv [hoare_lemmas]: "MOMToHCM_1 (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma MOMToHCM_2_inv [hoare_lemmas]: "MOMToHCM_2() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma MOMToHCM_2_inv [hoare_lemmas]: "MOMToHCM_2 (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma MOMToHCM_3_inv [hoare_lemmas]: "MOMToHCM_3() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma MOMToHCM_3_inv [hoare_lemmas]: "MOMToHCM_3 (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma HCMToOCM_inv [hoare_lemmas]: "HCMToOCM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma HCMToOCM_inv [hoare_lemmas]: "HCMToOCM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma HCMToOCM_1_inv [hoare_lemmas]: "HCMToOCM_1() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma HCMToOCM_1_inv [hoare_lemmas]: "HCMToOCM_1 (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma HCMToCAM_inv [hoare_lemmas]: "HCMToCAM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma HCMToCAM_inv [hoare_lemmas]: "HCMToCAM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma HCMToMOM_inv [hoare_lemmas]: "HCMToMOM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma HCMToMOM_inv [hoare_lemmas]: "HCMToMOM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma CAMToOCM_inv [hoare_lemmas]: "CAMToOCM() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma CAMToOCM_inv [hoare_lemmas]: "CAMToOCM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma CAMToOCM_1_inv [hoare_lemmas]: "CAMToOCM_1() preserves LreController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma CAMToOCM_1_inv [hoare_lemmas]: "CAMToOCM_1 (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_OCM_inv [hoare_lemmas]: "Idle_OCM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_MOM_inv [hoare_lemmas]: "Idle_MOM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_HCM_inv [hoare_lemmas]: "Idle_HCM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_CAM_inv [hoare_lemmas]: "Idle_CAM (nxt) preserves LreController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
 
 subsection \<open> Safety Requirements \<close>
@@ -605,58 +679,70 @@ zexpr R1 is "True"
 lemma  "Init establishes R1"
   by zpog_full
 
-lemma "InitialToOCM() preserves R1 under LreController_inv"
+lemma "InitialToOCM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "OCMToOCM() preserves R1 under LreController_inv"
+lemma "OCMToOCM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "OCMToOCM_1() preserves R1 under LreController_inv"
+lemma "OCMToOCM_1 (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "OCMToMOM() preserves R1 under LreController_inv"
+lemma "OCMToMOM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "MOMToOCM() preserves R1 under LreController_inv"
+lemma "MOMToOCM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "MOMToOCM_1() preserves R1 under LreController_inv"
+lemma "MOMToOCM_1 (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "MOMToHCM() preserves R1 under LreController_inv"
+lemma "MOMToHCM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "MOMToOCM_2() preserves R1 under LreController_inv"
+lemma "MOMToOCM_2 (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "MOMToCAM() preserves R1 under LreController_inv"
+lemma "MOMToCAM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "MOMToHCM_1() preserves R1 under LreController_inv"
+lemma "MOMToHCM_1 (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "MOMToHCM_2() preserves R1 under LreController_inv"
+lemma "MOMToHCM_2 (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "MOMToHCM_3() preserves R1 under LreController_inv"
+lemma "MOMToHCM_3 (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "HCMToOCM() preserves R1 under LreController_inv"
+lemma "HCMToOCM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "HCMToOCM_1() preserves R1 under LreController_inv"
+lemma "HCMToOCM_1 (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "HCMToCAM() preserves R1 under LreController_inv"
+lemma "HCMToCAM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "HCMToMOM() preserves R1 under LreController_inv"
+lemma "HCMToMOM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "CAMToOCM() preserves R1 under LreController_inv"
+lemma "CAMToOCM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
-lemma "CAMToOCM_1() preserves R1 under LreController_inv"
+lemma "CAMToOCM_1 (nxt) preserves R1 under LreController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_OCM (nxt) preserves R1 under LreController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_MOM (nxt) preserves R1 under LreController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_HCM (nxt) preserves R1 under LreController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_CAM (nxt) preserves R1 under LreController_inv"
   by (zpog_full; auto)
   
 
@@ -665,16 +751,6 @@ definition [z_defs]: "LreController_axioms = True"
 lemma LreController_deadlock_free: "LreController_axioms  \<Longrightarrow> deadlock_free LreControllerMachine"
   unfolding LreControllerMachine_def
   apply deadlock_free
-  by (metis St.exhaust_disc insertCI)
-  (* TACTIC (2026-09-16, supersedes the hasPayloadDomain fork): the closing
-     call is `by (metis St.exhaust_disc <used-enum>.exhaust_disc ... insertCI)`.
-     Under the invariant conjunct `offered = listens` the residual goal after
-     `apply deadlock_free` is a finite case analysis over St plus every enum a
-     precondition compares (e.g. `sts = noGas` puts Status in the disjunction);
-     each such enum's exhaust_disc lemma is supplied, computed from the emitted
-     preconditions. Measured 2026-09-16: sranger 17/17 obligations (21s), lre
-     39/39 (119s), chem 17/17 (30s -- without Status.exhaust_disc the same call
-     is a >900s timeout). The earlier auto branch existed for a payload
-     existential measured against a goal that was FALSE before this fix; with the true
-     goal, metis with the computed fact list closes the payload machine too. *)
+  apply (case_tac st; (simp)?; (elim disjE)?; (simp)?)
+  by blast+
 end

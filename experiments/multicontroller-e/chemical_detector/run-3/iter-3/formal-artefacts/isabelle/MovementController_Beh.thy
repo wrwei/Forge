@@ -89,294 +89,389 @@ zstore MovementController =
                             for. Written by every operation's update to the
                             target state's awaited set; pinned per state by the
                             invariant below. A property OF THE AUTOMATON. *)
-  offered :: "Evt set"   (* FORK: DYNAMIC. The events the environment
-                            offers THIS step. Written by no operation, pinned by
-                            no invariant conjunct: a free input. Read by trigger
-                            presence conjuncts (C2) and absence conjuncts.
-                            A property OF THE ENVIRONMENT, not of the automaton. *)
+  offered :: "Evt set"   (* DYNAMIC. The events the environment offers THIS
+                            step. Environment model B (2026-10-20): the
+                            invariant pins, per state, offered = {} or
+                            offered = {e} for one listened e -- the Java step
+                            consumes at most one input event. Every operation
+                            sets offered' to a fresh choice `nxt` drawn from the
+                            target state's allowed offers. Read by trigger
+                            presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
     "tr \<noteq> []
-                      \<and> (st = Waiting \<longrightarrow> listens = {resume, stop, tick, turn})
-                      \<and> (st = Going \<longrightarrow> listens = {obstacle, turn, resume, stop, tick})
+                      \<and> (st = Waiting \<longrightarrow> listens = {turn, stop, tick, resume})
+                      \<and> (st = Going \<longrightarrow> listens = {stop, tick, obstacle, turn, resume})
                       \<and> (st = Found \<longrightarrow> listens = {tick})
-                      \<and> (st = Avoiding \<longrightarrow> listens = {turn, stop, resume, tick})
-                      \<and> (st = TryingAgain \<longrightarrow> listens = {tick, obstacle, turn, resume, stop})
+                      \<and> (st = Avoiding \<longrightarrow> listens = {turn, tick, stop, resume})
+                      \<and> (st = TryingAgain \<longrightarrow> listens = {resume, turn, obstacle, tick, stop})
                       \<and> (st = AvoidingAgain \<longrightarrow> listens = {stop, resume})
-                      \<and> (st = GettingOut \<longrightarrow> listens = {stop, tick, resume, turn}) \<and> offered = listens"
+                      \<and> (st = GettingOut \<longrightarrow> listens = {turn, resume, tick, stop})
+                                                                                                        \<and> (st = Waiting \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {stop} \<or> offered = {tick} \<or> offered = {resume}))
+                                                                                                        \<and> (st = Going \<longrightarrow> (offered = {} \<or> offered = {stop} \<or> offered = {tick} \<or> offered = {obstacle} \<or> offered = {turn} \<or> offered = {resume}))
+                                                                                                        \<and> (st = Found \<longrightarrow> (offered = {} \<or> offered = {tick}))
+                                                                                                        \<and> (st = Avoiding \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {tick} \<or> offered = {stop} \<or> offered = {resume}))
+                                                                                                        \<and> (st = TryingAgain \<longrightarrow> (offered = {} \<or> offered = {resume} \<or> offered = {turn} \<or> offered = {obstacle} \<or> offered = {tick} \<or> offered = {stop}))
+                                                                                                        \<and> (st = AvoidingAgain \<longrightarrow> (offered = {} \<or> offered = {stop} \<or> offered = {resume}))
+                                                                                                        \<and> (st = GettingOut \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {resume} \<or> offered = {tick} \<or> offered = {stop}))
+                                                                                                        \<and> (st = initial \<longrightarrow> (offered = {}))"
 
 subsection \<open> Operations \<close>
 
 zoperation InitialToWaiting =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}" 
   pre "st= initial"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {resume, stop, tick, turn}
-         ,offered\<Zprime> = {resume, stop, tick, turn}
+         ,listens\<Zprime> = {turn, stop, tick, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation WaitingToFound =
   over MovementController
+  params nxt \<in> "{{}, {tick}}" 
   pre "st= Waiting \<and> stop \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Found
          ,tr\<Zprime> =tr @ [Event stop]@ [Event flag] @ [State Found]
          ,listens\<Zprime> = {tick}
-         ,offered\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation WaitingToWaiting =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}" 
   pre "st= Waiting \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {resume, stop, tick, turn}
-         ,offered\<Zprime> = {resume, stop, tick, turn}
+         ,listens\<Zprime> = {turn, stop, tick, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation WaitingToGoing =
   over MovementController
-  params a_input \<in> "A" 
+  params a_input \<in> "A" nxt \<in> "{{}, {stop}, {tick}, {obstacle}, {turn}, {resume}}" 
   pre "st= Waiting \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Going
          ,a\<Zprime> =a_input
          ,tr\<Zprime> =tr @ [Event turn] @ [State Going]
-         ,listens\<Zprime> = {obstacle, turn, resume, stop, tick}
-         ,offered\<Zprime> = {obstacle, turn, resume, stop, tick}
+         ,listens\<Zprime> = {stop, tick, obstacle, turn, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation WaitingToWaiting_1 =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}" 
   pre "st= Waiting \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event tick]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {resume, stop, tick, turn}
-         ,offered\<Zprime> = {resume, stop, tick, turn}
+         ,listens\<Zprime> = {turn, stop, tick, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GoingToFound =
   over MovementController
+  params nxt \<in> "{{}, {tick}}" 
   pre "st= Going \<and> stop \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Found
          ,tr\<Zprime> =tr @ [Event stop]@ [Event flag] @ [State Found]
          ,listens\<Zprime> = {tick}
-         ,offered\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GoingToWaiting =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}" 
   pre "st= Going \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {resume, stop, tick, turn}
-         ,offered\<Zprime> = {resume, stop, tick, turn}
+         ,listens\<Zprime> = {turn, stop, tick, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GoingToGoing =
   over MovementController
-  params a_input \<in> "A" 
+  params a_input \<in> "A" nxt \<in> "{{}, {stop}, {tick}, {obstacle}, {turn}, {resume}}" 
   pre "st= Going \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Going
          ,a\<Zprime> =a_input
          ,tr\<Zprime> =tr @ [Event turn] @ [State Going]
-         ,listens\<Zprime> = {obstacle, turn, resume, stop, tick}
-         ,offered\<Zprime> = {obstacle, turn, resume, stop, tick}
+         ,listens\<Zprime> = {stop, tick, obstacle, turn, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GoingToAvoiding =
   over MovementController
-  params l_input \<in> "L" 
+  params l_input \<in> "L" nxt \<in> "{{}, {turn}, {tick}, {stop}, {resume}}" 
   pre "st= Going \<and> obstacle \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Avoiding
          ,l\<Zprime> =l_input
          ,d0\<Zprime> = odometer()
          ,tr\<Zprime> =tr @ [Event obstacle]@ [Event changeDirection] @ [State Avoiding]
-         ,listens\<Zprime> = {turn, stop, resume, tick}
-         ,offered\<Zprime> = {turn, stop, resume, tick}
+         ,listens\<Zprime> = {turn, tick, stop, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GoingToGoing_1 =
   over MovementController
+  params nxt \<in> "{{}, {stop}, {tick}, {obstacle}, {turn}, {resume}}" 
   pre "st= Going \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Going
          ,tr\<Zprime> =tr @ [Event tick] @ [State Going]
-         ,listens\<Zprime> = {obstacle, turn, resume, stop, tick}
-         ,offered\<Zprime> = {obstacle, turn, resume, stop, tick}
+         ,listens\<Zprime> = {stop, tick, obstacle, turn, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation FoundToFound =
   over MovementController
+  params nxt \<in> "{{}, {tick}}" 
   pre "st= Found \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Found
          ,tr\<Zprime> =tr @ [Event tick] @ [State Found]
          ,listens\<Zprime> = {tick}
-         ,offered\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingToFound =
   over MovementController
+  params nxt \<in> "{{}, {tick}}" 
   pre "st= Avoiding \<and> stop \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Found
          ,tr\<Zprime> =tr @ [Event stop]@ [Event flag] @ [State Found]
          ,listens\<Zprime> = {tick}
-         ,offered\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingToWaiting =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}" 
   pre "st= Avoiding \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {resume, stop, tick, turn}
-         ,offered\<Zprime> = {resume, stop, tick, turn}
+         ,listens\<Zprime> = {turn, stop, tick, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingToTryingAgain =
   over MovementController
-  params a_input \<in> "A" 
+  params a_input \<in> "A" nxt \<in> "{{}, {resume}, {turn}, {obstacle}, {tick}, {stop}}" 
   pre "st= Avoiding \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= TryingAgain
          ,a\<Zprime> =a_input
          ,tr\<Zprime> =tr @ [Event turn] @ [State TryingAgain]
-         ,listens\<Zprime> = {tick, obstacle, turn, resume, stop}
-         ,offered\<Zprime> = {tick, obstacle, turn, resume, stop}
+         ,listens\<Zprime> = {resume, turn, obstacle, tick, stop}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingToAvoiding =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {tick}, {stop}, {resume}}" 
   pre "st= Avoiding \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Avoiding
          ,tr\<Zprime> =tr @ [Event tick] @ [State Avoiding]
-         ,listens\<Zprime> = {turn, stop, resume, tick}
-         ,offered\<Zprime> = {turn, stop, resume, tick}
+         ,listens\<Zprime> = {turn, tick, stop, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation TryingAgainToFound =
   over MovementController
+  params nxt \<in> "{{}, {tick}}" 
   pre "st= TryingAgain \<and> stop \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Found
          ,tr\<Zprime> =tr @ [Event stop]@ [Event flag] @ [State Found]
          ,listens\<Zprime> = {tick}
-         ,offered\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation TryingAgainToWaiting =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}" 
   pre "st= TryingAgain \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {resume, stop, tick, turn}
-         ,offered\<Zprime> = {resume, stop, tick, turn}
+         ,listens\<Zprime> = {turn, stop, tick, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation TryingAgainToTryingAgain =
   over MovementController
-  params a_input \<in> "A" 
+  params a_input \<in> "A" nxt \<in> "{{}, {resume}, {turn}, {obstacle}, {tick}, {stop}}" 
   pre "st= TryingAgain \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= TryingAgain
          ,a\<Zprime> =a_input
          ,tr\<Zprime> =tr @ [Event turn] @ [State TryingAgain]
-         ,listens\<Zprime> = {tick, obstacle, turn, resume, stop}
-         ,offered\<Zprime> = {tick, obstacle, turn, resume, stop}
+         ,listens\<Zprime> = {resume, turn, obstacle, tick, stop}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation TryingAgainToAvoidingAgain =
   over MovementController
-  params l_input \<in> "L" 
+  params l_input \<in> "L" nxt \<in> "{{}, {stop}, {resume}}" 
   pre "st= TryingAgain \<and> obstacle \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= AvoidingAgain
          ,l\<Zprime> =l_input
          ,d1\<Zprime> = odometer()
          ,tr\<Zprime> =tr @ [Event obstacle] @ [State AvoidingAgain]
          ,listens\<Zprime> = {stop, resume}
-         ,offered\<Zprime> = {stop, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation TryingAgainToTryingAgain_1 =
   over MovementController
+  params nxt \<in> "{{}, {resume}, {turn}, {obstacle}, {tick}, {stop}}" 
   pre "st= TryingAgain \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= TryingAgain
          ,tr\<Zprime> =tr @ [Event tick] @ [State TryingAgain]
-         ,listens\<Zprime> = {tick, obstacle, turn, resume, stop}
-         ,offered\<Zprime> = {tick, obstacle, turn, resume, stop}
+         ,listens\<Zprime> = {resume, turn, obstacle, tick, stop}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingAgainToFound =
   over MovementController
+  params nxt \<in> "{{}, {tick}}" 
   pre "st= AvoidingAgain \<and> stop \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Found
          ,tr\<Zprime> =tr @ [Event stop]@ [Event flag] @ [State Found]
          ,listens\<Zprime> = {tick}
-         ,offered\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingAgainToWaiting =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}" 
   pre "st= AvoidingAgain \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {resume, stop, tick, turn}
-         ,offered\<Zprime> = {resume, stop, tick, turn}
+         ,listens\<Zprime> = {turn, stop, tick, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingAgainToAvoiding =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {tick}, {stop}, {resume}}" 
   pre "st= AvoidingAgain \<and> (since(evadeStart())<stuckPeriod() \<or> (d1 - d0)>stuckDist()) \<and> \<not>(stop \<in> offered) \<and> \<not>(resume \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Avoiding
          ,d0\<Zprime> = odometer()
          ,tr\<Zprime> =tr @ [Event changeDirection] @ [State Avoiding]
-         ,listens\<Zprime> = {turn, stop, resume, tick}
-         ,offered\<Zprime> = {turn, stop, resume, tick}
+         ,listens\<Zprime> = {turn, tick, stop, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingAgainToGettingOut =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {resume}, {tick}, {stop}}" 
   pre "st= AvoidingAgain \<and> \<not>since(evadeStart())<stuckPeriod() \<and> \<not>(d1 - d0)>stuckDist() \<and> \<not>((since(evadeStart())<stuckPeriod() \<or> (d1 - d0)>stuckDist())) \<and> \<not>(stop \<in> offered) \<and> \<not>(resume \<in> offered) \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= GettingOut
          ,tr\<Zprime> =tr @ [Event shortRandomWalk] @ [State GettingOut]
-         ,listens\<Zprime> = {stop, tick, resume, turn}
-         ,offered\<Zprime> = {stop, tick, resume, turn}
+         ,listens\<Zprime> = {turn, resume, tick, stop}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GettingOutToFound =
   over MovementController
+  params nxt \<in> "{{}, {tick}}" 
   pre "st= GettingOut \<and> stop \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Found
          ,tr\<Zprime> =tr @ [Event stop]@ [Event flag] @ [State Found]
          ,listens\<Zprime> = {tick}
-         ,offered\<Zprime> = {tick}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GettingOutToWaiting =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}" 
   pre "st= GettingOut \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {resume, stop, tick, turn}
-         ,offered\<Zprime> = {resume, stop, tick, turn}
+         ,listens\<Zprime> = {turn, stop, tick, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GettingOutToGoing =
   over MovementController
-  params a_input \<in> "A" 
+  params a_input \<in> "A" nxt \<in> "{{}, {stop}, {tick}, {obstacle}, {turn}, {resume}}" 
   pre "st= GettingOut \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Going
          ,a\<Zprime> =a_input
          ,tr\<Zprime> =tr @ [Event turn] @ [State Going]
-         ,listens\<Zprime> = {obstacle, turn, resume, stop, tick}
-         ,offered\<Zprime> = {obstacle, turn, resume, stop, tick}
+         ,listens\<Zprime> = {stop, tick, obstacle, turn, resume}
+         ,offered\<Zprime> = nxt
          ]"
         
 zoperation GettingOutToGettingOut =
   over MovementController
+  params nxt \<in> "{{}, {turn}, {resume}, {tick}, {stop}}" 
   pre "st= GettingOut \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= GettingOut
          ,tr\<Zprime> =tr @ [Event tick] @ [State GettingOut]
-         ,listens\<Zprime> = {stop, tick, resume, turn}
-         ,offered\<Zprime> = {stop, tick, resume, turn}
+         ,listens\<Zprime> = {turn, resume, tick, stop}
+         ,offered\<Zprime> = nxt
          ]"
         
 
   
+zoperation Idle_Waiting =
+  over MovementController
+  params nxt \<in> "{{}, {turn}, {stop}, {tick}, {resume}}"
+  pre "st= Waiting \<and> \<not>(stop \<in> offered) \<and> \<not>(resume \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(tick \<in> offered)"
+  update "[st\<Zprime>= Waiting
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_Going =
+  over MovementController
+  params nxt \<in> "{{}, {stop}, {tick}, {obstacle}, {turn}, {resume}}"
+  pre "st= Going \<and> \<not>(stop \<in> offered) \<and> \<not>(resume \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(obstacle \<in> offered) \<and> \<not>(tick \<in> offered)"
+  update "[st\<Zprime>= Going
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_Found =
+  over MovementController
+  params nxt \<in> "{{}, {tick}}"
+  pre "st= Found \<and> \<not>(tick \<in> offered)"
+  update "[st\<Zprime>= Found
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_Avoiding =
+  over MovementController
+  params nxt \<in> "{{}, {turn}, {tick}, {stop}, {resume}}"
+  pre "st= Avoiding \<and> \<not>(stop \<in> offered) \<and> \<not>(resume \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(tick \<in> offered)"
+  update "[st\<Zprime>= Avoiding
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_TryingAgain =
+  over MovementController
+  params nxt \<in> "{{}, {resume}, {turn}, {obstacle}, {tick}, {stop}}"
+  pre "st= TryingAgain \<and> \<not>(stop \<in> offered) \<and> \<not>(resume \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(obstacle \<in> offered) \<and> \<not>(tick \<in> offered)"
+  update "[st\<Zprime>= TryingAgain
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_AvoidingAgain =
+  over MovementController
+  params nxt \<in> "{{}, {stop}, {resume}}"
+  pre "st= AvoidingAgain \<and> \<not>(stop \<in> offered) \<and> \<not>(resume \<in> offered) \<and> \<not>((since(evadeStart())<stuckPeriod() \<or> (d1 - d0)>stuckDist())) \<and> \<not>(\<not>since(evadeStart())<stuckPeriod() \<and> \<not>(d1 - d0)>stuckDist())"
+  update "[st\<Zprime>= AvoidingAgain
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
+zoperation Idle_GettingOut =
+  over MovementController
+  params nxt \<in> "{{}, {turn}, {resume}, {tick}, {stop}}"
+  pre "st= GettingOut \<and> \<not>(stop \<in> offered) \<and> \<not>(resume \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(tick \<in> offered)"
+  update "[st\<Zprime>= GettingOut
+         ,tr\<Zprime> = tr
+         ,offered\<Zprime> = nxt
+         ]"
+
 definition Init :: "MovementController subst" where
   [z_defs]:
   "Init =
@@ -391,7 +486,7 @@ definition Init :: "MovementController subst" where
 zmachine MovementControllerMachine =
   init Init
   invariant MovementController_inv
-  operations  InitialToWaiting WaitingToFound WaitingToWaiting WaitingToGoing WaitingToWaiting_1 GoingToFound GoingToWaiting GoingToGoing GoingToAvoiding GoingToGoing_1 FoundToFound AvoidingToFound AvoidingToWaiting AvoidingToTryingAgain AvoidingToAvoiding TryingAgainToFound TryingAgainToWaiting TryingAgainToTryingAgain TryingAgainToAvoidingAgain TryingAgainToTryingAgain_1 AvoidingAgainToFound AvoidingAgainToWaiting AvoidingAgainToAvoiding AvoidingAgainToGettingOut GettingOutToFound GettingOutToWaiting GettingOutToGoing GettingOutToGettingOut
+  operations  InitialToWaiting WaitingToFound WaitingToWaiting WaitingToGoing WaitingToWaiting_1 GoingToFound GoingToWaiting GoingToGoing GoingToAvoiding GoingToGoing_1 FoundToFound AvoidingToFound AvoidingToWaiting AvoidingToTryingAgain AvoidingToAvoiding TryingAgainToFound TryingAgainToWaiting TryingAgainToTryingAgain TryingAgainToAvoidingAgain TryingAgainToTryingAgain_1 AvoidingAgainToFound AvoidingAgainToWaiting AvoidingAgainToAvoiding AvoidingAgainToGettingOut GettingOutToFound GettingOutToWaiting GettingOutToGoing GettingOutToGettingOut Idle_Waiting Idle_Going Idle_Found Idle_Avoiding Idle_TryingAgain Idle_AvoidingAgain Idle_GettingOut
 
 
 subsection \<open> Structural Invariants \<close>
@@ -399,89 +494,110 @@ subsection \<open> Structural Invariants \<close>
 lemma Init_inv [hoare_lemmas]: "Init establishes MovementController_inv"
   by zpog_full
 
-lemma InitialToWaiting_inv [hoare_lemmas]: "InitialToWaiting() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma WaitingToFound_inv [hoare_lemmas]: "WaitingToFound() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma WaitingToWaiting_inv [hoare_lemmas]: "WaitingToWaiting() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma WaitingToGoing_inv [hoare_lemmas]: "WaitingToGoing (a_input) preserves MovementController_inv"
+lemma InitialToWaiting_inv [hoare_lemmas]: "InitialToWaiting (nxt) preserves MovementController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma WaitingToWaiting_1_inv [hoare_lemmas]: "WaitingToWaiting_1() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma GoingToFound_inv [hoare_lemmas]: "GoingToFound() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma GoingToWaiting_inv [hoare_lemmas]: "GoingToWaiting() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma GoingToGoing_inv [hoare_lemmas]: "GoingToGoing (a_input) preserves MovementController_inv"
+lemma WaitingToFound_inv [hoare_lemmas]: "WaitingToFound (nxt) preserves MovementController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma GoingToAvoiding_inv [hoare_lemmas]: "GoingToAvoiding (l_input) preserves MovementController_inv"
+lemma WaitingToWaiting_inv [hoare_lemmas]: "WaitingToWaiting (nxt) preserves MovementController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma GoingToGoing_1_inv [hoare_lemmas]: "GoingToGoing_1() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma FoundToFound_inv [hoare_lemmas]: "FoundToFound() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma AvoidingToFound_inv [hoare_lemmas]: "AvoidingToFound() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma AvoidingToWaiting_inv [hoare_lemmas]: "AvoidingToWaiting() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma AvoidingToTryingAgain_inv [hoare_lemmas]: "AvoidingToTryingAgain (a_input) preserves MovementController_inv"
+lemma WaitingToGoing_inv [hoare_lemmas]: "WaitingToGoing (a_input, nxt) preserves MovementController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma AvoidingToAvoiding_inv [hoare_lemmas]: "AvoidingToAvoiding() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma TryingAgainToFound_inv [hoare_lemmas]: "TryingAgainToFound() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma TryingAgainToWaiting_inv [hoare_lemmas]: "TryingAgainToWaiting() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma TryingAgainToTryingAgain_inv [hoare_lemmas]: "TryingAgainToTryingAgain (a_input) preserves MovementController_inv"
+lemma WaitingToWaiting_1_inv [hoare_lemmas]: "WaitingToWaiting_1 (nxt) preserves MovementController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma TryingAgainToAvoidingAgain_inv [hoare_lemmas]: "TryingAgainToAvoidingAgain (l_input) preserves MovementController_inv"
+lemma GoingToFound_inv [hoare_lemmas]: "GoingToFound (nxt) preserves MovementController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma TryingAgainToTryingAgain_1_inv [hoare_lemmas]: "TryingAgainToTryingAgain_1() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma AvoidingAgainToFound_inv [hoare_lemmas]: "AvoidingAgainToFound() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma AvoidingAgainToWaiting_inv [hoare_lemmas]: "AvoidingAgainToWaiting() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma AvoidingAgainToAvoiding_inv [hoare_lemmas]: "AvoidingAgainToAvoiding() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma AvoidingAgainToGettingOut_inv [hoare_lemmas]: "AvoidingAgainToGettingOut() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma GettingOutToFound_inv [hoare_lemmas]: "GettingOutToFound() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma GettingOutToWaiting_inv [hoare_lemmas]: "GettingOutToWaiting() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
-
-lemma GettingOutToGoing_inv [hoare_lemmas]: "GettingOutToGoing (a_input) preserves MovementController_inv"
+lemma GoingToWaiting_inv [hoare_lemmas]: "GoingToWaiting (nxt) preserves MovementController_inv"
   by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
-lemma GettingOutToGettingOut_inv [hoare_lemmas]: "GettingOutToGettingOut() preserves MovementController_inv"
-  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: see twin lemma above for rationale *)
+lemma GoingToGoing_inv [hoare_lemmas]: "GoingToGoing (a_input, nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma GoingToAvoiding_inv [hoare_lemmas]: "GoingToAvoiding (l_input, nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma GoingToGoing_1_inv [hoare_lemmas]: "GoingToGoing_1 (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma FoundToFound_inv [hoare_lemmas]: "FoundToFound (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma AvoidingToFound_inv [hoare_lemmas]: "AvoidingToFound (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma AvoidingToWaiting_inv [hoare_lemmas]: "AvoidingToWaiting (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma AvoidingToTryingAgain_inv [hoare_lemmas]: "AvoidingToTryingAgain (a_input, nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma AvoidingToAvoiding_inv [hoare_lemmas]: "AvoidingToAvoiding (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma TryingAgainToFound_inv [hoare_lemmas]: "TryingAgainToFound (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma TryingAgainToWaiting_inv [hoare_lemmas]: "TryingAgainToWaiting (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma TryingAgainToTryingAgain_inv [hoare_lemmas]: "TryingAgainToTryingAgain (a_input, nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma TryingAgainToAvoidingAgain_inv [hoare_lemmas]: "TryingAgainToAvoidingAgain (l_input, nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma TryingAgainToTryingAgain_1_inv [hoare_lemmas]: "TryingAgainToTryingAgain_1 (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma AvoidingAgainToFound_inv [hoare_lemmas]: "AvoidingAgainToFound (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma AvoidingAgainToWaiting_inv [hoare_lemmas]: "AvoidingAgainToWaiting (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma AvoidingAgainToAvoiding_inv [hoare_lemmas]: "AvoidingAgainToAvoiding (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma AvoidingAgainToGettingOut_inv [hoare_lemmas]: "AvoidingAgainToGettingOut (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma GettingOutToFound_inv [hoare_lemmas]: "GettingOutToFound (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma GettingOutToWaiting_inv [hoare_lemmas]: "GettingOutToWaiting (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma GettingOutToGoing_inv [hoare_lemmas]: "GettingOutToGoing (a_input, nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma GettingOutToGettingOut_inv [hoare_lemmas]: "GettingOutToGettingOut (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_Waiting_inv [hoare_lemmas]: "Idle_Waiting (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_Going_inv [hoare_lemmas]: "Idle_Going (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_Found_inv [hoare_lemmas]: "Idle_Found (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_Avoiding_inv [hoare_lemmas]: "Idle_Avoiding (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_TryingAgain_inv [hoare_lemmas]: "Idle_TryingAgain (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_AvoidingAgain_inv [hoare_lemmas]: "Idle_AvoidingAgain (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
+
+lemma Idle_GettingOut_inv [hoare_lemmas]: "Idle_GettingOut (nxt) preserves MovementController_inv"
+  by (zpog_full; auto simp add: wf_rcstore_def)  (* FORK: archive used `auto` alone; our trace-update shape `tr @ [Event x] @ [State y]` needs explicit unfolding of wf_rcstore *)
 
 
 subsection \<open> Safety Requirements \<close>
@@ -491,88 +607,109 @@ zexpr R1 is "True"
 lemma  "Init establishes R1"
   by zpog_full
 
-lemma "InitialToWaiting() preserves R1 under MovementController_inv"
+lemma "InitialToWaiting (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "WaitingToFound() preserves R1 under MovementController_inv"
+lemma "WaitingToFound (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "WaitingToWaiting() preserves R1 under MovementController_inv"
+lemma "WaitingToWaiting (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "WaitingToGoing (a_input) preserves R1 under MovementController_inv"
+lemma "WaitingToGoing (a_input, nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "WaitingToWaiting_1() preserves R1 under MovementController_inv"
+lemma "WaitingToWaiting_1 (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GoingToFound() preserves R1 under MovementController_inv"
+lemma "GoingToFound (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GoingToWaiting() preserves R1 under MovementController_inv"
+lemma "GoingToWaiting (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GoingToGoing (a_input) preserves R1 under MovementController_inv"
+lemma "GoingToGoing (a_input, nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GoingToAvoiding (l_input) preserves R1 under MovementController_inv"
+lemma "GoingToAvoiding (l_input, nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GoingToGoing_1() preserves R1 under MovementController_inv"
+lemma "GoingToGoing_1 (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "FoundToFound() preserves R1 under MovementController_inv"
+lemma "FoundToFound (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "AvoidingToFound() preserves R1 under MovementController_inv"
+lemma "AvoidingToFound (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "AvoidingToWaiting() preserves R1 under MovementController_inv"
+lemma "AvoidingToWaiting (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "AvoidingToTryingAgain (a_input) preserves R1 under MovementController_inv"
+lemma "AvoidingToTryingAgain (a_input, nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "AvoidingToAvoiding() preserves R1 under MovementController_inv"
+lemma "AvoidingToAvoiding (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "TryingAgainToFound() preserves R1 under MovementController_inv"
+lemma "TryingAgainToFound (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "TryingAgainToWaiting() preserves R1 under MovementController_inv"
+lemma "TryingAgainToWaiting (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "TryingAgainToTryingAgain (a_input) preserves R1 under MovementController_inv"
+lemma "TryingAgainToTryingAgain (a_input, nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "TryingAgainToAvoidingAgain (l_input) preserves R1 under MovementController_inv"
+lemma "TryingAgainToAvoidingAgain (l_input, nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "TryingAgainToTryingAgain_1() preserves R1 under MovementController_inv"
+lemma "TryingAgainToTryingAgain_1 (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "AvoidingAgainToFound() preserves R1 under MovementController_inv"
+lemma "AvoidingAgainToFound (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "AvoidingAgainToWaiting() preserves R1 under MovementController_inv"
+lemma "AvoidingAgainToWaiting (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "AvoidingAgainToAvoiding() preserves R1 under MovementController_inv"
+lemma "AvoidingAgainToAvoiding (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "AvoidingAgainToGettingOut() preserves R1 under MovementController_inv"
+lemma "AvoidingAgainToGettingOut (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GettingOutToFound() preserves R1 under MovementController_inv"
+lemma "GettingOutToFound (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GettingOutToWaiting() preserves R1 under MovementController_inv"
+lemma "GettingOutToWaiting (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GettingOutToGoing (a_input) preserves R1 under MovementController_inv"
+lemma "GettingOutToGoing (a_input, nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
-lemma "GettingOutToGettingOut() preserves R1 under MovementController_inv"
+lemma "GettingOutToGettingOut (nxt) preserves R1 under MovementController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_Waiting (nxt) preserves R1 under MovementController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_Going (nxt) preserves R1 under MovementController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_Found (nxt) preserves R1 under MovementController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_Avoiding (nxt) preserves R1 under MovementController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_TryingAgain (nxt) preserves R1 under MovementController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_AvoidingAgain (nxt) preserves R1 under MovementController_inv"
+  by (zpog_full; auto)
+  
+lemma "Idle_GettingOut (nxt) preserves R1 under MovementController_inv"
   by (zpog_full; auto)
   
 
@@ -581,16 +718,6 @@ definition [z_defs]: "MovementController_axioms = True"
 lemma MovementController_deadlock_free: "MovementController_axioms  \<Longrightarrow> deadlock_free MovementControllerMachine"
   unfolding MovementControllerMachine_def
   apply deadlock_free
-  by (metis St.exhaust_disc insertCI)
-  (* TACTIC (2026-09-16, supersedes the hasPayloadDomain fork): the closing
-     call is `by (metis St.exhaust_disc <used-enum>.exhaust_disc ... insertCI)`.
-     Under the invariant conjunct `offered = listens` the residual goal after
-     `apply deadlock_free` is a finite case analysis over St plus every enum a
-     precondition compares (e.g. `sts = noGas` puts Status in the disjunction);
-     each such enum's exhaust_disc lemma is supplied, computed from the emitted
-     preconditions. Measured 2026-09-16: sranger 17/17 obligations (21s), lre
-     39/39 (119s), chem 17/17 (30s -- without Status.exhaust_disc the same call
-     is a >900s timeout). The earlier auto branch existed for a payload
-     existential measured against a goal that was FALSE before this fix; with the true
-     goal, metis with the computed fact list closes the payload machine too. *)
+  apply (case_tac st; (simp)?; (elim disjE)?; (simp)?)
+  by blast+
 end
