@@ -88,6 +88,6 @@ every log in `verify/isabelle/` that records the ML command line shows
 - `verify/sb_fdr4_rerun.sh`, `verify/sb_isa_rerun.sh` -- the exact runners.
 
 Reproducibility: the artefacts regenerate deterministically from
-`../steamboiler_java_generated` inputs at the pipeline used for the Table 7
+`../steamboiler_java_generated` inputs at the pipeline used for the Table 8
 experiments; the CSP tree is byte-identical modulo the generation timestamp,
 the theory and Dafny files byte-identical.

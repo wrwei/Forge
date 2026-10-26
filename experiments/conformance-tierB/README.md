@@ -5,7 +5,7 @@ next mode the Java controller takes with the set of targets the extracted
 Isabelle model admits. A state agrees when the admitted target set is exactly
 the Java's next mode (the current mode when nothing is enabled).
 
-| study | states | Table 4 extractor | current extractor |
+| study | states | archived extraction | published extractor |
 |---|--:|--:|--:|
 | LRE | 7,168 | 88.8% | 100% |
 | SRanger | 60 | 80.0% | 100% |
@@ -16,7 +16,7 @@ the Java's next mode (the current mode when nothing is enabled).
 From the repository root, with Python 3 (standard library only):
 
 ```
-# Table 4 extractor: the archived theories in reference-runs/
+# archived extraction: the theories in reference-runs/
 python experiments/conformance-tierB/run_tierb.py prefix
 
 # Current extractor: regenerate the theories from the same Java, then enumerate
@@ -28,7 +28,7 @@ python experiments/conformance-tierB/run_tierb.py fixed --thy-root /tmp/tierb-th
 (`cd forge.transformations && ./gradlew classes`).
 
 The two settings differ only in how the triggering event is read from a theory.
-The Table 4 extractor puts no event in an operation's precondition, so the
+The archived extraction puts no event in an operation's precondition, so the
 event is read from the operation's trace update; the current extractor puts it
 in the precondition as `e ∈ offered`. Both settings use the same Java side and the
 same agreement definition. For the LRE the Java side is read from the extracted

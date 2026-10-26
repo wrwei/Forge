@@ -273,7 +273,7 @@ Expectations, stated before running:
 4. Kills are at least the archived 1 and may rise, since the nine LRE
    operations whose lemmas were vacuous under model A are live under B.
 
-Reporting rule: the archived column stays as collected (Table 9); the model-B
+Reporting rule: the archived column stays as collected (Table 10); the model-B
 column is reported beside it as the repaired-generator result. `timeout`,
 `MEMKILL`, `HARDKILL` rows are environment outcomes, rerun before any count.
 

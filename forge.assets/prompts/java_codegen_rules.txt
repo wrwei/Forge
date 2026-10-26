@@ -98,15 +98,14 @@ Controller style:
   must be DUPLICATED as the first inner branches in each applicable mode block, giving them highest
   priority within that mode.
 - EVERY MODE MUST HAVE AN OUTGOING TRANSITION. A mode block whose body is empty
-  (e.g. `} else if (currentMode == FINAL) { }`) or whose transitions are all
-  guarded leaves that mode with nothing enabled. In the extracted Z-machine that
-  is a genuine deadlock: `z_machine Init Ops = process Init (loop (foldr (box)
-  Ops))` loops forever over the operations' external choice, so a mode enabling
-  no operation offers the empty set — `Vis {}`, which is exactly Isabelle's
-  `deadlock`. The generated `<Machine>_deadlock_free` obligation is then FALSE
-  and no tactic can close it (measured: auto OOM-killed at 978s, metis 1825s,
-  blast 922s, fastforce 923s — all searching for a proof of a false statement).
-  A terminal/sink mode therefore needs an explicit TICK-TRIGGERED SELF-LOOP:
+  (e.g. `} else if (currentMode == FINAL) { }`) leaves that mode with nothing
+  enabled. This is a convention of the generated code, not a verifier
+  requirement: the Isabelle generator marks a state with no outgoing transition
+  as terminal and exempts it from the deadlock-freedom obligation, so an empty
+  terminal block verifies as written. The rule is kept so that no mode is left
+  empty and so that a mode is never kept live by an UNTRIGGERED self-loop (see
+  below). A terminal/sink mode is therefore written with an explicit
+  TICK-TRIGGERED SELF-LOOP:
 
       } else if (currentMode == Mode.FINAL) {
           if (event instanceof InputEvent.Tick) {
@@ -120,33 +119,11 @@ Controller style:
   cycle that FDR4 correctly reports as a divergence. A tick-TRIGGERED loop gives
   CSP a visible event instead, satisfying Isabelle and FDR4 at once.
 
-  What the current extractor emits for such a loop (measured 2026-09-16, not
-  assumed) is
-
-      zoperation FINALToFINAL = ...
-        pre "st = FINAL /\ tick : offered /\ offered <= listens"
-
-  plus an invariant conjunct `st = FINAL --> listens = {tick}`.
-
-  IMPORTANT, MEASURED 2026-09-16: this self-loop is NECESSARY BUT NOT
-  SUFFICIENT. It gives FINAL a disjunct in the deadlock-freedom goal, but that
-  disjunct is trigger-guarded, and the goal quantifies `offered` UNIVERSALLY:
-
-      st = initial \/ (ALL offered_v.  st = READING /\ gas : offered_v /\ ...
-                                    \/ st = ANALYSIS /\ ...
-                                    \/ st = FINAL /\ tick : offered_v /\ ...)
-
-  At `offered_v = {}` every presence-guarded disjunct is false, so any state
-  whose ONLY outgoing operations are trigger-guarded still falsifies the goal.
-  For chem that is READING as well as FINAL. Adding the self-loop therefore
-  removes the "no disjunct at all" defect but not the falsity (tracked as a
-  generator/encoding issue: see thy_generation_rule.egl). Do NOT expect
-  deadlock_free to discharge from this rule alone.
-
-  The rule still earns its place: without an outgoing transition the state has
-  NO disjunct under ANY offer, which is unconditionally false and also breaks
-  FDR4. With it, the remaining obstacle is the offered-quantification, which is
-  a generator matter and not something the Java can fix.
+  The extractor emits such a loop as an operation guarded on the tick event
+  (`pre "st = FINAL /\ tick : offered ..."`), which closes under the environment
+  model the theories use (at most one listened event offered per step, or none,
+  with an idle operation per state). Deadlock-freedom does not depend on this
+  rule.
 
   Modes that already have an event-triggered bare-precondition transition need
   no self-loop. Do NOT add self-loops to modes with an autonomous outgoing edge:

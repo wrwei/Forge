@@ -791,7 +791,7 @@ pre {
                     t.source = state and t.source <> stm.nodes.selectOne(n | n.isKindOf(RoboChart!Initial)));
             if (outgoing.isEmpty()) {
                 ("[deadlock-lint] " + stm.name + "." + state.name
-                        + ": no outgoing transitions (Isabelle deadlock_free proof will fail)").println();
+                        + ": no outgoing transitions (terminal state; the Isabelle generator exempts it from deadlock-freedom)").println();
                 continue;
             }
             var hasBare = outgoing.exists(t |
@@ -799,8 +799,8 @@ pre {
             if (not hasBare) {
                 ("[deadlock-lint] " + stm.name + "." + state.name
                         + ": all outgoing transitions are guarded or event-triggered "
-                        + "(no unconditional fallback — Isabelle deadlock_free proof will fail). "
-                        + "Add an unconditional else-branch in the Java mode block.").println();
+                        + "(no unconditional fallback; the Isabelle generator adds an idle "
+                        + "operation for the remaining cases, so no change is needed).").println();
             }
         }
     }

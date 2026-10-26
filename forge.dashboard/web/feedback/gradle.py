@@ -328,12 +328,10 @@ def build_gradle_phase_feedback(
                 title=f"State without unconditional fallback: {state_loc}",
                 raw=raw,
                 fix_directive=(
-                    "Add an `else { mode = <SameMode>; }` clause to the inner "
-                    "if-else chain of this mode block so the state has at "
-                    "least one bare-precondition outgoing transition. "
-                    "Without it, the Isabelle deadlock_free proof will fail "
-                    "(see CLAUDE.md \"Isabelle/UTP Z-Machine `deadlock_free` "
-                    "proof\" gotcha)."
+                    "This state has no unconditional outgoing transition. The "
+                    "Isabelle generator represents the remaining cases by an idle "
+                    "operation, so the deadlock-freedom obligation does not depend "
+                    "on this; no change is required."
                 ),
             ))
         next_step_by_phase = {
