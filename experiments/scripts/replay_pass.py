@@ -21,6 +21,12 @@ and the pass is recorded under <out-dir>:
     formal-artefacts/      *.dfy, robochart_controller.rct, csp-gen/, isabelle/
     driver.log             the driver's stdout and stderr
 
+REPLAY_TRACE=<path to a result_codegen.json> (optional) copies that code-generation
+trace into java.generated.project/ for the duration of the pass, so the coverage
+check (Phase 2b) can run; it is removed afterwards and its path is recorded as
+"trace". Unset, the pass runs exactly as before and coverage reports the trace as
+missing.
+
 Exit code 0 when the pass ran to completion (whatever the verdicts); 1 on a
 driver timeout (REPLAY_TIMEOUT seconds, default 3600) or a setup error.
 """
@@ -71,6 +77,16 @@ def main() -> int:
     n_java = len(list((target_root / pkg).rglob("*.java")))
     print(f"[replay] {study}: copied {n_java} Java files from {src} -> {target_root / pkg}", flush=True)
 
+    trace_dst = REPO_ROOT / "java.generated.project" / "result_codegen.json"
+    trace_src = os.environ.get("REPLAY_TRACE", "")
+    trace_prior = trace_dst.read_bytes() if trace_dst.exists() else None
+    if trace_src:
+        if not Path(trace_src).is_file():
+            print(f"ERROR: REPLAY_TRACE {trace_src} is not a file", file=sys.stderr)
+            return 1
+        shutil.copy(trace_src, trace_dst)
+        print(f"[replay] trace: {trace_src} -> {trace_dst}", flush=True)
+
     corrections = REPO_ROOT / "forge.assets" / "corrections"
     corrections.mkdir(parents=True, exist_ok=True)
     for stale in list(corrections.glob("post_*.md")) + list(corrections.glob("post_*.json")):
@@ -106,6 +122,11 @@ def main() -> int:
         if original != study:
             raw.setdefault("agent", {})["active_case_study"] = original
             manifest.dump(manifest_path)
+        if trace_src:
+            if trace_prior is None:
+                trace_dst.unlink(missing_ok=True)
+            else:
+                trace_dst.write_bytes(trace_prior)
     elapsed = time.time() - t0
 
     out.mkdir(parents=True, exist_ok=True)
@@ -137,6 +158,7 @@ def main() -> int:
         except Exception:
             status[p] = "unreadable"
     record = {"study": study, "package": pkg, "source": src_shown, "java_files": n_java,
+              "trace": trace_src or None,
               "driver_exit": rc, "driver_timeout": timed_out, "elapsed_s": round(elapsed, 1),
               "phase_status": status, "all_passed": all(v == "passed" for v in status.values())}
     (out / "phase_status.json").write_text(json.dumps(record, indent=2), encoding="utf-8")

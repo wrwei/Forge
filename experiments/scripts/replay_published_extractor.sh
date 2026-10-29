@@ -8,7 +8,8 @@
 # One collection:   REPLAY_ONLY=cold  (or ablation, or cbv2)
 #   cbv2 = the cold-baseline-v2 passes committed in the research repository
 #   (CBV2_SRC, default ~/Gitee/formal_method_guided_vibe_coding/experiments/cold-baseline-v2),
-#   scored into experiments/cold-baseline-v2-replay/. Not part of "all".
+#   scored into experiments/cold-baseline-v2-replay/, each pass with its own recorded
+#   code-generation trace so the coverage check runs. Not part of "all".
 # One study:        REPLAY_STUDY=lre
 # Per-pass cap:     REPLAY_TIMEOUT=3600 (seconds, default)
 #
@@ -93,7 +94,9 @@ if [ "$ONLY" = cbv2 ]; then
       git -C "$CBV2_SRC" diff --quiet HEAD -- "$src" 2>/dev/null && [ -z "$(git -C "$CBV2_SRC" ls-files --others -- "$src")" ] \
         || { log "  skip  cbv2 $s run-$k (source not committed)"; continue; }
       out="experiments/cold-baseline-v2-replay/$s/run-$k"
-      run_pass "$s" "$src" "$out" "cbv2 $s run-$k"
+      tr="$r/iter-1/traces/result_codegen.json"
+      [ -f "$tr" ] || { log "  skip  cbv2 $s run-$k (no recorded trace)"; continue; }
+      REPLAY_TRACE="$tr" run_pass "$s" "$src" "$out" "cbv2 $s run-$k"
       [ -f "$out/phase_status.json" ] && echo "{\"source\": \"cold-baseline-v2/$s/run-$k/iter-1/java\", \"research_commit\": \"$(git -C "$CBV2_SRC" log -1 --format=%h -- "$src")\", \"pipeline_commit\": \"$HEAD\"}" > "$out/source.json"
     done
   done
@@ -120,9 +123,9 @@ if [ "$ONLY" != cbv2 ]; then
   log "--- aggregate ---"
   "$PY" experiments/scripts/replay_aggregate.py 2>&1 | tee -a "$LOG"
 else
-  log "--- cbv2 verdicts (all_passed per pass; coverage is excluded at analysis, as in RQ3) ---"
+  log "--- cbv2 verdicts (all twelve phases, coverage scored with the pass's recorded trace) ---"
   for f in $(ls experiments/cold-baseline-v2-replay/*/run-*/phase_status.json 2>/dev/null); do
-    log "  $(echo $f | sed -E 's|experiments/cold-baseline-v2-replay/||; s|/phase_status.json||')  $("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); p=d["phase_status"]; bad=[k for k,v in p.items() if v!="passed" and k!="coverage"]; print("CONVERGED" if not bad and not d.get("driver_timeout") else "not converged:", ",".join(bad))' "$f")"
+    log "  $(echo $f | sed -E 's|experiments/cold-baseline-v2-replay/||; s|/phase_status.json||')  $("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); p=d["phase_status"]; bad=[k for k,v in p.items() if v!="passed"]; print("CONVERGED" if not bad and not d.get("driver_timeout") else "not converged:", ",".join(bad))' "$f")"
   done
 fi
 # the passes run through the pipeline's live scratch (java.generated.project/src/main/java,
