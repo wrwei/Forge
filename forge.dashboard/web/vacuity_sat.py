@@ -416,7 +416,9 @@ _NAMETYPE_RE = re.compile(r"^nametype\s+(\w+)\s*=\s*\{\s*(-?\d+)\s*\.\.\s*(-?\d+
 _STUB_RE = re.compile(r"^(\w+)\(([^)]*)\)\s*=\s*(-?\d+(?:\.\d+)?|\w+)\s*$", re.MULTILINE)
 _RCT_CONST_RE = re.compile(r"^\s*const\s+(\w+)\s*:\s*\w+\s*=\s*(-?\d+(?:\.\d+)?)",
                            re.MULTILINE)
-_DFY_CONST_RE = re.compile(r"^\s*const\s+(\w+)\s*:\s*\w+\s*:=\s*(-?\d+(?:\.\d+)?)",
+# FIX (2026-10-28): accept an exponent; a Dafny constant printed as `1.0E-9`
+# was read as its mantissa (1) and reported as a divergence from the Java.
+_DFY_CONST_RE = re.compile(r"^\s*const\s+(\w+)\s*:\s*\w+\s*:=\s*(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)",
                            re.MULTILINE)
 _CSP_CONST_RE = re.compile(r"^\s*(const_\w+)\s*=\s*(-?\d+(?:\.\d+)?)\s*$", re.MULTILINE)
 _JAVA_CONST_RE = re.compile(

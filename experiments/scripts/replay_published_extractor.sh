@@ -5,7 +5,10 @@
 #
 # Run in YOUR terminal (Docker Desktop running; dafny and refines on PATH):
 #     bash experiments/scripts/replay_published_extractor.sh
-# One collection:   REPLAY_ONLY=cold  (or ablation)
+# One collection:   REPLAY_ONLY=cold  (or ablation, or cbv2)
+#   cbv2 = the cold-baseline-v2 passes committed in the research repository
+#   (CBV2_SRC, default ~/Gitee/formal_method_guided_vibe_coding/experiments/cold-baseline-v2),
+#   scored into experiments/cold-baseline-v2-replay/. Not part of "all".
 # One study:        REPLAY_STUDY=lre
 # Per-pass cap:     REPLAY_TIMEOUT=3600 (seconds, default)
 #
@@ -75,6 +78,27 @@ if [ "$ONLY" = all ] || [ "$ONLY" = cold ]; then
   done
 fi
 
+if [ "$ONLY" = cbv2 ]; then
+  CBV2_SRC=${CBV2_SRC:-$HOME/Gitee/formal_method_guided_vibe_coding/experiments/cold-baseline-v2}
+  [ -d "$CBV2_SRC" ] || { echo "FATAL: CBV2_SRC not found: $CBV2_SRC"; exit 1; }
+  SRCHEAD=$(git -C "$CBV2_SRC" rev-parse --short HEAD 2>/dev/null)
+  log "--- cold baseline v2: committed passes from $CBV2_SRC (research HEAD $SRCHEAD) ---"
+  for s in $STUDIES; do
+    [ -n "$STUDY_FILTER" ] && [ "$s" != "$STUDY_FILTER" ] && continue
+    for r in $(ls -d "$CBV2_SRC/$s"/run-* 2>/dev/null | sort -t- -k2 -n); do
+      k=${r##*-}; src="$r/iter-1/java"
+      [ -d "$src" ] || continue
+      [ -f "$r/TRANSCRIPT_AUDIT.md" ] && ! grep -q PENDING "$r/TRANSCRIPT_AUDIT.md" || { log "  skip  cbv2 $s run-$k (audit not complete)"; continue; }
+      [ -f "$r/VOID.md" ] && { log "  skip  cbv2 $s run-$k (void)"; continue; }
+      git -C "$CBV2_SRC" diff --quiet HEAD -- "$src" 2>/dev/null && [ -z "$(git -C "$CBV2_SRC" ls-files --others -- "$src")" ] \
+        || { log "  skip  cbv2 $s run-$k (source not committed)"; continue; }
+      out="experiments/cold-baseline-v2-replay/$s/run-$k"
+      run_pass "$s" "$src" "$out" "cbv2 $s run-$k"
+      [ -f "$out/phase_status.json" ] && echo "{\"source\": \"cold-baseline-v2/$s/run-$k/iter-1/java\", \"research_commit\": \"$(git -C "$CBV2_SRC" log -1 --format=%h -- "$src")\", \"pipeline_commit\": \"$HEAD\"}" > "$out/source.json"
+    done
+  done
+fi
+
 if [ "$ONLY" = all ] || [ "$ONLY" = ablation ]; then
   log "--- compile-only ablation: the recorded stop-point Java of each run, one pass each ---"
   for s in $STUDIES; do
@@ -92,8 +116,15 @@ if [ "$ONLY" = all ] || [ "$ONLY" = ablation ]; then
 fi
 
 log ""
-log "--- aggregate ---"
-"$PY" experiments/scripts/replay_aggregate.py 2>&1 | tee -a "$LOG"
+if [ "$ONLY" != cbv2 ]; then
+  log "--- aggregate ---"
+  "$PY" experiments/scripts/replay_aggregate.py 2>&1 | tee -a "$LOG"
+else
+  log "--- cbv2 verdicts (all_passed per pass; coverage is excluded at analysis, as in RQ3) ---"
+  for f in $(ls experiments/cold-baseline-v2-replay/*/run-*/phase_status.json 2>/dev/null); do
+    log "  $(echo $f | sed -E 's|experiments/cold-baseline-v2-replay/||; s|/phase_status.json||')  $("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); p=d["phase_status"]; bad=[k for k,v in p.items() if v!="passed" and k!="coverage"]; print("CONVERGED" if not bad and not d.get("driver_timeout") else "not converged:", ",".join(bad))' "$f")"
+  done
+fi
 # the passes run through the pipeline's live scratch (java.generated.project/src/main/java,
 # forge.assets/corrections, forge.transformations/output), which the repository tracks as a
 # sample; put it back as committed so the replay leaves no diff behind.
