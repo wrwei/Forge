@@ -1308,6 +1308,11 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
             // no real value and stay as before (Dafny rejects them, as it should).
             var finite = doubleFiniteConstant(varRef, fname);
             if (finite <> "") { return finite; }
+            // The same constants of the other numeric wrapper types: exact
+            // integer values for Integer/Long/Short/Byte, Java's printed decimal
+            // for Float.
+            var wrapped = wrapperFiniteConstant(varRef, fname);
+            if (wrapped <> "") { return wrapped; }
             return fname;
         }
         return "?";
@@ -1607,6 +1612,25 @@ operation doubleFiniteConstant(varRef : Any, fname : String) : String {
     if (dtn <> "Double" and dtn <> "java.lang.Double") { return ""; }
     if (fname = "MAX_VALUE") { return plainDecimal("1.7976931348623157E308"); }
     return plainDecimal("4.9E-324");
+}
+
+// `MAX_VALUE` / `MIN_VALUE` of Integer, Long, Short, Byte (exact integers; a
+// negative one in parentheses) and Float (Java's printed decimal), else "".
+operation wrapperFiniteConstant(varRef : Any, fname : String) : String {
+    if (fname <> "MAX_VALUE" and fname <> "MIN_VALUE") { return ""; }
+    var dt = getFeature(varRef, "declaringType");
+    if (dt.isUndefined()) { return ""; }
+    var dtn = getFeature(dt, "name");
+    if (dtn.isUndefined()) { dtn = getFeature(dt, "simpleName"); }
+    if (dtn.isUndefined()) { return ""; }
+    if (dtn.startsWith("java.lang.")) { dtn = dtn.substring(10); }
+    var isMax = fname = "MAX_VALUE";
+    if (dtn = "Integer") { if (isMax) { return "2147483647"; } return "(-2147483648)"; }
+    if (dtn = "Long") { if (isMax) { return "9223372036854775807"; } return "(-9223372036854775808)"; }
+    if (dtn = "Short") { if (isMax) { return "32767"; } return "(-32768)"; }
+    if (dtn = "Byte") { if (isMax) { return "127"; } return "(-128)"; }
+    if (dtn = "Float") { if (isMax) { return plainDecimal("3.4028235E38"); } return plainDecimal("1.4E-45"); }
+    return "";
 }
 
 operation resolveTargetVarName(target : Any) : String {
