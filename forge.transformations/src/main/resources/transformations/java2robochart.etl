@@ -2830,6 +2830,30 @@ operation collectFunctionNamesFromAction(stmt : Any, names : OrderedSet) {
         collectFunctionNames(stmt.right, names);
         return;
     }
+    // Any other statement kind (an operation Call, a Wait, a
+    // CommunicationStmt): collect from every expression it contains. Without
+    // this, a function called inside an argument -- `op(v, f(x))` from the
+    // Java `actuator.op(V, sensor.f(x))` -- was used in the model but never
+    // declared, and the CSP generator stopped on an unresolved reference.
+    collectFunctionNamesInContents(stmt, names);
+}
+
+// Walk every containment reference of a statement (or of a non-expression
+// part of it, e.g. a Communication) and hand each expression found to
+// collectFunctionNames, which descends into the expression itself.
+operation collectFunctionNamesInContents(obj : Any, names : OrderedSet) {
+    for (f in obj.eClass().getEAllReferences()) {
+        if (not f.isContainment()) { continue; }
+        var val = obj.eGet(f);
+        if (val.isUndefined()) { continue; }
+        var items = new Sequence;
+        if (f.isMany()) { items.addAll(val); } else { items.add(val); }
+        for (child in items) {
+            if (child.isUndefined()) { continue; }
+            if (child.isKindOf(RoboChart!Expression)) { collectFunctionNames(child, names); }
+            else { collectFunctionNamesInContents(child, names); }
+        }
+    }
 }
 
 // Collect zero-arg CallExp names from RoboChart action statements.
