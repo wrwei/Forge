@@ -6,11 +6,11 @@ documented in `forge.assets/vibe-coding-prompts/README.md`.
 Using the skeleton from Layer 2, implement the leaf logic:
 
 - **Sensor** class: derived quantities as pure methods or cached
-  fields updated on each cycle. Return safe defaults when data is
-  missing (e.g., `0` for distances, `false` for predicates) — never
-  sentinels like `-1` or `null`. The controller layer will rely on
-  these defaults; if you push the missing-data check into the
-  controller predicates, the formal model extraction breaks.
+  fields updated on each cycle. Where a requirement does not say what
+  a quantity is when no reading is available, choose a value of the
+  declared type within the quantity's range (an integer is never
+  negative; `null` is not a value), and list the choice as an
+  `invented_default` in Layer 5.
 - **Actuator** class: setters for the controller's output commands;
   track last-issued values for inspection.
 - **One `Operation` class per requirement of `types: ["operation"]`**,

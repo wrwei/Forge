@@ -1,0 +1,51 @@
+{
+  "study": "sranger",
+  "run": 10,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 21:00:19",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run10-sranger",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-sranger-run10",
+  "files": {
+    "java": 9,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 222,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 sranger, pass 10, iteration 1\n\nNo Java was present at the start, so nothing was deleted.\n\n## What was written\n\nNine Java files under `sranger/`:\n- `annotation/RoboChartType`;\n- `event/InputEvent` (`Obstacle`, `Tick`, `EndTask`) and `event/OutputEvent` (`Move(lv, av)`);\n- `controller/SRangerMode` (MOVING first), `SRangerConstants`, `Clock` and `SRangerController`;\n- `sensor/Sensor` (`distance()`);\n- `actuator/Actuator`.\n\n`step()` is a two-level if-else with two predicates, `obstacleDetected` and `turnDurationElapsed`, the latter written as `timer.now() - clockResetTime >= TURN_DURATION`. Each branch assigns the mode and performs the target's entry action inline. All 23 requirements are traced in `result_codegen.json`. The review is in `post_codegen.{md,json}`.\n\n## Decisions the requirements did not settle\n\n- **Sensor no-reading default:** 1000.0 m. Negative, NaN or out-of-range readings also count as \"no reading\".\n- **Actuator before the first command:** (0, 0).\n- **Move:** one record with two real components, emitted via `actuator.apply(new OutputEvent.Move(...))`.\n- **Power-up entry:** `Move(moveVel, 0)` is issued in the constructor, since `step()` carries transitions only.\n- **Moving \u2192 Turning:** the `Obstacle` trigger *and* the `obstacleDetected` guard, because SR-Beh2 and SR-GP1 each state one of them.\n- **Turning priority:** endTask, then the timed return, then `tick && !turnDurationElapsed`. Otherwise a tick every cycle would block the return to Moving. Tick self-loops perform no action and do not reset the clock.\n- **Clock:** a framework-advanced clock. The controller field is named `timer` because `clock` is reserved.\n- **Unhandled events:** obstacle in Turning and every event in Final are ignored. Final is terminal, and no transitions were invented.\n\n## Unresolved\n\n- `OBSTACLE_THRESHOLD = 0.5` will be rounded up to 1 in the model's constants interface. The extracted guard is therefore coarser than the Java.\n- I don't know whether the extractor types a two-component event record, or keeps an output call made in the constructor. If either fails, the fallbacks are listed in `post_codegen`."
+}

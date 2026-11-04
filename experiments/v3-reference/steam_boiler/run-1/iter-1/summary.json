@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 1,
+  "iteration": 1,
+  "recorded_utc": "2026-11-02 17:20:08",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r16-run1-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run1",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1108,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "failed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "failed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Steam Boiler, run 1: iteration summary\n\n## What was written and why\n- The scaffold held no Java, so none was deleted.\n- `SteamBoilerController` contains the five modes. Each mode's transitions are triggered by the per-cycle `Transmission` event, so no transition is internal, and each mode's guards are exclusive and exhaustive.\n- The controller's state is the mode plus three initialisation flags: plant waiting, valve open, PROGRAM_READY sent.\n- `BoilerSensor` holds the analysed quantities the controller reads.\n- `PlantMonitor` (Java only) handles message reception, the STOP count, all failure detection, unit status, the estimate bounds, and the announcement and acknowledgement messages.\n- `BoilerActuator` collects output messages; `SteamBoilerProgram` runs one cycle per call.\n\n## Decisions the requirements left open\n- **Constants (invented):** C=1000, M1=150, M2=850, N1=400, N2=600, W=25, P=10, U1=U2=2.\n- **Regulation:** bang-bang on all four pumps. Rescue uses the estimate's midpoint. A cycle that changes mode sends only MODE.\n- **Risk:** worst-case bounds for the next cycle. The minimum counts only pumps known to pour. The maximum counts running pumps, unless the cycle's branch closes them.\n- **Before STEAM_BOILER_WAITING:** only STOP\u00d73, transmission failure, or a premature PHYSICAL_UNITS_READY can end initialisation.\n- **Emergency stop:** MODE is sent once; then the program stops (SB-Beh22 over SB-Beh24).\n- **Rescue:** any pump-controller or steam failure makes it impossible, and a level failure then goes straight to emergency stop.\n- **Aberrant messages:** duplicate or missing data, a bad pump number, unexpected repairs or acknowledgements, initialisation messages elsewhere.\n- **Initialisation:** pump 1 fills. The drain rate is unknown, so the lower level bound is dropped while the valve is open.\n- **MODE(m) payload:** a separate `OperatingMode` enum.\n\n## Unresolved\n- Detection and the acknowledgement protocol (SB-FR1\u2013FR7, SB-V9) are outside the extracted state machine, so the verifiers do not cover them."
+}

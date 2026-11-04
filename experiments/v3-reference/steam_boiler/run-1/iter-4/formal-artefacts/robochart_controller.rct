@@ -1,0 +1,204 @@
+diagram SteamBoilerController
+
+enumeration PumpPosition { PUMP_OFF PUMP_ON }
+enumeration WaterFlow { NO_FLOW FLOW }
+enumeration OperatingMode { INITIALISATION_MODE NORMAL_MODE DEGRADED_MODE RESCUE_MODE EMERGENCY_STOP_MODE }
+
+datatype PumpControlReading {
+	controllerIndex : int
+	observation : WaterFlow
+}
+
+datatype PumpReading {
+	pumpIndex : int
+	position : PumpPosition
+}
+
+interface Inputs {
+	event transmission
+}
+
+interface Outputs {
+	event mode
+	event programReady
+}
+
+interface Sensors {
+	var startUpAbort : boolean
+	var startUpLevelReached : boolean
+	var unitsReady : boolean
+	var emergencyCause : boolean
+	var levelFailure : boolean
+	var unitFailure : boolean
+	var estimateUnreliable : boolean
+	var plantWaiting : boolean
+	var levelBelowNormal : boolean
+	var levelAboveNormal : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var programReadySent : boolean = false
+}
+
+interface Constants {
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state EMERGENCY_STOP {
+		entry send mode
+	}
+	state RESCUE {
+		entry send mode
+	}
+	state DEGRADED {
+		entry send mode
+	}
+	state NORMAL {
+		entry send mode
+	}
+	state INITIALISATION {
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALISATION
+	}
+	transition t1 {
+		from INITIALISATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition startUpAbort
+	}
+	transition t2 {
+		from INITIALISATION
+		to INITIALISATION
+		trigger transmission
+		condition not ( startUpAbort ) /\ startUpLevelReached /\ not ( programReadySent )
+		action programReadySent = true ; send programReady ; send mode
+	}
+	transition t3 {
+		from INITIALISATION
+		to INITIALISATION
+		trigger transmission
+		condition not ( startUpAbort ) /\ programReadySent /\ not ( unitsReady )
+		action send programReady ; send mode
+	}
+	transition t4 {
+		from INITIALISATION
+		to NORMAL
+		trigger transmission
+		condition not ( startUpAbort ) /\ programReadySent /\ unitsReady /\ not ( unitFailure )
+	}
+	transition t5 {
+		from INITIALISATION
+		to DEGRADED
+		trigger transmission
+		condition not ( startUpAbort ) /\ programReadySent /\ unitsReady /\ unitFailure
+	}
+	transition t6 {
+		from INITIALISATION
+		to INITIALISATION
+		trigger transmission
+		action send mode
+	}
+	transition t7 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition emergencyCause \/ levelFailure /\ estimateUnreliable
+	}
+	transition t8 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition not ( emergencyCause ) /\ levelFailure /\ not ( estimateUnreliable )
+	}
+	transition t9 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( emergencyCause ) /\ not ( levelFailure ) /\ unitFailure
+	}
+	transition t10 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+	}
+	transition t11 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition emergencyCause \/ levelFailure /\ estimateUnreliable
+	}
+	transition t12 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition not ( emergencyCause ) /\ levelFailure /\ not ( estimateUnreliable )
+	}
+	transition t13 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( emergencyCause ) /\ not ( levelFailure ) /\ not ( unitFailure )
+	}
+	transition t14 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+	}
+	transition t15 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition emergencyCause \/ estimateUnreliable
+	}
+	transition t16 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( emergencyCause ) /\ not ( estimateUnreliable ) /\ not ( levelFailure ) /\ not ( unitFailure )
+	}
+	transition t17 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( emergencyCause ) /\ not ( estimateUnreliable ) /\ not ( levelFailure ) /\ unitFailure
+	}
+	transition t18 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+	}
+	transition t19 {
+		from EMERGENCY_STOP
+		to EMERGENCY_STOP
+		trigger transmission
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmission to stm_ref0 on transmission
+	connection stm_ref0 on mode to SteamBoilerController_Ctrl on mode
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmission
+		event mode
+		event programReady
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmission to ctrl_ref0 on transmission
+	connection ctrl_ref0 on mode to SteamBoilerController_Platform on mode
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+}
+

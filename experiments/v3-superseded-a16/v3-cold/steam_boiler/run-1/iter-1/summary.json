@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 1,
+  "iteration": 1,
+  "recorded_utc": "2026-11-02 11:48:55",
+  "infrastructure_sha": "d714365c485f8f6836bb3dee20e2c7a753e8afdd",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c15-run1-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run1",
+  "files": {
+    "java": 14,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1238,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 1 summary: steam_boiler\n\n**Written.** 14 Java files under `steam_boiler/`. One controller, `SteamBoilerController.step`, runs once per cycle on an `InputEvent.Transmission` trigger, since SB-V3 makes a cycle's messages simultaneous. `BoilerSensor` receives each transmission and exposes cached results as zero-argument getters: STOP count, transmission failure, unit status, q, v, p, level bounds and worst-case levels. The profile restricts guards to sensor calls and constants. `PumpMonitor` and `UnitStatus` implement FR1\u2013FR4, FR6 and FR7. `SteamBoilerProgram` runs receive \u2192 analyse \u2192 step \u2192 transmit. Each guard excludes the higher-priority guards (FR8). The trace covers all 53 requirements.\n\n**Decisions the requirements leave open.**\n- I invented C, M1, M2, N1, N2, W, U1, U2 and P. Every constant used in a guard is an integer.\n- Initialization uses four controller states (waiting, filling, draining, ready), all reporting MODE(initialization). The MODE payload is a separate five-value enum.\n- Pumps switch as a group. All four open at start-up (\"a pump\"), and regulation is bang-bang on N1/N2 (rescue uses the estimate's midpoint).\n- Level risk is judged one cycle ahead: worst-case steam, no guaranteed pump water, start-up latency respected.\n- Aberrant messages: PHYSICAL_UNITS_READY before PROGRAM_READY, start-up messages after initialization, unsolicited acknowledgements or repairs, and invalid pump numbers.\n- One failed pump controller ends rescue (SB-Beh21).\n- Emergency stop is absorbing and only re-sends MODE (SB-Beh22 vs SB-Beh24).\n- Failure detection starts at STEAM_BOILER_WAITING. The steam-zero check repeats on every later initialization cycle.\n\n**Unresolved.** Failure announcements and repair acknowledgements are generated outside the state machine, so the model lacks them. The valve's drainage rate is unknown (lower bound 0 while open). With these constants, rescue lasts about ten cycles before emergency stop.\n\nNote: the git context the harness attached showed commit subjects from earlier steam_boiler runs. I ran no git history commands."
+}

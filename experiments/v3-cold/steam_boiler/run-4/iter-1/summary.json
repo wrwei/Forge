@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 4,
+  "iteration": 1,
+  "recorded_utc": "2026-11-03 04:15:44",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c16-run4-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run4",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1153,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "failed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "failed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Steam Boiler, pass 4, iteration 1\n\n## What I wrote\n\n15 Java files under `steam_boiler/`:\n\n- **`SteamBoilerController`**: five modes and 38 transitions, all triggered by one per-cycle `Transmission` event (SB-V3), so no guard-only cycles exist. Guards within a mode are mutually exclusive and ordered emergency, rescue, degraded, regulation (SB-FR8). Each transition sends MODE(m). State: q, v, p, the estimate bounds, and the init flags.\n- **`BoilerSensor`**, with `UnitRecord`, `PumpUnit` and `UnitStatus`: decodes transmissions and judges failures (SB-FR1\u2013FR5). It tracks unit status and acknowledgements (SB-V9), counts successive STOPs (SB-V10) and composes the failure and repair messages (SB-FR6/7).\n- **`BoilerActuator`**: collects the outgoing transmission. **`SteamBoilerProgram`**: runs each cycle.\n- **Events and types**: `InputEvent` and `OutputEvent` (sealed), `ModeValue`, `PumpReading`, `PumpControlReading` and `BoilerConstants`.\n\nThe trace has 221 entries covering all 53 requirements.\n\n## Decisions the requirements left open\n\n- **Constants**: invented C=1000, M1=150, M2=850, N1=400, N2=600, W=10, U1=U2=2, P=5.\n- **Regulation**: all four pumps on below N1, all off above N2. Rescue uses the midpoint of the estimate.\n- **Risk**: judged on the next cycle's worst case. The estimate uses known-pouring pumps, which respects start-up latency.\n- **Untrustworthy estimate**: a level failure while the steam device or a pump controller is out goes directly to emergency stop.\n- **\"Pump-controller units fail\"**: read as any one controller failing.\n- **Aberrant messages**: read strictly, e.g. a late PHYSICAL_UNITS_READY, an unexpected acknowledgement, or a repair notice for a sound unit.\n- **Start-up**: pumps assumed off. A missing reading defaults to 0.\n- **Emergency stop**: terminal.\n\n## Unresolved\n\nThe per-unit protocol (SB-FR6/7, SB-V9) is outside the controller's state machine, so the model abstracts it. Model state includes five real variables whose CSP ranges I cannot predict."
+}

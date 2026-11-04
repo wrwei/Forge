@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 4,
+  "iteration": 3,
+  "recorded_utc": "2026-10-31 19:29:59",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r7-run4-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run4",
+  "files": {
+    "java": 22,
+    "java_test": 0,
+    "formal_artefacts": 80,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 665,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY: chemical_detector, run 4\n\n**What I wrote.** 22 files in `chemical_detector`, with two controllers (CD-ARCH2). `GasAnalysisController` has the modes Reading, Analysis, NoGas, GasDetected and Concluded. `MovementController` has the seven movement states. Turn, stop and resume are `OutputEvent` records of the gas-analysis subsystem and `InputEvent` records of the movement subsystem (shared events). `GasSensorArray` holds analysis, intensity, location and goreq. `VehicleSensor` holds the odometer. `Clock` drives the evasion timer.\n\n**Decisions the requirements left open:**\n- Constants: THR=3.0, LV=1.0, EVADE_TIME=2, STUCK_PERIOD=4, STUCK_DIST=1.0, OUT_PERIOD=2.\n- Variables start at noGas, 0.0, Front and front. Each is overwritten before it is read.\n- In analysis, a sample \"indicates\" the target when it is the target Chem with positive intensity. angle(x) follows the Angle declaration order.\n- The odometer is a sampled sensor method, not an event.\n- Waiting's during action randomWalk runs on each transition into Waiting, but not on the initial entry.\n- Found and Concluded are terminal modes.\n- The GasSensor record is named `GasSample`, to keep \"sensor\" out of its name.\n- The waits use `MovementActuator.pause`.\n- No Java class connects the two controllers.\n\n**Iteration 2.** FDR4 failed to parse and Isabelle failed on type coercion. The cause was the operation calls in `step`: the pipeline named all four operations after their method, `compute`, merged their bodies, and turned their parameters into untyped constants. I believe this is a pipeline limitation. As a workaround, the controller sends the Vehicle commands as output events (`move!a`, `halt`, `randomWalk`, `shortRandomWalk`, `changeDirection!l`). FDR4 then passed.\n\n**Iteration 3.** Isabelle still injected the bodies of operations with parameters into every controller's Init. Every `compute()` is now parameterless, and `MovementActuator` records the commanded velocity and heading.\n\n**Unresolved.** Taken literally, CD-Fn2 takes the maximum over all chemicals. All points are in `post_codegen.md`."
+}

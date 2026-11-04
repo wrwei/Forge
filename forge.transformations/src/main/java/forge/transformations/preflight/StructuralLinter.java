@@ -227,8 +227,8 @@ public class StructuralLinter {
                                 + "but declares no named boolean predicates above the if-else chain",
                         "Extract each guard into a named boolean local variable declared at the top "
                         + "of step(), before the outer if-else chain. Use descriptive names that "
-                        + "encode the sensor function and threshold (e.g. 'boolean velBelowLimit = "
-                        + "calcVel.speed() <= MAX_SPEED;'). See java_codegen_rules.txt "
+                        + "encode the sensor function and threshold (e.g. 'boolean waitAboveLimit = "
+                        + "sensor.waitingTime() > MAX_WAIT;'). See java_codegen_rules.txt "
                         + "'NAMED BOOLEAN PREDICATES'.");
             }
         }
@@ -340,9 +340,8 @@ public class StructuralLinter {
                         + "the Java: either give the later branch an explicit guard that "
                         + "excludes the earlier branch's case, or place the triggerless "
                         + "branch FIRST so the ordinary priority-negation synthesis applies. "
-                        + "Witness: LreController.java CAM block (reqOCM then "
-                        + "cdaAboveOrAtMinSafe) — 128 of 8192 LRE abstract states admit two "
-                        + "operations where the Java is deterministic.");
+                        + "Otherwise the model admits two operations in states where the "
+                        + "Java is deterministic.");
             }
 
             if (!precedingCores.isEmpty()) {
@@ -360,12 +359,11 @@ public class StructuralLinter {
                                     + String.join(", ", missing),
                             "Branches below a triggerless guarded branch must textually carry "
                             + "the negation of each preceding triggerless guard (e.g. "
-                            + "'else if (hcmActive && !camActive)'). Relying on the implicit "
+                            + "'else if (queueLong && !waitAboveLimit)'). Relying on the implicit "
                             + "priority of else-if produces a formal model whose operations "
                             + "can fire nondeterministically — the extracted preconditions "
                             + "are not mutually exclusive. Conjoin '&& !<guard>' for each "
-                            + "guard listed above. See the hand-written LRE convention in "
-                            + "reference-runs/lre/java/controller/LreController.java.");
+                            + "guard listed above.");
                 }
             }
 

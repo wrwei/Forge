@@ -1,0 +1,373 @@
+diagram SteamBoilerController
+
+enumeration FlowObservation { NO_FLOW WATER_FLOWING }
+enumeration PumpPosition { PUMP_OFF PUMP_ON }
+enumeration ValvePosition { VALVE_CLOSED VALVE_OPEN }
+
+datatype FlowReading {
+	pump : int
+	flow : FlowObservation
+}
+
+datatype PumpReading {
+	pump : int
+	position : PumpPosition
+}
+
+interface Inputs {
+	event transmissionReceived
+}
+
+interface Outputs {
+	event sendMode
+	event setValve
+	event stopAllPumps
+	event sendUnitMessages
+	event startFillPump
+	event sendProgramReady
+	event startAllPumps
+}
+
+interface Sensors {
+	var levelReading : real
+	var steamReading : real
+	var pumpThroughput : real
+	var levelEstimateLow : real
+	var levelEstimateHigh : real
+	var successiveStops : int
+	var steamBoilerWaitingSeen : boolean
+	var physicalUnitsReadyReceived : boolean
+	var transmissionFailed : boolean
+	var steamRateNonZero : boolean
+	var levelDeviceOutOfOrder : boolean
+	var otherUnitOutOfOrder : boolean
+	var rescueEstimateUnreliable : boolean
+	var levelAboveNormal : boolean
+	var levelBelowNormal : boolean
+	var levelLimitRisk : boolean
+	var levelHeadingLow : boolean
+	var levelHeadingHigh : boolean
+	var transmissionFault : boolean
+	var plantWaiting : boolean
+	var steamNonZero : boolean
+	var levelFailed : boolean
+	var levelAboveN2 : boolean
+	var levelBelowN1 : boolean
+	var unitsReady : boolean
+	var otherFailed : boolean
+	var limitRisk : boolean
+	var estimateUnreliable : boolean
+	var headingBelowN1 : boolean
+	var headingAboveN2 : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var readyAnnounced : boolean = false
+}
+
+interface Constants {
+	const stopLimit : real = 3
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state EMERGENCY_STOP {
+		entry send sendMode
+	}
+	state RESCUE {
+		entry send sendMode ; send sendUnitMessages
+	}
+	state DEGRADED {
+		entry send sendMode ; send sendUnitMessages
+	}
+	state NORMAL {
+		entry send sendMode ; send sendUnitMessages
+	}
+	state INITIALIZATION {
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStops >= stopLimit
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ transmissionFault
+	}
+	transition t3 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ plantWaiting /\ steamNonZero
+	}
+	transition t4 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ plantWaiting /\ not ( steamNonZero ) /\ levelFailed
+	}
+	transition t5 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ plantWaiting /\ not ( steamNonZero ) /\ not ( levelFailed ) /\ not ( readyAnnounced ) /\ levelAboveN2
+		action send sendMode ; send setValve ; send stopAllPumps ; send sendUnitMessages
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ plantWaiting /\ not ( steamNonZero ) /\ not ( levelFailed ) /\ not ( readyAnnounced ) /\ not ( levelAboveN2 ) /\ levelBelowN1
+		action send sendMode ; send setValve ; send startFillPump ; send sendUnitMessages
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ plantWaiting /\ not ( steamNonZero ) /\ not ( levelFailed ) /\ not ( readyAnnounced ) /\ not ( levelAboveN2 ) /\ not ( levelBelowN1 )
+		action send sendMode ; readyAnnounced = true ; send setValve ; send stopAllPumps ; send sendProgramReady ; send sendUnitMessages
+	}
+	transition t8 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ plantWaiting /\ not ( steamNonZero ) /\ not ( levelFailed ) /\ readyAnnounced /\ unitsReady /\ not ( otherFailed )
+	}
+	transition t9 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ plantWaiting /\ not ( steamNonZero ) /\ not ( levelFailed ) /\ readyAnnounced /\ unitsReady /\ otherFailed
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ plantWaiting /\ not ( steamNonZero ) /\ not ( levelFailed ) /\ readyAnnounced /\ not ( unitsReady )
+		action send sendMode ; send setValve ; send stopAllPumps ; send sendProgramReady ; send sendUnitMessages
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		action send sendMode
+	}
+	transition t12 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStops >= stopLimit
+	}
+	transition t13 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ transmissionFault
+	}
+	transition t14 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ limitRisk
+	}
+	transition t15 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ levelFailed /\ estimateUnreliable
+	}
+	transition t16 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ levelFailed /\ not ( estimateUnreliable )
+	}
+	transition t17 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ not ( levelFailed ) /\ otherFailed
+	}
+	transition t18 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ not ( levelFailed ) /\ not ( otherFailed ) /\ headingBelowN1
+		action send sendMode ; send startAllPumps ; send sendUnitMessages
+	}
+	transition t19 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ not ( levelFailed ) /\ not ( otherFailed ) /\ not ( headingBelowN1 ) /\ headingAboveN2
+		action send sendMode ; send stopAllPumps ; send sendUnitMessages
+	}
+	transition t20 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+	}
+	transition t21 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStops >= stopLimit
+	}
+	transition t22 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ transmissionFault
+	}
+	transition t23 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ limitRisk
+	}
+	transition t24 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ levelFailed /\ estimateUnreliable
+	}
+	transition t25 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ levelFailed /\ not ( estimateUnreliable )
+	}
+	transition t26 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ not ( levelFailed ) /\ not ( otherFailed )
+	}
+	transition t27 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ not ( levelFailed ) /\ otherFailed /\ headingBelowN1
+		action send sendMode ; send startAllPumps ; send sendUnitMessages
+	}
+	transition t28 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( limitRisk ) /\ not ( levelFailed ) /\ otherFailed /\ not ( headingBelowN1 ) /\ headingAboveN2
+		action send sendMode ; send stopAllPumps ; send sendUnitMessages
+	}
+	transition t29 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+	}
+	transition t30 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStops >= stopLimit
+	}
+	transition t31 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ transmissionFault
+	}
+	transition t32 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ estimateUnreliable
+	}
+	transition t33 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( estimateUnreliable ) /\ limitRisk
+	}
+	transition t34 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( estimateUnreliable ) /\ not ( limitRisk ) /\ not ( levelFailed ) /\ not ( otherFailed )
+	}
+	transition t35 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( estimateUnreliable ) /\ not ( limitRisk ) /\ not ( levelFailed ) /\ otherFailed
+	}
+	transition t36 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( estimateUnreliable ) /\ not ( limitRisk ) /\ levelFailed /\ headingBelowN1
+		action send sendMode ; send startAllPumps ; send sendUnitMessages
+	}
+	transition t37 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopLimit ) /\ not ( transmissionFault ) /\ not ( estimateUnreliable ) /\ not ( limitRisk ) /\ levelFailed /\ not ( headingBelowN1 ) /\ headingAboveN2
+		action send sendMode ; send stopAllPumps ; send sendUnitMessages
+	}
+	transition t38 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+	}
+	transition t39 {
+		from EMERGENCY_STOP
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionReceived to stm_ref0 on transmissionReceived
+	connection stm_ref0 on sendMode to SteamBoilerController_Ctrl on sendMode
+	connection stm_ref0 on setValve to SteamBoilerController_Ctrl on setValve
+	connection stm_ref0 on stopAllPumps to SteamBoilerController_Ctrl on stopAllPumps
+	connection stm_ref0 on sendUnitMessages to SteamBoilerController_Ctrl on sendUnitMessages
+	connection stm_ref0 on startFillPump to SteamBoilerController_Ctrl on startFillPump
+	connection stm_ref0 on sendProgramReady to SteamBoilerController_Ctrl on sendProgramReady
+	connection stm_ref0 on startAllPumps to SteamBoilerController_Ctrl on startAllPumps
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionReceived
+		event sendMode
+		event setValve
+		event stopAllPumps
+		event sendUnitMessages
+		event startFillPump
+		event sendProgramReady
+		event startAllPumps
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionReceived to ctrl_ref0 on transmissionReceived
+	connection ctrl_ref0 on sendMode to SteamBoilerController_Platform on sendMode
+	connection ctrl_ref0 on setValve to SteamBoilerController_Platform on setValve
+	connection ctrl_ref0 on stopAllPumps to SteamBoilerController_Platform on stopAllPumps
+	connection ctrl_ref0 on sendUnitMessages to SteamBoilerController_Platform on sendUnitMessages
+	connection ctrl_ref0 on startFillPump to SteamBoilerController_Platform on startFillPump
+	connection ctrl_ref0 on sendProgramReady to SteamBoilerController_Platform on sendProgramReady
+	connection ctrl_ref0 on startAllPumps to SteamBoilerController_Platform on startAllPumps
+}
+

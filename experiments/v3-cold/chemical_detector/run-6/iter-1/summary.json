@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 6,
+  "iteration": 1,
+  "recorded_utc": "2026-10-30 16:21:10",
+  "infrastructure_sha": "2db4c03116e00b82c1c4186c171a50ad26574e33",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c-run6-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run6",
+  "files": {
+    "java": 19,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 617,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 1: chemical_detector, cold pass 6\n\nNo Java was present at the start. I wrote 19 files under `chemical_detector/`:\n\n- `GasAnalysisController` (Reading, Analysis, NoGas, GasDetected, Concluded) and `MovementController` (Waiting, Going, Found, Avoiding, TryingAgain, AvoidingAgain, GettingOut), each a profile `step`;\n- domain types; sealed `InputEvent`/`OutputEvent`; constants;\n- `ChemicalSensor` (analysis, intensity, location, goreq), `OdometerSensor`, `Clock`;\n- `VehicleActuator`, `CommandActuator`, and a `ChemicalDetectorSystem` that wires the controllers.\n\nturn/stop/resume appear in both event interfaces under the same names, so they become shared events. The trace covers all 81 requirements. The code compiles (Java 17), and a scenario smoke test behaved as specified.\n\n## Decisions the requirements left open\n\n- **Constants:** THR=2, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=2, STUCK_DIST=1.0, OUT_PERIOD=1. All integral and small, so every guard outcome stays reachable.\n- **Initial values:** sts=noGas, ins=0, anl/a=Front, l=front, d0=d1=0, T=0.\n- **Types:** Intensity is nat; Chem is a record with a nat id.\n- **analysis:** gasD when some value is the target chemical (a constructor argument) with i>0.\n- **Position to Angle:** position p is the p-th Angle (Left, Right, Back, Front). An empty reading gives 0 and Front.\n- **Odometer:** a sampled sensor, not an event.\n- **move, randomWalk, shortRandomWalk, changeDirection:** actuator methods, because they take arguments; waits are `pause(n)`.\n- **Waiting's during randomWalk():** issued on every transition into Waiting, so the robot does not walk before the first resume or turn.\n- **Evasion timer:** reset on both transitions into Avoiding.\n- **Final states:** Found is terminal; gas analysis ends in Concluded.\n\n## Unresolved\n\n- CD-DC1 does not hold literally for CD-MV-Beh9 or the two initial transitions.\n- NoGas\u2192Reading has no trigger and no guard, as CD-GA-Beh3 requires; the profile discourages that form.\n- Gas readings that arrive outside Reading are not buffered.\n\nDetails are in `post_codegen.md`."
+}

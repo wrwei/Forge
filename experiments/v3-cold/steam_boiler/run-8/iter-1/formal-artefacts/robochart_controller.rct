@@ -1,0 +1,411 @@
+diagram SteamBoilerController
+
+datatype FlowReading {
+	controllerIndex : int
+	waterFlowing : boolean
+}
+
+datatype PumpReading {
+	pumpIndex : int
+	pumpOpen : boolean
+}
+
+interface Inputs {
+	event transmission
+}
+
+interface Outputs {
+	event mode
+	event valve
+	event closePump : int
+	event openPump : int
+	event programReady
+}
+
+interface Sensors {
+	var successiveStopCount : int
+	var plantWaiting : boolean
+	var transmissionFailed : boolean
+	var steamRate : real
+	var levelDeviceFailed : boolean
+	var unitsReady : boolean
+	var steamDeviceFailed : boolean
+	var pumpFailed : boolean
+	var pumpControlFailed : boolean
+	var valveIsOpen : boolean
+	var waterLevel : real
+	var openPumpCount : int
+	var levelLowerBound : real
+	var maximumSteamOutflow : real
+	var levelUpperBound : real
+	var minimumSteamOutflow : real
+	var maximumPumpInflow : real
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+}
+
+interface Constants {
+	const stopRepetitions : real = 3
+	const maxNormalLevel : real = 600
+	const minNormalLevel : real = 400
+	const minLimitLevel : real = 100
+	const maxLimitLevel : real = 900
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state NORMAL {
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send mode
+	}
+	state DEGRADED {
+	}
+	state RESCUE {
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStopCount >= stopRepetitions
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed)
+	}
+	transition t3 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ unitsReady /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ valveIsOpen
+		action send mode ; send valve
+	}
+	transition t4 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ unitsReady /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ not ( valveIsOpen )
+		action send mode
+	}
+	transition t5 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ unitsReady /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ valveIsOpen
+		action send mode ; send valve
+	}
+	transition t6 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ unitsReady /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ not ( valveIsOpen )
+		action send mode
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ not ( unitsReady ) /\ waterLevel > maxNormalLevel /\ not ( valveIsOpen )
+		action send mode ; send valve ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ not ( unitsReady ) /\ waterLevel > maxNormalLevel /\ valveIsOpen
+		action send mode
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ not ( unitsReady ) /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel ) /\ valveIsOpen
+		action send mode ; send valve ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ not ( unitsReady ) /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel ) /\ not ( valveIsOpen )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ not ( unitsReady ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel ) /\ valveIsOpen
+		action send mode ; send valve ; send programReady
+	}
+	transition t12 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ not ( unitsReady ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel ) /\ not ( valveIsOpen ) /\ openPumpCount > 0
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady
+	}
+	transition t13 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting /\ (transmissionFailed \/ steamRate != 0 \/ levelDeviceFailed) ) /\ plantWaiting /\ not ( unitsReady ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel ) /\ not ( valveIsOpen ) /\ not ( openPumpCount > 0 )
+		action send mode ; send programReady
+	}
+	transition t14 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions ) /\ not ( plantWaiting )
+		action send mode
+	}
+	transition t15 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed)
+	}
+	transition t16 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ levelDeviceFailed /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t17 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ levelDeviceFailed /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t18 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ levelDeviceFailed /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+	transition t19 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t20 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t21 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+	transition t22 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t23 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t24 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+	transition t25 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed)
+	}
+	transition t26 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ levelDeviceFailed /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t27 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ levelDeviceFailed /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t28 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ levelDeviceFailed /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+	transition t29 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t30 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t31 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+	transition t32 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t33 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t34 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ levelDeviceFailed /\ (steamDeviceFailed \/ pumpControlFailed) ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+	transition t35 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed
+	}
+	transition t36 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t37 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t38 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+	transition t39 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t40 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t41 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ not ( levelDeviceFailed ) /\ not ( not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( pumpFailed ) /\ not ( pumpControlFailed ) ) /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+	transition t42 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ levelDeviceFailed /\ waterLevel > maxNormalLevel
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t43 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ levelDeviceFailed /\ waterLevel < minNormalLevel /\ not ( waterLevel > maxNormalLevel )
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t44 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopRepetitions \/ transmissionFailed \/ levelLowerBound - maximumSteamOutflow <= minLimitLevel \/ waterLevel > maxNormalLevel /\ levelUpperBound - minimumSteamOutflow >= maxLimitLevel \/ not ( waterLevel > maxNormalLevel ) /\ levelUpperBound + maximumPumpInflow - minimumSteamOutflow >= maxLimitLevel \/ steamDeviceFailed \/ pumpControlFailed ) /\ levelDeviceFailed /\ not ( waterLevel < minNormalLevel ) /\ not ( waterLevel > maxNormalLevel )
+		action send mode
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmission to stm_ref0 on transmission
+	connection stm_ref0 on mode to SteamBoilerController_Ctrl on mode
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmission
+		event mode
+		event valve
+		event closePump : int
+		event openPump : int
+		event programReady
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmission to ctrl_ref0 on transmission
+	connection ctrl_ref0 on mode to SteamBoilerController_Platform on mode
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+}
+

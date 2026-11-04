@@ -1,0 +1,130 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 81 requirements are implemented and traced in result_codegen.json (19 Java files). Two controllers: GasAnalysisController (Reading, Analysis, NoGas, GasDetected, Concluded) and MovementController (Waiting, Going, Found, Avoiding, TryingAgain, AvoidingAgain, GettingOut), communicating through the shared events turn, stop and resume. The issues below are values the requirements leave open and design choices made to fit the Java profile; none is a known defect.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Values of the six configuration constants",
+      "raw": "CD-Const1..6 say the constants are configured at startup but give no values. Chosen: THR = 2, LV = 1.0, EVADE_TIME = 1, STUCK_PERIOD = 2, STUCK_DIST = 1.0, OUT_PERIOD = 1. All are whole numbers, so the constants interface does not round them. They are small so that both outcomes of each threshold guard (goreq(ins, THR), since(T) < STUCK_PERIOD, d1 - d0 > STUCK_DIST) remain reachable in a bounded model.",
+      "fix_directive": "If the deployment fixes other values, change them in ChemicalDetectorConstants only; no other code depends on the values.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/ChemicalDetectorConstants.java", "line_start": 11, "line_end": 21, "element": "ChemicalDetectorConstants", "requirement_ids": ["CD-Const1", "CD-Const2", "CD-Const3", "CD-Const4", "CD-Const5", "CD-Const6"]}
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Initial values of the state variables",
+      "raw": "Only gs has a stated initial value (empty, CD-GA-Var1). Chosen: sts = noGas, ins = 0, anl = Front; a = Front, l = front, d0 = d1 = 0.0, T = 0. On every path, each is assigned before it is first read, so the choice has no observable effect.",
+      "fix_directive": "Change the field initialisers if other initial values are required.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java", "line_start": 26, "line_end": 29, "element": "gs, sts, ins, anl", "requirement_ids": ["CD-GA-Var1", "CD-GA-Var2", "CD-GA-Var3", "CD-GA-Var4"]},
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java", "line_start": 24, "line_end": 28, "element": "a, l, d0, d1, T", "requirement_ids": ["CD-MV-Var1", "CD-MV-Var2", "CD-MV-Var3", "CD-MV-Var4", "CD-MV-Clock1"]}
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensing position to Angle mapping, and results for an empty reading",
+      "raw": "CD-DM7 and CD-Fn3 say that a reading's 1-based position maps to a direction through angle(x), but they don't give the map. Chosen: position p maps to the p-th Angle in declaration order (1 Left, 2 Right, 3 Back, 4 Front), cycling for longer arrays. intensity and location require a non-empty reading; for an empty one they return 0 and Front. The controller only calls them after analysis has returned gasD, which implies a non-empty reading.",
+      "fix_directive": "Replace ChemicalSensor.angle with the platform's actual sensor layout.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/sensor/ChemicalSensor.java", "line_start": 43, "line_end": 78, "element": "intensity, location, angle", "requirement_ids": ["CD-Fn2", "CD-Fn3", "CD-DM7"]}
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "What 'indicates the target chemical' means, and where the target is configured",
+      "raw": "CD-Fn1: analysis returns noGas if no reading indicates the target chemical. Interpreted as: gasD if and only if some value has c equal to the target chemical and i > 0. The target Chem is passed to the ChemicalSensor constructor. It is not a model constant, because the requirements name no such constant.",
+      "fix_directive": "If 'indicates' should mean c == target regardless of intensity, drop the i > 0 test in ChemicalSensor.analysis.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/sensor/ChemicalSensor.java", "line_start": 17, "line_end": 35, "element": "ChemicalSensor.analysis", "requirement_ids": ["CD-Fn1"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Representation of Intensity and Chem",
+      "raw": "Java cannot declare an opaque or ordered type alias. Intensity (CD-DM5) is a natural number (int, nat), so thr is a numeric constant, and ordering is done by goreq. Chem (CD-DM4) is a record carrying a nat identifier, compared only by equality.",
+      "fix_directive": "None unless intensities must be real-valued; in that case change GasSensor.i, ins, THR, intensity and goreq to double with @RoboChartType(\"real\").",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/domain/GasSensor.java", "line_start": 11, "line_end": 12, "element": "GasSensor", "requirement_ids": ["CD-DM5", "CD-DM6"]},
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/domain/Chem.java", "line_start": 9, "line_end": 10, "element": "Chem", "requirement_ids": ["CD-DM4"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Odometer read as a sensor, not received as an event",
+      "raw": "CD-Evt3 is typed 'event', but its text says that movement samples the distance into d0 or d1 inside actions (Avoiding entry, and the TryingAgain to AvoidingAgain transition). A step-based controller receives only one event per cycle, so the odometer is the zero-argument sensor method OdometerSensor.distance(), which becomes a sensor variable in the model.",
+      "fix_directive": "None expected; if an explicit odometer event is required, it would need its own transitions, which the requirements do not describe.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/sensor/OdometerSensor.java", "line_start": 6, "line_end": 19, "element": "OdometerSensor.distance", "requirement_ids": ["CD-Evt3", "CD-MV-Var2", "CD-MV-Var3"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Operations as Vehicle actuator methods, waits as pause",
+      "raw": "CD-OP1..4 take arguments (move(lv, a), changeDirection(l)) and compute no result, so they do not fit the profile's compute()-only operation class. They are methods of VehicleActuator, and the controller calls them with arguments. changeDirection's specified mapping (left to Right, right to Left, front to Back, at LV) is implemented in the actuator body, so the model sees changeDirection(l) as an abstract call. wait(evadeTime) and wait(outPeriod) are written as vehicle.pause(n).",
+      "fix_directive": "If changeDirection must be visible in the model, inline it as vehicle.move(LV, f(l)) with a sensor function f from Loc to Angle.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/actuator/VehicleActuator.java", "line_start": 25, "line_end": 61, "element": "move, randomWalk, shortRandomWalk, changeDirection, pause", "requirement_ids": ["CD-OP1", "CD-OP2", "CD-OP3", "CD-OP4", "CD-Const3", "CD-Const6"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Waiting's during action randomWalk() realised on entry",
+      "raw": "CD-MV-FR1 gives Waiting the during action randomWalk(). The profile has no during-action form; every branch performs its target's entry actions inline. randomWalk() is therefore issued on every transition into Waiting, including the resume self-loop. An unbounded random walk continues until a later move supersedes it. One consequence: the initial transition has no action (CD-MV-Beh1), so the robot does not walk until the first resume or turn arrives.",
+      "fix_directive": "If the pipeline supports a during-action form, move vehicle.randomWalk() there.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java", "line_start": 57, "line_end": 59, "element": "step (Waiting, resume)", "requirement_ids": ["CD-MV-FR1", "CD-MV-Beh3", "CD-OP2"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Evasion timer reset and distance samples placed on transitions",
+      "raw": "CD-MV-Clock1 restarts T on entry to Avoiding; CD-MV-Beh7 and Beh17 describe the restart as part of those transitions. T = timer.now() is placed in the action of both transitions into Avoiding, before the entry actions. d0 is sampled in Avoiding's entry actions; d1 is sampled in the TryingAgain to AvoidingAgain transition (CD-MV-Beh16).",
+      "fix_directive": "None; equivalent to an entry reset, because these are the only two transitions into Avoiding.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java", "line_start": 80, "line_end": 88, "element": "step (Going, obstacle)", "requirement_ids": ["CD-MV-Beh7", "CD-MV-Clock1", "CD-MV-Var2", "CD-MV-FR4"]},
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java", "line_start": 121, "line_end": 125, "element": "step (TryingAgain, obstacle)", "requirement_ids": ["CD-MV-Beh16", "CD-MV-Var3"]},
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java", "line_start": 136, "line_end": 146, "element": "step (AvoidingAgain)", "requirement_ids": ["CD-MV-Beh17", "CD-MV-Beh18", "CD-Const4", "CD-Const5"]}
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Final states: Found is terminal, and gas analysis ends in Concluded",
+      "raw": "CD-MV-Beh9 is named Found_to_Final, but its text only says that movement stays halted in Found. Found is implemented as a terminal state with no outgoing transition, so Beh9 has no transition of its own. Likewise, the initial transitions (CD-GA-Beh1, CD-MV-Beh1) are field initialisers. CD-DC1 ('each behavioural requirement maps to exactly one transition') therefore does not hold literally for these three. Gas analysis's final state (CD-GA-Beh6) is the terminal mode Concluded.",
+      "fix_directive": "If a separate final state after Found is required, add a terminal mode and an unconditional Found to final transition.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java", "line_start": 90, "line_end": 92, "element": "step (Found)", "requirement_ids": ["CD-MV-Beh9", "CD-MV-FR3", "CD-DC1"]},
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java", "line_start": 70, "line_end": 82, "element": "step (GasDetected, Concluded)", "requirement_ids": ["CD-GA-Beh6", "CD-GA-Beh7"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "NoGas to Reading has neither trigger nor guard",
+      "raw": "CD-GA-Beh3 requires NoGas to go to Reading with no guard and no trigger, so the NoGas block is the bare assignment currentMode = Reading. This is not a self-loop. Every cycle through it includes the gas event that leads out of Reading, so no divergence is expected.",
+      "fix_directive": "If the extractor does not accept a mode block without an inner if, report it as a pipeline limitation; adding an artificial guard would contradict CD-GA-Beh3.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java", "line_start": 67, "line_end": 68, "element": "step (NoGas)", "requirement_ids": ["CD-GA-Beh3", "CD-GA-FR1"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Shared events and the Java-side wiring",
+      "raw": "turn, stop and resume are records in both OutputEvent (sent by gas analysis through CommandActuator.apply) and InputEvent (received by movement), with the same names so that they become shared events. flag is sent to the Vehicle through VehicleActuator.apply. ChemicalDetectorSystem.cycle passes each cycle's platform event to both controllers, then forwards the issued commands to movement. A gas reading that arrives while gas analysis is not in Reading is not buffered, whereas in the model the Vehicle would wait.",
+      "fix_directive": "None for the model. A deployment that cannot drop readings should step gas analysis until it reaches Reading before delivering the next reading.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/ChemicalDetectorSystem.java", "line_start": 42, "line_end": 69, "element": "cycle, toMovementEvent", "requirement_ids": ["CD-ARCH1", "CD-ARCH2", "CD-Evt4", "CD-Evt5", "CD-Evt6"]}
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Halt command in Found",
+      "raw": "CD-MV-FR3 and CD-OP1: the halt is move(0.0, Angle.Front), issued after the flag event on every transition into Found.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {"java_file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java", "line_start": 53, "line_end": 56, "element": "step (Waiting, stop)", "requirement_ids": ["CD-MV-FR3", "CD-Evt7", "CD-OP1"]}
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile, coverage, profile check, transformations, verifiers). If a phase rejects one of the forms flagged above, NoGas's unconditional transition or the actuator-method operations, read its report against these issues."
+}

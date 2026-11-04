@@ -1,0 +1,51 @@
+{
+  "study": "sranger",
+  "run": 9,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 19:46:25",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run9-sranger",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-sranger-run9",
+  "files": {
+    "java": 9,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 208,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# SRanger \u2014 pass 9, iteration 1\n\nNo Java was present before writing.\n\n## What I wrote\n\nNine files under `sranger/`: the `RoboChartType` annotation; sealed `InputEvent` (`Obstacle`, `Tick`, `EndTask`) and `OutputEvent` (`Move(lv, av)`); `Sensor.distance()`; `Actuator.apply()` storing the last lv/av; a framework-advanced `Clock`; `SRangerMode` (MOVING, TURNING, FINAL); `SRangerConstants` (1.0, 2.0, 0.5, 2.0); and `SRangerController`, whose single `step()` has two predicates (`obstacleDetected`, `turnDurationElapsed`) and a two-level if-else with seven transitions, one per SR-Beh requirement. I also wrote the trace (`result_codegen.json`) and the review (`post_codegen.{md,json}`, 11 issues).\n\n## Decisions the requirements left open\n\n- Moving\u2192Turning needs both the obstacle event and `obstacleDetected` (SR-Beh2 plus SR-GP1).\n- Priority: endTask comes first in both modes. In Turning the timeout outranks tick, and the tick branch conjoins `!turnDurationElapsed`, so regular ticks cannot keep the robot turning forever.\n- The tick self-loops do nothing (SR-Beh4/7): no Move is reissued and the timer is not restarted.\n- The power-up Move(moveVel, 0) is issued in the constructor, since no transition enters the initial mode.\n- No-reading default: 1000.0 m. Negative or NaN readings count as missing.\n- Before any command, the actuator reports (0, 0).\n- Move has two real components, not one datatype.\n- The clock field is named `timer` (`clock` is reserved).\n- Final ignores all events.\n\n## Unresolved\n\n- `obstacleThreshold` = 0.5 is rounded up to 1 in the model's constants, so the model's obstacle guard is looser than the Java's.\n- In RoboChart a self-transition re-runs the state's entry action. If the extraction puts Turning's clock reset into its entry action, a tick restarts the timer in the model but not in the Java.\n- The constructor-time initial Move may not appear in the extracted model."
+}

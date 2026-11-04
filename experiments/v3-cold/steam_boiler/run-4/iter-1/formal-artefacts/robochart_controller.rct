@@ -1,0 +1,379 @@
+diagram SteamBoilerController
+
+enumeration ModeValue { MODE_INITIALIZATION MODE_NORMAL MODE_DEGRADED MODE_RESCUE MODE_EMERGENCY_STOP }
+enumeration UnitStatus { SOUND FAILED FAILED_ACKNOWLEDGED }
+
+datatype PumpControlReading {
+	controlIndex : int
+	waterFlowing : boolean
+}
+
+datatype PumpReading {
+	pumpIndex : int
+	pumpOn : boolean
+}
+
+interface Inputs {
+	event transmission
+}
+
+interface Outputs {
+	event modeAnnouncement
+	event valve
+	event closePump : int
+	event openPump : int
+	event programReady
+}
+
+interface Sensors {
+	var levelMessages : int
+	var receivedLevel : real
+	var steamMessages : int
+	var receivedSteam : real
+	var stopReceived : boolean
+	var waitingReceived : boolean
+	var readyReceived : boolean
+	var malformed : boolean
+	var stopRun : int
+	var faultFound : boolean
+	var levelOut : boolean
+	var steamOut : boolean
+	var pumpOut : boolean
+	var controlOut : boolean
+	var knownRate : real
+	var possibleRate : real
+	var successiveStopCount : int
+	var transmissionFailed : boolean
+	var unitsReadyNow : boolean
+	var steamValue : real
+	var levelUnitFailed : boolean
+	var levelValue : real
+	var flowingThroughput : real
+	var boilerWaitingPresent : boolean
+	var steamUnitFailed : boolean
+	var pumpUnitFailed : boolean
+	var pumpControlUnitFailed : boolean
+	var openThroughput : real
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var levelReading : real = 0
+	var steamReading : real = 0
+	var pumpThroughput : real = 0
+	var levelLow : real = 0
+	var levelHigh : real = 1000
+	var boilerWaiting : boolean = false
+	var readySent : boolean = false
+	var valveOpen : boolean = false
+}
+
+interface Constants {
+	const stopLimit : real = 3
+	const normalN2 : real = 600
+	const normalN1 : real = 400
+	const cycleSeconds : real = 5
+	const steamRiseMargin : real = 25
+	const limitM1 : real = 150
+	const steamMaxOutflow : real = 50
+	const pumpsMaxInflow : real = 100
+	const steamFallMargin : real = 25
+	const limitM2 : real = 850
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state RESCUE {
+		entry send modeAnnouncement ; levelLow = levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin ; levelHigh = levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin ; steamReading = steamValue ; pumpThroughput = flowingThroughput
+	}
+	state DEGRADED {
+		entry send modeAnnouncement ; levelReading = levelValue ; steamReading = steamValue ; levelLow = levelValue ; levelHigh = levelValue ; pumpThroughput = flowingThroughput
+	}
+	state NORMAL {
+		entry send modeAnnouncement ; levelReading = levelValue ; steamReading = steamValue ; levelLow = levelValue ; levelHigh = levelValue ; pumpThroughput = flowingThroughput
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send modeAnnouncement
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStopCount >= stopLimit
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (transmissionFailed \/ unitsReadyNow /\ not ( readySent )) /\ not ( successiveStopCount >= stopLimit )
+	}
+	transition t3 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition boilerWaiting /\ steamValue != 0 /\ not ( successiveStopCount >= stopLimit ) /\ not ( transmissionFailed \/ unitsReadyNow /\ not ( readySent ) )
+	}
+	transition t4 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition boilerWaiting /\ levelUnitFailed /\ not ( steamValue != 0 ) /\ not ( successiveStopCount >= stopLimit ) /\ not ( transmissionFailed \/ unitsReadyNow /\ not ( readySent ) )
+	}
+	transition t5 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmission
+		condition boilerWaiting /\ not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ unitsReadyNow /\ not ( readySent ) \/ (boilerWaiting \/ boilerWaitingPresent) /\ (steamValue != 0 \/ levelUnitFailed) ) /\ unitsReadyNow /\ not ( steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed )
+	}
+	transition t6 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmission
+		condition boilerWaiting /\ not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ unitsReadyNow /\ not ( readySent ) \/ (boilerWaiting \/ boilerWaitingPresent) /\ (steamValue != 0 \/ levelUnitFailed) ) /\ unitsReadyNow /\ (steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed)
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition boilerWaiting /\ not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ unitsReadyNow /\ not ( readySent ) \/ (boilerWaiting \/ boilerWaitingPresent) /\ (steamValue != 0 \/ levelUnitFailed) ) /\ not ( unitsReadyNow ) /\ levelValue > normalN2 /\ not ( valveOpen )
+		action send modeAnnouncement ; send valve ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; levelReading = levelValue ; steamReading = steamValue ; boilerWaiting = true ; valveOpen = true
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition boilerWaiting /\ not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ unitsReadyNow /\ not ( readySent ) \/ (boilerWaiting \/ boilerWaitingPresent) /\ (steamValue != 0 \/ levelUnitFailed) ) /\ not ( unitsReadyNow ) /\ levelValue > normalN2 /\ valveOpen
+		action send modeAnnouncement ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; levelReading = levelValue ; steamReading = steamValue ; boilerWaiting = true
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition boilerWaiting /\ not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ unitsReadyNow /\ not ( readySent ) \/ (boilerWaiting \/ boilerWaitingPresent) /\ (steamValue != 0 \/ levelUnitFailed) ) /\ not ( unitsReadyNow ) /\ levelValue < normalN1 /\ not ( valveOpen )
+		action send modeAnnouncement ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4 ; levelReading = levelValue ; steamReading = steamValue ; boilerWaiting = true
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition boilerWaiting /\ not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ unitsReadyNow /\ not ( readySent ) \/ (boilerWaiting \/ boilerWaitingPresent) /\ (steamValue != 0 \/ levelUnitFailed) ) /\ not ( unitsReadyNow ) /\ levelValue < normalN1 /\ valveOpen
+		action send modeAnnouncement ; send valve ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4 ; levelReading = levelValue ; steamReading = steamValue ; boilerWaiting = true ; valveOpen = false
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition boilerWaiting /\ not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ unitsReadyNow /\ not ( readySent ) \/ (boilerWaiting \/ boilerWaitingPresent) /\ (steamValue != 0 \/ levelUnitFailed) ) /\ not ( unitsReadyNow ) /\ not ( levelValue > normalN2 ) /\ not ( levelValue < normalN1 ) /\ valveOpen
+		action send modeAnnouncement ; send valve ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady ; levelReading = levelValue ; steamReading = steamValue ; boilerWaiting = true ; valveOpen = false ; readySent = true
+	}
+	transition t12 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition boilerWaiting /\ not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ unitsReadyNow /\ not ( readySent ) \/ (boilerWaiting \/ boilerWaitingPresent) /\ (steamValue != 0 \/ levelUnitFailed) ) /\ not ( unitsReadyNow ) /\ not ( levelValue > normalN2 ) /\ not ( levelValue < normalN1 ) /\ not ( valveOpen )
+		action send modeAnnouncement ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady ; levelReading = levelValue ; steamReading = steamValue ; boilerWaiting = true ; readySent = true
+	}
+	transition t13 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( boilerWaiting \/ boilerWaitingPresent ) /\ not ( successiveStopCount >= stopLimit ) /\ not ( transmissionFailed \/ unitsReadyNow /\ not ( readySent ) )
+		action send modeAnnouncement ; levelReading = levelValue ; steamReading = steamValue
+	}
+	transition t14 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStopCount >= stopLimit
+	}
+	transition t15 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (transmissionFailed \/ unitsReadyNow) /\ not ( successiveStopCount >= stopLimit )
+	}
+	transition t16 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2)) /\ not ( successiveStopCount >= stopLimit ) /\ not ( transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow )
+	}
+	transition t17 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ levelUnitFailed
+	}
+	transition t18 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ (steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed)
+	}
+	transition t19 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ not ( steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed ) /\ levelValue < normalN1
+		action send modeAnnouncement ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4 ; levelReading = levelValue ; steamReading = steamValue ; levelLow = levelValue ; levelHigh = levelValue ; pumpThroughput = flowingThroughput
+	}
+	transition t20 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ not ( steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed ) /\ levelValue > normalN2
+		action send modeAnnouncement ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; levelReading = levelValue ; steamReading = steamValue ; levelLow = levelValue ; levelHigh = levelValue ; pumpThroughput = 0
+	}
+	transition t21 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ not ( steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed ) /\ not ( levelValue < normalN1 ) /\ not ( levelValue > normalN2 )
+	}
+	transition t22 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStopCount >= stopLimit
+	}
+	transition t23 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (transmissionFailed \/ unitsReadyNow) /\ not ( successiveStopCount >= stopLimit )
+	}
+	transition t24 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2)) /\ not ( successiveStopCount >= stopLimit ) /\ not ( transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow )
+	}
+	transition t25 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ levelUnitFailed
+	}
+	transition t26 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ not ( steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed )
+	}
+	transition t27 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ (steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed) /\ levelValue < normalN1
+		action send modeAnnouncement ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4 ; levelReading = levelValue ; steamReading = steamValue ; levelLow = levelValue ; levelHigh = levelValue ; pumpThroughput = flowingThroughput
+	}
+	transition t28 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ (steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed) /\ levelValue > normalN2
+		action send modeAnnouncement ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; levelReading = levelValue ; steamReading = steamValue ; levelLow = levelValue ; levelHigh = levelValue ; pumpThroughput = 0
+	}
+	transition t29 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ (steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed) /\ not ( levelValue < normalN1 ) /\ not ( levelValue > normalN2 )
+	}
+	transition t30 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStopCount >= stopLimit
+	}
+	transition t31 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (transmissionFailed \/ unitsReadyNow) /\ not ( successiveStopCount >= stopLimit )
+	}
+	transition t32 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) /\ not ( successiveStopCount >= stopLimit ) /\ not ( transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow )
+	}
+	transition t33 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2)) /\ not ( levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) ) /\ not ( successiveStopCount >= stopLimit ) /\ not ( transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow )
+	}
+	transition t34 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ not ( steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed )
+	}
+	transition t35 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ not ( levelUnitFailed ) /\ (steamUnitFailed \/ pumpUnitFailed \/ pumpControlUnitFailed)
+	}
+	transition t36 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ levelUnitFailed /\ levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin + levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin < 2 * normalN1
+		action send modeAnnouncement ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4 ; levelLow = levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin ; levelHigh = levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin ; steamReading = steamValue ; pumpThroughput = flowingThroughput
+	}
+	transition t37 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ levelUnitFailed /\ levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin + levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin > 2 * normalN2 /\ not ( levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin + levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin < 2 * normalN1 )
+		action send modeAnnouncement ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; levelLow = levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin ; levelHigh = levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin ; steamReading = steamValue ; pumpThroughput = 0
+	}
+	transition t38 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStopCount >= stopLimit \/ transmissionFailed \/ boilerWaitingPresent \/ unitsReadyNow \/ not ( levelUnitFailed ) /\ (not ( steamUnitFailed ) /\ levelValue - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ steamUnitFailed /\ levelValue - steamMaxOutflow <= limitM1 \/ not ( steamUnitFailed ) /\ levelValue + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2 \/ steamUnitFailed /\ levelValue + pumpsMaxInflow >= limitM2) \/ levelUnitFailed /\ (steamUnitFailed \/ pumpControlUnitFailed) \/ levelUnitFailed /\ (levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin - cycleSeconds * steamValue - steamRiseMargin <= limitM1 \/ levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin + pumpsMaxInflow - cycleSeconds * steamValue + steamFallMargin >= limitM2) ) /\ levelUnitFailed /\ not ( levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin + levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin < 2 * normalN1 ) /\ not ( levelLow + cycleSeconds * pumpThroughput - cycleSeconds * steamReading - steamRiseMargin + levelHigh + cycleSeconds * openThroughput - cycleSeconds * steamReading + steamFallMargin > 2 * normalN2 )
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmission to stm_ref0 on transmission
+	connection stm_ref0 on modeAnnouncement to SteamBoilerController_Ctrl on modeAnnouncement
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmission
+		event modeAnnouncement
+		event valve
+		event closePump : int
+		event openPump : int
+		event programReady
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmission to ctrl_ref0 on transmission
+	connection ctrl_ref0 on modeAnnouncement to SteamBoilerController_Platform on modeAnnouncement
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+}
+

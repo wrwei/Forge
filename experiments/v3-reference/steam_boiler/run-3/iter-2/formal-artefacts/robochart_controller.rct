@@ -1,0 +1,275 @@
+diagram SteamBoilerController
+
+enumeration PumpPosition { OFF ON }
+enumeration ValvePosition { CLOSED OPEN }
+enumeration WaterFlow { NO_FLOW FLOWING }
+enumeration PumpOrder { NO_ORDER OPEN_ORDER CLOSE_ORDER }
+
+interface Inputs {
+	event transmissionReceived
+}
+
+interface Outputs {
+	event modeMessage
+	event programReady
+	event valve
+	event closePump : int
+	event openPump : int
+}
+
+interface Sensors {
+	var stopOrTransmissionFault : boolean
+	var unitsReady : boolean
+	var plantWaiting : boolean
+	var startupFault : boolean
+	var otherUnitDefective : boolean
+	var levelHigh : boolean
+	var levelLow : boolean
+	var operatingEmergency : boolean
+	var levelDefective : boolean
+	var estimateUnreliable : boolean
+	var predictedHigh : boolean
+	var predictedLow : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var readyAnnounced : boolean = false
+	var evacuationValve : ValvePosition
+}
+
+interface Constants {
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state NORMAL {
+		entry send modeMessage
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send modeMessage
+	}
+	state DEGRADED {
+		entry send modeMessage
+	}
+	state RESCUE {
+		entry send modeMessage
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition stopOrTransmissionFault \/ unitsReady /\ not ( readyAnnounced ) \/ plantWaiting /\ startupFault
+	}
+	transition t2 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionReceived
+		condition unitsReady /\ otherUnitDefective
+	}
+	transition t3 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionReceived
+		condition unitsReady
+	}
+	transition t4 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition readyAnnounced
+		action send modeMessage ; send programReady
+	}
+	transition t5 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition plantWaiting /\ levelHigh /\ not ( evacuationValve == OPEN )
+		action send modeMessage ; send valve ; closePump ! 1 ; evacuationValve = OPEN
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition plantWaiting /\ levelLow /\ evacuationValve == OPEN
+		action send modeMessage ; send valve ; openPump ! 1 ; evacuationValve = CLOSED
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition plantWaiting /\ levelLow
+		action send modeMessage ; openPump ! 1
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition plantWaiting /\ not ( levelHigh ) /\ evacuationValve == OPEN
+		action send modeMessage ; send valve ; closePump ! 1 ; send programReady ; evacuationValve = CLOSED ; readyAnnounced = true
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition plantWaiting /\ not ( levelHigh )
+		action send modeMessage ; closePump ! 1 ; send programReady ; readyAnnounced = true
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		action send modeMessage
+	}
+	transition t11 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatingEmergency \/ levelDefective /\ estimateUnreliable
+	}
+	transition t12 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionReceived
+		condition levelDefective
+	}
+	transition t13 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionReceived
+		condition otherUnitDefective
+	}
+	transition t14 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition predictedHigh
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t15 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition predictedLow
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t16 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+	}
+	transition t17 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatingEmergency \/ levelDefective /\ estimateUnreliable
+	}
+	transition t18 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionReceived
+		condition levelDefective
+	}
+	transition t19 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( otherUnitDefective )
+	}
+	transition t20 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition predictedHigh
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t21 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition predictedLow
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t22 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+	}
+	transition t23 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatingEmergency \/ estimateUnreliable
+	}
+	transition t24 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( levelDefective ) /\ not ( otherUnitDefective )
+	}
+	transition t25 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( levelDefective )
+	}
+	transition t26 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition predictedHigh
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t27 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition predictedLow
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t28 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionReceived to stm_ref0 on transmissionReceived
+	connection stm_ref0 on modeMessage to SteamBoilerController_Ctrl on modeMessage
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionReceived
+		event modeMessage
+		event programReady
+		event valve
+		event closePump : int
+		event openPump : int
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionReceived to ctrl_ref0 on transmissionReceived
+	connection ctrl_ref0 on modeMessage to SteamBoilerController_Platform on modeMessage
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+}
+

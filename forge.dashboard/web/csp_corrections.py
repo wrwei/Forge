@@ -461,6 +461,55 @@ def apply_csp_corrections(config_path: str = None,
                        "left as configured — a load failure downstream may "
                        "be this", e)
 
+    # 4. PER-CHANNEL VALUE SETS (pre-registration v3, Amendment 16). The
+    # numeric types stay at their narrowed ranges (state variables, constants
+    # and every other channel are checked exactly as configured). An event
+    # typed int/nat on which the model sends an integer LITERAL outside its
+    # type's range (Steam Boiler: `openPump ! 2` with int = {0..1}) used to
+    # make FDR4 reject the value and return every assertion "inconclusive".
+    # That event's channel alone now gets a value set spanning the range and
+    # those literals, in every generated CSP file (untimed and timed).
+    try:
+        out_dir = inst_path.parent.parent
+        rct = next(out_dir.glob("*.rct"), None)
+        if rct is not None:
+            rtext = rct.read_text(encoding="utf-8")
+            ev_type = {m.group(1): m.group(2) for m in re.finditer(
+                r"^\s*event\s+(\w+)\s*:\s*(int|nat)\s*$", rtext, re.M)}
+            lits: dict[str, set[int]] = {}
+            for line in rtext.splitlines():
+                if not re.match(r"\s*(entry|exit|during|action)\b", line):
+                    continue
+                for m in re.finditer(r"\b(\w+)\s*!\s*(-?\d+)\b(?!\s*\.)", line):
+                    if m.group(1) in ev_type:
+                        lits.setdefault(m.group(1), set()).add(int(m.group(2)))
+            chan_sets: dict[str, str] = {}
+            for ev, vals in lits.items():
+                typ = ev_type[ev]
+                cur = overrides.get(typ, [DEFAULT_TYPE_RANGES.get(typ, "")])[0]
+                mm = re.search(r"\{(-?\d+)\.\.(-?\d+)\}", cur)
+                if not mm:
+                    continue
+                clo, chi = int(mm.group(1)), int(mm.group(2))
+                lo, hi = min([clo] + list(vals)), max([chi] + list(vals))
+                if (lo, hi) != (clo, chi):
+                    chan_sets[ev] = (csp_names[typ], "{%d..%d}" % (lo, hi))
+                    logger.warning(
+                        "CHANNEL %s: values {%d..%d} (the model sends %s); %s stays {%d..%d} "
+                        "everywhere else (Amendment 16).", ev, lo, hi,
+                        ", ".join(str(v) for v in sorted(vals)), csp_names[typ], clo, chi)
+            if chan_sets:
+                for f in sorted(inst_path.parent.rglob("*.csp")):
+                    txt = f.read_text(encoding="utf-8")
+                    new = txt
+                    for ev, (tname, vset) in chan_sets.items():
+                        new = re.sub(rf"(\bchannel\s+{re.escape(ev)}(?:__)?\s*:\s*(?:\w+\.)*){tname}\b",
+                                     lambda m, v=vset: m.group(1) + v, new)
+                    if new != txt:
+                        f.write_text(new, encoding="utf-8")
+    except Exception as e:  # never let the scan break the phase
+        logger.warning("per-channel value-set scan failed (%s); channels left as generated", e)
+
     # The RoboChart CSP generator emits TWO instantiations.csp files when
     # any controller has a clock field:
     #   csp-gen/instantiations.csp        — untimed module

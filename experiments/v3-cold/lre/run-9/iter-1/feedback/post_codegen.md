@@ -1,0 +1,165 @@
+# post_codegen
+
+**status:** uncertain
+
+**summary:** All 51 LRE requirements are implemented in 15 Java files under java.generated.project/src/main/java/lre (controller LreController with modes OCM/MOM/HCM/CAM, five operations, Sensor with ObstacleRegister, Actuator, sealed input/output events). The code compiles under Java 17 and result_codegen.json maps every requirement and every file. Fifteen items need review: two contradictions between requirements, the forced replacement of the -1 'no obstacle' index, the CPA geometry, the unspecified CAM manoeuvre, and several defaults and orderings the requirements leave open.
+
+## Issues
+
+### 1. [design_choice] 'No obstacle' index is 0, not -1
+
+**raw:** LRE-Var5/Var6 declare cstc and cdyn natural numbers with -1 meaning no obstacle, and LRE-DM5/OP3/OP4 have closestStaticIndex()/closestDynamicIndex() return -1. Java ints become nat in the model, so a negative value cannot be represented.
+
+**fix_directive:** None required. Index 0 (ObstacleRegister.NO_OBSTACLE) is reserved for 'none'; ObstacleRegister.put rejects identifiers below 1, and every Sensor accessor treats an unregistered index as no obstacle. Change only if obstacle identifiers must include 0.
+
+**java_trace:**
+
+- `src/main/java/lre/sensor/ObstacleRegister.java` lines 20-33, `NO_OBSTACLE`; requirements: LRE-Var5, LRE-Var6, LRE-DM3
+- `src/main/java/lre/sensor/Sensor.java` lines 140-166, `closestStaticIndex`; requirements: LRE-DM5, LRE-OP3, LRE-OP4
+
+### 2. [ambiguous_requirement] Missing-obstacle default for nsRelDist/ewRelDist: DM5 says zero, OP5 says large distance
+
+**raw:** LRE-DM5: when no obstacle exists, nsRelDist and ewRelDist return zero. LRE-OP5: the Sensor returns zero-velocity and large-distance defaults when no dynamic obstacle exists. With zero relative distance CalcCPA gives cda = 0 and tcpa = 0, so MOM and HCM would enter CAM whenever no dynamic obstacle exists.
+
+**fix_directive:** Followed LRE-OP5: nsRelDist/ewRelDist return the safe large distance for an unregistered index; obsNsVel/obsEwVel return 0 (both requirements agree on velocity). Confirm with the requirement owner.
+
+**java_trace:**
+
+- `src/main/java/lre/sensor/Sensor.java` lines 101-115, `nsRelDist`; requirements: LRE-DM5, LRE-OP5
+
+### 3. [invented_default] Safe large distance is 1000000.0 m
+
+**raw:** LRE-DM5 says odist, hdist, vdist (and, per LRE-OP5, the relative distances) return 'a safe large distance' when no obstacle exists, without a value.
+
+**fix_directive:** None required; Sensor.NO_OBSTACLE_DISTANCE = 1000000.0 (private to the sensor). Any value far above every threshold (all 1 m) behaves the same.
+
+**java_trace:**
+
+- `src/main/java/lre/sensor/Sensor.java` lines 18-18, `NO_OBSTACLE_DISTANCE`; requirements: LRE-DM5
+
+### 4. [design_choice] CalcCPA: horizontal CPA with the obstacle velocity as the relative velocity
+
+**raw:** LRE-OP5 does not give the CPA formula; it says CalcCPA uses the obstacle's relative position and velocity from the Sensor (nsRelDist, ewRelDist, obsNsVel, obsEwVel) and that the sensor's zero-velocity/large-distance defaults handle the no-obstacle case.
+
+**fix_directive:** Implemented tcpa = -(r.v)/(|v|^2 + CPA_EPSILON) and cda = |r + v*tcpa| with r = (nsRelDist, ewRelDist), v = (obsNsVel, obsEwVel), unclamped (negative tcpa = CPA already passed). The AUV's own velocity is not subtracted: only then do the OP5 defaults give cda = large distance with no dynamic obstacle. If obstacle velocities are absolute, subtract (nsVel, ewVel) from v, but then the no-obstacle case needs separate handling.
+
+**java_trace:**
+
+- `src/main/java/lre/operation/CalcCPA.java` lines 32-43, `compute`; requirements: LRE-OP5, LRE-Var7, LRE-Var8
+
+### 5. [invented_default] CPA_EPSILON = 0.000001 keeps tcpa defined; the model rounds it up to 1
+
+**raw:** Without relative motion |v|^2 = 0 and tcpa would be 0/0. compute() may contain only assignments, so the guard is an additive constant. The model's constants interface rounds fractional constants up to the next integer.
+
+**fix_directive:** In the model the tcpa denominator is |v|^2 + 1, which keeps tcpa's sign (all Beh8/Beh14 test) but changes the value of cda. The Java is exact up to 1e-6.
+
+**java_trace:**
+
+- `src/main/java/lre/LreConstants.java` lines 39-39, `CPA_EPSILON`; requirements: LRE-OP5
+
+### 6. [ambiguous_requirement] CAM exit ignores tcpa: an obstacle that passed within minSafeDist keeps the LRE in CAM
+
+**raw:** LRE-Beh18 leaves CAM only when cda >= minSafeDist. With the standard CPA, an obstacle that has passed (tcpa < 0) along a line within minSafeDist keeps cda < minSafeDist.
+
+**fix_directive:** Implemented as written: the LRE then stays in CAM until reqOCM (LRE-Beh17), until the obstacle leaves the register, or until another dynamic obstacle becomes closest. Confirm whether Beh18 should also accept tcpa < 0.
+
+**java_trace:**
+
+- `src/main/java/lre/controller/LreController.java` lines 143-152, `step`; requirements: LRE-Beh18, LRE-Beh17
+
+### 7. [design_choice] CheckOPEZ and CalcCPA read the closest index from the sensor, not from CalcCStc/CalcCDyn
+
+**raw:** LRE-OP2 says CheckOPEZ uses the index computed by CalcCStc, and LRE-OP5 says CalcCPA uses cdyn. The profile allows compute() right-hand sides to use only sensor calls, arithmetic, Math.sqrt and fields of the same class.
+
+**fix_directive:** Both call sensor.closestStaticIndex()/closestDynamicIndex(), the same function CalcCStc/CalcCDyn call, on the same sensor within the same step, so they use the same index. No duplicate cstc/cdyn variable is introduced.
+
+**java_trace:**
+
+- `src/main/java/lre/operation/CheckOPEZ.java` lines 29-32, `compute`; requirements: LRE-OP2
+- `src/main/java/lre/operation/CalcCPA.java` lines 32-43, `compute`; requirements: LRE-OP5
+
+### 8. [ambiguous_requirement] HCM advised velocity: system description says 0.1 m/s, LRE-FR3 says 0 m/s
+
+**raw:** system_description.txt: 'HCM: Reduced speed (0.1 m/s)'. LRE-FR3: 'On entering HCM, the LRE advises a velocity of 0 m/s'.
+
+**fix_directive:** Followed LRE-FR3 (the requirements file is the only source of requirements): HCM_VELOCITY = 0.0. If 0.1 is intended, note that the model rounds fractional constants up (to 1).
+
+**java_trace:**
+
+- `src/main/java/lre/LreConstants.java` lines 27-27, `HCM_VELOCITY`; requirements: LRE-FR3
+
+### 9. [unimplemented] CAM evasive manoeuvre is not specified
+
+**raw:** LRE-FR4: in CAM 'the AUV performs evasive manoeuvres'. No requirement says what the LRE advises in CAM, and LRE-DM7 limits outputs to advVel/advHdng.
+
+**fix_directive:** Entering CAM (LRE-Beh8, LRE-Beh14) issues no output; the last advice stays in force. Specify the CAM advice (velocity and/or heading) to implement it.
+
+**java_trace:**
+
+- `src/main/java/lre/controller/LreController.java` lines 106-108, `step`; requirements: LRE-FR4, LRE-Beh8
+- `src/main/java/lre/controller/LreController.java` lines 134-136, `step`; requirements: LRE-FR4, LRE-Beh14
+
+### 10. [design_choice] Order of MOM and HCM transitions (all have priority 8)
+
+**raw:** The behavioural requirements share one priority. Java takes the first true branch; the model sees alternatives, so each branch below a guard-only branch conjoins its negation.
+
+**fix_directive:** MOM: reqOCM, endTask, inOpez, collision course (CAM), reqHCM, Beh9, Beh11, Beh10. HCM: reqOCM, inOpez, collision course (CAM), Beh13. Operator commands come first as overrides. OPEZ comes before CAM, so the exclusion-zone hand-over to OCM always applies. Beh11 comes before Beh10 because, with equal thresholds, Beh11's guard implies Beh10's: placed after Beh10 it could never be enabled.
+
+**java_trace:**
+
+- `src/main/java/lre/controller/LreController.java` lines 95-142, `step`; requirements: LRE-Beh5, LRE-Beh6, LRE-Beh7, LRE-Beh8, LRE-Beh9, LRE-Beh10, LRE-Beh11, LRE-Beh12, LRE-Beh13, LRE-Beh14, LRE-Beh15, LRE-Beh16, LRE-DC1
+
+### 11. [design_choice] The literal thresholds of 1 in Beh4/Beh9/Beh11 are separate constants, not minSafeDist
+
+**raw:** LRE-Beh4 uses vel <= 1 and odist > 1; LRE-Beh9/Beh11 use hvel/vvel >= 1 m/s. These are literals in the requirements, not the named DM4 thresholds.
+
+**fix_directive:** VEL_THRESHOLD = 1.0 (vel, hvel, vvel bounds) and ENTRY_CLEARANCE_DIST = 1.0 (odist bound for entering MOM). They equal minSafeDist today but are kept apart.
+
+**java_trace:**
+
+- `src/main/java/lre/LreConstants.java` lines 33-36, `VEL_THRESHOLD`; requirements: LRE-Beh4, LRE-Beh9, LRE-Beh11
+
+### 12. [ambiguous_requirement] vvel is the signed rate of climb, so Beh11 ignores fast descent
+
+**raw:** LRE-OP1: 'vvel is the rate of climb'. LRE-Beh11 tests vvel >= 1 m/s, which a descent towards an obstacle below never satisfies.
+
+**fix_directive:** Implemented as written (vvel = rateOfClimb). If vertical speed in either direction is meant, Beh11 needs |vvel|.
+
+**java_trace:**
+
+- `src/main/java/lre/operation/CalcVel.java` lines 26-26, `compute`; requirements: LRE-OP1, LRE-Var3, LRE-Beh11
+
+### 13. [scope_question] reqHCM is undone on the next step when no static obstacle is near
+
+**raw:** LRE-Beh13 (HCM to MOM when hdist > staticObsHorizDist and vdist > staticObsVertDist) has no exception for an operator-requested HCM (LRE-Beh12).
+
+**fix_directive:** Implemented as written: after reqHCM with no nearby static obstacle, the next step returns to MOM and advises 1 m/s. Confirm this is intended.
+
+**java_trace:**
+
+- `src/main/java/lre/controller/LreController.java` lines 109-112, `step`; requirements: LRE-Beh12, LRE-Beh13
+
+### 14. [design_choice] step(null) means 'no operator input this cycle'
+
+**raw:** LRE-DM6 lists only operator events, but autonomous transitions (OPEZ, CAM, HCM entry and exit) must also be evaluated in cycles without operator input.
+
+**fix_directive:** step accepts null as the absence of an event; no extra event type was added. Every call recomputes the operations and evaluates the autonomous transitions.
+
+**java_trace:**
+
+- `src/main/java/lre/controller/LreController.java` lines 55-60, `step`; requirements: LRE-DM6, LRE-ARCH2
+
+### 15. [invented_default] Actuator starts at 0 advice; equally close obstacles resolve to the lowest index
+
+**raw:** LRE-DM8 does not say what the actuator holds before the first advice. LRE-OP3/OP4 do not say which obstacle is closest when two are at the same distance.
+
+**fix_directive:** Actuator.advisedVelocity and advisedHeading start at 0.0; Sensor.closestOf keeps the lowest identifier on ties.
+
+**java_trace:**
+
+- `src/main/java/lre/actuator/Actuator.java` lines 12-13, `Actuator`; requirements: LRE-DM8
+- `src/main/java/lre/sensor/Sensor.java` lines 154-166, `closestOf`; requirements: LRE-OP3, LRE-OP4
+
+## next_step
+
+Run the pipeline (compile, coverage, profile check, T2M, M2M, M2T, FDR4, Dafny, Isabelle, vacuity). The items above need a requirement owner's decision, not a code fix.

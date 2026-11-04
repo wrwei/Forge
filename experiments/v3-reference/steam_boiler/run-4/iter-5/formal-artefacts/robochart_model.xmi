@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="ASCII"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:robochart="http://www.robocalc.circus/RoboChart">
+  <robochart:RCPackage name="extracted">
+    <interfaces name="Ctrl_State"/>
+    <interfaces name="Sensors">
+      <variableList>
+        <vars name="initialisationEmergency">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="operationEmergency">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="rescueEmergency">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="steamBoilerWaitingReceived">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="physicalUnitsReadyReceived">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="levelUnitFailed">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="nonLevelUnitFailed">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="levelUnderNormalBand">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="levelOverNormalBand">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="initAbort">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="unitsReady">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="otherUnitFailed">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="operatingAbort">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="levelFailed">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+        <vars name="rescueAbort">
+          <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+        </vars>
+      </variableList>
+    </interfaces>
+    <interfaces name="Actuators"/>
+    <interfaces name="Constants"/>
+    <types xsi:type="robochart:Enumeration" name="FlowObservation">
+      <literals name="WATER_FLOWS"/>
+      <literals name="NO_WATER_FLOW"/>
+    </types>
+    <types xsi:type="robochart:PrimitiveType" name="real"/>
+    <types xsi:type="robochart:RecordType" name="LevelEstimate">
+      <fields name="lowerBound">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </fields>
+      <fields name="upperBound">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.1"/>
+      </fields>
+    </types>
+    <types xsi:type="robochart:PrimitiveType" name="int"/>
+    <types xsi:type="robochart:RecordType" name="PumpControlReading">
+      <fields name="controlledPump">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.3"/>
+      </fields>
+      <fields name="observation">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.0"/>
+      </fields>
+    </types>
+    <types xsi:type="robochart:PrimitiveType" name="boolean"/>
+    <types xsi:type="robochart:RecordType" name="PumpReading">
+      <fields name="pumpNumber">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.3"/>
+      </fields>
+      <fields name="pumpRunning">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+      </fields>
+    </types>
+    <types xsi:type="robochart:RecordType" name="UnitStatus">
+      <fields name="outOfOrder">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+      </fields>
+      <fields name="detectionAcknowledged">
+        <type xsi:type="robochart:TypeRef" ref="/0/@types.5"/>
+      </fields>
+    </types>
+    <machines name="SteamBoilerController">
+      <events name="transmissionReceived"/>
+      <events name="modeMessage"/>
+      <nodes xsi:type="robochart:State" name="INITIALIZATION"/>
+      <nodes xsi:type="robochart:State" name="NORMAL"/>
+      <nodes xsi:type="robochart:State" name="DEGRADED"/>
+      <nodes xsi:type="robochart:State" name="RESCUE"/>
+      <nodes xsi:type="robochart:State" name="EMERGENCY_STOP"/>
+      <nodes xsi:type="robochart:Initial" name="i0"/>
+      <transitions name="t_init" source="/0/@machines.0/@nodes.5" target="/0/@machines.0/@nodes.0"/>
+      <transitions name="t1" source="/0/@machines.0/@nodes.0" target="/0/@machines.0/@nodes.4">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="initAbort"/>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t2" source="/0/@machines.0/@nodes.0" target="/0/@machines.0/@nodes.1">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="initAbort"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="unitsReady"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="otherUnitFailed"/>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t3" source="/0/@machines.0/@nodes.0" target="/0/@machines.0/@nodes.2">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="initAbort"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="unitsReady"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="otherUnitFailed"/>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t4" source="/0/@machines.0/@nodes.0" target="/0/@machines.0/@nodes.0">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="initAbort"/>
+            </exp>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="unitsReady"/>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t5" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.4">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="operatingAbort"/>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t6" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.3">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="operatingAbort"/>
+            </exp>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelFailed"/>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t7" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.2">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="operatingAbort"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailed"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="otherUnitFailed"/>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t8" source="/0/@machines.0/@nodes.1" target="/0/@machines.0/@nodes.1">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="operatingAbort"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailed"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="otherUnitFailed"/>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t9" source="/0/@machines.0/@nodes.2" target="/0/@machines.0/@nodes.4">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="operatingAbort"/>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t10" source="/0/@machines.0/@nodes.2" target="/0/@machines.0/@nodes.3">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="operatingAbort"/>
+            </exp>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelFailed"/>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t11" source="/0/@machines.0/@nodes.2" target="/0/@machines.0/@nodes.1">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="operatingAbort"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailed"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="otherUnitFailed"/>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t12" source="/0/@machines.0/@nodes.2" target="/0/@machines.0/@nodes.2">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="operatingAbort"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailed"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="otherUnitFailed"/>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t13" source="/0/@machines.0/@nodes.3" target="/0/@machines.0/@nodes.4">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="rescueAbort"/>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t14" source="/0/@machines.0/@nodes.3" target="/0/@machines.0/@nodes.1">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="rescueAbort"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailed"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="otherUnitFailed"/>
+            </exp>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t15" source="/0/@machines.0/@nodes.3" target="/0/@machines.0/@nodes.2">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="rescueAbort"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailed"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="otherUnitFailed"/>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+      <transitions name="t16" source="/0/@machines.0/@nodes.3" target="/0/@machines.0/@nodes.3">
+        <trigger event="/0/@machines.0/@events.0"/>
+        <condition xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="rescueAbort"/>
+            </exp>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelFailed"/>
+          </right>
+        </condition>
+        <action xsi:type="robochart:CommunicationStmt">
+          <communication event="/0/@machines.0/@events.1"/>
+        </action>
+      </transitions>
+    </machines>
+  </robochart:RCPackage>
+  <robochart:VariableList/>
+</xmi:XMI>

@@ -1,0 +1,305 @@
+diagram SteamBoilerController
+
+enumeration ModeValue { INITIALIZATION_MODE NORMAL_MODE DEGRADED_MODE RESCUE_MODE EMERGENCY_STOP_MODE }
+enumeration WaterFlow { FLOWING NOT_FLOWING }
+
+interface Inputs {
+	event stopConfirmed
+	event transmissionFault
+	event startUpFailure
+	event steamBoilerWaiting
+	event physicalUnitsReady
+	event transmission
+	event levelRisk
+	event estimateUnreliable
+}
+
+interface Outputs {
+	event programReady
+	event valve
+}
+
+interface Sensors {
+	var levelDeviceOutOfOrder : boolean
+	var otherUnitOutOfOrder : boolean
+	var levelTooLow : boolean
+	var levelTooHigh : boolean
+	var otherUnitFailed : boolean
+	var levelDeviceFailed : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var steamBoilerWaitingSeen : boolean = false
+	var readyAnnounced : boolean = false
+	var valveOpen : boolean = false
+	var pumpsOpen : boolean = false
+}
+
+interface Constants {
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state EMERGENCY_STOP {
+	}
+	state RESCUE {
+	}
+	state DEGRADED {
+	}
+	state NORMAL {
+	}
+	state INITIALIZATION {
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger stopConfirmed
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionFault
+	}
+	transition t3 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger startUpFailure
+	}
+	transition t4 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger steamBoilerWaiting
+		action steamBoilerWaitingSeen = true
+	}
+	transition t5 {
+		from INITIALIZATION
+		to NORMAL
+		trigger physicalUnitsReady
+		condition readyAnnounced /\ not ( otherUnitFailed )
+	}
+	transition t6 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger physicalUnitsReady
+		condition readyAnnounced /\ otherUnitFailed
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition steamBoilerWaitingSeen /\ readyAnnounced
+		action send programReady
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition steamBoilerWaitingSeen /\ not ( readyAnnounced ) /\ levelTooHigh /\ not ( valveOpen )
+		action send valve ; valveOpen = true ; pumpsOpen = false
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition steamBoilerWaitingSeen /\ not ( readyAnnounced ) /\ not ( levelTooHigh ) /\ valveOpen
+		action send valve ; valveOpen = false
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition steamBoilerWaitingSeen /\ not ( readyAnnounced ) /\ not ( levelTooHigh ) /\ levelTooLow /\ not ( valveOpen )
+		action pumpsOpen = true
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition steamBoilerWaitingSeen /\ not ( readyAnnounced ) /\ not ( levelTooHigh ) /\ not ( levelTooLow ) /\ not ( valveOpen )
+		action pumpsOpen = false ; send programReady ; readyAnnounced = true
+	}
+	transition t12 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger stopConfirmed
+	}
+	transition t13 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionFault
+	}
+	transition t14 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger levelRisk
+	}
+	transition t15 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition levelDeviceFailed
+	}
+	transition t16 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( levelDeviceFailed ) /\ otherUnitFailed
+	}
+	transition t17 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( levelDeviceFailed ) /\ not ( otherUnitFailed ) /\ levelTooLow
+		action pumpsOpen = true
+	}
+	transition t18 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( levelDeviceFailed ) /\ not ( otherUnitFailed ) /\ not ( levelTooLow ) /\ levelTooHigh
+		action pumpsOpen = false
+	}
+	transition t19 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger stopConfirmed
+	}
+	transition t20 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionFault
+	}
+	transition t21 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger levelRisk
+	}
+	transition t22 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition levelDeviceFailed
+	}
+	transition t23 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( levelDeviceFailed ) /\ not ( otherUnitFailed )
+	}
+	transition t24 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( levelDeviceFailed ) /\ otherUnitFailed /\ levelTooLow
+		action pumpsOpen = true
+	}
+	transition t25 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( levelDeviceFailed ) /\ otherUnitFailed /\ not ( levelTooLow ) /\ levelTooHigh
+		action pumpsOpen = false
+	}
+	transition t26 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger stopConfirmed
+	}
+	transition t27 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionFault
+	}
+	transition t28 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger levelRisk
+	}
+	transition t29 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger estimateUnreliable
+	}
+	transition t30 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( levelDeviceFailed ) /\ not ( otherUnitFailed )
+	}
+	transition t31 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( levelDeviceFailed ) /\ otherUnitFailed
+	}
+	transition t32 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition levelDeviceFailed /\ levelTooLow
+		action pumpsOpen = true
+	}
+	transition t33 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition levelDeviceFailed /\ not ( levelTooLow ) /\ levelTooHigh
+		action pumpsOpen = false
+	}
+	transition t34 {
+		from EMERGENCY_STOP
+		to EMERGENCY_STOP
+		trigger transmission
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on stopConfirmed to stm_ref0 on stopConfirmed
+	connection SteamBoilerController_Ctrl on transmissionFault to stm_ref0 on transmissionFault
+	connection SteamBoilerController_Ctrl on startUpFailure to stm_ref0 on startUpFailure
+	connection SteamBoilerController_Ctrl on steamBoilerWaiting to stm_ref0 on steamBoilerWaiting
+	connection SteamBoilerController_Ctrl on physicalUnitsReady to stm_ref0 on physicalUnitsReady
+	connection SteamBoilerController_Ctrl on transmission to stm_ref0 on transmission
+	connection SteamBoilerController_Ctrl on levelRisk to stm_ref0 on levelRisk
+	connection SteamBoilerController_Ctrl on estimateUnreliable to stm_ref0 on estimateUnreliable
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event stopConfirmed
+		event transmissionFault
+		event startUpFailure
+		event steamBoilerWaiting
+		event physicalUnitsReady
+		event transmission
+		event levelRisk
+		event estimateUnreliable
+		event programReady
+		event valve
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on stopConfirmed to ctrl_ref0 on stopConfirmed
+	connection SteamBoilerController_Platform on transmissionFault to ctrl_ref0 on transmissionFault
+	connection SteamBoilerController_Platform on startUpFailure to ctrl_ref0 on startUpFailure
+	connection SteamBoilerController_Platform on steamBoilerWaiting to ctrl_ref0 on steamBoilerWaiting
+	connection SteamBoilerController_Platform on physicalUnitsReady to ctrl_ref0 on physicalUnitsReady
+	connection SteamBoilerController_Platform on transmission to ctrl_ref0 on transmission
+	connection SteamBoilerController_Platform on levelRisk to ctrl_ref0 on levelRisk
+	connection SteamBoilerController_Platform on estimateUnreliable to ctrl_ref0 on estimateUnreliable
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+}
+

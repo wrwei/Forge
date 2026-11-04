@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 2,
+  "iteration": 1,
+  "recorded_utc": "2026-10-29 13:47:10",
+  "infrastructure_sha": "5280e26e828cec41338485a44f71433436c7b55e",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c-run2-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run2",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 664,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 lre, pass 2, iteration 1\n\nNo Java existed beforehand. Wrote 15 files under `java.generated.project/src/main/java/lre/` in the five layers, plus `result_codegen.json` (172 entries; every requirement, file and public element mapped) and `post_codegen.{md,json}`.\n\n**Structure.** `LreController.step` runs CalcVel, CalcCStc, CalcCDyn, CheckOPEZ and CalcCPA, declares named predicates (including `inOpez`), then a two-level if-else over OCM/MOM/HCM/CAM. `Sensor` holds an `ObstacleRegister` of `Obstacle` records; `Actuator.apply` receives `AdvVel`/`AdvHdng`. Var1\u20138 are operation fields read through same-named getters, not duplicated in the controller.\n\n**Decisions the requirements did not settle**\n- Index -1 (\"none\") is impossible for nat: index 0 means none, obstacles are numbered from 1, ties go to the lowest index.\n- Safe large distance: 1000000.0 m.\n- CPA: relative velocity (obstacle minus AUV); tcpa = r\u00b7w/(|w|\u00b2+\u03b5), \u03b5 = 0.000001 (rounded to 1 in the model); cda adds the current vertical separation, which keeps the no-obstacle case safe. Position accessors return 0 as DM5 says (OP5 says \"large\").\n- CheckOPEZ and CalcCPA call the same sensor selection functions as CalcCStc/CalcCDyn, because compute() may read only the sensor.\n- Priority: reqOCM, inOpez, collision\u2192CAM, then endTask, Beh9, Beh11, Beh10, reqHCM in MOM; Beh13 last in HCM. Lower branches conjoin negations of earlier guard-only guards.\n- Requirement literals (1, 0) are named constants; HCM advises 0 m/s (FR3), not the description's 0.1.\n- Readings and advice start at zero.\n\n**Unresolved**\n- CAM's evasive manoeuvre has no specified output; CAM has no entry action.\n- Beh18 leaves CAM on cda alone: after an obstacle passes on a near line, CAM persists until reqOCM.\n- Beh11 tests signed vvel, so a fast descent never triggers it.\n- DC1 read as \"no duplicated transition\": MOM has five guard-only transitions."
+}

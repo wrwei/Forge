@@ -1,0 +1,51 @@
+{
+  "study": "sranger",
+  "run": 2,
+  "iteration": 1,
+  "recorded_utc": "2026-10-29 13:08:23",
+  "infrastructure_sha": "5280e26e828cec41338485a44f71433436c7b55e",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c-run2-sranger",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-sranger-run2",
+  "files": {
+    "java": 9,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 205,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 sranger, pass 2\n\n**Written.** Nine Java files in package `sranger`: `RoboChartType`; `InputEvent` (Obstacle, Tick, EndTask); `OutputEvent` (Move(lv, av)); `SRangerMode` (MOVING initial, TURNING, FINAL); `SRangerConstants`; `Sensor` (distance, update); `Clock` (now); `Actuator` (apply, last velocities); `SRangerController`. `step` declares `obstacleDetected` and `turnDurationElapsed` (`timer.now() - clockResetTime >= TURN_DURATION`), then a two-level if-else with six transitions, one per SR-Beh2\u20137; SR-Beh1 is the mode field's initialiser. Final is terminal. Also `result_codegen.json` (66 entries; all 23 requirements, all 9 files) and `post_codegen.{md,json}` (status uncertain, 10 items). Compiles with `javac --release 17 -Xlint:all`, no warnings; a scratchpad smoke test of every transition passed.\n\n**Decisions the requirements did not settle.**\n- Moving\u2192Turning: trigger `obstacle` and guard `obstacleDetected` together (Beh2 names the event, GP1 the guard).\n- Turning order: endTask, timed return, then tick guarded by `!turnDurationElapsed`. Ticks arrive every cycle, so tick-first would starve the timed return.\n- endTask is the first branch in Moving and Turning.\n- Tick self-loops do nothing; Turning's entry actions (clock reset, Move(0, turnVel)) are inlined only on Moving\u2192Turning.\n- Power-up Move(moveVel, 0) is issued in the constructor.\n- Move is one record with two real components (one event, two values).\n- Sensor distance with no reading: 100.0 m (invented); negative or NaN readings are ignored.\n- clockResetTime starts at 0.0; actuator starts at (0, 0) (invented).\n- Clock: monotonic seconds since creation; the controller field is `timer` because `clock` is reserved.\n\n**Unresolved.** OBSTACLE_THRESHOLD = 0.5 is rounded up to 1 in the model's constants interface, so the model's guard reads `distance() <= 1`; the Java keeps 0.5. Whether the extraction carries the constructor's power-up command and the two-component Move is unknown until the run."
+}

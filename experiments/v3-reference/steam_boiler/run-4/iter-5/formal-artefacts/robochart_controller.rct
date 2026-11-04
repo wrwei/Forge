@@ -1,0 +1,197 @@
+diagram SteamBoilerController
+
+enumeration FlowObservation { WATER_FLOWS NO_WATER_FLOW }
+
+datatype LevelEstimate {
+	lowerBound : real
+	upperBound : real
+}
+
+datatype PumpControlReading {
+	controlledPump : int
+	observation : FlowObservation
+}
+
+datatype PumpReading {
+	pumpNumber : int
+	pumpRunning : boolean
+}
+
+datatype UnitStatus {
+	outOfOrder : boolean
+	detectionAcknowledged : boolean
+}
+
+interface Inputs {
+	event transmissionReceived
+}
+
+interface Outputs {
+	event modeMessage
+}
+
+interface Sensors {
+	var initialisationEmergency : boolean
+	var operationEmergency : boolean
+	var rescueEmergency : boolean
+	var steamBoilerWaitingReceived : boolean
+	var physicalUnitsReadyReceived : boolean
+	var levelUnitFailed : boolean
+	var nonLevelUnitFailed : boolean
+	var levelUnderNormalBand : boolean
+	var levelOverNormalBand : boolean
+	var initAbort : boolean
+	var unitsReady : boolean
+	var otherUnitFailed : boolean
+	var operatingAbort : boolean
+	var levelFailed : boolean
+	var rescueAbort : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+}
+
+interface Constants {
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state EMERGENCY_STOP {
+		entry send modeMessage
+	}
+	state RESCUE {
+		entry send modeMessage
+	}
+	state DEGRADED {
+		entry send modeMessage
+	}
+	state NORMAL {
+		entry send modeMessage
+	}
+	state INITIALIZATION {
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition initAbort
+	}
+	transition t2 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( initAbort ) /\ unitsReady /\ not ( otherUnitFailed )
+	}
+	transition t3 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( initAbort ) /\ unitsReady /\ otherUnitFailed
+	}
+	transition t4 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( initAbort ) /\ not ( unitsReady )
+		action send modeMessage
+	}
+	transition t5 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatingAbort
+	}
+	transition t6 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( operatingAbort ) /\ levelFailed
+	}
+	transition t7 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( operatingAbort ) /\ not ( levelFailed ) /\ otherUnitFailed
+	}
+	transition t8 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( operatingAbort ) /\ not ( levelFailed ) /\ not ( otherUnitFailed )
+	}
+	transition t9 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatingAbort
+	}
+	transition t10 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( operatingAbort ) /\ levelFailed
+	}
+	transition t11 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( operatingAbort ) /\ not ( levelFailed ) /\ not ( otherUnitFailed )
+	}
+	transition t12 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( operatingAbort ) /\ not ( levelFailed ) /\ otherUnitFailed
+	}
+	transition t13 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition rescueAbort
+	}
+	transition t14 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( rescueAbort ) /\ not ( levelFailed ) /\ not ( otherUnitFailed )
+	}
+	transition t15 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( rescueAbort ) /\ not ( levelFailed ) /\ otherUnitFailed
+	}
+	transition t16 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( rescueAbort ) /\ levelFailed
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionReceived to stm_ref0 on transmissionReceived
+	connection stm_ref0 on modeMessage to SteamBoilerController_Ctrl on modeMessage
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionReceived
+		event modeMessage
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionReceived to ctrl_ref0 on transmissionReceived
+	connection ctrl_ref0 on modeMessage to SteamBoilerController_Platform on modeMessage
+}
+

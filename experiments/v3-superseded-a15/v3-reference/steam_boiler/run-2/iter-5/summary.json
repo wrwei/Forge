@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 2,
+  "iteration": 5,
+  "recorded_utc": "2026-11-01 21:59:17",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r10-run2-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run2",
+  "files": {
+    "java": 13,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1150,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 steam_boiler, run 2\n\n## Design\n\n13 Java files (none existed before). `SteamBoilerController`: mode\nenum `BoilerMode`, state variables `plantWaiting`, `valveOpen`, `programReadySent`. It is stepped once per\ncycle on one event, `MessagesReceived` (a cycle's messages arrive together); guards read boolean\n`BoilerSensor` queries. The sensor holds failure\ndetection, unit status, the STOP count and the level bounds. Guards per mode are\ndisjoint and exhaustive (SB-FR8 precedence).\n\nDecisions the requirements left open (see `post_codegen.md`):\n- constant values invented (C=1000, M1=150, M2=800, N1=400, N2=600, W=25, U1=U2=4, P=10);\n- level risk = worst-case level reachable next cycle crosses M1/M2;\n- regulation: all four pumps on below N1, off above N2; initialization fills with all four;\n- in rescue, any defective pump controller forces emergency stop;\n- STOP/transmission failure apply before STEAM_BOILER_WAITING;\n- failure announcements and repair acks come from the sensor;\n- emergency stop terminal.\n\n## Iterations\n\n- **It 1 \u2192 2:** `OperatingMode` literals renamed `MODE_*` (name clash with states); private doubles\n  annotated; real-valued guard functions replaced by boolean queries (FDR4 blow-up).\n- **It 2 \u2192 3:** no predicate is a bare alias of a sensor call (Isabelle typed one real); one\n  emergency branch per mode (29 transitions).\n- **It 3 \u2192 4:** Isabelle typed computed-body queries as real (plausibly FDR4's blow-up); Dafny\n  found positive predicate references expanded unparenthesised. Queries became field getters, and\n  predicates use one operator, with other-operator references only negated.\n- **It 4 \u2192 5:** `levelLimitAtRisk` was still real (its flag was assigned a `||` of comparisons).\n  Every guard-read flag is now set from literals or single comparisons. The guard functions shrank\n  to ten (`haltDemanded`, `estimateTrustworthy`, `startupReadingsPlausible` merge requirement-named\n  conditions) to shrink FDR4's model.\n\n**Possible pipeline defects:** unparenthesised predicate expansion; boolean sensor functions typed\nreal depending on how the returned value is computed; alias predicates keep their own name."
+}

@@ -1,0 +1,51 @@
+{
+  "study": "sranger",
+  "run": 7,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 15:53:06",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run7-sranger",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-sranger-run7",
+  "files": {
+    "java": 9,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 227,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# SRanger \u2014 cold pass 7, iteration 1\n\n## What was written\n\nNine files under `sranger/`: the `RoboChartType` annotation; sealed `InputEvent`\n(`Obstacle`, `Tick`, `EndTask`) and `OutputEvent` (`Move(lv, av)`); `Sensor`\n(`distance()`); `Actuator` (`apply`, last linear/angular velocity); `Clock`\n(`now()`, `advance()`); and, in `controller`, `SRangerMode`\n(`MOVING`, `TURNING`, `FINAL`), `SRangerConstants` and `SRangerController`.\n`step()` is the profile's two-level if-else with two predicates,\n`obstacleDetected` and `turnDurationElapsed`. Also written:\n`result_codegen.json` (54 entries; all 23 requirements, all 9 files) and\n`post_codegen.{md,json}`. No Java was present beforehand.\n\n## Decisions the requirements left open\n\n- Moving \u2192 Turning is `Obstacle && obstacleDetected` (SR-Beh2 trigger,\n  SR-GP1 guard). An obstacle event above the threshold is ignored.\n- Turning priority: endTask, then autonomous `turnDurationElapsed`, then\n  `Tick && !turnDurationElapsed`. A per-cycle tick must not starve the return\n  to Moving.\n- endTask is the first branch in both Moving and Turning. Final is terminal,\n  with an empty block.\n- Move is one two-component record sent via\n  `actuator.apply(new OutputEvent.Move(...))`.\n- The power-up Move(MOVE_VEL, 0) is issued in the constructor.\n- Clock is framework-advanced from 0.0 and monotonic. The field is `timer`\n  because `clock` is reserved, and `clockResetTime = timer.now()` follows the\n  clock convention.\n- Invented defaults: no-reading distance 1000.0 m (negative or NaN readings\n  count as no reading); the actuator starts at Move(0, 0); `clockResetTime`\n  starts at 0.0.\n\n## Unresolved\n\n- The model rounds `OBSTACLE_THRESHOLD` 0.5 up to 1, so the model's guard is\n  `distance() <= 1`.\n- Whether the extractor types a two-component event, and whether it carries\n  the constructor's initial Move, is unknown to me."
+}

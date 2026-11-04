@@ -1,0 +1,364 @@
+diagram SteamBoilerController
+
+enumeration PumpPosition { PUMP_OFF PUMP_ON }
+enumeration UnitCondition { SOUND FAILED_UNACKNOWLEDGED FAILED_ACKNOWLEDGED }
+enumeration ValvePosition { VALVE_CLOSED VALVE_OPEN }
+enumeration WaterFlow { NOT_FLOWING FLOWING }
+enumeration OperatingMode { INITIALIZATION_MODE NORMAL_MODE DEGRADED_MODE RESCUE_MODE EMERGENCY_STOP_MODE }
+
+datatype PumpControlReading {
+	controlledPump : int
+	flow : WaterFlow
+}
+
+datatype PumpStateReading {
+	pumpNumber : int
+	position : PumpPosition
+}
+
+interface Inputs {
+	event transmissionReceived
+}
+
+interface Outputs {
+	event mode
+	event programReady
+	event valve
+	event closePump : int
+	event openPump : int
+}
+
+interface Sensors {
+	var pumpNumber : int
+	var position : PumpPosition
+	var operatorStop : boolean
+	var transmissionLost : boolean
+	var plantWaiting : boolean
+	var steamNonZero : boolean
+	var levelFailed : boolean
+	var unitsReady : boolean
+	var otherUnitFailed : boolean
+	var aboveNormal : boolean
+	var belowNormal : boolean
+	var levelRisk : boolean
+	var estimationUnitFailed : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var readyAnnounced : boolean = false
+	var valveOpen : boolean = false
+}
+
+interface Constants {
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state NORMAL {
+		entry send mode
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send mode
+	}
+	state DEGRADED {
+		entry send mode
+	}
+	state RESCUE {
+		entry send mode
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatorStop
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition transmissionLost
+	}
+	transition t3 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( plantWaiting )
+		action send mode
+	}
+	transition t4 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition steamNonZero
+	}
+	transition t5 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition levelFailed
+	}
+	transition t6 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionReceived
+		condition unitsReady /\ otherUnitFailed
+	}
+	transition t7 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionReceived
+		condition unitsReady
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition readyAnnounced
+		action send mode ; send programReady
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition aboveNormal /\ not ( valveOpen )
+		action valveOpen = true ; send mode ; send valve ; closePump ! 1
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition aboveNormal
+		action send mode
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition valveOpen
+		action valveOpen = false ; send mode ; send valve
+	}
+	transition t12 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition belowNormal
+		action send mode ; openPump ! 1
+	}
+	transition t13 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		action readyAnnounced = true ; send mode ; closePump ! 1 ; send programReady
+	}
+	transition t14 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatorStop
+	}
+	transition t15 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition transmissionLost
+	}
+	transition t16 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition levelRisk
+	}
+	transition t17 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition levelFailed /\ estimationUnitFailed
+	}
+	transition t18 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionReceived
+		condition levelFailed
+	}
+	transition t19 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionReceived
+		condition otherUnitFailed
+	}
+	transition t20 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition belowNormal
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t21 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition aboveNormal
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t22 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+	}
+	transition t23 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatorStop
+	}
+	transition t24 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition transmissionLost
+	}
+	transition t25 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition levelRisk
+	}
+	transition t26 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition levelFailed /\ estimationUnitFailed
+	}
+	transition t27 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionReceived
+		condition levelFailed
+	}
+	transition t28 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( otherUnitFailed )
+	}
+	transition t29 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition belowNormal
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t30 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition aboveNormal
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t31 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+	}
+	transition t32 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatorStop
+	}
+	transition t33 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition transmissionLost
+	}
+	transition t34 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition levelRisk
+	}
+	transition t35 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition estimationUnitFailed
+	}
+	transition t36 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( levelFailed ) /\ not ( otherUnitFailed )
+	}
+	transition t37 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( levelFailed )
+	}
+	transition t38 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition belowNormal
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t39 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition aboveNormal
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t40 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+	}
+	transition t41 {
+		from EMERGENCY_STOP
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionReceived to stm_ref0 on transmissionReceived
+	connection stm_ref0 on mode to SteamBoilerController_Ctrl on mode
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionReceived
+		event mode
+		event programReady
+		event valve
+		event closePump : int
+		event openPump : int
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionReceived to ctrl_ref0 on transmissionReceived
+	connection ctrl_ref0 on mode to SteamBoilerController_Platform on mode
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+}
+

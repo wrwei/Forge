@@ -1,0 +1,108 @@
+# post_codegen
+
+**phase:** codegen  
+**status:** uncertain
+
+## Summary
+
+All 23 SRanger requirements are implemented and traced in result_codegen.json (9 Java files, single controller SRangerController with modes MOVING, TURNING, FINAL and six step() branches plus the initial mode). SR-DC1 is enforced by construction: every (source mode, trigger) pair appears in exactly one branch. Eight points are flagged: two invented defaults, five design choices (one of them the 0.5 m threshold that the constants interface rounds up), one ambiguity between SR-Beh2 and SR-GP1, and one scope question about the terminal mode.
+
+## Issues
+
+### 1. [invented_default] Sensor: value returned when no IR reading is available
+
+**raw:** SR-DM5: 'When no reading is available ... distance() returns a large default value'. No value is given. Chosen: NO_READING_DISTANCE = 1000.0 m (far above obstacleThreshold = 0.5 m). A negative or NaN reading passed to update() is treated as 'no reading available' and also yields 1000.0, so distance() is always non-negative.
+
+**fix_directive:** Confirm 1000.0 m as the no-reading value and that invalid (negative/NaN) readings count as missing data; change NO_READING_DISTANCE or update() if a different policy is wanted.
+
+**java_trace:**
+
+- `src/main/java/sranger/sensor/Sensor.java` lines 12-31, element `Sensor`, requirement_ids: SR-DM5, SR-SF1
+
+### 2. [invented_default] Actuator: recorded command before the first Move
+
+**raw:** SR-DM6 says the actuator stores the latest issued command but not what it holds before any command. Chosen: lastLinearVelocity = 0.0 and lastAngularVelocity = 0.0 (stopped). In practice the controller constructor issues Move(moveVel, 0) immediately, so this value is only visible before a controller is attached.
+
+**fix_directive:** None needed unless a different initial recorded command is required.
+
+**java_trace:**
+
+- `src/main/java/sranger/actuator/Actuator.java` lines 10-11, element `Actuator`, requirement_ids: SR-DM6
+
+### 3. [design_choice] Power-up entry command of Moving issued in the controller constructor
+
+**raw:** SR-FR1/SR-Beh1: Moving is the initial mode and on entering Moving the controller issues Move(moveVel, 0). The profile places entry actions on the incoming branches of step(); the initial entry has no branch. Chosen: the constructor issues actuator.apply(new OutputEvent.Move(MOVE_VEL, 0.0)) once, so the Java robot drives forward from power-up. The extracted model's initial transition may not carry this action, in which case the model's first Move happens only on Turning -> Moving.
+
+**fix_directive:** If the verifiers or the extracted model reject or ignore the constructor statement, either accept that the initial entry action is absent from the model or move the power-up command to a mechanism the extractor supports.
+
+**java_trace:**
+
+- `src/main/java/sranger/controller/SRangerController.java` lines 22-28, element `SRangerController`, requirement_ids: SR-FR1, SR-Beh1
+
+### 4. [design_choice] Move modelled as one event record with two real components
+
+**raw:** SR-DM4: Move carries two real values (linear and angular velocity). The codegen rules describe an event carrying a value as one record component. Chosen: record Move(double lv, double av), matching the requirement's Move(lv, av) signature directly, rather than wrapping both values in an extra datatype the requirements do not name. The controller emits it as actuator.apply(new OutputEvent.Move(lv, av)).
+
+**fix_directive:** If the extractor supports only single-component event records, replace the two components with one record-typed component (e.g. a velocity pair) and update the three emission sites in step() and the constructor.
+
+**java_trace:**
+
+- `src/main/java/sranger/event/OutputEvent.java` lines 10-10, element `Move`, requirement_ids: SR-DM4
+- `src/main/java/sranger/actuator/Actuator.java` lines 14-20, element `apply`, requirement_ids: SR-DM6
+
+### 5. [design_choice] obstacleThreshold = 0.5 is rounded up to 1 in the model's constants interface
+
+**raw:** SR-DM2/SR-GP1: obstacleThreshold = 0.5 m and obstacleDetected is distance <= obstacleThreshold. The model's constants interface rounds a fractional constant up, so the model's guard reads distance() <= 1. The exact value matters to this guard: readings in (0.5, 1] satisfy it in the model but not in Java. The unit (metres) and value were kept as the requirements state them; the other constants (1.0, 2.0, 2.0) are integral and unaffected.
+
+**fix_directive:** Treat verification results on the Moving -> Turning guard as covering a threshold of 1 m, not 0.5 m. Rescaling to centimetres would remove the rounding but contradicts SR-DM5/SR-SF1 (distance() in metres).
+
+**java_trace:**
+
+- `src/main/java/sranger/controller/SRangerConstants.java` lines 14-14, element `OBSTACLE_THRESHOLD`, requirement_ids: SR-DM2, SR-GP1
+- `src/main/java/sranger/controller/SRangerController.java` lines 38-38, element `obstacleDetected`, requirement_ids: SR-GP1
+
+### 6. [design_choice] Transition priority within Moving and Turning
+
+**raw:** The requirements give no priorities. Chosen: endTask first in both modes (operator shutdown overrides); in Moving, obstacle then tick (distinct events, no overlap); in Turning, the autonomous turnDurationElapsed -> Moving branch above the tick self-loop, and the tick branch conjoins !turnDurationElapsed because the model treats a mode's branches as alternatives. Consequently a tick that arrives once the turn duration has elapsed returns the robot to Moving rather than looping in Turning.
+
+**fix_directive:** None needed unless a different priority is required.
+
+**java_trace:**
+
+- `src/main/java/sranger/controller/SRangerController.java` lines 42-65, element `step`, requirement_ids: SR-Beh2, SR-Beh3, SR-Beh4, SR-Beh5, SR-Beh6, SR-Beh7, SR-DC1
+
+### 7. [design_choice] Time source: a Clock class advanced by the framework
+
+**raw:** SR-Var1/SR-GP2 need the current time but name no time source. Chosen: class Clock (package sranger.timing) with now() in seconds (real) and advance(seconds), driven by the system framework; the controller holds it as field 'timer' (clock is reserved). clockResetTime = timer.now() on Moving -> Turning, and turnDurationElapsed = timer.now() - clockResetTime >= TURN_DURATION ('at or above').
+
+**fix_directive:** None needed unless a wall-clock time source is required.
+
+**java_trace:**
+
+- `src/main/java/sranger/timing/Clock.java` lines 8-22, element `Clock`, requirement_ids: SR-Var1, SR-GP2
+- `src/main/java/sranger/controller/SRangerController.java` lines 39-39, element `turnDurationElapsed`, requirement_ids: SR-GP2
+- `src/main/java/sranger/controller/SRangerController.java` lines 48-48, element `clockResetTime`, requirement_ids: SR-Var1
+
+### 8. [ambiguous_requirement] Moving -> Turning: obstacle event and obstacleDetected guard
+
+**raw:** SR-Beh2 says the transition fires when the obstacle event is received; SR-GP1 says obstacleDetected (distance <= obstacleThreshold) is the guard on the same transition. Implemented as both: trigger obstacle, condition obstacleDetected. An obstacle event that arrives while distance() is above the threshold (e.g. a stale event or no reading) is ignored and the robot keeps Moving.
+
+**fix_directive:** Confirm that the guard should be conjoined with the event; if the event alone is meant to trigger the turn, drop '&& obstacleDetected' from the Moving -> Turning branch (SR-GP1 would then be unused).
+
+**java_trace:**
+
+- `src/main/java/sranger/controller/SRangerController.java` lines 46-49, element `step`, requirement_ids: SR-Beh2, SR-GP1
+
+### 9. [scope_question] Events with no specified transition are ignored (Final, obstacle in Turning)
+
+**raw:** Final has no outgoing transitions (SR-FR3 calls it terminal), so tick, obstacle and endTask are ignored there; an obstacle event in Turning, and endTask after Final, are likewise ignored. No self-loops were added for these, because SR-DC1 maps each behaviour requirement to exactly one transition and the requirements specify no others. In the model Final is a terminal state in which only time passes.
+
+**fix_directive:** None needed unless Final is expected to accept events (e.g. a tick self-loop).
+
+**java_trace:**
+
+- `src/main/java/sranger/controller/SRangerController.java` lines 67-69, element `step`, requirement_ids: SR-FR3, SR-DC1
+
+## Next step
+
+Run the pipeline (compile, coverage, profile check, transformations, FDR4, Dafny, Isabelle, vacuity).

@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 5,
+  "iteration": 3,
+  "recorded_utc": "2026-11-04 01:13:27",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r16-run5-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run5",
+  "files": {
+    "java": 18,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1278,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Steam Boiler \u2014 iteration 3\n\n**Iteration 2:** preflight and vacuity passed. FDR4 was killed at 80 GB again, and Isabelle `deadlock_free` timed out.\n\n**Changes, Java behaviour unchanged (same outputs on my scenario runs):**\n- Isabelle needs, in every mode, one branch with no guard besides the event. The last branch of each mode is now `event instanceof TransmissionReceived`. That is the remaining case of the else-if chain: the idle wait in initialization, otherwise the ready announcement or the hold.\n- FDR4: numeric types were already narrowed to {0..1}, so value ranges were not the cause. Guards repeated the negations of every higher branch (up to ten sensor calls each, roughly 40 to 90 per mode). Guards now carry at most two boolean judgements, and the else-if order supplies the priority. Negations are only required below predicate-only branches, which I don't have. Trade-off: the extracted model lets a mode's transitions overlap; it over-approximates the Java's priority order.\n\n**Earlier changes:** boolean sensor judgements (the comparisons are made in `BoilerSensor.judge`). `EMERGENCY_STOP` reports MODE every cycle and has no exit. The vacuity audit's crash in iteration 1 (`RecursionError` in its guard parser) looks like a pipeline defect; flat guards avoid it.\n\n**Design:** one `TransmissionReceived` per cycle after `BoilerSensor.receive`. The sensor does detection, unit status, the estimate and forecasts. `SteamBoilerProgram` sends failure announcements and repair acknowledgements.\n\n**Open decisions:**\n- Constants invented: C=1000, M1=150, M2=850, N1=400, N2=600, W=25, U1=U2=2, P=10.\n- Regulation is bang-bang on all pumps; initialization fills with pump 1.\n- Level risk is the worst case one cycle ahead, with the pump start-up latency.\n- Any pump-controller failure makes rescue untenable.\n- Aberrant: a missing or repeated data message, a bad pump number, an unexpected acknowledgement, a start-up message outside initialization, or PHYSICAL_UNITS_READY before PROGRAM_READY.\n\n**Unresolved:** detection internals lie outside the model."
+}

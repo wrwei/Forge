@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 4,
+  "iteration": 2,
+  "recorded_utc": "2026-11-03 18:06:20",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r16-run4-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run4",
+  "files": {
+    "java": 14,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1203,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Steam Boiler, run 4: iteration 2\n\n**Iteration 1 results.**\n- Preflight: two private `double` parameters lacked `@RoboChartType(\"real\")`.\n- FDR4: killed at 78 GB with no verdict.\n- Isabelle: `deadlock_free` timed out.\n- Vacuity: crashed with a recursion error while parsing guards.\n\n**Changes in iteration 2.**\n- Annotated the two parameters.\n- Every sensor query the controller's guards use is now boolean; before, some were real- or nat-valued and compared with constants. The comparisons against M1, M2, N1 and N2 moved into `BoilerSensor`.\n- The disjunctions moved into three sensor judgements (emergency in initialization, operation and rescue), so every guard is a flat conjunction of literals.\n- The aberrant start-up message checks moved into the sensor, which learns the mode and PROGRAM_READY from the messages transmitted.\n- The controller keeps only `currentMode` and `valveOpen`.\n- The valve is now closed on its own cycle before filling or PROGRAM_READY.\n\nBehaviour is otherwise unchanged, checked with a scratch simulation.\n\n**What the Java is.** `SteamBoilerController.step` (five modes, 27 transitions, each triggered by `TransmissionReceived` and sending MODE), `BoilerSensor` (FR1\u2013FR7, V5\u2013V10, prediction), `BoilerActuator`, the `SteamBoilerProgram` driver, events, domain types, constants.\n\n**Open decisions (all in `post_codegen.md`):**\n- The constant values are invented.\n- Regulation opens all pumps below N1 and closes all above N2.\n- Emergency stop sends MODE once, then the program stops.\n- STOP and transmission checks also run before STEAM_BOILER_WAITING.\n- A level failure while the steam device or a pump controller is out of order goes to emergency stop (FR8).\n- Which messages count as aberrant; the drain rate of the valve; FR2's delay is applied to stop orders too.\n\n**Possible instrument issue.** In iteration 1 the vacuity audit crashed (a Python RecursionError) instead of reporting. I worked around it by flattening the guards.\n\n**Unresolved:** none so far."
+}

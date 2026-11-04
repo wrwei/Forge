@@ -1,0 +1,99 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 03-11-2026 04:05:41
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "SteamBoilerController_Module.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate SteamBoilerController_Module
+P_SteamBoilerController_Module = let
+	id__ = 0
+	
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_stopLimit = 3
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_normalN2 = 600
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_normalN1 = 400
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_cycleSeconds = 5
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_steamRiseMargin = 25
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_limitM1 = 150
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_steamMaxOutflow = 50
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_pumpsMaxInflow = 100
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_steamFallMargin = 25
+	const_SteamBoilerController_Module_SteamBoilerController_Platform_limitM2 = 850
+	
+	
+		
+	
+within
+	SteamBoilerController_Module::O__(id__,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_stopLimit,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_normalN2,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_normalN1,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_cycleSeconds,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_steamRiseMargin,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_limitM1,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_steamMaxOutflow,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_pumpsMaxInflow,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_steamFallMargin,
+			    const_SteamBoilerController_Module_SteamBoilerController_Platform_limitM2)
+assert P_SteamBoilerController_Module :[deadlock-free]	
+assert P_SteamBoilerController_Module;RUN({r__}) :[deadlock-free]
+assert P_SteamBoilerController_Module :[deterministic]
+assert P_SteamBoilerController_Module :[divergence-free]
+
+-- generate SteamBoilerController_Module_ctrl_ref0
+P_SteamBoilerController_Module_ctrl_ref0 = let
+	id__ = 0
+	
+	const_SteamBoilerController_Ctrl_stopLimit = 3
+	const_SteamBoilerController_Ctrl_normalN2 = 600
+	const_SteamBoilerController_Ctrl_normalN1 = 400
+	const_SteamBoilerController_Ctrl_cycleSeconds = 5
+	const_SteamBoilerController_Ctrl_steamRiseMargin = 25
+	const_SteamBoilerController_Ctrl_limitM1 = 150
+	const_SteamBoilerController_Ctrl_steamMaxOutflow = 50
+	const_SteamBoilerController_Ctrl_pumpsMaxInflow = 100
+	const_SteamBoilerController_Ctrl_steamFallMargin = 25
+	const_SteamBoilerController_Ctrl_limitM2 = 850
+	
+	
+		
+within
+	SteamBoilerController_Module::ctrl_ref0::O__(id__,
+			    const_SteamBoilerController_Ctrl_stopLimit,
+			    const_SteamBoilerController_Ctrl_normalN2,
+			    const_SteamBoilerController_Ctrl_normalN1,
+			    const_SteamBoilerController_Ctrl_cycleSeconds,
+			    const_SteamBoilerController_Ctrl_steamRiseMargin,
+			    const_SteamBoilerController_Ctrl_limitM1,
+			    const_SteamBoilerController_Ctrl_steamMaxOutflow,
+			    const_SteamBoilerController_Ctrl_pumpsMaxInflow,
+			    const_SteamBoilerController_Ctrl_steamFallMargin,
+			    const_SteamBoilerController_Ctrl_limitM2)
+
+assert P_SteamBoilerController_Module_ctrl_ref0 :[deadlock-free]	
+assert P_SteamBoilerController_Module_ctrl_ref0;RUN({r__}) :[deadlock-free]
+assert P_SteamBoilerController_Module_ctrl_ref0 :[deterministic]
+assert P_SteamBoilerController_Module_ctrl_ref0 :[divergence-free]
+
+-- timed deadlock free
+assert prioritise(P_SteamBoilerController_Module_ctrl_ref0[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_SteamBoilerController_Module_ctrl_ref0
+-- timed deadlock free
+assert prioritise(P_SteamBoilerController_Module[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_SteamBoilerController_Module

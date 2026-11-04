@@ -1,0 +1,98 @@
+# post_codegen
+
+**status:** uncertain
+
+**summary:** LRE controller generated: 15 Java files, 51/51 requirements traced. 12 points the requirements did not settle are recorded below. None blocks compilation.
+
+## Issues
+
+### 1. [ambiguous_requirement] "-1 means no obstacle" conflicts with cstc/cdyn being natural numbers
+
+- **raw:** LRE-Var5/Var6 and LRE-DM5 say closestStaticIndex/closestDynamicIndex return -1 when there is no obstacle, but they also call cstc/cdyn natural numbers, and the Java profile maps int to nat (never negative).
+- **fix_directive:** Resolved: index 0 (ObstacleRegister.NO_OBSTACLE) means 'no obstacle' and the register only accepts keys >= 1. Because 0 is never a key, the sensor's distance functions return the safe large distance for it, and its field accessors return zero, as LRE-DM5 requires for the -1 case. Confirm, or name another non-negative sentinel.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/sensor/ObstacleRegister.java` L16-31 `NO_OBSTACLE` (LRE-DM3, LRE-DM5, LRE-Var5, LRE-Var6)
+  - `java.generated.project/src/main/java/lre/sensor/Sensor.java` L146-157 `closestOf` (LRE-OP3, LRE-OP4)
+
+### 2. [ambiguous_requirement] No-dynamic-obstacle defaults of LRE-DM5 would make CalcCPA report a collision
+
+- **raw:** LRE-DM5: with no obstacle, nsRelDist/ewRelDist/obsNsVel/obsEwVel return zero. LRE-OP5: the Sensor returns 'zero-velocity and large-distance defaults'. A CPA computed from a zero relative position gives cda = 0 and tcpa = 0, which satisfies the MOM->CAM guard when no dynamic obstacle exists.
+- **fix_directive:** Resolved: CalcCPA takes the range |r| from sensor.hdist(cdyn), which carries the large-distance default, and takes the direction from the field accessors: cda = sqrt(hdist^2 - tcpa^2 |w|^2). With no dynamic obstacle, tcpa = 0 and cda = the safe large distance. With an obstacle, the formula is the standard horizontal CPA.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/operation/CalcCPA.java` L36-47 `compute` (LRE-OP5, LRE-Var7, LRE-Var8, LRE-DM5)
+
+### 3. [design_choice] CPA geometry: horizontal plane, relative velocity, epsilon in the divisor
+
+- **raw:** LRE-OP5 does not give the CPA formula.
+- **fix_directive:** Chosen: CPA in the horizontal (ns, ew) plane only, because the Sensor exposes only horizontal accessors. The obstacle velocities are taken as absolute, so the closing velocity is AUV velocity minus obstacle velocity. LreConstants.CPA_EPSILON (1e-6) is added to |w|^2 so the division never divides by zero, which also gives tcpa = 0 when there is no relative motion. The model's constants interface rounds CPA_EPSILON up to 1; this affects the computed values of cda/tcpa in the model but not the structure of the guards.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/operation/CalcCPA.java` L40-46 `compute` (LRE-OP5)
+  - `java.generated.project/src/main/java/lre/LreConstants.java` L32-33 `CPA_EPSILON` (LRE-OP5)
+
+### 4. [ambiguous_requirement] HCM speed: 0 m/s (LRE-FR3) vs 0.1 m/s (system description)
+
+- **raw:** System description: 'HCM: Reduced speed (0.1 m/s)'. LRE-FR3: 'On entering HCM, the LRE advises a velocity of 0 m/s'.
+- **fix_directive:** Resolved in favour of the requirement: HCM_SPEED = 0.0. (A value of 0.1 would also be rounded up to 1 in the model's constants interface.)
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/LreConstants.java` L26-27 `HCM_SPEED` (LRE-FR3)
+
+### 5. [design_choice] Literal 1s in LRE-Beh4/Beh9/Beh11 bound to named constants
+
+- **raw:** LRE-Beh4 says 'vel <= 1' and 'odist > 1'; LRE-Beh9/Beh11 say '>= 1 m/s'.
+- **fix_directive:** The velocity limits use NORMAL_SPEED (1.0, the MOM speed of LRE-FR2). The distance limits in LRE-Beh4 use MIN_SAFE_DIST (1.0). The values are identical to the literals.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` L58-73 `step` (LRE-Beh4, LRE-Beh9, LRE-Beh11, LRE-FR2)
+
+### 6. [design_choice] Transition priority within MOM and HCM
+
+- **raw:** The requirements give no priority among the transitions out of MOM, HCM and CAM.
+- **fix_directive:** Order used: reqOCM first, as an operator override in every non-OCM mode, unguarded; then inOpez -> OCM; then collision risk -> CAM; then endTask; then reqHCM; then the autonomous HCM entries in the order Beh9, Beh11, Beh10. Each later branch conjoins the negation of every earlier predicate-only guard. Beh11 is placed before Beh10: with equal vertical thresholds, Beh11 placed after the negation of Beh10 could never be enabled.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` L89-131 `step` (LRE-Beh5, LRE-Beh6, LRE-Beh7, LRE-Beh8, LRE-Beh9, LRE-Beh10, LRE-Beh11, LRE-Beh12, LRE-Beh13, LRE-Beh14, LRE-Beh15, LRE-Beh16, LRE-Beh17, LRE-Beh18, LRE-DC1)
+
+### 7. [ambiguous_requirement] CAM's evasive manoeuvre is not specified
+
+- **raw:** LRE-FR4: 'the AUV performs evasive manoeuvres'. No velocity or heading is given, and LRE-DM7 allows only advVel/advHdng.
+- **fix_directive:** CAM has no entry action. The LRE issues no advice in CAM until it leaves CAM (advVel(0) on Beh18). Specify the evasive advice if one is intended.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` L125-131 `step` (LRE-FR4, LRE-Beh17, LRE-Beh18)
+
+### 8. [ambiguous_requirement] vvel is the signed rate of climb
+
+- **raw:** LRE-OP1: 'vvel is the rate of climb'. LRE-Beh11 tests vvel >= 1 m/s.
+- **fix_directive:** Implemented literally (vvel = rate_of_climb), so Beh11 fires when the AUV climbs at >= 1 m/s towards a static obstacle but not when it descends. Use the magnitude instead if descent should count.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/operation/CalcVel.java` L24-24 `compute` (LRE-OP1, LRE-Var3, LRE-Beh11)
+
+### 9. [invented_default] Safe large distance, initial readings, tie-breaking
+
+- **raw:** LRE-DM5 asks for 'a safe large distance' without a value, and the initial sensor/actuator values are not given.
+- **fix_directive:** Values chosen: SAFE_LARGE_DISTANCE = 1000000.0 m. Sensor readings and actuator advice are 0.0 until first set, so depth 0 puts the AUV in the OPEZ until the first update. On equal odist, the closest-obstacle search picks the lowest index.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/sensor/Sensor.java` L15-18 `SAFE_LARGE_DISTANCE` (LRE-DM5)
+  - `java.generated.project/src/main/java/lre/actuator/Actuator.java` L12-13 `Actuator` (LRE-DM8)
+
+### 10. [design_choice] CheckOPEZ reads the closest static index from the Sensor
+
+- **raw:** LRE-OP2: CheckOPEZ uses the index computed by CalcCStc. The operation profile admits only sensor calls and the operation's own fields on a right-hand side.
+- **fix_directive:** CheckOPEZ evaluates sensor.odist(sensor.closestStaticIndex()). This is the same value CalcCStc stores within a step, because the sensor is a snapshot during step().
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/operation/CheckOPEZ.java` L23-26 `compute` (LRE-OP2, LRE-Var1)
+
+### 11. [scope_question] MOM/HCM oscillation if staticObsDfltVertDist > staticObsVertDist
+
+- **raw:** LRE-Beh10 (vdist <= staticObsDfltVertDist) and LRE-Beh13 (hdist > horiz and vdist > staticObsVertDist) are both enabled when staticObsVertDist < vdist <= staticObsDfltVertDist.
+- **fix_directive:** With the required defaults (all 1) the two guards are mutually exclusive, so no change was made. If the thresholds may differ, Beh13 should also require vdist > staticObsDfltVertDist.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` L68-73 `step` (LRE-Beh10, LRE-Beh13, LRE-DM4)
+
+### 12. [design_choice] A cycle without operator input is step(null)
+
+- **raw:** LRE-DM6 lists only operator events; autonomous transitions must still be evaluated every cycle.
+- **fix_directive:** step(null) runs the operations and the autonomous transitions. No extra 'tick' event was invented.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` L47-56 `step` (LRE-ARCH2)
+
+## next_step
+
+Run the pipeline. The decisions above are recorded for review and need no Java change unless the verifiers or the operator object.

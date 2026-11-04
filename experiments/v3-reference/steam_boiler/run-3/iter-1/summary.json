@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 3,
+  "iteration": 1,
+  "recorded_utc": "2026-11-03 13:03:13",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r16-run3-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run3",
+  "files": {
+    "java": 18,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1367,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "failed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 1 \u2014 steam_boiler, run 3\n\nNo Java was present at the start.\n\n## What I wrote\n\n- `SteamBoilerController`: five modes (initialization first), one `step` per cycle triggered by `TransmissionReceived`. In every mode the guards are named predicates forming an exhaustive, mutually exclusive partition ordered by severity (SB-FR8). MODE is sent on every transition; emergency stop is terminal. State: mode, `boilerWaiting`, `readyAnnounced`, `evacuationValve`.\n- `BoilerSensor`: the 14 boolean/nat queries the controller reads.\n- `PlantMonitor` / `PumpUnit` / `UnitHealth`: reception, transmission check, STOP count, q, v, p, level estimate, failure judgements, unit status, failure announcements and repair acknowledgements.\n- `SteamBoilerProgram`: the receive\u2013analyse\u2013transmit cycle. Events, domain enums and records, constants, and the actuator.\n\nPlant analysis is kept outside the controller so that the extracted model has four state variables and no real arithmetic.\n\n## Decisions the requirements left open\n\n- Constant values (C=1000, M1=150, M2=850, N1=400, N2=600, W=25, U1=U2=4, P=10) and pump numbers 1\u20134.\n- Regulation switches all four pumps together, based on the level predicted for the end of the coming cycle. Regulating on the current level reached the M1 risk at full steam in simulation. Pumps are not ordered in the cycle of a mode change.\n- Initialization fills with pump 1 only (\"a pump\").\n- A level failure while the steam device or any pump controller is out of order goes straight to emergency stop.\n- The aberrant-message set, the timing of the pump and controller judgements, and the worst-case bounds are listed in `post_codegen.md`.\n- The zero-steam check runs on every initialization cycle after STEAM_BOILER_WAITING.\n\n## Unresolved\n\n- SB-Beh24 (MODE on every cycle) versus SB-Beh22 (the program stops): MODE(EMERGENCY_STOP) is sent once, then nothing.\n- FR6/FR7 message repetition and the failure judgements are not in the extracted model, so the verifiers do not check them."
+}

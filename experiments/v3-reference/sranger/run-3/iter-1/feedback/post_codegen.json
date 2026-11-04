@@ -1,0 +1,144 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 23 SR requirements implemented in 9 Java files under sranger/; 7 points the requirements did not settle are recorded below.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading distance is 1000.0 m",
+      "raw": "SR-DM5 requires a 'large default value' when no reading is available but gives no number. Chosen: 1000.0 m (Sensor.NO_READING_DISTANCE), far above obstacleThreshold. A negative or NaN measurement passed to update() is also treated as 'no reading'.",
+      "fix_directive": "None unless the requirement fixes a value; change NO_READING_DISTANCE if so.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/sensor/Sensor.java",
+          "line_start": 12,
+          "line_end": 28,
+          "element": "Sensor.NO_READING_DISTANCE / update",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Initial values of clockResetTime and the actuator's stored command",
+      "raw": "clockResetTime starts at 0.0 (it is always reset on entry to Turning before the Turning guard reads it). The Actuator's stored lv/av start at 0.0 before the first command; the constructor immediately overwrites them with Move(moveVel, 0).",
+      "fix_directive": "None; the values are never observed by a guard before being set.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 20,
+          "line_end": 20,
+          "element": "clockResetTime",
+          "requirement_ids": [
+            "SR-Var1"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/actuator/Actuator.java",
+          "line_start": 11,
+          "line_end": 12,
+          "element": "lastLinearVelocity / lastAngularVelocity",
+          "requirement_ids": [
+            "SR-DM6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Power-up entry action of Moving is issued in the constructor",
+      "raw": "SR-FR1/SR-Beh1: Moving is initial and its entry issues Move(moveVel, 0). With entry actions written inline on each branch of step(), the power-up entry has no branch; the constructor issues it. The extracted model's initial transition may therefore carry no action.",
+      "fix_directive": "None unless the model must show the initial Move.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 32,
+          "line_end": 39,
+          "element": "SRangerController(Sensor, Actuator, Clock)",
+          "requirement_ids": [
+            "SR-FR1",
+            "SR-Beh1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Moving -> Turning needs the obstacle event and obstacleDetected",
+      "raw": "SR-Beh2 names the obstacle event as trigger; SR-GP1 names obstacleDetected (distance <= obstacleThreshold) as the guard of the same transition. Both are used: trigger obstacle, condition obstacleDetected.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 53,
+          "line_end": 66,
+          "element": "step / obstacleDetected",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Tick self-loops perform no action; Turning priority endTask > timeout > tick",
+      "raw": "SR-Beh4/SR-Beh7 say the tick self-loops perform no action, so the branches do not re-issue Move. In Turning, endTask is first (override), the autonomous turnDurationElapsed transition second, and the tick self-loop last with '&& !turnDurationElapsed' so that the timeout is not masked by the per-cycle tick.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 67,
+          "line_end": 84,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh4",
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "obstacleThreshold 0.5 is fractional; the model constant rounds it up to 1",
+      "raw": "SR-DM2 fixes obstacleThreshold = 0.5 m. The model's constants interface rounds fractional constants up to an integer, so the model guard reads distance() <= 1 while the Java tests distance() <= 0.5. moveVel, turnVel and turnDuration are whole numbers and unaffected.",
+      "fix_directive": "The exact value matters to the SR-GP1 guard; the verified model over-approximates the obstacle condition.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerConstants.java",
+          "line_start": 14,
+          "line_end": 14,
+          "element": "OBSTACLE_THRESHOLD",
+          "requirement_ids": [
+            "SR-DM2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "Final ignores all events",
+      "raw": "SR-FR3 makes Final terminal and no requirement gives it a transition, so its mode block is empty (time still passes in the model). The Clock is a separate class (field 'timer', since 'clock' is reserved) advanced by the framework.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 86,
+          "line_end": 88,
+          "element": "step (FINAL block)",
+          "requirement_ids": [
+            "SR-FR3",
+            "SR-DM1"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile, coverage, profile check, transformations, FDR4, Dafny, Isabelle, vacuity)."
+}

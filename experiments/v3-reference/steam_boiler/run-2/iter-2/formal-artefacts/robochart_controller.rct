@@ -1,0 +1,365 @@
+diagram SteamBoilerController
+
+enumeration ModeValue { INITIALIZATION_MODE NORMAL_MODE DEGRADED_MODE RESCUE_MODE EMERGENCY_STOP_MODE }
+enumeration WaterFlow { FLOWING NOT_FLOWING }
+
+interface Inputs {
+	event transmission
+}
+
+interface Outputs {
+	event modeMessage
+	event programReady
+	event valve
+	event closePump : int
+	event openPump : int
+}
+
+interface Sensors {
+	var operatorStopConfirmed : boolean
+	var transmissionFailure : boolean
+	var steamBoilerWaitingReceived : boolean
+	var physicalUnitsReadyReceived : boolean
+	var levelDeviceOutOfOrder : boolean
+	var steamDeviceOutOfOrder : boolean
+	var pumpControllerOutOfOrder : boolean
+	var otherUnitOutOfOrder : boolean
+	var levelBelowNormal : boolean
+	var levelAboveNormal : boolean
+	var levelMayFallBelowNormal : boolean
+	var levelMayRiseAboveNormal : boolean
+	var levelRiskOfLimit : boolean
+	var stopDemanded : boolean
+	var transmissionFailed : boolean
+	var levelDeviceFailed : boolean
+	var steamDeviceFailed : boolean
+	var plantWaitingNow : boolean
+	var unitsReadyNow : boolean
+	var otherUnitFailed : boolean
+	var levelAboveN2 : boolean
+	var levelBelowN1 : boolean
+	var levelRisk : boolean
+	var levelMayFallBelowN1 : boolean
+	var levelMayRiseAboveN2 : boolean
+	var pumpControllerFailed : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var steamBoilerWaitingSeen : boolean = false
+	var readyAnnounced : boolean = false
+	var valveOpen : boolean = false
+}
+
+interface Constants {
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state RESCUE {
+		entry send modeMessage
+	}
+	state DEGRADED {
+		entry send modeMessage
+	}
+	state NORMAL {
+		entry send modeMessage
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send modeMessage
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition stopDemanded
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ transmissionFailed
+	}
+	transition t3 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ levelDeviceFailed
+	}
+	transition t4 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ steamDeviceFailed
+	}
+	transition t5 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( steamBoilerWaitingSeen ) /\ not ( plantWaitingNow )
+		action send modeMessage
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( steamBoilerWaitingSeen ) /\ plantWaitingNow
+		action send modeMessage ; steamBoilerWaitingSeen = true
+	}
+	transition t7 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ readyAnnounced /\ unitsReadyNow /\ not ( otherUnitFailed )
+	}
+	transition t8 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ readyAnnounced /\ unitsReadyNow /\ otherUnitFailed
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ readyAnnounced /\ not ( unitsReadyNow )
+		action send modeMessage ; send programReady
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( readyAnnounced ) /\ levelAboveN2 /\ not ( valveOpen )
+		action send modeMessage ; send valve ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; valveOpen = true
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( readyAnnounced ) /\ levelAboveN2 /\ valveOpen
+		action send modeMessage
+	}
+	transition t12 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( readyAnnounced ) /\ not ( levelAboveN2 ) /\ valveOpen
+		action send modeMessage ; send valve ; valveOpen = false
+	}
+	transition t13 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( readyAnnounced ) /\ not ( levelAboveN2 ) /\ levelBelowN1 /\ not ( valveOpen )
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t14 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ steamBoilerWaitingSeen /\ not ( levelDeviceFailed ) /\ not ( steamDeviceFailed ) /\ not ( readyAnnounced ) /\ not ( levelAboveN2 ) /\ not ( levelBelowN1 ) /\ not ( valveOpen )
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady ; readyAnnounced = true
+	}
+	transition t15 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition stopDemanded
+	}
+	transition t16 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ transmissionFailed
+	}
+	transition t17 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ levelRisk
+	}
+	transition t18 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ levelDeviceFailed
+	}
+	transition t19 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( levelDeviceFailed ) /\ otherUnitFailed
+	}
+	transition t20 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( levelDeviceFailed ) /\ not ( otherUnitFailed ) /\ levelMayFallBelowN1
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t21 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( levelDeviceFailed ) /\ not ( otherUnitFailed ) /\ not ( levelMayFallBelowN1 ) /\ levelMayRiseAboveN2
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t22 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( levelDeviceFailed ) /\ not ( otherUnitFailed ) /\ not ( levelMayFallBelowN1 ) /\ not ( levelMayRiseAboveN2 )
+	}
+	transition t23 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition stopDemanded
+	}
+	transition t24 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ transmissionFailed
+	}
+	transition t25 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ levelRisk
+	}
+	transition t26 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ levelDeviceFailed
+	}
+	transition t27 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( levelDeviceFailed ) /\ not ( otherUnitFailed )
+	}
+	transition t28 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( levelDeviceFailed ) /\ otherUnitFailed /\ levelMayFallBelowN1
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t29 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( levelDeviceFailed ) /\ otherUnitFailed /\ not ( levelMayFallBelowN1 ) /\ levelMayRiseAboveN2
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t30 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( levelDeviceFailed ) /\ otherUnitFailed /\ not ( levelMayFallBelowN1 ) /\ not ( levelMayRiseAboveN2 )
+	}
+	transition t31 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition stopDemanded
+	}
+	transition t32 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ transmissionFailed
+	}
+	transition t33 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ levelRisk
+	}
+	transition t34 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ steamDeviceFailed
+	}
+	transition t35 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( steamDeviceFailed ) /\ pumpControllerFailed
+	}
+	transition t36 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( steamDeviceFailed ) /\ not ( pumpControllerFailed ) /\ not ( levelDeviceFailed ) /\ not ( otherUnitFailed )
+	}
+	transition t37 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( steamDeviceFailed ) /\ not ( pumpControllerFailed ) /\ not ( levelDeviceFailed ) /\ otherUnitFailed
+	}
+	transition t38 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( steamDeviceFailed ) /\ not ( pumpControllerFailed ) /\ levelDeviceFailed /\ levelMayFallBelowN1
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t39 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( steamDeviceFailed ) /\ not ( pumpControllerFailed ) /\ levelDeviceFailed /\ not ( levelMayFallBelowN1 ) /\ levelMayRiseAboveN2
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t40 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded ) /\ not ( transmissionFailed ) /\ not ( levelRisk ) /\ not ( steamDeviceFailed ) /\ not ( pumpControllerFailed ) /\ levelDeviceFailed /\ not ( levelMayFallBelowN1 ) /\ not ( levelMayRiseAboveN2 )
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmission to stm_ref0 on transmission
+	connection stm_ref0 on modeMessage to SteamBoilerController_Ctrl on modeMessage
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmission
+		event modeMessage
+		event programReady
+		event valve
+		event closePump : int
+		event openPump : int
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmission to ctrl_ref0 on transmission
+	connection ctrl_ref0 on modeMessage to SteamBoilerController_Platform on modeMessage
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+}
+

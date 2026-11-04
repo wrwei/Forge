@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 1,
+  "iteration": 1,
+  "recorded_utc": "2026-11-01 17:02:41",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c9-run1-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run1",
+  "files": {
+    "java": 14,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1211,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "failed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 1 summary: steam_boiler (cold pass)\n\n## What was written\n14 Java files under `steam_boiler/`. `SteamBoilerController.step` has five modes and 41 transitions, all triggered by `TransmissionReceived` (no guard-only cycles). Guards within a mode are mutually exclusive, ordered stop > hazard > rescue > degraded > regulation (FR8). Emergency stop is terminal. Controller fields: `boilerWaitingSeen`, `programReadySent`, `valveOpen`.\n\n`BoilerSensor` runs the receive stage and the FR1\u2013FR5 judgements. It also keeps the unit bookkeeping (V9, through `UnitHealth`), the STOP count, q, v and p, and the interval estimate and prediction (V8, Beh19, Beh25). It emits the FR6/FR7 detection and acknowledgement messages. `SteamBoilerProgram` runs receive, analyse, transmit. The trace maps 53 requirements in 198 entries.\n\n## Decisions the requirements left open\n- **Constants:** C=1000, M1=125, N1=400, N2=600, M2=800, W=25, U1=U2=2, P=10, cycle 5 s.\n- **Pumps:** numbered 1..4.\n- **Regulation:** a target pump count; at most one pump order per cycle; no pump order on a cycle that changes mode.\n- **Risk:** the next-cycle low bound counts only water known to be supplied, and the high bound counts every running or untrusted pump. Emergency stop at \u2264M1 or \u2265M2.\n- **Level plausibility (FR3):** assumes any pump may stop.\n- **Rescue:** if the steam device or any pump controller is out of order, a level failure goes straight to emergency stop.\n- **Aberrant messages (FR5):** duplicates; bad pump index; misplaced WAITING or READY; a repair for a sound unit; an acknowledgement with no pending detection.\n- **Initialization:** only STOP counts before WAITING; filling uses one pump.\n- **Emergency stop:** MODE is sent once, then the program stops.\n\n## Unresolved\n- The FR6/FR7 messages and the per-unit bookkeeping are outside the RoboChart model.\n- The constants are invented.\n- Only a scratchpad simulation exercised the main scenarios; there are no unit tests."
+}

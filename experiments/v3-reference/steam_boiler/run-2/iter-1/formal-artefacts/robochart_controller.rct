@@ -1,0 +1,308 @@
+diagram SteamBoilerController
+
+enumeration ModeValue { INITIALIZATION_MODE NORMAL_MODE DEGRADED_MODE RESCUE_MODE EMERGENCY_STOP_MODE }
+enumeration WaterFlow { FLOWING NOT_FLOWING }
+
+interface Inputs {
+	event transmission
+}
+
+interface Outputs {
+	event modeMessage
+	event valve
+	event programReady
+	event closePump : int
+	event openPump : int
+}
+
+interface Sensors {
+	var operatorStopConfirmed : boolean
+	var transmissionFailure : boolean
+	var steamBoilerWaitingReceived : boolean
+	var physicalUnitsReadyReceived : boolean
+	var levelDeviceOutOfOrder : boolean
+	var steamDeviceOutOfOrder : boolean
+	var anyPumpOutOfOrder : boolean
+	var anyPumpControllerOutOfOrder : boolean
+	var steamReading : real
+	var levelReading : real
+	var predictedMinLevel : real
+	var predictedMaxLevel : real
+	var predictedMinLevelPumpsClosed : real
+	var predictedMaxLevelPumpsClosed : real
+	var stopDemanded : boolean
+	var transmissionFailed : boolean
+	var plantWaitingNow : boolean
+	var levelDeviceFailed : boolean
+	var unitsReadyNow : boolean
+	var pumpControllerFailed : boolean
+	var steamDeviceFailed : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var steamBoilerWaitingSeen : boolean = false
+	var readyAnnounced : boolean = false
+	var valveOpen : boolean = false
+}
+
+interface Constants {
+	const minimalNormalN1 : real = 400
+	const maximalNormalN2 : real = 600
+	const minimalLimitM1 : real = 150
+	const maximalLimitM2 : real = 850
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state NORMAL {
+		entry send modeMessage
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+	}
+	state DEGRADED {
+		entry send modeMessage
+	}
+	state RESCUE {
+		entry send modeMessage
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed)) /\ valveOpen
+		action send modeMessage ; send valve ; valveOpen = false
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition (stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed)) /\ not ( valveOpen )
+		action send modeMessage
+	}
+	transition t3 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ not ( steamBoilerWaitingSeen \/ plantWaitingNow )
+		action send modeMessage
+	}
+	transition t4 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ readyAnnounced /\ unitsReadyNow /\ not ( anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed )
+	}
+	transition t5 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ readyAnnounced /\ unitsReadyNow /\ (anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed)
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ readyAnnounced /\ not ( unitsReadyNow )
+		action send modeMessage ; send programReady
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ not ( readyAnnounced ) /\ not ( levelReading < minimalNormalN1 ) /\ levelReading > maximalNormalN2 /\ not ( valveOpen )
+		action send modeMessage ; send valve ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; valveOpen = true ; steamBoilerWaitingSeen = true
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ not ( readyAnnounced ) /\ not ( levelReading < minimalNormalN1 ) /\ levelReading > maximalNormalN2 /\ valveOpen
+		action send modeMessage ; steamBoilerWaitingSeen = true
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ not ( readyAnnounced ) /\ levelReading < minimalNormalN1 /\ valveOpen
+		action send modeMessage ; send valve ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4 ; valveOpen = false ; steamBoilerWaitingSeen = true
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ not ( readyAnnounced ) /\ levelReading < minimalNormalN1 /\ not ( valveOpen )
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4 ; steamBoilerWaitingSeen = true
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ not ( readyAnnounced ) /\ not ( levelReading < minimalNormalN1 ) /\ not ( not ( levelReading < minimalNormalN1 ) /\ levelReading > maximalNormalN2 ) /\ valveOpen
+		action send modeMessage ; send valve ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady ; valveOpen = false ; readyAnnounced = true ; steamBoilerWaitingSeen = true
+	}
+	transition t12 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ (steamReading != 0 \/ levelDeviceFailed) ) /\ (steamBoilerWaitingSeen \/ plantWaitingNow) /\ not ( readyAnnounced ) /\ not ( levelReading < minimalNormalN1 ) /\ not ( not ( levelReading < minimalNormalN1 ) /\ levelReading > maximalNormalN2 ) /\ not ( valveOpen )
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady ; readyAnnounced = true ; steamBoilerWaitingSeen = true
+	}
+	transition t13 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2
+		action send modeMessage
+	}
+	transition t14 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ levelDeviceFailed
+	}
+	transition t15 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ not ( levelDeviceFailed ) /\ (anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed)
+	}
+	transition t16 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ not ( levelDeviceFailed ) /\ not ( anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed ) /\ predictedMinLevel < minimalNormalN1
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t17 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ not ( levelDeviceFailed ) /\ not ( anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed ) /\ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t18 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ not ( levelDeviceFailed ) /\ not ( anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed ) /\ not ( predictedMinLevel < minimalNormalN1 ) /\ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 )
+	}
+	transition t19 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2
+		action send modeMessage
+	}
+	transition t20 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ levelDeviceFailed
+	}
+	transition t21 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ not ( levelDeviceFailed ) /\ not ( anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed )
+	}
+	transition t22 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ not ( levelDeviceFailed ) /\ (anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed) /\ predictedMinLevel < minimalNormalN1
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t23 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ not ( levelDeviceFailed ) /\ (anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed) /\ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t24 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 ) /\ not ( levelDeviceFailed ) /\ (anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed) /\ not ( predictedMinLevel < minimalNormalN1 ) /\ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 )
+	}
+	transition t25 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 \/ steamDeviceFailed \/ pumpControllerFailed
+		action send modeMessage
+	}
+	transition t26 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 \/ steamDeviceFailed \/ pumpControllerFailed ) /\ not ( levelDeviceFailed ) /\ not ( anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed )
+	}
+	transition t27 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 \/ steamDeviceFailed \/ pumpControllerFailed ) /\ not ( levelDeviceFailed ) /\ (anyPumpOutOfOrder \/ pumpControllerFailed \/ steamDeviceFailed)
+	}
+	transition t28 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 \/ steamDeviceFailed \/ pumpControllerFailed ) /\ levelDeviceFailed /\ predictedMinLevel < minimalNormalN1
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t29 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 \/ steamDeviceFailed \/ pumpControllerFailed ) /\ levelDeviceFailed /\ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t30 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( stopDemanded \/ transmissionFailed \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMinLevelPumpsClosed <= minimalLimitM1 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMinLevel <= minimalLimitM1 \/ not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 /\ predictedMaxLevelPumpsClosed >= maximalLimitM2 \/ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 ) /\ predictedMaxLevel >= maximalLimitM2 \/ steamDeviceFailed \/ pumpControllerFailed ) /\ levelDeviceFailed /\ not ( predictedMinLevel < minimalNormalN1 ) /\ not ( not ( predictedMinLevel < minimalNormalN1 ) /\ predictedMaxLevel > maximalNormalN2 )
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmission to stm_ref0 on transmission
+	connection stm_ref0 on modeMessage to SteamBoilerController_Ctrl on modeMessage
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmission
+		event modeMessage
+		event valve
+		event programReady
+		event closePump : int
+		event openPump : int
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmission to ctrl_ref0 on transmission
+	connection ctrl_ref0 on modeMessage to SteamBoilerController_Platform on modeMessage
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+}
+

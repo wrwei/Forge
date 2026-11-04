@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 3,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 15:21:45",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r7-run3-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run3",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 556,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 lre, run 3, iteration 1\n\n## What was written\nThe work followed the five layers in order. There are 15 files under `lre/`:\n- the `RoboChartType` annotation and `LreConstants` (the four DM4 thresholds, plus named constants for the other fixed values);\n- the `LreMode` enum, with OCM first;\n- the `InputEvent` and `OutputEvent` sealed interfaces;\n- `Obstacle`, `ObstacleRegister` and `Sensor`;\n- `Actuator.apply(OutputEvent)`;\n- the five operations;\n- `LreController.step()`, which runs the operations, declares 17 named predicates, then takes one branch of a two-level if-else per Beh2\u2013Beh18.\n\n`result_codegen.json` traces all 51 requirements.\n\n## Decisions the requirements did not settle\n- **\"None\" index.** cstc/cdyn are nat but \"none\" is \u22121. \"None\" is index 2147483647, which the register never stores. Distances for it are 1000000.0 m (invented); field accessors return 0.\n- **CPA.** p = obstacle position relative to the AUV, w = AUV velocity \u2212 obstacle velocity. tcpa = p\u00b7w/(|w|\u00b2+\u03b5), with \u03b5 = 0.000001 (the model rounds it to 1; the sign of tcpa is unaffected). cda combines the horizontal miss distance with vdist. With no dynamic obstacle, cda is therefore large.\n- **HCM velocity.** Advised velocity is 0 (FR3), not the system description's 0.1.\n- **vvel** is the signed rate of climb.\n- **Priority within modes.** Operator overrides (reqOCM, endTask) come first, then OPEZ, collision course, then the HCM triggers, with reqHCM last. Lower guard-only branches conjoin the negations of the guards above them. Beh11 is placed before Beh10 because, with equal thresholds, Beh10 placed first would leave Beh11's guard unsatisfiable.\n- **Variables** live in the operations. CheckOPEZ and CalcCPA re-read the closest index from the sensor.\n- **Literal 1s** in Beh4/9/11 became separate named constants.\n\n## Unresolved\n- CAM's evasive manoeuvre is unspecified, so entering CAM issues no advice.\n\nAll of these are listed in `post_codegen.md`."
+}

@@ -1,0 +1,51 @@
+{
+  "study": "sranger",
+  "run": 5,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 22:28:01",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r7-run5-sranger",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-sranger-run5",
+  "files": {
+    "java": 9,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 228,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 sranger, run 5, iteration 1\n\n## What was written\n\nNine Java files under `java.generated.project/src/main/java/sranger/` (no Java was present beforehand):\n\n- `annotation/RoboChartType`\n- `event/InputEvent` (Obstacle, Tick, EndTask) and `event/OutputEvent` (Move(lv, av), both `real`)\n- `sensor/Sensor` with `distance()`\n- `actuator/Actuator` with `apply(OutputEvent)`, which records the last lv/av\n- `timing/Clock` with `now()`\n- `controller/SRangerMode` {MOVING, TURNING, FINAL}, `SRangerConstants` (four real constants) and `SRangerController`\n\n`step` has two predicates, `obstacleDetected` and `turnDurationElapsed` (`timer.now() - clockResetTime >= TURN_DURATION`, so `since(clockResetTime)`), and one block per mode. The trace `result_codegen.json` covers all 23 requirements and all files. A javac harness confirmed the behaviour.\n\n## Decisions the requirements did not settle\n\n- **No-reading distance:** 1000.0 m (invented). Negative/NaN readings also count as \"no reading\".\n- **Moving\u2192Turning:** trigger is the Obstacle event and the guard is `obstacleDetected` (SR-Beh2 + SR-GP1 together).\n- **Priority:** endTask comes first in Moving and Turning. In Turning the autonomous return to Moving outranks the tick self-loop, which carries `!turnDurationElapsed`. Otherwise per-cycle ticks would block SR-Beh5.\n- **Power-up entry action:** Move(moveVel, 0) is issued in the constructor. The model's initial transition may not carry it.\n- **Clock field:** named `timer`, because `clock` is reserved.\n- **Final:** no outgoing transitions (terminal).\n- **Actuator method:** named `apply`, not `move`, to avoid a name clash with the `Move` event.\n\n## Unresolved / notes\n\n- `obstacleThreshold` 0.5 is rounded up to 1 in the model's constants interface. It only affects the guard on an uninterpreted sensor function.\n- Element type for the step-local predicates in the trace: `field` (the trace rules list no type for locals)."
+}

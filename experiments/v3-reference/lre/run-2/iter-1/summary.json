@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 2,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 12:35:44",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r7-run2-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run2",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 629,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 lre, run 2\n\n## Iteration 1\n\nNo Java was present at the start, so nothing was deleted.\n\n**What I wrote.** I wrote 15 files under `lre`: the events, `Obstacle`, `ObstacleRegister`, `Sensor` (SF1\u20133, DM5), `Actuator`, `LreConstants`, and the operations OP1\u20135, whose getters are named after Var1\u20138. `LreController.step` runs the operations, declares the named predicates (`inOpez` among them) and then a two-level if-else over the four modes. In MOM, HCM and CAM, `reqOCM` is the first, unguarded branch. Every predicate-only branch is negated in the branches below it.\n\n**Decisions the requirements left open:**\n- **No-obstacle index.** \"-1 = none\" conflicts with nat. The sentinel is index 0 (`NO_OBSTACLE`), and register keys are \u2265 1.\n- **CPA with no obstacle.** DM5's zero field defaults would give cda = 0 (a false CAM). CalcCPA therefore takes the range from `hdist`, which carries the large default. It works in the horizontal plane with relative velocity, and adds `CPA_EPSILON` to the divisor.\n- **HCM speed.** I advise 0 m/s (FR3), not the description's 0.1.\n- **Literal 1s.** Velocities use `NORMAL_SPEED`; Beh4's distances use `MIN_SAFE_DIST`.\n- **Priority in MOM.** reqOCM, inOpez, CAM, endTask, reqHCM, then Beh9, Beh11, Beh10. Beh11 comes before Beh10 so that it is not dead code.\n- **`vvel`.** It is the signed rate of climb, as written.\n- **CheckOPEZ.** It reads the closest static index from the sensor, as the profile requires.\n- **No input this cycle.** `step(null)` means no operator input.\n- **Invented defaults.** The safe distance is 10^6 m. Readings and advice start at 0. Ties go to the lowest index.\n\n**Unresolved:**\n- CAM's evasive manoeuvre is unspecified, so CAM has no entry action.\n- MOM and HCM could oscillate if `staticObsDfltVertDist > staticObsVertDist`. The guards are exclusive at the given defaults.\n\nDetails are in `post_codegen.md`."
+}

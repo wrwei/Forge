@@ -1,0 +1,3256 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 03-11-2026 20:33:54
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+	module SteamBoilerController_Ctrl
+		shared_variable_events = {|
+			set_EXT_plantWaiting,
+			set_EXT_readyAnnounced,
+			set_EXT_PUMPS,
+			set_EXT_SETTLED,
+			set_EXT_stopReceived,
+			set_EXT_waitingReceived,
+			set_EXT_unitsReadyReceived,
+			set_EXT_aberrantMessage,
+			set_EXT_levelMessages,
+			set_EXT_steamMessages,
+			set_EXT_levelValue,
+			set_EXT_steamValue,
+			set_EXT_programReadySentPrevious,
+			set_EXT_programReadySentCurrent,
+			set_EXT_valveOpen,
+			set_EXT_valveOpenDuringCycle,
+			set_EXT_q,
+			set_EXT_v,
+			set_EXT_p,
+			set_EXT_levelLow,
+			set_EXT_levelHigh,
+			set_EXT_steamRateLow,
+			set_EXT_steamRateHigh,
+			set_EXT_predictedLow,
+			set_EXT_predictedHigh,
+			set_EXT_stopCount,
+			set_EXT_transmissionFailed,
+			set_EXT_boundsKnown,
+			set_EXT_successiveStops,
+			set_EXT_waitingNow,
+			set_EXT_transmissionFault,
+			set_EXT_steamReading,
+			set_EXT_levelFault,
+			set_EXT_unitsReady,
+			set_EXT_steamFault,
+			set_EXT_pumpFault,
+			set_EXT_pumpControlFault,
+			set_EXT_levelReading,
+			set_EXT_predictedLevelLow,
+			set_EXT_predictedLevelHigh,
+			set_EXT_levelEstimate
+		|}
+		
+	exports
+		transparent diamond
+		transparent sbisim
+		transparent dbisim
+		transparent chase
+
+		-- declaring controller events
+		channel transmissionComplete: InOut
+		channel broadcastMode: InOut
+		channel commandValveClosed: InOut
+		channel reportUnitStatus: InOut
+		channel announceProgramReady: InOut
+		channel commandPumpOff: InOut.{0..4}
+		channel commandValveOpen: InOut
+		channel commandPumpOn: InOut.{0..4}
+		
+		channel set_plantWaiting: core_boolean
+		channel get_plantWaiting: core_boolean
+		channel set_readyAnnounced: core_boolean
+		channel get_readyAnnounced: core_boolean
+		channel set_PUMPS: core_int
+		channel get_PUMPS: core_int
+		channel set_SETTLED: core_int
+		channel get_SETTLED: core_int
+		channel set_stopReceived: core_boolean
+		channel get_stopReceived: core_boolean
+		channel set_waitingReceived: core_boolean
+		channel get_waitingReceived: core_boolean
+		channel set_unitsReadyReceived: core_boolean
+		channel get_unitsReadyReceived: core_boolean
+		channel set_aberrantMessage: core_boolean
+		channel get_aberrantMessage: core_boolean
+		channel set_levelMessages: core_int
+		channel get_levelMessages: core_int
+		channel set_steamMessages: core_int
+		channel get_steamMessages: core_int
+		channel set_levelValue: core_real
+		channel get_levelValue: core_real
+		channel set_steamValue: core_real
+		channel get_steamValue: core_real
+		channel set_programReadySentPrevious: core_boolean
+		channel get_programReadySentPrevious: core_boolean
+		channel set_programReadySentCurrent: core_boolean
+		channel get_programReadySentCurrent: core_boolean
+		channel set_valveOpen: core_boolean
+		channel get_valveOpen: core_boolean
+		channel set_valveOpenDuringCycle: core_boolean
+		channel get_valveOpenDuringCycle: core_boolean
+		channel set_q: core_real
+		channel get_q: core_real
+		channel set_v: core_real
+		channel get_v: core_real
+		channel set_p: core_real
+		channel get_p: core_real
+		channel set_levelLow: core_real
+		channel get_levelLow: core_real
+		channel set_levelHigh: core_real
+		channel get_levelHigh: core_real
+		channel set_steamRateLow: core_real
+		channel get_steamRateLow: core_real
+		channel set_steamRateHigh: core_real
+		channel get_steamRateHigh: core_real
+		channel set_predictedLow: core_real
+		channel get_predictedLow: core_real
+		channel set_predictedHigh: core_real
+		channel get_predictedHigh: core_real
+		channel set_stopCount: core_int
+		channel get_stopCount: core_int
+		channel set_transmissionFailed: core_boolean
+		channel get_transmissionFailed: core_boolean
+		channel set_boundsKnown: core_boolean
+		channel get_boundsKnown: core_boolean
+		channel set_successiveStops: core_int
+		channel get_successiveStops: core_int
+		channel set_waitingNow: core_boolean
+		channel get_waitingNow: core_boolean
+		channel set_transmissionFault: core_boolean
+		channel get_transmissionFault: core_boolean
+		channel set_steamReading: core_real
+		channel get_steamReading: core_real
+		channel set_levelFault: core_boolean
+		channel get_levelFault: core_boolean
+		channel set_unitsReady: core_boolean
+		channel get_unitsReady: core_boolean
+		channel set_steamFault: core_boolean
+		channel get_steamFault: core_boolean
+		channel set_pumpFault: core_boolean
+		channel get_pumpFault: core_boolean
+		channel set_pumpControlFault: core_boolean
+		channel get_pumpControlFault: core_boolean
+		channel set_levelReading: core_real
+		channel get_levelReading: core_real
+		channel set_predictedLevelLow: core_real
+		channel get_predictedLevelLow: core_real
+		channel set_predictedLevelHigh: core_real
+		channel get_predictedLevelHigh: core_real
+		channel set_levelEstimate: core_real
+		channel get_levelEstimate: core_real
+		
+		channel set_EXT_plantWaiting: core_boolean
+		channel set_EXT_readyAnnounced: core_boolean
+		channel set_EXT_PUMPS: core_int
+		channel set_EXT_SETTLED: core_int
+		channel set_EXT_stopReceived: core_boolean
+		channel set_EXT_waitingReceived: core_boolean
+		channel set_EXT_unitsReadyReceived: core_boolean
+		channel set_EXT_aberrantMessage: core_boolean
+		channel set_EXT_levelMessages: core_int
+		channel set_EXT_steamMessages: core_int
+		channel set_EXT_levelValue: core_real
+		channel set_EXT_steamValue: core_real
+		channel set_EXT_programReadySentPrevious: core_boolean
+		channel set_EXT_programReadySentCurrent: core_boolean
+		channel set_EXT_valveOpen: core_boolean
+		channel set_EXT_valveOpenDuringCycle: core_boolean
+		channel set_EXT_q: core_real
+		channel set_EXT_v: core_real
+		channel set_EXT_p: core_real
+		channel set_EXT_levelLow: core_real
+		channel set_EXT_levelHigh: core_real
+		channel set_EXT_steamRateLow: core_real
+		channel set_EXT_steamRateHigh: core_real
+		channel set_EXT_predictedLow: core_real
+		channel set_EXT_predictedHigh: core_real
+		channel set_EXT_stopCount: core_int
+		channel set_EXT_transmissionFailed: core_boolean
+		channel set_EXT_boundsKnown: core_boolean
+		channel set_EXT_successiveStops: core_int
+		channel set_EXT_waitingNow: core_boolean
+		channel set_EXT_transmissionFault: core_boolean
+		channel set_EXT_steamReading: core_real
+		channel set_EXT_levelFault: core_boolean
+		channel set_EXT_unitsReady: core_boolean
+		channel set_EXT_steamFault: core_boolean
+		channel set_EXT_pumpFault: core_boolean
+		channel set_EXT_pumpControlFault: core_boolean
+		channel set_EXT_levelReading: core_real
+		channel set_EXT_predictedLevelLow: core_real
+		channel set_EXT_predictedLevelHigh: core_real
+		channel set_EXT_levelEstimate: core_real
+		
+		-- declaring call and ret events for undefined operations
+		
+		-- declaring controller termination channel
+		channel terminate
+		
+		-- channel set with all visible events
+		sem__events = {|
+			terminate
+		,	transmissionComplete,
+			broadcastMode,
+			commandValveClosed,
+			reportUnitStatus,
+			announceProgramReady,
+			commandPumpOff,
+			commandValveOpen,
+			commandPumpOn
+		,	set_EXT_plantWaiting, set_plantWaiting,
+			set_EXT_readyAnnounced, set_readyAnnounced,
+			set_EXT_PUMPS, set_PUMPS,
+			set_EXT_SETTLED, set_SETTLED,
+			set_EXT_stopReceived, set_stopReceived,
+			set_EXT_waitingReceived, set_waitingReceived,
+			set_EXT_unitsReadyReceived, set_unitsReadyReceived,
+			set_EXT_aberrantMessage, set_aberrantMessage,
+			set_EXT_levelMessages, set_levelMessages,
+			set_EXT_steamMessages, set_steamMessages,
+			set_EXT_levelValue, set_levelValue,
+			set_EXT_steamValue, set_steamValue,
+			set_EXT_programReadySentPrevious, set_programReadySentPrevious,
+			set_EXT_programReadySentCurrent, set_programReadySentCurrent,
+			set_EXT_valveOpen, set_valveOpen,
+			set_EXT_valveOpenDuringCycle, set_valveOpenDuringCycle,
+			set_EXT_q, set_q,
+			set_EXT_v, set_v,
+			set_EXT_p, set_p,
+			set_EXT_levelLow, set_levelLow,
+			set_EXT_levelHigh, set_levelHigh,
+			set_EXT_steamRateLow, set_steamRateLow,
+			set_EXT_steamRateHigh, set_steamRateHigh,
+			set_EXT_predictedLow, set_predictedLow,
+			set_EXT_predictedHigh, set_predictedHigh,
+			set_EXT_stopCount, set_stopCount,
+			set_EXT_transmissionFailed, set_transmissionFailed,
+			set_EXT_boundsKnown, set_boundsKnown,
+			set_EXT_successiveStops, set_successiveStops,
+			set_EXT_waitingNow, set_waitingNow,
+			set_EXT_transmissionFault, set_transmissionFault,
+			set_EXT_steamReading, set_steamReading,
+			set_EXT_levelFault, set_levelFault,
+			set_EXT_unitsReady, set_unitsReady,
+			set_EXT_steamFault, set_steamFault,
+			set_EXT_pumpFault, set_pumpFault,
+			set_EXT_pumpControlFault, set_pumpControlFault,
+			set_EXT_levelReading, set_levelReading,
+			set_EXT_predictedLevelLow, set_predictedLevelLow,
+			set_EXT_predictedLevelHigh, set_predictedLevelHigh,
+			set_EXT_levelEstimate, set_levelEstimate
+		|}
+		
+		-- set of visible memory events
+		visibleMemoryEvents = {|get_plantWaiting,set_plantWaiting,get_readyAnnounced,set_readyAnnounced,get_PUMPS,set_PUMPS,get_SETTLED,set_SETTLED,get_stopReceived,set_stopReceived,get_waitingReceived,set_waitingReceived,get_unitsReadyReceived,set_unitsReadyReceived,get_aberrantMessage,set_aberrantMessage,get_levelMessages,set_levelMessages,get_steamMessages,set_steamMessages,get_levelValue,set_levelValue,get_steamValue,set_steamValue,get_programReadySentPrevious,set_programReadySentPrevious,get_programReadySentCurrent,set_programReadySentCurrent,get_valveOpen,set_valveOpen,get_valveOpenDuringCycle,set_valveOpenDuringCycle,get_q,set_q,get_v,set_v,get_p,set_p,get_levelLow,set_levelLow,get_levelHigh,set_levelHigh,get_steamRateLow,set_steamRateLow,get_steamRateHigh,set_steamRateHigh,get_predictedLow,set_predictedLow,get_predictedHigh,set_predictedHigh,get_stopCount,set_stopCount,get_transmissionFailed,set_transmissionFailed,get_boundsKnown,set_boundsKnown,get_successiveStops,set_successiveStops,get_waitingNow,set_waitingNow,get_transmissionFault,set_transmissionFault,get_steamReading,set_steamReading,get_levelFault,set_levelFault,get_unitsReady,set_unitsReady,get_steamFault,set_steamFault,get_pumpFault,set_pumpFault,get_pumpControlFault,set_pumpControlFault,get_levelReading,set_levelReading,get_predictedLevelLow,set_predictedLevelLow,get_predictedLevelHigh,set_predictedLevelHigh,get_levelEstimate,set_levelEstimate|}
+
+		-- defined operations
+	
+		-- declaring machines
+		module stm_ref0
+		exports
+			transparent diamond
+			transparent sbisim
+			transparent dbisim
+			transparent chase
+		
+			-- Transition identifiers
+			-- declaring identifiers of transitions
+			datatype NIDS = 
+			              NID_RESCUE|
+			              NID_DEGRADED|
+			              NID_NORMAL|
+			              NID_INITIALIZATION|
+			              NID_EMERGENCY_STOP|
+			              NID_i0
+			
+			channel internal__ : NIDS
+			
+			-- Flow channels		
+			channel interrupt
+			channel exited
+			channel exit
+			channel terminate
+			
+			-- Variable channels
+			channel get_plantWaiting, set_plantWaiting, setL_plantWaiting, setR_plantWaiting: core_boolean
+			channel get_readyAnnounced, set_readyAnnounced, setL_readyAnnounced, setR_readyAnnounced: core_boolean
+			channel get_PUMPS, set_PUMPS, setL_PUMPS, setR_PUMPS: core_int
+			channel get_SETTLED, set_SETTLED, setL_SETTLED, setR_SETTLED: core_int
+			channel get_stopReceived, set_stopReceived, setL_stopReceived, setR_stopReceived: core_boolean
+			channel get_waitingReceived, set_waitingReceived, setL_waitingReceived, setR_waitingReceived: core_boolean
+			channel get_unitsReadyReceived, set_unitsReadyReceived, setL_unitsReadyReceived, setR_unitsReadyReceived: core_boolean
+			channel get_aberrantMessage, set_aberrantMessage, setL_aberrantMessage, setR_aberrantMessage: core_boolean
+			channel get_levelMessages, set_levelMessages, setL_levelMessages, setR_levelMessages: core_int
+			channel get_steamMessages, set_steamMessages, setL_steamMessages, setR_steamMessages: core_int
+			channel get_levelValue, set_levelValue, setL_levelValue, setR_levelValue: core_real
+			channel get_steamValue, set_steamValue, setL_steamValue, setR_steamValue: core_real
+			channel get_programReadySentPrevious, set_programReadySentPrevious, setL_programReadySentPrevious, setR_programReadySentPrevious: core_boolean
+			channel get_programReadySentCurrent, set_programReadySentCurrent, setL_programReadySentCurrent, setR_programReadySentCurrent: core_boolean
+			channel get_valveOpen, set_valveOpen, setL_valveOpen, setR_valveOpen: core_boolean
+			channel get_valveOpenDuringCycle, set_valveOpenDuringCycle, setL_valveOpenDuringCycle, setR_valveOpenDuringCycle: core_boolean
+			channel get_q, set_q, setL_q, setR_q: core_real
+			channel get_v, set_v, setL_v, setR_v: core_real
+			channel get_p, set_p, setL_p, setR_p: core_real
+			channel get_levelLow, set_levelLow, setL_levelLow, setR_levelLow: core_real
+			channel get_levelHigh, set_levelHigh, setL_levelHigh, setR_levelHigh: core_real
+			channel get_steamRateLow, set_steamRateLow, setL_steamRateLow, setR_steamRateLow: core_real
+			channel get_steamRateHigh, set_steamRateHigh, setL_steamRateHigh, setR_steamRateHigh: core_real
+			channel get_predictedLow, set_predictedLow, setL_predictedLow, setR_predictedLow: core_real
+			channel get_predictedHigh, set_predictedHigh, setL_predictedHigh, setR_predictedHigh: core_real
+			channel get_stopCount, set_stopCount, setL_stopCount, setR_stopCount: core_int
+			channel get_transmissionFailed, set_transmissionFailed, setL_transmissionFailed, setR_transmissionFailed: core_boolean
+			channel get_boundsKnown, set_boundsKnown, setL_boundsKnown, setR_boundsKnown: core_boolean
+			channel get_successiveStops, set_successiveStops, setL_successiveStops, setR_successiveStops: core_int
+			channel get_waitingNow, set_waitingNow, setL_waitingNow, setR_waitingNow: core_boolean
+			channel get_transmissionFault, set_transmissionFault, setL_transmissionFault, setR_transmissionFault: core_boolean
+			channel get_steamReading, set_steamReading, setL_steamReading, setR_steamReading: core_real
+			channel get_levelFault, set_levelFault, setL_levelFault, setR_levelFault: core_boolean
+			channel get_unitsReady, set_unitsReady, setL_unitsReady, setR_unitsReady: core_boolean
+			channel get_steamFault, set_steamFault, setL_steamFault, setR_steamFault: core_boolean
+			channel get_pumpFault, set_pumpFault, setL_pumpFault, setR_pumpFault: core_boolean
+			channel get_pumpControlFault, set_pumpControlFault, setL_pumpControlFault, setR_pumpControlFault: core_boolean
+			channel get_levelReading, set_levelReading, setL_levelReading, setR_levelReading: core_real
+			channel get_predictedLevelLow, set_predictedLevelLow, setL_predictedLevelLow, setR_predictedLevelLow: core_real
+			channel get_predictedLevelHigh, set_predictedLevelHigh, setL_predictedLevelHigh, setR_predictedLevelHigh: core_real
+			channel get_levelEstimate, set_levelEstimate, setL_levelEstimate, setR_levelEstimate: core_real
+			
+			-- Shared variable channels
+			channel set_EXT_plantWaiting: core_boolean
+			channel set_EXT_readyAnnounced: core_boolean
+			channel set_EXT_PUMPS: core_int
+			channel set_EXT_SETTLED: core_int
+			channel set_EXT_stopReceived: core_boolean
+			channel set_EXT_waitingReceived: core_boolean
+			channel set_EXT_unitsReadyReceived: core_boolean
+			channel set_EXT_aberrantMessage: core_boolean
+			channel set_EXT_levelMessages: core_int
+			channel set_EXT_steamMessages: core_int
+			channel set_EXT_levelValue: core_real
+			channel set_EXT_steamValue: core_real
+			channel set_EXT_programReadySentPrevious: core_boolean
+			channel set_EXT_programReadySentCurrent: core_boolean
+			channel set_EXT_valveOpen: core_boolean
+			channel set_EXT_valveOpenDuringCycle: core_boolean
+			channel set_EXT_q: core_real
+			channel set_EXT_v: core_real
+			channel set_EXT_p: core_real
+			channel set_EXT_levelLow: core_real
+			channel set_EXT_levelHigh: core_real
+			channel set_EXT_steamRateLow: core_real
+			channel set_EXT_steamRateHigh: core_real
+			channel set_EXT_predictedLow: core_real
+			channel set_EXT_predictedHigh: core_real
+			channel set_EXT_stopCount: core_int
+			channel set_EXT_transmissionFailed: core_boolean
+			channel set_EXT_boundsKnown: core_boolean
+			channel set_EXT_successiveStops: core_int
+			channel set_EXT_waitingNow: core_boolean
+			channel set_EXT_transmissionFault: core_boolean
+			channel set_EXT_steamReading: core_real
+			channel set_EXT_levelFault: core_boolean
+			channel set_EXT_unitsReady: core_boolean
+			channel set_EXT_steamFault: core_boolean
+			channel set_EXT_pumpFault: core_boolean
+			channel set_EXT_pumpControlFault: core_boolean
+			channel set_EXT_levelReading: core_real
+			channel set_EXT_predictedLevelLow: core_real
+			channel set_EXT_predictedLevelHigh: core_real
+			channel set_EXT_levelEstimate: core_real
+			
+			-- Local variable channels for defined operations that are required by the state machine
+			
+			-- Declaring state machine events
+			channel transmissionComplete__: NIDS.InOut
+			channel transmissionComplete: InOut
+			channel broadcastMode__: NIDS.InOut
+			channel broadcastMode: InOut
+			channel commandValveClosed__: NIDS.InOut
+			channel commandValveClosed: InOut
+			channel reportUnitStatus__: NIDS.InOut
+			channel reportUnitStatus: InOut
+			channel announceProgramReady__: NIDS.InOut
+			channel announceProgramReady: InOut
+			channel commandPumpOff__: NIDS.InOut.{0..4}
+			channel commandPumpOff: InOut.{0..4}
+			channel commandValveOpen__: NIDS.InOut
+			channel commandValveOpen: InOut
+			channel commandPumpOn__: NIDS.InOut.{0..4}
+			channel commandPumpOn: InOut.{0..4}
+			
+			-- Declaring call and ret events for undefined operations
+			
+			enterSS = {|
+			RESCUE::enter,
+			DEGRADED::enter,
+			NORMAL::enter,
+			INITIALIZATION::enter,
+			EMERGENCY_STOP::enter,
+			i0::enter
+			|}
+			
+			enteredSS = 	{|
+			RESCUE::entered,
+			DEGRADED::entered,
+			NORMAL::entered,
+			INITIALIZATION::entered,
+			EMERGENCY_STOP::entered
+			|}
+			
+			internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
+			
+			shared_variable_events = {|
+				set_EXT_plantWaiting,
+				set_EXT_readyAnnounced,
+				set_EXT_PUMPS,
+				set_EXT_SETTLED,
+				set_EXT_stopReceived,
+				set_EXT_waitingReceived,
+				set_EXT_unitsReadyReceived,
+				set_EXT_aberrantMessage,
+				set_EXT_levelMessages,
+				set_EXT_steamMessages,
+				set_EXT_levelValue,
+				set_EXT_steamValue,
+				set_EXT_programReadySentPrevious,
+				set_EXT_programReadySentCurrent,
+				set_EXT_valveOpen,
+				set_EXT_valveOpenDuringCycle,
+				set_EXT_q,
+				set_EXT_v,
+				set_EXT_p,
+				set_EXT_levelLow,
+				set_EXT_levelHigh,
+				set_EXT_steamRateLow,
+				set_EXT_steamRateHigh,
+				set_EXT_predictedLow,
+				set_EXT_predictedHigh,
+				set_EXT_stopCount,
+				set_EXT_transmissionFailed,
+				set_EXT_boundsKnown,
+				set_EXT_successiveStops,
+				set_EXT_waitingNow,
+				set_EXT_transmissionFault,
+				set_EXT_steamReading,
+				set_EXT_levelFault,
+				set_EXT_unitsReady,
+				set_EXT_steamFault,
+				set_EXT_pumpFault,
+				set_EXT_pumpControlFault,
+				set_EXT_levelReading,
+				set_EXT_predictedLevelLow,
+				set_EXT_predictedLevelHigh,
+				set_EXT_levelEstimate
+			|}
+			
+			-- channel set with all visible events
+			sem__events = {|
+				terminate
+			,	set_EXT_plantWaiting, set_plantWaiting,
+				set_EXT_readyAnnounced, set_readyAnnounced,
+				set_EXT_PUMPS, set_PUMPS,
+				set_EXT_SETTLED, set_SETTLED,
+				set_EXT_stopReceived, set_stopReceived,
+				set_EXT_waitingReceived, set_waitingReceived,
+				set_EXT_unitsReadyReceived, set_unitsReadyReceived,
+				set_EXT_aberrantMessage, set_aberrantMessage,
+				set_EXT_levelMessages, set_levelMessages,
+				set_EXT_steamMessages, set_steamMessages,
+				set_EXT_levelValue, set_levelValue,
+				set_EXT_steamValue, set_steamValue,
+				set_EXT_programReadySentPrevious, set_programReadySentPrevious,
+				set_EXT_programReadySentCurrent, set_programReadySentCurrent,
+				set_EXT_valveOpen, set_valveOpen,
+				set_EXT_valveOpenDuringCycle, set_valveOpenDuringCycle,
+				set_EXT_q, set_q,
+				set_EXT_v, set_v,
+				set_EXT_p, set_p,
+				set_EXT_levelLow, set_levelLow,
+				set_EXT_levelHigh, set_levelHigh,
+				set_EXT_steamRateLow, set_steamRateLow,
+				set_EXT_steamRateHigh, set_steamRateHigh,
+				set_EXT_predictedLow, set_predictedLow,
+				set_EXT_predictedHigh, set_predictedHigh,
+				set_EXT_stopCount, set_stopCount,
+				set_EXT_transmissionFailed, set_transmissionFailed,
+				set_EXT_boundsKnown, set_boundsKnown,
+				set_EXT_successiveStops, set_successiveStops,
+				set_EXT_waitingNow, set_waitingNow,
+				set_EXT_transmissionFault, set_transmissionFault,
+				set_EXT_steamReading, set_steamReading,
+				set_EXT_levelFault, set_levelFault,
+				set_EXT_unitsReady, set_unitsReady,
+				set_EXT_steamFault, set_steamFault,
+				set_EXT_pumpFault, set_pumpFault,
+				set_EXT_pumpControlFault, set_pumpControlFault,
+				set_EXT_levelReading, set_levelReading,
+				set_EXT_predictedLevelLow, set_predictedLevelLow,
+				set_EXT_predictedLevelHigh, set_predictedLevelHigh,
+				set_EXT_levelEstimate, set_levelEstimate
+			,	transmissionComplete,
+				broadcastMode,
+				commandValveClosed,
+				reportUnitStatus,
+				announceProgramReady,
+				commandPumpOff,
+				commandValveOpen,
+				commandPumpOn
+				|}
+			
+			channel clockReset, clockResetL, clockResetR 
+			
+			localClockResets = {||}
+			
+			
+			channel get_CLID_NORMAL : core_clock_type 
+			channel get_CLID_RESCUE : core_clock_type 
+			channel get_CLID_INITIALIZATION : core_clock_type 
+			channel get_CLID_EMERGENCY_STOP : core_clock_type 
+			channel get_CLID_DEGRADED : core_clock_type 
+			--channel increment__
+			
+			CLID_NORMAL_clock_type(id__,
+					          const_SteamBoilerController_stopRepetitions,
+					          const_SteamBoilerController_maxNormalN2,
+					          const_SteamBoilerController_minNormalN1,
+					          const_SteamBoilerController_minLimitM1,
+					          const_SteamBoilerController_maxLimitM2) = 
+				let
+					max = (clock_type_max(Union({
+			{}
+			}))+1)
+				ctype = {0..max}
+			within
+				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+			
+			CLID_RESCUE_clock_type(id__,
+					          const_SteamBoilerController_stopRepetitions,
+					          const_SteamBoilerController_maxNormalN2,
+					          const_SteamBoilerController_minNormalN1,
+					          const_SteamBoilerController_minLimitM1,
+					          const_SteamBoilerController_maxLimitM2) = 
+				let
+					max = (clock_type_max(Union({
+			{}
+			}))+1)
+				ctype = {0..max}
+			within
+				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+			
+			CLID_INITIALIZATION_clock_type(id__,
+					          const_SteamBoilerController_stopRepetitions,
+					          const_SteamBoilerController_maxNormalN2,
+					          const_SteamBoilerController_minNormalN1,
+					          const_SteamBoilerController_minLimitM1,
+					          const_SteamBoilerController_maxLimitM2) = 
+				let
+					max = (clock_type_max(Union({
+			{}
+			}))+1)
+				ctype = {0..max}
+			within
+				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+			
+			CLID_EMERGENCY_STOP_clock_type(id__,
+					          const_SteamBoilerController_stopRepetitions,
+					          const_SteamBoilerController_maxNormalN2,
+					          const_SteamBoilerController_minNormalN1,
+					          const_SteamBoilerController_minLimitM1,
+					          const_SteamBoilerController_maxLimitM2) = 
+				let
+					max = (clock_type_max(Union({
+			{}
+			}))+1)
+				ctype = {0..max}
+			within
+				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+			
+			CLID_DEGRADED_clock_type(id__,
+					          const_SteamBoilerController_stopRepetitions,
+					          const_SteamBoilerController_maxNormalN2,
+					          const_SteamBoilerController_minNormalN1,
+					          const_SteamBoilerController_minLimitM1,
+					          const_SteamBoilerController_maxLimitM2) = 
+				let
+					max = (clock_type_max(Union({
+			{}
+			}))+1)
+				ctype = {0..max}
+			within
+				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+			
+			
+		
+				-- Nodes --
+				-- declaring all nodes
+				
+				----------------------------------------------------------------------
+				-- State: RESCUE
+				module RESCUE
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--channel increment__
+					
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					Timed(OneStep) {
+						--	Rule: behaviours(Node)
+						--  Note that FDR has problems with efficiently compiling the process below
+						-- 	if using a different recursion pattern.
+						D__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							-- IMPLEMENTATION NOTE: 
+							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+							-- however FDR struggles with that form in certain cases. So we use the exception operator
+							-- instead to 'terminate'.
+							
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+							
+						VS_O__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+						
+						
+						-- Clocks
+						
+						StateClocks(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2) = terminate -> SKIP
+						
+						stateClockSync = {||}
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: DEGRADED
+				module DEGRADED
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--channel increment__
+					
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					Timed(OneStep) {
+						--	Rule: behaviours(Node)
+						--  Note that FDR has problems with efficiently compiling the process below
+						-- 	if using a different recursion pattern.
+						D__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							-- IMPLEMENTATION NOTE: 
+							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+							-- however FDR struggles with that form in certain cases. So we use the exception operator
+							-- instead to 'terminate'.
+							
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= SKIP ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+							
+						VS_O__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= SKIP ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+						
+						
+						-- Clocks
+						
+						StateClocks(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2) = terminate -> SKIP
+						
+						stateClockSync = {||}
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: NORMAL
+				module NORMAL
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--channel increment__
+					
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					Timed(OneStep) {
+						--	Rule: behaviours(Node)
+						--  Note that FDR has problems with efficiently compiling the process below
+						-- 	if using a different recursion pattern.
+						D__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							-- IMPLEMENTATION NOTE: 
+							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+							-- however FDR struggles with that form in certain cases. So we use the exception operator
+							-- instead to 'terminate'.
+							
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= SKIP ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+							
+						VS_O__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= SKIP ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+						
+						
+						-- Clocks
+						
+						StateClocks(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2) = terminate -> SKIP
+						
+						stateClockSync = {||}
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: INITIALIZATION
+				module INITIALIZATION
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--channel increment__
+					
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					Timed(OneStep) {
+						--	Rule: behaviours(Node)
+						--  Note that FDR has problems with efficiently compiling the process below
+						-- 	if using a different recursion pattern.
+						D__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							-- IMPLEMENTATION NOTE: 
+							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+							-- however FDR struggles with that form in certain cases. So we use the exception operator
+							-- instead to 'terminate'.
+							
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= SKIP ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+							
+						VS_O__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= SKIP ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+						
+						
+						-- Clocks
+						
+						StateClocks(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2) = terminate -> SKIP
+						
+						stateClockSync = {||}
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: EMERGENCY_STOP
+				module EMERGENCY_STOP
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--channel increment__
+					
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					Timed(OneStep) {
+						--	Rule: behaviours(Node)
+						--  Note that FDR has problems with efficiently compiling the process below
+						-- 	if using a different recursion pattern.
+						D__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							-- IMPLEMENTATION NOTE: 
+							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+							-- however FDR struggles with that form in certain cases. So we use the exception operator
+							-- instead to 'terminate'.
+							
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= true&(share__choice(broadcastMode.out -> SKIP)) ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+							
+						VS_O__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= true&(share__choice(broadcastMode.out -> SKIP)) ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+						
+						
+						-- Clocks
+						
+						StateClocks(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2) = terminate -> SKIP
+						
+						stateClockSync = {||}
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- Initial: i0
+				module i0
+				exports
+				
+					channel enter, interrupt
+					
+					Timed(OneStep) {
+						D__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= share__choice(interrupt -> SKIP) ; Inactive
+							within
+								Inactive [| {terminate} |> SKIP)
+						
+						VS_O__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) = D__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2)
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				-- END of Nodes --
+				
+				Timed(OneStep) {
+				-- Operation calls --
+				-- Only the undefined operations are declared here.
+				-- If the state machine is in isolation, all required operations will be undefined.
+				-- If it is in the context of a controller, the required operations not provided by the
+				-- controller will be declared here, and the defined operations will be defined in the
+				-- context of the Controller module, and therefore within scope of the state machine module.
+				
+				-- END of Operation calls --
+			
+				-- STM processes
+				STM(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+				( 
+					(
+						(
+							(IteratedStateful(id__,
+									    const_SteamBoilerController_stopRepetitions,
+									    const_SteamBoilerController_maxNormalN2,
+									    const_SteamBoilerController_minNormalN1,
+									    const_SteamBoilerController_minLimitM1,
+									    const_SteamBoilerController_maxLimitM2) \ {terminate} ; share__choice(terminate -> SKIP))
+						 	[[ share__ <- x__ | x__ <- {|set_EXT_plantWaiting,set_EXT_readyAnnounced,set_EXT_PUMPS,set_EXT_SETTLED,set_EXT_stopReceived,set_EXT_waitingReceived,set_EXT_unitsReadyReceived,set_EXT_aberrantMessage,set_EXT_levelMessages,set_EXT_steamMessages,set_EXT_levelValue,set_EXT_steamValue,set_EXT_programReadySentPrevious,set_EXT_programReadySentCurrent,set_EXT_valveOpen,set_EXT_valveOpenDuringCycle,set_EXT_q,set_EXT_v,set_EXT_p,set_EXT_levelLow,set_EXT_levelHigh,set_EXT_steamRateLow,set_EXT_steamRateHigh,set_EXT_predictedLow,set_EXT_predictedHigh,set_EXT_stopCount,set_EXT_transmissionFailed,set_EXT_boundsKnown,set_EXT_successiveStops,set_EXT_waitingNow,set_EXT_transmissionFault,set_EXT_steamReading,set_EXT_levelFault,set_EXT_unitsReady,set_EXT_steamFault,set_EXT_pumpFault,set_EXT_pumpControlFault,set_EXT_levelReading,set_EXT_predictedLevelLow,set_EXT_predictedLevelHigh,set_EXT_levelEstimate|} ]]
+						)
+					[| {share__} |]
+					SKIP
+					)
+					[| union(sharedVarSync,{terminate}) |]
+					dbisim(sharedVarMemory(id__,
+							    const_SteamBoilerController_stopRepetitions,
+							    const_SteamBoilerController_maxNormalN2,
+							    const_SteamBoilerController_minNormalN1,
+							    const_SteamBoilerController_minLimitM1,
+							    const_SteamBoilerController_maxLimitM2))
+				)\sharedVarHide
+				
+				STM_VS_O(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+				( 
+					(
+						(
+							(IteratedStateful_VS_O(id__,
+									    const_SteamBoilerController_stopRepetitions,
+									    const_SteamBoilerController_maxNormalN2,
+									    const_SteamBoilerController_minNormalN1,
+									    const_SteamBoilerController_minLimitM1,
+									    const_SteamBoilerController_maxLimitM2) \ {terminate} ; share__choice(terminate -> SKIP))
+						 	[[ share__ <- x__ | x__ <- {|set_EXT_plantWaiting,set_EXT_readyAnnounced,set_EXT_PUMPS,set_EXT_SETTLED,set_EXT_stopReceived,set_EXT_waitingReceived,set_EXT_unitsReadyReceived,set_EXT_aberrantMessage,set_EXT_levelMessages,set_EXT_steamMessages,set_EXT_levelValue,set_EXT_steamValue,set_EXT_programReadySentPrevious,set_EXT_programReadySentCurrent,set_EXT_valveOpen,set_EXT_valveOpenDuringCycle,set_EXT_q,set_EXT_v,set_EXT_p,set_EXT_levelLow,set_EXT_levelHigh,set_EXT_steamRateLow,set_EXT_steamRateHigh,set_EXT_predictedLow,set_EXT_predictedHigh,set_EXT_stopCount,set_EXT_transmissionFailed,set_EXT_boundsKnown,set_EXT_successiveStops,set_EXT_waitingNow,set_EXT_transmissionFault,set_EXT_steamReading,set_EXT_levelFault,set_EXT_unitsReady,set_EXT_steamFault,set_EXT_pumpFault,set_EXT_pumpControlFault,set_EXT_levelReading,set_EXT_predictedLevelLow,set_EXT_predictedLevelHigh,set_EXT_levelEstimate|} ]]
+						)
+					[| {share__} |]
+					SKIP
+					)
+					[| union(sharedVarSync,{terminate}) |]
+					dbisim(sharedVarMemory(id__,
+							    const_SteamBoilerController_stopRepetitions,
+							    const_SteamBoilerController_maxNormalN2,
+							    const_SteamBoilerController_minNormalN1,
+							    const_SteamBoilerController_minLimitM1,
+							    const_SteamBoilerController_maxLimitM2))
+				)\sharedVarHide
+				
+				-- Transitions
+				Transitions(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = ((let
+					Trans = share__choice(get_levelFault?levelFault -> get_pumpFault?pumpFault -> get_levelReading?levelReading -> get_predictedLevelHigh?predictedLevelHigh -> get_unitsReady?unitsReady -> get_successiveStops?successiveStops -> get_levelEstimate?levelEstimate -> get_transmissionFault?transmissionFault -> get_waitingNow?waitingNow -> get_steamFault?steamFault -> get_predictedLevelLow?predictedLevelLow -> get_plantWaiting?plantWaiting -> get_readyAnnounced?readyAnnounced -> get_pumpControlFault?pumpControlFault -> get_steamReading?steamReading -> TimeOut_1(
+						 (share__ -> SKIP
+						 [] dbisim((true)&(internal__!NID_i0 -> SKIP ;  ((SKIP ; INITIALIZATION::enter -> SKIP))))
+						 [] dbisim((((successiveStops>=const_SteamBoilerController_stopRepetitions) or (((plantWaiting or waitingNow)) and (((transmissionFault or (steamReading!=0)) or levelFault)))))&(transmissionComplete__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+						 [] dbisim((((not ((((successiveStops>=const_SteamBoilerController_stopRepetitions) or (((plantWaiting or waitingNow)) and (((transmissionFault or (steamReading!=0)) or levelFault))))))) and (not (((plantWaiting or waitingNow))))))&(transmissionComplete__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+						 [] dbisim(((((((not ((((successiveStops>=const_SteamBoilerController_stopRepetitions) or (((plantWaiting or waitingNow)) and (((transmissionFault or (steamReading!=0)) or levelFault))))))) and ((plantWaiting or waitingNow))) and readyAnnounced) and unitsReady) and (not ((((steamFault or pumpFault) or pumpControlFault))))))&(transmissionComplete__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(commandValveClosed.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+						 [] dbisim(((((((not ((((successiveStops>=const_SteamBoilerController_stopRepetitions) or (((plantWaiting or waitingNow)) and (((transmissionFault or (steamReading!=0)) or levelFault))))))) and ((plantWaiting or waitingNow))) and readyAnnounced) and unitsReady) and (((steamFault or pumpFault) or pumpControlFault))))&(transmissionComplete__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(commandValveClosed.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+						 [] dbisim((((((not ((((successiveStops>=const_SteamBoilerController_stopRepetitions) or (((plantWaiting or waitingNow)) and (((transmissionFault or (steamReading!=0)) or levelFault))))))) and ((plantWaiting or waitingNow))) and readyAnnounced) and (not ((unitsReady)))))&(transmissionComplete__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));share__choice(true & (share__choice(set_plantWaiting!true -> SKIP)));true&(share__choice(announceProgramReady.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+						 [] dbisim((((((not ((((successiveStops>=const_SteamBoilerController_stopRepetitions) or (((plantWaiting or waitingNow)) and (((transmissionFault or (steamReading!=0)) or levelFault))))))) and ((plantWaiting or waitingNow))) and (not ((readyAnnounced)))) and (levelReading>const_SteamBoilerController_maxNormalN2)))&(transmissionComplete__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));share__choice(true & (share__choice(set_plantWaiting!true -> SKIP)));true&(share__choice(commandPumpOff.out!1 -> SKIP));true&(share__choice(commandValveOpen.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+						 [] dbisim((((((not ((((successiveStops>=const_SteamBoilerController_stopRepetitions) or (((plantWaiting or waitingNow)) and (((transmissionFault or (steamReading!=0)) or levelFault))))))) and ((plantWaiting or waitingNow))) and (not ((readyAnnounced)))) and (levelReading<const_SteamBoilerController_minNormalN1)))&(transmissionComplete__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));share__choice(true & (share__choice(set_plantWaiting!true -> SKIP)));true&(share__choice(commandValveClosed.out -> SKIP));true&(share__choice(commandPumpOn.out!1 -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+						 [] dbisim(((((((not ((((successiveStops>=const_SteamBoilerController_stopRepetitions) or (((plantWaiting or waitingNow)) and (((transmissionFault or (steamReading!=0)) or levelFault))))))) and ((plantWaiting or waitingNow))) and (not ((readyAnnounced)))) and (not (((levelReading>const_SteamBoilerController_maxNormalN2))))) and (not (((levelReading<const_SteamBoilerController_minNormalN1))))))&(transmissionComplete__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));share__choice(true & (share__choice(set_plantWaiting!true -> SKIP)));share__choice(true & (share__choice(set_readyAnnounced!true -> SKIP)));true&(share__choice(commandValveClosed.out -> SKIP));true&(share__choice(commandPumpOff.out!1 -> SKIP));true&(share__choice(announceProgramReady.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+						 [] dbisim((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2)))&(transmissionComplete__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+						 [] dbisim((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and levelFault))&(transmissionComplete__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+						 [] dbisim(((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and (not ((levelFault)))) and (((steamFault or pumpFault) or pumpControlFault))))&(transmissionComplete__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+						 [] dbisim(((((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and (not ((levelFault)))) and (not ((((steamFault or pumpFault) or pumpControlFault))))) and (levelEstimate<const_SteamBoilerController_minNormalN1)) and (not (((predictedLevelHigh>const_SteamBoilerController_maxNormalN2))))))&(transmissionComplete__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(commandPumpOn.out!1 -> SKIP));true&(share__choice(commandPumpOn.out!2 -> SKIP));true&(share__choice(commandPumpOn.out!3 -> SKIP));true&(share__choice(commandPumpOn.out!4 -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+						 [] dbisim((((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and (not ((levelFault)))) and (not ((((steamFault or pumpFault) or pumpControlFault))))) and (predictedLevelHigh>const_SteamBoilerController_maxNormalN2)))&(transmissionComplete__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(commandPumpOff.out!1 -> SKIP));true&(share__choice(commandPumpOff.out!2 -> SKIP));true&(share__choice(commandPumpOff.out!3 -> SKIP));true&(share__choice(commandPumpOff.out!4 -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+						 [] dbisim(((((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and (not ((levelFault)))) and (not ((((steamFault or pumpFault) or pumpControlFault))))) and (not (((levelEstimate<const_SteamBoilerController_minNormalN1))))) and (not (((predictedLevelHigh>const_SteamBoilerController_maxNormalN2))))))&(transmissionComplete__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+						 [] dbisim((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2)))&(transmissionComplete__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+						 [] dbisim((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and levelFault))&(transmissionComplete__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+						 [] dbisim(((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and (not ((levelFault)))) and (not ((((steamFault or pumpFault) or pumpControlFault))))))&(transmissionComplete__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+						 [] dbisim(((((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and (not ((levelFault)))) and (((steamFault or pumpFault) or pumpControlFault))) and (levelEstimate<const_SteamBoilerController_minNormalN1)) and (not (((predictedLevelHigh>const_SteamBoilerController_maxNormalN2))))))&(transmissionComplete__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(commandPumpOn.out!1 -> SKIP));true&(share__choice(commandPumpOn.out!2 -> SKIP));true&(share__choice(commandPumpOn.out!3 -> SKIP));true&(share__choice(commandPumpOn.out!4 -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+						 [] dbisim((((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and (not ((levelFault)))) and (((steamFault or pumpFault) or pumpControlFault))) and (predictedLevelHigh>const_SteamBoilerController_maxNormalN2)))&(transmissionComplete__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(commandPumpOff.out!1 -> SKIP));true&(share__choice(commandPumpOff.out!2 -> SKIP));true&(share__choice(commandPumpOff.out!3 -> SKIP));true&(share__choice(commandPumpOff.out!4 -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+						 [] dbisim(((((((not ((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2))))) and (not ((levelFault)))) and (((steamFault or pumpFault) or pumpControlFault))) and (not (((levelEstimate<const_SteamBoilerController_minNormalN1))))) and (not (((predictedLevelHigh>const_SteamBoilerController_maxNormalN2))))))&(transmissionComplete__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+						 [] dbisim((((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2)) or steamFault) or pumpControlFault))&(transmissionComplete__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+						 [] dbisim(((((not ((((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2)) or steamFault) or pumpControlFault)))) and (not ((levelFault)))) and (not ((((steamFault or pumpFault) or pumpControlFault))))))&(transmissionComplete__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+						 [] dbisim(((((not ((((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2)) or steamFault) or pumpControlFault)))) and (not ((levelFault)))) and (((steamFault or pumpFault) or pumpControlFault))))&(transmissionComplete__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+						 [] dbisim((((((not ((((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2)) or steamFault) or pumpControlFault)))) and levelFault) and (levelEstimate<const_SteamBoilerController_minNormalN1)) and (not (((predictedLevelHigh>const_SteamBoilerController_maxNormalN2))))))&(transmissionComplete__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(commandPumpOn.out!1 -> SKIP));true&(share__choice(commandPumpOn.out!2 -> SKIP));true&(share__choice(commandPumpOn.out!3 -> SKIP));true&(share__choice(commandPumpOn.out!4 -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; RESCUE::enter -> SKIP)))
+						 [] dbisim(((((not ((((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2)) or steamFault) or pumpControlFault)))) and levelFault) and (predictedLevelHigh>const_SteamBoilerController_maxNormalN2)))&(transmissionComplete__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(broadcastMode.out -> SKIP));true&(share__choice(commandPumpOff.out!1 -> SKIP));true&(share__choice(commandPumpOff.out!2 -> SKIP));true&(share__choice(commandPumpOff.out!3 -> SKIP));true&(share__choice(commandPumpOff.out!4 -> SKIP));true&(share__choice(reportUnitStatus.out -> SKIP)) ; RESCUE::enter -> SKIP)))
+						 [] dbisim((((((not ((((((((successiveStops>=const_SteamBoilerController_stopRepetitions) or transmissionFault) or (predictedLevelLow<const_SteamBoilerController_minLimitM1)) or (predictedLevelHigh>const_SteamBoilerController_maxLimitM2)) or steamFault) or pumpControlFault)))) and levelFault) and (not (((levelEstimate<const_SteamBoilerController_minNormalN1))))) and (not (((predictedLevelHigh>const_SteamBoilerController_maxNormalN2))))))&(transmissionComplete__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+						 []
+						 (interrupt -> share__choice(exit -> SKIP) ; share__choice(exited -> terminate -> SKIP))
+						 []
+						 terminate -> SKIP
+						 )
+					,SKIP);Trans
+					)
+				within
+					Trans [|{terminate}|> SKIP
+				)
+				)
+				
+				-- Stateful
+				-- RULE: Stateful(stm:StateMachineBody) : CSPProcess
+				
+				-- Named process definitions
+				MachineBody(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = 
+					dbisim((
+					let
+						finalNodesEntered = {||}
+					within
+						(dbisim((dbisim((let
+							-- IMPLEMENTATION NOTE:
+							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+							-- modules for defining the semantics of each node.
+							enterSS = {|
+							RESCUE::enter,
+							DEGRADED::enter,
+							NORMAL::enter,
+							INITIALIZATION::enter,
+							EMERGENCY_STOP::enter,
+							i0::enter
+							|}
+							hideSet = union(enterSS,{|exit,exited,internal__|})
+						within 
+							((let
+								-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+								-- because CSPM modules are used for the semantics of Node.
+								flowevts = union(enterSS,{|exit,exited,interrupt|})
+								transSync = {|internal__.NID_i0,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in|}
+							within
+								((
+								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+								   RESCUE::D__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   DEGRADED::D__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   NORMAL::D__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   INITIALIZATION::D__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   EMERGENCY_STOP::D__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   i0::D__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   )
+								   )
+								   )
+								   )
+								   )
+								 )
+								 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in|}]]
+								 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in|}]]
+								 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in|}]]
+								 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in|}]]
+								 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+								 )
+								  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+								  [[set_levelFault <- setL_levelFault,set_pumpFault <- setL_pumpFault,set_levelReading <- setL_levelReading,set_predictedLevelHigh <- setL_predictedLevelHigh,set_unitsReady <- setL_unitsReady,set_successiveStops <- setL_successiveStops,set_levelEstimate <- setL_levelEstimate,set_transmissionFault <- setL_transmissionFault,set_waitingNow <- setL_waitingNow,set_steamFault <- setL_steamFault,set_predictedLevelLow <- setL_predictedLevelLow,set_plantWaiting <- setL_plantWaiting,set_readyAnnounced <- setL_readyAnnounced,set_pumpControlFault <- setL_pumpControlFault,set_steamReading <- setL_steamReading]]
+								 )
+								 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+								 			,setL_levelFault
+								 			,setL_pumpFault
+								 			,setL_levelReading
+								 			,setL_predictedLevelHigh
+								 			,setL_unitsReady
+								 			,setL_successiveStops
+								 			,setL_levelEstimate
+								 			,setL_transmissionFault
+								 			,setL_waitingNow
+								 			,setL_steamFault
+								 			,setL_predictedLevelLow
+								 			,setL_plantWaiting
+								 			,setL_readyAnnounced
+								 			,setL_pumpControlFault
+								 			,setL_steamReading
+								|}) |]
+								 ((i0::enter -> Transitions(id__,
+								 		    const_SteamBoilerController_stopRepetitions,
+								 		    const_SteamBoilerController_maxNormalN2,
+								 		    const_SteamBoilerController_minNormalN1,
+								 		    const_SteamBoilerController_minLimitM1,
+								 		    const_SteamBoilerController_maxLimitM2))
+								  [[ share__ <- x__ | x__ <- {| share__,setL_levelFault,setL_pumpFault,setL_levelReading,setL_predictedLevelHigh,setL_unitsReady,setL_successiveStops,setL_levelEstimate,setL_transmissionFault,setL_waitingNow,setL_steamFault,setL_predictedLevelLow,setL_plantWaiting,setL_readyAnnounced,setL_pumpControlFault,setL_steamReading |} ]]
+								 )
+								)[[setL_levelFault <- set_levelFault,setL_pumpFault <- set_pumpFault,setL_levelReading <- set_levelReading,setL_predictedLevelHigh <- set_predictedLevelHigh,setL_unitsReady <- set_unitsReady,setL_successiveStops <- set_successiveStops,setL_levelEstimate <- set_levelEstimate,setL_transmissionFault <- set_transmissionFault,setL_waitingNow <- set_waitingNow,setL_steamFault <- set_steamFault,setL_predictedLevelLow <- set_predictedLevelLow,setL_plantWaiting <- set_plantWaiting,setL_readyAnnounced <- set_readyAnnounced,setL_pumpControlFault <- set_pumpControlFault,setL_steamReading <- set_steamReading]]
+								)
+							)
+							 \ hideSet)
+							[[
+								transmissionComplete__.x____ <- transmissionComplete,
+								broadcastMode__.x____ <- broadcastMode,
+								commandValveClosed__.x____ <- commandValveClosed,
+								reportUnitStatus__.x____ <- reportUnitStatus,
+								announceProgramReady__.x____ <- announceProgramReady,
+								commandPumpOff__.x____ <- commandPumpOff,
+								commandValveOpen__.x____ <- commandValveOpen,
+								commandPumpOn__.x____ <- commandPumpOn
+								| x____ <- NIDS
+							]]
+						)
+						)
+						 [| union(stateClockSync,{terminate}) |]
+						 StateClocks(id__,
+						 		          const_SteamBoilerController_stopRepetitions,
+						 		          const_SteamBoilerController_maxNormalN2,
+						 		          const_SteamBoilerController_minNormalN1,
+						 		          const_SteamBoilerController_minLimitM1,
+						 		          const_SteamBoilerController_maxLimitM2)
+						)\diff(stateClockSync,enteredSS))
+						 [| {| interrupt |} |] SKIP)
+					)
+					)
+				
+				Behaviour(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = 
+					dbisim((let
+						stateClockSync = {|get_CLID_NORMAL,NORMAL::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_DEGRADED,DEGRADED::entered|}
+					 within
+						(MachineBody(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)) \ union(stateClockSync,enteredSS)
+					)
+					)
+				
+				IteratedBehaviour(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = 
+					dbisim((let
+						stateClockSync = {|get_CLID_NORMAL,NORMAL::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_DEGRADED,DEGRADED::entered|}
+					 within
+						(dbisim(
+							sbisim(
+								dbisim(
+									sbisim(
+										dbisim(
+											sbisim(
+												dbisim(
+													sbisim(
+														dbisim(
+															sbisim(
+																MachineBody(id__,
+																		    const_SteamBoilerController_stopRepetitions,
+																		    const_SteamBoilerController_maxNormalN2,
+																		    const_SteamBoilerController_minNormalN1,
+																		    const_SteamBoilerController_minLimitM1,
+																		    const_SteamBoilerController_maxLimitM2)
+																[| {|get_CLID_DEGRADED,DEGRADED::entered,terminate|} |]
+																dbisim(Clock_CLID_DEGRADED(id__,0,
+																		          const_SteamBoilerController_stopRepetitions,
+																		          const_SteamBoilerController_maxNormalN2,
+																		          const_SteamBoilerController_minNormalN1,
+																		          const_SteamBoilerController_minLimitM1,
+																		          const_SteamBoilerController_maxLimitM2))
+															)\{|get_CLID_DEGRADED|}
+														)
+														[| {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,terminate|} |]
+														dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+																          const_SteamBoilerController_stopRepetitions,
+																          const_SteamBoilerController_maxNormalN2,
+																          const_SteamBoilerController_minNormalN1,
+																          const_SteamBoilerController_minLimitM1,
+																          const_SteamBoilerController_maxLimitM2))
+													)\{|get_CLID_EMERGENCY_STOP|}
+												)
+												[| {|get_CLID_INITIALIZATION,INITIALIZATION::entered,terminate|} |]
+												dbisim(Clock_CLID_INITIALIZATION(id__,0,
+														          const_SteamBoilerController_stopRepetitions,
+														          const_SteamBoilerController_maxNormalN2,
+														          const_SteamBoilerController_minNormalN1,
+														          const_SteamBoilerController_minLimitM1,
+														          const_SteamBoilerController_maxLimitM2))
+											)\{|get_CLID_INITIALIZATION|}
+										)
+										[| {|get_CLID_RESCUE,RESCUE::entered,terminate|} |]
+										dbisim(Clock_CLID_RESCUE(id__,0,
+												          const_SteamBoilerController_stopRepetitions,
+												          const_SteamBoilerController_maxNormalN2,
+												          const_SteamBoilerController_minNormalN1,
+												          const_SteamBoilerController_minLimitM1,
+												          const_SteamBoilerController_maxLimitM2))
+									)\{|get_CLID_RESCUE|}
+								)
+								[| {|get_CLID_NORMAL,NORMAL::entered,terminate|} |]
+								dbisim(Clock_CLID_NORMAL(id__,0,
+										          const_SteamBoilerController_stopRepetitions,
+										          const_SteamBoilerController_maxNormalN2,
+										          const_SteamBoilerController_minNormalN1,
+										          const_SteamBoilerController_minLimitM1,
+										          const_SteamBoilerController_maxLimitM2))
+							)\{|get_CLID_NORMAL|}
+						)
+						) \ union(stateClockSync,enteredSS)
+					)
+					)
+				
+				Stateful(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = 
+					((let
+						getsetLocalChannels = {||}
+						clockSync = {||}
+					within
+						(Behaviour(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) 
+						 [| union(union(getsetLocalChannels,clockSync),{terminate}) |] 
+						 (varMemory(id__,
+						 		    const_SteamBoilerController_stopRepetitions,
+						 		    const_SteamBoilerController_maxNormalN2,
+						 		    const_SteamBoilerController_minNormalN1,
+						 		    const_SteamBoilerController_minLimitM1,
+						 		    const_SteamBoilerController_maxLimitM2) [| {terminate} |] Clocks(id__,
+						 		          const_SteamBoilerController_stopRepetitions,
+						 		          const_SteamBoilerController_maxNormalN2,
+						 		          const_SteamBoilerController_minNormalN1,
+						 		          const_SteamBoilerController_minLimitM1,
+						 		          const_SteamBoilerController_maxLimitM2))
+					 	)\union(getsetLocalChannels,clockSync)
+					)
+					)
+				
+				IteratedStateful(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) =
+					(IteratedBehaviour(id__,
+							    const_SteamBoilerController_stopRepetitions,
+							    const_SteamBoilerController_maxNormalN2,
+							    const_SteamBoilerController_minNormalN1,
+							    const_SteamBoilerController_minLimitM1,
+							    const_SteamBoilerController_maxLimitM2))
+				
+				-- Visible counterparts
+				MachineBody_VS_O(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = 
+					dbisim((
+					let
+						finalNodesEntered = {||}
+					within
+						(dbisim((dbisim((let
+							-- IMPLEMENTATION NOTE:
+							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+							-- modules for defining the semantics of each node.
+							enterSS = {|
+							RESCUE::enter,
+							DEGRADED::enter,
+							NORMAL::enter,
+							INITIALIZATION::enter,
+							EMERGENCY_STOP::enter,
+							i0::enter
+							|}
+							hideSet = union(enterSS,{|exit,exited,internal__|})
+						within 
+							((let
+								-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+								-- because CSPM modules are used for the semantics of Node.
+								flowevts = union(enterSS,{|exit,exited,interrupt|})
+								transSync = {|internal__.NID_i0,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in|}
+							within
+								((
+								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+								   RESCUE::VS_O__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   DEGRADED::VS_O__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   NORMAL::VS_O__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   INITIALIZATION::VS_O__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   EMERGENCY_STOP::VS_O__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   [| { share__, terminate } |] (
+								   i0::VS_O__(id__,
+								   		    const_SteamBoilerController_stopRepetitions,
+								   		    const_SteamBoilerController_maxNormalN2,
+								   		    const_SteamBoilerController_minNormalN1,
+								   		    const_SteamBoilerController_minLimitM1,
+								   		    const_SteamBoilerController_maxLimitM2)
+								   )
+								   )
+								   )
+								   )
+								   )
+								 )
+								 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in,transmissionComplete__.NID_RESCUE.in|}]]
+								 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in,transmissionComplete__.NID_DEGRADED.in|}]]
+								 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in,transmissionComplete__.NID_NORMAL.in|}]]
+								 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in,transmissionComplete__.NID_INITIALIZATION.in|}]]
+								 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+								 )
+								  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+								  [[set_levelFault <- setL_levelFault,set_pumpFault <- setL_pumpFault,set_levelReading <- setL_levelReading,set_predictedLevelHigh <- setL_predictedLevelHigh,set_unitsReady <- setL_unitsReady,set_successiveStops <- setL_successiveStops,set_levelEstimate <- setL_levelEstimate,set_transmissionFault <- setL_transmissionFault,set_waitingNow <- setL_waitingNow,set_steamFault <- setL_steamFault,set_predictedLevelLow <- setL_predictedLevelLow,set_plantWaiting <- setL_plantWaiting,set_readyAnnounced <- setL_readyAnnounced,set_pumpControlFault <- setL_pumpControlFault,set_steamReading <- setL_steamReading]]
+								 )
+								 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+								 			,setL_levelFault
+								 			,setL_pumpFault
+								 			,setL_levelReading
+								 			,setL_predictedLevelHigh
+								 			,setL_unitsReady
+								 			,setL_successiveStops
+								 			,setL_levelEstimate
+								 			,setL_transmissionFault
+								 			,setL_waitingNow
+								 			,setL_steamFault
+								 			,setL_predictedLevelLow
+								 			,setL_plantWaiting
+								 			,setL_readyAnnounced
+								 			,setL_pumpControlFault
+								 			,setL_steamReading
+								|}) |]
+								 ((i0::enter -> Transitions(id__,
+								 		    const_SteamBoilerController_stopRepetitions,
+								 		    const_SteamBoilerController_maxNormalN2,
+								 		    const_SteamBoilerController_minNormalN1,
+								 		    const_SteamBoilerController_minLimitM1,
+								 		    const_SteamBoilerController_maxLimitM2))
+								  [[ share__ <- x__ | x__ <- {| share__,setL_levelFault,setL_pumpFault,setL_levelReading,setL_predictedLevelHigh,setL_unitsReady,setL_successiveStops,setL_levelEstimate,setL_transmissionFault,setL_waitingNow,setL_steamFault,setL_predictedLevelLow,setL_plantWaiting,setL_readyAnnounced,setL_pumpControlFault,setL_steamReading |} ]]
+								 )
+								)[[setL_levelFault <- set_levelFault,setL_pumpFault <- set_pumpFault,setL_levelReading <- set_levelReading,setL_predictedLevelHigh <- set_predictedLevelHigh,setL_unitsReady <- set_unitsReady,setL_successiveStops <- set_successiveStops,setL_levelEstimate <- set_levelEstimate,setL_transmissionFault <- set_transmissionFault,setL_waitingNow <- set_waitingNow,setL_steamFault <- set_steamFault,setL_predictedLevelLow <- set_predictedLevelLow,setL_plantWaiting <- set_plantWaiting,setL_readyAnnounced <- set_readyAnnounced,setL_pumpControlFault <- set_pumpControlFault,setL_steamReading <- set_steamReading]]
+								)
+							)
+							 \ hideSet)
+							[[
+								transmissionComplete__.x____ <- transmissionComplete,
+								broadcastMode__.x____ <- broadcastMode,
+								commandValveClosed__.x____ <- commandValveClosed,
+								reportUnitStatus__.x____ <- reportUnitStatus,
+								announceProgramReady__.x____ <- announceProgramReady,
+								commandPumpOff__.x____ <- commandPumpOff,
+								commandValveOpen__.x____ <- commandValveOpen,
+								commandPumpOn__.x____ <- commandPumpOn
+								| x____ <- NIDS
+							]]
+						)
+						)
+						 [| union(stateClockSync,{terminate}) |]
+						 StateClocks(id__,
+						 		          const_SteamBoilerController_stopRepetitions,
+						 		          const_SteamBoilerController_maxNormalN2,
+						 		          const_SteamBoilerController_minNormalN1,
+						 		          const_SteamBoilerController_minLimitM1,
+						 		          const_SteamBoilerController_maxLimitM2)
+						)\diff(stateClockSync,enteredSS))
+						 [| {| interrupt |} |] SKIP)
+					)
+					)
+				
+				Behaviour_VS_O(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = 
+					dbisim((let
+						stateClockSync = {|get_CLID_NORMAL,NORMAL::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_DEGRADED,DEGRADED::entered|}
+					 within
+						(MachineBody_VS_O(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)) \ diff(union(stateClockSync,enteredSS),enteredSS)
+					)
+					)
+				
+				IteratedBehaviour_VS_O(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = 
+					dbisim((let
+						stateClockSync = {|get_CLID_NORMAL,NORMAL::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_DEGRADED,DEGRADED::entered|}
+					 within
+						(dbisim(
+							sbisim(
+								dbisim(
+									sbisim(
+										dbisim(
+											sbisim(
+												dbisim(
+													sbisim(
+														dbisim(
+															sbisim(
+																MachineBody_VS_O(id__,
+																		    const_SteamBoilerController_stopRepetitions,
+																		    const_SteamBoilerController_maxNormalN2,
+																		    const_SteamBoilerController_minNormalN1,
+																		    const_SteamBoilerController_minLimitM1,
+																		    const_SteamBoilerController_maxLimitM2)
+																[| {|get_CLID_DEGRADED,DEGRADED::entered,terminate|} |]
+																dbisim(Clock_CLID_DEGRADED(id__,0,
+																		          const_SteamBoilerController_stopRepetitions,
+																		          const_SteamBoilerController_maxNormalN2,
+																		          const_SteamBoilerController_minNormalN1,
+																		          const_SteamBoilerController_minLimitM1,
+																		          const_SteamBoilerController_maxLimitM2))
+															)\{|get_CLID_DEGRADED|}
+														)
+														[| {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,terminate|} |]
+														dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+																          const_SteamBoilerController_stopRepetitions,
+																          const_SteamBoilerController_maxNormalN2,
+																          const_SteamBoilerController_minNormalN1,
+																          const_SteamBoilerController_minLimitM1,
+																          const_SteamBoilerController_maxLimitM2))
+													)\{|get_CLID_EMERGENCY_STOP|}
+												)
+												[| {|get_CLID_INITIALIZATION,INITIALIZATION::entered,terminate|} |]
+												dbisim(Clock_CLID_INITIALIZATION(id__,0,
+														          const_SteamBoilerController_stopRepetitions,
+														          const_SteamBoilerController_maxNormalN2,
+														          const_SteamBoilerController_minNormalN1,
+														          const_SteamBoilerController_minLimitM1,
+														          const_SteamBoilerController_maxLimitM2))
+											)\{|get_CLID_INITIALIZATION|}
+										)
+										[| {|get_CLID_RESCUE,RESCUE::entered,terminate|} |]
+										dbisim(Clock_CLID_RESCUE(id__,0,
+												          const_SteamBoilerController_stopRepetitions,
+												          const_SteamBoilerController_maxNormalN2,
+												          const_SteamBoilerController_minNormalN1,
+												          const_SteamBoilerController_minLimitM1,
+												          const_SteamBoilerController_maxLimitM2))
+									)\{|get_CLID_RESCUE|}
+								)
+								[| {|get_CLID_NORMAL,NORMAL::entered,terminate|} |]
+								dbisim(Clock_CLID_NORMAL(id__,0,
+										          const_SteamBoilerController_stopRepetitions,
+										          const_SteamBoilerController_maxNormalN2,
+										          const_SteamBoilerController_minNormalN1,
+										          const_SteamBoilerController_minLimitM1,
+										          const_SteamBoilerController_maxLimitM2))
+							)\{|get_CLID_NORMAL|}
+						)
+						) \ diff(union(stateClockSync,enteredSS),enteredSS)
+					)
+					)
+				
+				Stateful_VS_O(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = 
+					dbisim((let
+						getsetLocalChannels = {||}
+						clockSync = {||}
+					within
+						(Behaviour_VS_O(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2) 
+						 [| union(union(getsetLocalChannels,clockSync),{terminate}) |] 
+						 (varMemory(id__,
+						 		    const_SteamBoilerController_stopRepetitions,
+						 		    const_SteamBoilerController_maxNormalN2,
+						 		    const_SteamBoilerController_minNormalN1,
+						 		    const_SteamBoilerController_minLimitM1,
+						 		    const_SteamBoilerController_maxLimitM2) [| {terminate} |] Clocks(id__,
+						 		          const_SteamBoilerController_stopRepetitions,
+						 		          const_SteamBoilerController_maxNormalN2,
+						 		          const_SteamBoilerController_minNormalN1,
+						 		          const_SteamBoilerController_minLimitM1,
+						 		          const_SteamBoilerController_maxLimitM2))
+					 	)\union(getsetLocalChannels,clockSync)
+					)
+					)
+				
+				IteratedStateful_VS_O(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) =
+					(IteratedBehaviour_VS_O(id__,
+							    const_SteamBoilerController_stopRepetitions,
+							    const_SteamBoilerController_maxNormalN2,
+							    const_SteamBoilerController_minNormalN1,
+							    const_SteamBoilerController_minLimitM1,
+							    const_SteamBoilerController_maxLimitM2))
+				
+				-- END
+				
+				-- Memory
+				-- Memory variables
+				
+				-- varMemory process
+				varMemory(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = terminate -> SKIP
+				
+				getsetLocalChannels = {||}
+				
+				-- Definition of the behaviour of state machines (default, optimised, visible, visible and optimised)
+				FVS__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = STM_VS_O(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) \ localClockResets
+				D__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = timed_priority(STM(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) \ union(internal_events,localClockResets))
+				O__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = dbisim(D__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2))
+				VS__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = FVS__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2)
+				VS_O__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = dbisim(FVS__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2))
+				HEXT__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = O__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) [|shared_variable_events|] SKIP
+				FVS_C__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = dbisim(timed_priority(STM(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) \ internal_events))
+				HUP__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = timed_priority(O__(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) [|{share__}|] SKIP)
+				
+				-- Clocks
+				
+				Clocks(id__,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2) = terminate -> SKIP
+				
+				clockSync = {||}
+				
+				Clock_CLID_NORMAL(id__,x__,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2) = 
+					TimeOut_1(
+						NORMAL::entered -> Clock_CLID_NORMAL(id__,0,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						get_CLID_NORMAL!x__ -> Clock_CLID_NORMAL(id__,x__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						terminate -> SKIP,Clock_CLID_NORMAL(id__,clock_type_plus(x__,1,CLID_NORMAL_clock_type(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)),
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2))
+				Clock_CLID_RESCUE(id__,x__,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2) = 
+					TimeOut_1(
+						RESCUE::entered -> Clock_CLID_RESCUE(id__,0,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						get_CLID_RESCUE!x__ -> Clock_CLID_RESCUE(id__,x__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						terminate -> SKIP,Clock_CLID_RESCUE(id__,clock_type_plus(x__,1,CLID_RESCUE_clock_type(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)),
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2))
+				Clock_CLID_INITIALIZATION(id__,x__,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2) = 
+					TimeOut_1(
+						INITIALIZATION::entered -> Clock_CLID_INITIALIZATION(id__,0,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						get_CLID_INITIALIZATION!x__ -> Clock_CLID_INITIALIZATION(id__,x__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						terminate -> SKIP,Clock_CLID_INITIALIZATION(id__,clock_type_plus(x__,1,CLID_INITIALIZATION_clock_type(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)),
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2))
+				Clock_CLID_EMERGENCY_STOP(id__,x__,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2) = 
+					TimeOut_1(
+						EMERGENCY_STOP::entered -> Clock_CLID_EMERGENCY_STOP(id__,0,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						get_CLID_EMERGENCY_STOP!x__ -> Clock_CLID_EMERGENCY_STOP(id__,x__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						terminate -> SKIP,Clock_CLID_EMERGENCY_STOP(id__,clock_type_plus(x__,1,CLID_EMERGENCY_STOP_clock_type(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)),
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2))
+				Clock_CLID_DEGRADED(id__,x__,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2) = 
+					TimeOut_1(
+						DEGRADED::entered -> Clock_CLID_DEGRADED(id__,0,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						get_CLID_DEGRADED!x__ -> Clock_CLID_DEGRADED(id__,x__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)
+						[]
+						terminate -> SKIP,Clock_CLID_DEGRADED(id__,clock_type_plus(x__,1,CLID_DEGRADED_clock_type(id__,
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2)),
+								          const_SteamBoilerController_stopRepetitions,
+								          const_SteamBoilerController_maxNormalN2,
+								          const_SteamBoilerController_minNormalN1,
+								          const_SteamBoilerController_minLimitM1,
+								          const_SteamBoilerController_maxLimitM2))
+				
+				StateClocks(id__,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2) = dbisim(Clock_CLID_NORMAL(id__,0,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2))
+				[| { terminate } |] (
+				dbisim(Clock_CLID_RESCUE(id__,0,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2))
+				[| { terminate } |] (
+				dbisim(Clock_CLID_INITIALIZATION(id__,0,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2))
+				[| { terminate } |] (
+				dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2))
+				[| { terminate } |] (
+				dbisim(Clock_CLID_DEGRADED(id__,0,
+						          const_SteamBoilerController_stopRepetitions,
+						          const_SteamBoilerController_maxNormalN2,
+						          const_SteamBoilerController_minNormalN1,
+						          const_SteamBoilerController_minLimitM1,
+						          const_SteamBoilerController_maxLimitM2))
+				)
+				)
+				)
+				)
+				
+				stateClockSync = {|get_CLID_NORMAL,NORMAL::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_DEGRADED,DEGRADED::entered|}
+				
+				-- Shared memory
+				-- Shared memory variables
+				Memory_plantWaiting(plantWaiting) =
+					get_plantWaiting!plantWaiting -> Memory_plantWaiting(plantWaiting)
+					[]
+					set_plantWaiting?x__ -> Memory_plantWaiting(x__)
+					[]
+					set_EXT_plantWaiting?x__ -> Memory_plantWaiting(x__)
+					[]
+					terminate -> SKIP
+				Memory_readyAnnounced(readyAnnounced) =
+					get_readyAnnounced!readyAnnounced -> Memory_readyAnnounced(readyAnnounced)
+					[]
+					set_readyAnnounced?x__ -> Memory_readyAnnounced(x__)
+					[]
+					set_EXT_readyAnnounced?x__ -> Memory_readyAnnounced(x__)
+					[]
+					terminate -> SKIP
+				Memory_PUMPS(PUMPS) =
+					get_PUMPS!PUMPS -> Memory_PUMPS(PUMPS)
+					[]
+					set_PUMPS?x__ -> Memory_PUMPS(x__)
+					[]
+					set_EXT_PUMPS?x__ -> Memory_PUMPS(x__)
+					[]
+					terminate -> SKIP
+				Memory_SETTLED(SETTLED) =
+					get_SETTLED!SETTLED -> Memory_SETTLED(SETTLED)
+					[]
+					set_SETTLED?x__ -> Memory_SETTLED(x__)
+					[]
+					set_EXT_SETTLED?x__ -> Memory_SETTLED(x__)
+					[]
+					terminate -> SKIP
+				Memory_stopReceived(stopReceived) =
+					get_stopReceived!stopReceived -> Memory_stopReceived(stopReceived)
+					[]
+					set_stopReceived?x__ -> Memory_stopReceived(x__)
+					[]
+					set_EXT_stopReceived?x__ -> Memory_stopReceived(x__)
+					[]
+					terminate -> SKIP
+				Memory_waitingReceived(waitingReceived) =
+					get_waitingReceived!waitingReceived -> Memory_waitingReceived(waitingReceived)
+					[]
+					set_waitingReceived?x__ -> Memory_waitingReceived(x__)
+					[]
+					set_EXT_waitingReceived?x__ -> Memory_waitingReceived(x__)
+					[]
+					terminate -> SKIP
+				Memory_unitsReadyReceived(unitsReadyReceived) =
+					get_unitsReadyReceived!unitsReadyReceived -> Memory_unitsReadyReceived(unitsReadyReceived)
+					[]
+					set_unitsReadyReceived?x__ -> Memory_unitsReadyReceived(x__)
+					[]
+					set_EXT_unitsReadyReceived?x__ -> Memory_unitsReadyReceived(x__)
+					[]
+					terminate -> SKIP
+				Memory_aberrantMessage(aberrantMessage) =
+					get_aberrantMessage!aberrantMessage -> Memory_aberrantMessage(aberrantMessage)
+					[]
+					set_aberrantMessage?x__ -> Memory_aberrantMessage(x__)
+					[]
+					set_EXT_aberrantMessage?x__ -> Memory_aberrantMessage(x__)
+					[]
+					terminate -> SKIP
+				Memory_levelMessages(levelMessages) =
+					get_levelMessages!levelMessages -> Memory_levelMessages(levelMessages)
+					[]
+					set_levelMessages?x__ -> Memory_levelMessages(x__)
+					[]
+					set_EXT_levelMessages?x__ -> Memory_levelMessages(x__)
+					[]
+					terminate -> SKIP
+				Memory_steamMessages(steamMessages) =
+					get_steamMessages!steamMessages -> Memory_steamMessages(steamMessages)
+					[]
+					set_steamMessages?x__ -> Memory_steamMessages(x__)
+					[]
+					set_EXT_steamMessages?x__ -> Memory_steamMessages(x__)
+					[]
+					terminate -> SKIP
+				Memory_levelValue(levelValue) =
+					get_levelValue!levelValue -> Memory_levelValue(levelValue)
+					[]
+					set_levelValue?x__ -> Memory_levelValue(x__)
+					[]
+					set_EXT_levelValue?x__ -> Memory_levelValue(x__)
+					[]
+					terminate -> SKIP
+				Memory_steamValue(steamValue) =
+					get_steamValue!steamValue -> Memory_steamValue(steamValue)
+					[]
+					set_steamValue?x__ -> Memory_steamValue(x__)
+					[]
+					set_EXT_steamValue?x__ -> Memory_steamValue(x__)
+					[]
+					terminate -> SKIP
+				Memory_programReadySentPrevious(programReadySentPrevious) =
+					get_programReadySentPrevious!programReadySentPrevious -> Memory_programReadySentPrevious(programReadySentPrevious)
+					[]
+					set_programReadySentPrevious?x__ -> Memory_programReadySentPrevious(x__)
+					[]
+					set_EXT_programReadySentPrevious?x__ -> Memory_programReadySentPrevious(x__)
+					[]
+					terminate -> SKIP
+				Memory_programReadySentCurrent(programReadySentCurrent) =
+					get_programReadySentCurrent!programReadySentCurrent -> Memory_programReadySentCurrent(programReadySentCurrent)
+					[]
+					set_programReadySentCurrent?x__ -> Memory_programReadySentCurrent(x__)
+					[]
+					set_EXT_programReadySentCurrent?x__ -> Memory_programReadySentCurrent(x__)
+					[]
+					terminate -> SKIP
+				Memory_valveOpen(valveOpen) =
+					get_valveOpen!valveOpen -> Memory_valveOpen(valveOpen)
+					[]
+					set_valveOpen?x__ -> Memory_valveOpen(x__)
+					[]
+					set_EXT_valveOpen?x__ -> Memory_valveOpen(x__)
+					[]
+					terminate -> SKIP
+				Memory_valveOpenDuringCycle(valveOpenDuringCycle) =
+					get_valveOpenDuringCycle!valveOpenDuringCycle -> Memory_valveOpenDuringCycle(valveOpenDuringCycle)
+					[]
+					set_valveOpenDuringCycle?x__ -> Memory_valveOpenDuringCycle(x__)
+					[]
+					set_EXT_valveOpenDuringCycle?x__ -> Memory_valveOpenDuringCycle(x__)
+					[]
+					terminate -> SKIP
+				Memory_q(q) =
+					get_q!q -> Memory_q(q)
+					[]
+					set_q?x__ -> Memory_q(x__)
+					[]
+					set_EXT_q?x__ -> Memory_q(x__)
+					[]
+					terminate -> SKIP
+				Memory_v(v) =
+					get_v!v -> Memory_v(v)
+					[]
+					set_v?x__ -> Memory_v(x__)
+					[]
+					set_EXT_v?x__ -> Memory_v(x__)
+					[]
+					terminate -> SKIP
+				Memory_p(p) =
+					get_p!p -> Memory_p(p)
+					[]
+					set_p?x__ -> Memory_p(x__)
+					[]
+					set_EXT_p?x__ -> Memory_p(x__)
+					[]
+					terminate -> SKIP
+				Memory_levelLow(levelLow) =
+					get_levelLow!levelLow -> Memory_levelLow(levelLow)
+					[]
+					set_levelLow?x__ -> Memory_levelLow(x__)
+					[]
+					set_EXT_levelLow?x__ -> Memory_levelLow(x__)
+					[]
+					terminate -> SKIP
+				Memory_levelHigh(levelHigh) =
+					get_levelHigh!levelHigh -> Memory_levelHigh(levelHigh)
+					[]
+					set_levelHigh?x__ -> Memory_levelHigh(x__)
+					[]
+					set_EXT_levelHigh?x__ -> Memory_levelHigh(x__)
+					[]
+					terminate -> SKIP
+				Memory_steamRateLow(steamRateLow) =
+					get_steamRateLow!steamRateLow -> Memory_steamRateLow(steamRateLow)
+					[]
+					set_steamRateLow?x__ -> Memory_steamRateLow(x__)
+					[]
+					set_EXT_steamRateLow?x__ -> Memory_steamRateLow(x__)
+					[]
+					terminate -> SKIP
+				Memory_steamRateHigh(steamRateHigh) =
+					get_steamRateHigh!steamRateHigh -> Memory_steamRateHigh(steamRateHigh)
+					[]
+					set_steamRateHigh?x__ -> Memory_steamRateHigh(x__)
+					[]
+					set_EXT_steamRateHigh?x__ -> Memory_steamRateHigh(x__)
+					[]
+					terminate -> SKIP
+				Memory_predictedLow(predictedLow) =
+					get_predictedLow!predictedLow -> Memory_predictedLow(predictedLow)
+					[]
+					set_predictedLow?x__ -> Memory_predictedLow(x__)
+					[]
+					set_EXT_predictedLow?x__ -> Memory_predictedLow(x__)
+					[]
+					terminate -> SKIP
+				Memory_predictedHigh(predictedHigh) =
+					get_predictedHigh!predictedHigh -> Memory_predictedHigh(predictedHigh)
+					[]
+					set_predictedHigh?x__ -> Memory_predictedHigh(x__)
+					[]
+					set_EXT_predictedHigh?x__ -> Memory_predictedHigh(x__)
+					[]
+					terminate -> SKIP
+				Memory_stopCount(stopCount) =
+					get_stopCount!stopCount -> Memory_stopCount(stopCount)
+					[]
+					set_stopCount?x__ -> Memory_stopCount(x__)
+					[]
+					set_EXT_stopCount?x__ -> Memory_stopCount(x__)
+					[]
+					terminate -> SKIP
+				Memory_transmissionFailed(transmissionFailed) =
+					get_transmissionFailed!transmissionFailed -> Memory_transmissionFailed(transmissionFailed)
+					[]
+					set_transmissionFailed?x__ -> Memory_transmissionFailed(x__)
+					[]
+					set_EXT_transmissionFailed?x__ -> Memory_transmissionFailed(x__)
+					[]
+					terminate -> SKIP
+				Memory_boundsKnown(boundsKnown) =
+					get_boundsKnown!boundsKnown -> Memory_boundsKnown(boundsKnown)
+					[]
+					set_boundsKnown?x__ -> Memory_boundsKnown(x__)
+					[]
+					set_EXT_boundsKnown?x__ -> Memory_boundsKnown(x__)
+					[]
+					terminate -> SKIP
+				Memory_successiveStops(successiveStops) =
+					get_successiveStops!successiveStops -> Memory_successiveStops(successiveStops)
+					[]
+					set_successiveStops?x__ -> Memory_successiveStops(x__)
+					[]
+					set_EXT_successiveStops?x__ -> Memory_successiveStops(x__)
+					[]
+					terminate -> SKIP
+				Memory_waitingNow(waitingNow) =
+					get_waitingNow!waitingNow -> Memory_waitingNow(waitingNow)
+					[]
+					set_waitingNow?x__ -> Memory_waitingNow(x__)
+					[]
+					set_EXT_waitingNow?x__ -> Memory_waitingNow(x__)
+					[]
+					terminate -> SKIP
+				Memory_transmissionFault(transmissionFault) =
+					get_transmissionFault!transmissionFault -> Memory_transmissionFault(transmissionFault)
+					[]
+					set_transmissionFault?x__ -> Memory_transmissionFault(x__)
+					[]
+					set_EXT_transmissionFault?x__ -> Memory_transmissionFault(x__)
+					[]
+					terminate -> SKIP
+				Memory_steamReading(steamReading) =
+					get_steamReading!steamReading -> Memory_steamReading(steamReading)
+					[]
+					set_steamReading?x__ -> Memory_steamReading(x__)
+					[]
+					set_EXT_steamReading?x__ -> Memory_steamReading(x__)
+					[]
+					terminate -> SKIP
+				Memory_levelFault(levelFault) =
+					get_levelFault!levelFault -> Memory_levelFault(levelFault)
+					[]
+					set_levelFault?x__ -> Memory_levelFault(x__)
+					[]
+					set_EXT_levelFault?x__ -> Memory_levelFault(x__)
+					[]
+					terminate -> SKIP
+				Memory_unitsReady(unitsReady) =
+					get_unitsReady!unitsReady -> Memory_unitsReady(unitsReady)
+					[]
+					set_unitsReady?x__ -> Memory_unitsReady(x__)
+					[]
+					set_EXT_unitsReady?x__ -> Memory_unitsReady(x__)
+					[]
+					terminate -> SKIP
+				Memory_steamFault(steamFault) =
+					get_steamFault!steamFault -> Memory_steamFault(steamFault)
+					[]
+					set_steamFault?x__ -> Memory_steamFault(x__)
+					[]
+					set_EXT_steamFault?x__ -> Memory_steamFault(x__)
+					[]
+					terminate -> SKIP
+				Memory_pumpFault(pumpFault) =
+					get_pumpFault!pumpFault -> Memory_pumpFault(pumpFault)
+					[]
+					set_pumpFault?x__ -> Memory_pumpFault(x__)
+					[]
+					set_EXT_pumpFault?x__ -> Memory_pumpFault(x__)
+					[]
+					terminate -> SKIP
+				Memory_pumpControlFault(pumpControlFault) =
+					get_pumpControlFault!pumpControlFault -> Memory_pumpControlFault(pumpControlFault)
+					[]
+					set_pumpControlFault?x__ -> Memory_pumpControlFault(x__)
+					[]
+					set_EXT_pumpControlFault?x__ -> Memory_pumpControlFault(x__)
+					[]
+					terminate -> SKIP
+				Memory_levelReading(levelReading) =
+					get_levelReading!levelReading -> Memory_levelReading(levelReading)
+					[]
+					set_levelReading?x__ -> Memory_levelReading(x__)
+					[]
+					set_EXT_levelReading?x__ -> Memory_levelReading(x__)
+					[]
+					terminate -> SKIP
+				Memory_predictedLevelLow(predictedLevelLow) =
+					get_predictedLevelLow!predictedLevelLow -> Memory_predictedLevelLow(predictedLevelLow)
+					[]
+					set_predictedLevelLow?x__ -> Memory_predictedLevelLow(x__)
+					[]
+					set_EXT_predictedLevelLow?x__ -> Memory_predictedLevelLow(x__)
+					[]
+					terminate -> SKIP
+				Memory_predictedLevelHigh(predictedLevelHigh) =
+					get_predictedLevelHigh!predictedLevelHigh -> Memory_predictedLevelHigh(predictedLevelHigh)
+					[]
+					set_predictedLevelHigh?x__ -> Memory_predictedLevelHigh(x__)
+					[]
+					set_EXT_predictedLevelHigh?x__ -> Memory_predictedLevelHigh(x__)
+					[]
+					terminate -> SKIP
+				Memory_levelEstimate(levelEstimate) =
+					get_levelEstimate!levelEstimate -> Memory_levelEstimate(levelEstimate)
+					[]
+					set_levelEstimate?x__ -> Memory_levelEstimate(x__)
+					[]
+					set_EXT_levelEstimate?x__ -> Memory_levelEstimate(x__)
+					[]
+					terminate -> SKIP
+				
+				-- sharedVarMemory process
+				sharedVarMemory(id__,
+						    const_SteamBoilerController_stopRepetitions,
+						    const_SteamBoilerController_maxNormalN2,
+						    const_SteamBoilerController_minNormalN1,
+						    const_SteamBoilerController_minLimitM1,
+						    const_SteamBoilerController_maxLimitM2) = Memory_plantWaiting(false)
+				[| { terminate } |] (
+				Memory_readyAnnounced(false)
+				[| { terminate } |] (
+				Memory_PUMPS(0)
+				[| { terminate } |] (
+				Memory_SETTLED(0)
+				[| { terminate } |] (
+				Memory_stopReceived(true)
+				[| { terminate } |] (
+				Memory_waitingReceived(true)
+				[| { terminate } |] (
+				Memory_unitsReadyReceived(true)
+				[| { terminate } |] (
+				Memory_aberrantMessage(true)
+				[| { terminate } |] (
+				Memory_levelMessages(0)
+				[| { terminate } |] (
+				Memory_steamMessages(0)
+				[| { terminate } |] (
+				Memory_levelValue(0)
+				[| { terminate } |] (
+				Memory_steamValue(0)
+				[| { terminate } |] (
+				Memory_programReadySentPrevious(true)
+				[| { terminate } |] (
+				Memory_programReadySentCurrent(true)
+				[| { terminate } |] (
+				Memory_valveOpen(true)
+				[| { terminate } |] (
+				Memory_valveOpenDuringCycle(true)
+				[| { terminate } |] (
+				Memory_q(0)
+				[| { terminate } |] (
+				Memory_v(0)
+				[| { terminate } |] (
+				Memory_p(0)
+				[| { terminate } |] (
+				Memory_levelLow(0)
+				[| { terminate } |] (
+				Memory_levelHigh(0)
+				[| { terminate } |] (
+				Memory_steamRateLow(0)
+				[| { terminate } |] (
+				Memory_steamRateHigh(0)
+				[| { terminate } |] (
+				Memory_predictedLow(0)
+				[| { terminate } |] (
+				Memory_predictedHigh(0)
+				[| { terminate } |] (
+				Memory_stopCount(0)
+				[| { terminate } |] (
+				Memory_transmissionFailed(true)
+				[| { terminate } |] (
+				Memory_boundsKnown(true)
+				[| { terminate } |] (
+				Memory_successiveStops(0)
+				[| { terminate } |] (
+				Memory_waitingNow(true)
+				[| { terminate } |] (
+				Memory_transmissionFault(true)
+				[| { terminate } |] (
+				Memory_steamReading(0)
+				[| { terminate } |] (
+				Memory_levelFault(true)
+				[| { terminate } |] (
+				Memory_unitsReady(true)
+				[| { terminate } |] (
+				Memory_steamFault(true)
+				[| { terminate } |] (
+				Memory_pumpFault(true)
+				[| { terminate } |] (
+				Memory_pumpControlFault(true)
+				[| { terminate } |] (
+				Memory_levelReading(0)
+				[| { terminate } |] (
+				Memory_predictedLevelLow(0)
+				[| { terminate } |] (
+				Memory_predictedLevelHigh(0)
+				[| { terminate } |] (
+				Memory_levelEstimate(0)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				)
+				
+				sharedVarSync = {|get_plantWaiting,set_plantWaiting,set_EXT_plantWaiting,get_readyAnnounced,set_readyAnnounced,set_EXT_readyAnnounced,get_PUMPS,set_PUMPS,set_EXT_PUMPS,get_SETTLED,set_SETTLED,set_EXT_SETTLED,get_stopReceived,set_stopReceived,set_EXT_stopReceived,get_waitingReceived,set_waitingReceived,set_EXT_waitingReceived,get_unitsReadyReceived,set_unitsReadyReceived,set_EXT_unitsReadyReceived,get_aberrantMessage,set_aberrantMessage,set_EXT_aberrantMessage,get_levelMessages,set_levelMessages,set_EXT_levelMessages,get_steamMessages,set_steamMessages,set_EXT_steamMessages,get_levelValue,set_levelValue,set_EXT_levelValue,get_steamValue,set_steamValue,set_EXT_steamValue,get_programReadySentPrevious,set_programReadySentPrevious,set_EXT_programReadySentPrevious,get_programReadySentCurrent,set_programReadySentCurrent,set_EXT_programReadySentCurrent,get_valveOpen,set_valveOpen,set_EXT_valveOpen,get_valveOpenDuringCycle,set_valveOpenDuringCycle,set_EXT_valveOpenDuringCycle,get_q,set_q,set_EXT_q,get_v,set_v,set_EXT_v,get_p,set_p,set_EXT_p,get_levelLow,set_levelLow,set_EXT_levelLow,get_levelHigh,set_levelHigh,set_EXT_levelHigh,get_steamRateLow,set_steamRateLow,set_EXT_steamRateLow,get_steamRateHigh,set_steamRateHigh,set_EXT_steamRateHigh,get_predictedLow,set_predictedLow,set_EXT_predictedLow,get_predictedHigh,set_predictedHigh,set_EXT_predictedHigh,get_stopCount,set_stopCount,set_EXT_stopCount,get_transmissionFailed,set_transmissionFailed,set_EXT_transmissionFailed,get_boundsKnown,set_boundsKnown,set_EXT_boundsKnown,get_successiveStops,set_successiveStops,set_EXT_successiveStops,get_waitingNow,set_waitingNow,set_EXT_waitingNow,get_transmissionFault,set_transmissionFault,set_EXT_transmissionFault,get_steamReading,set_steamReading,set_EXT_steamReading,get_levelFault,set_levelFault,set_EXT_levelFault,get_unitsReady,set_unitsReady,set_EXT_unitsReady,get_steamFault,set_steamFault,set_EXT_steamFault,get_pumpFault,set_pumpFault,set_EXT_pumpFault,get_pumpControlFault,set_pumpControlFault,set_EXT_pumpControlFault,get_levelReading,set_levelReading,set_EXT_levelReading,get_predictedLevelLow,set_predictedLevelLow,set_EXT_predictedLevelLow,get_predictedLevelHigh,set_predictedLevelHigh,set_EXT_predictedLevelHigh,get_levelEstimate,set_levelEstimate,set_EXT_levelEstimate|}
+				
+				sharedVarHide = {|get_plantWaiting,get_readyAnnounced,get_PUMPS,get_SETTLED,get_stopReceived,get_waitingReceived,get_unitsReadyReceived,get_aberrantMessage,get_levelMessages,get_steamMessages,get_levelValue,get_steamValue,get_programReadySentPrevious,get_programReadySentCurrent,get_valveOpen,get_valveOpenDuringCycle,get_q,get_v,get_p,get_levelLow,get_levelHigh,get_steamRateLow,get_steamRateHigh,get_predictedLow,get_predictedHigh,get_stopCount,get_transmissionFailed,get_boundsKnown,get_successiveStops,get_waitingNow,get_transmissionFault,get_steamReading,get_levelFault,get_unitsReady,get_steamFault,get_pumpFault,get_pumpControlFault,get_levelReading,get_predictedLevelLow,get_predictedLevelHigh,get_levelEstimate|}
+				}
+		endmodule
+		
+		Timed(OneStep) {
+				-- undefined operations
+				
+				-- declaring controller memory
+				Memory(id__, plantWaiting, readyAnnounced, PUMPS, SETTLED, stopReceived, waitingReceived, unitsReadyReceived, aberrantMessage, levelMessages, steamMessages, levelValue, steamValue, programReadySentPrevious, programReadySentCurrent, valveOpen, valveOpenDuringCycle, q, v, p, levelLow, levelHigh, steamRateLow, steamRateHigh, predictedLow, predictedHigh, stopCount, transmissionFailed, boundsKnown, successiveStops, waitingNow, transmissionFault, steamReading, levelFault, unitsReady, steamFault, pumpFault, pumpControlFault, levelReading, predictedLevelLow, predictedLevelHigh, levelEstimate, stopRepetitions, maxNormalN2, minNormalN1, minLimitM1, maxLimitM2) = (
+				set_EXT_plantWaiting?x__ -> stm_ref0::set_EXT_plantWaiting!x__ -> 
+				Memory(id__,x__,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_readyAnnounced?x__ -> stm_ref0::set_EXT_readyAnnounced!x__ -> 
+				Memory(id__,plantWaiting,x__,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_PUMPS?x__ -> stm_ref0::set_EXT_PUMPS!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,x__,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_SETTLED?x__ -> stm_ref0::set_EXT_SETTLED!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,x__,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_stopReceived?x__ -> stm_ref0::set_EXT_stopReceived!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,x__,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_waitingReceived?x__ -> stm_ref0::set_EXT_waitingReceived!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,x__,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_unitsReadyReceived?x__ -> stm_ref0::set_EXT_unitsReadyReceived!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,x__,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_aberrantMessage?x__ -> stm_ref0::set_EXT_aberrantMessage!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,x__,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_levelMessages?x__ -> stm_ref0::set_EXT_levelMessages!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,x__,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_steamMessages?x__ -> stm_ref0::set_EXT_steamMessages!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,x__,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_levelValue?x__ -> stm_ref0::set_EXT_levelValue!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,x__,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_steamValue?x__ -> stm_ref0::set_EXT_steamValue!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,x__,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_programReadySentPrevious?x__ -> stm_ref0::set_EXT_programReadySentPrevious!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,x__,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_programReadySentCurrent?x__ -> stm_ref0::set_EXT_programReadySentCurrent!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,x__,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_valveOpen?x__ -> stm_ref0::set_EXT_valveOpen!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,x__,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_valveOpenDuringCycle?x__ -> stm_ref0::set_EXT_valveOpenDuringCycle!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,x__,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_q?x__ -> stm_ref0::set_EXT_q!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,x__,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_v?x__ -> stm_ref0::set_EXT_v!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,x__,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_p?x__ -> stm_ref0::set_EXT_p!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,x__,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_levelLow?x__ -> stm_ref0::set_EXT_levelLow!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,x__,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_levelHigh?x__ -> stm_ref0::set_EXT_levelHigh!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,x__,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_steamRateLow?x__ -> stm_ref0::set_EXT_steamRateLow!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,x__,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_steamRateHigh?x__ -> stm_ref0::set_EXT_steamRateHigh!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,x__,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_predictedLow?x__ -> stm_ref0::set_EXT_predictedLow!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,x__,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_predictedHigh?x__ -> stm_ref0::set_EXT_predictedHigh!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,x__,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_stopCount?x__ -> stm_ref0::set_EXT_stopCount!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,x__,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_transmissionFailed?x__ -> stm_ref0::set_EXT_transmissionFailed!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,x__,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_boundsKnown?x__ -> stm_ref0::set_EXT_boundsKnown!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,x__,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_successiveStops?x__ -> stm_ref0::set_EXT_successiveStops!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,x__,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_waitingNow?x__ -> stm_ref0::set_EXT_waitingNow!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,x__,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_transmissionFault?x__ -> stm_ref0::set_EXT_transmissionFault!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,x__,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_steamReading?x__ -> stm_ref0::set_EXT_steamReading!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,x__,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_levelFault?x__ -> stm_ref0::set_EXT_levelFault!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,x__,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_unitsReady?x__ -> stm_ref0::set_EXT_unitsReady!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,x__,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_steamFault?x__ -> stm_ref0::set_EXT_steamFault!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,x__,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_pumpFault?x__ -> stm_ref0::set_EXT_pumpFault!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,x__,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_pumpControlFault?x__ -> stm_ref0::set_EXT_pumpControlFault!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,x__,levelReading,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_levelReading?x__ -> stm_ref0::set_EXT_levelReading!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,x__,predictedLevelLow,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_predictedLevelLow?x__ -> stm_ref0::set_EXT_predictedLevelLow!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,x__,predictedLevelHigh,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_predictedLevelHigh?x__ -> stm_ref0::set_EXT_predictedLevelHigh!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,x__,levelEstimate,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				 []
+				set_EXT_levelEstimate?x__ -> stm_ref0::set_EXT_levelEstimate!x__ -> 
+				Memory(id__,plantWaiting,readyAnnounced,PUMPS,SETTLED,stopReceived,waitingReceived,unitsReadyReceived,aberrantMessage,levelMessages,steamMessages,levelValue,steamValue,programReadySentPrevious,programReadySentCurrent,valveOpen,valveOpenDuringCycle,q,v,p,levelLow,levelHigh,steamRateLow,steamRateHigh,predictedLow,predictedHigh,stopCount,transmissionFailed,boundsKnown,successiveStops,waitingNow,transmissionFault,steamReading,levelFault,unitsReady,steamFault,pumpFault,pumpControlFault,levelReading,predictedLevelLow,predictedLevelHigh,x__,stopRepetitions,maxNormalN2,minNormalN1,minLimitM1,maxLimitM2)
+				)
+				
+				D__(id__,
+						    const_SteamBoilerController_Ctrl_stopRepetitions,
+						    const_SteamBoilerController_Ctrl_maxNormalN2,
+						    const_SteamBoilerController_Ctrl_minNormalN1,
+						    const_SteamBoilerController_Ctrl_minLimitM1,
+						    const_SteamBoilerController_Ctrl_maxLimitM2) = prioritise(	((
+						let
+							const_SteamBoilerController_stopRepetitions = const_SteamBoilerController_Ctrl_stopRepetitions
+							const_SteamBoilerController_maxNormalN2 = const_SteamBoilerController_Ctrl_maxNormalN2
+							const_SteamBoilerController_minNormalN1 = const_SteamBoilerController_Ctrl_minNormalN1
+							const_SteamBoilerController_minLimitM1 = const_SteamBoilerController_Ctrl_minLimitM1
+							const_SteamBoilerController_maxLimitM2 = const_SteamBoilerController_Ctrl_maxLimitM2
+						within 
+						stm_ref0::D__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2)[[
+							stm_ref0::terminate <- terminate,
+							stm_ref0::transmissionComplete <- transmissionComplete,
+							stm_ref0::broadcastMode <- broadcastMode,
+							stm_ref0::commandValveClosed <- commandValveClosed,
+							stm_ref0::reportUnitStatus <- reportUnitStatus,
+							stm_ref0::announceProgramReady <- announceProgramReady,
+							stm_ref0::commandPumpOff <- commandPumpOff,
+							stm_ref0::commandValveOpen <- commandValveOpen,
+							stm_ref0::commandPumpOn <- commandPumpOn,
+							stm_ref0::set_plantWaiting <- set_plantWaiting,
+							stm_ref0::get_plantWaiting <- get_plantWaiting,
+							stm_ref0::set_readyAnnounced <- set_readyAnnounced,
+							stm_ref0::get_readyAnnounced <- get_readyAnnounced,
+							stm_ref0::set_PUMPS <- set_PUMPS,
+							stm_ref0::get_PUMPS <- get_PUMPS,
+							stm_ref0::set_SETTLED <- set_SETTLED,
+							stm_ref0::get_SETTLED <- get_SETTLED,
+							stm_ref0::set_stopReceived <- set_stopReceived,
+							stm_ref0::get_stopReceived <- get_stopReceived,
+							stm_ref0::set_waitingReceived <- set_waitingReceived,
+							stm_ref0::get_waitingReceived <- get_waitingReceived,
+							stm_ref0::set_unitsReadyReceived <- set_unitsReadyReceived,
+							stm_ref0::get_unitsReadyReceived <- get_unitsReadyReceived,
+							stm_ref0::set_aberrantMessage <- set_aberrantMessage,
+							stm_ref0::get_aberrantMessage <- get_aberrantMessage,
+							stm_ref0::set_levelMessages <- set_levelMessages,
+							stm_ref0::get_levelMessages <- get_levelMessages,
+							stm_ref0::set_steamMessages <- set_steamMessages,
+							stm_ref0::get_steamMessages <- get_steamMessages,
+							stm_ref0::set_levelValue <- set_levelValue,
+							stm_ref0::get_levelValue <- get_levelValue,
+							stm_ref0::set_steamValue <- set_steamValue,
+							stm_ref0::get_steamValue <- get_steamValue,
+							stm_ref0::set_programReadySentPrevious <- set_programReadySentPrevious,
+							stm_ref0::get_programReadySentPrevious <- get_programReadySentPrevious,
+							stm_ref0::set_programReadySentCurrent <- set_programReadySentCurrent,
+							stm_ref0::get_programReadySentCurrent <- get_programReadySentCurrent,
+							stm_ref0::set_valveOpen <- set_valveOpen,
+							stm_ref0::get_valveOpen <- get_valveOpen,
+							stm_ref0::set_valveOpenDuringCycle <- set_valveOpenDuringCycle,
+							stm_ref0::get_valveOpenDuringCycle <- get_valveOpenDuringCycle,
+							stm_ref0::set_q <- set_q,
+							stm_ref0::get_q <- get_q,
+							stm_ref0::set_v <- set_v,
+							stm_ref0::get_v <- get_v,
+							stm_ref0::set_p <- set_p,
+							stm_ref0::get_p <- get_p,
+							stm_ref0::set_levelLow <- set_levelLow,
+							stm_ref0::get_levelLow <- get_levelLow,
+							stm_ref0::set_levelHigh <- set_levelHigh,
+							stm_ref0::get_levelHigh <- get_levelHigh,
+							stm_ref0::set_steamRateLow <- set_steamRateLow,
+							stm_ref0::get_steamRateLow <- get_steamRateLow,
+							stm_ref0::set_steamRateHigh <- set_steamRateHigh,
+							stm_ref0::get_steamRateHigh <- get_steamRateHigh,
+							stm_ref0::set_predictedLow <- set_predictedLow,
+							stm_ref0::get_predictedLow <- get_predictedLow,
+							stm_ref0::set_predictedHigh <- set_predictedHigh,
+							stm_ref0::get_predictedHigh <- get_predictedHigh,
+							stm_ref0::set_stopCount <- set_stopCount,
+							stm_ref0::get_stopCount <- get_stopCount,
+							stm_ref0::set_transmissionFailed <- set_transmissionFailed,
+							stm_ref0::get_transmissionFailed <- get_transmissionFailed,
+							stm_ref0::set_boundsKnown <- set_boundsKnown,
+							stm_ref0::get_boundsKnown <- get_boundsKnown,
+							stm_ref0::set_successiveStops <- set_successiveStops,
+							stm_ref0::get_successiveStops <- get_successiveStops,
+							stm_ref0::set_waitingNow <- set_waitingNow,
+							stm_ref0::get_waitingNow <- get_waitingNow,
+							stm_ref0::set_transmissionFault <- set_transmissionFault,
+							stm_ref0::get_transmissionFault <- get_transmissionFault,
+							stm_ref0::set_steamReading <- set_steamReading,
+							stm_ref0::get_steamReading <- get_steamReading,
+							stm_ref0::set_levelFault <- set_levelFault,
+							stm_ref0::get_levelFault <- get_levelFault,
+							stm_ref0::set_unitsReady <- set_unitsReady,
+							stm_ref0::get_unitsReady <- get_unitsReady,
+							stm_ref0::set_steamFault <- set_steamFault,
+							stm_ref0::get_steamFault <- get_steamFault,
+							stm_ref0::set_pumpFault <- set_pumpFault,
+							stm_ref0::get_pumpFault <- get_pumpFault,
+							stm_ref0::set_pumpControlFault <- set_pumpControlFault,
+							stm_ref0::get_pumpControlFault <- get_pumpControlFault,
+							stm_ref0::set_levelReading <- set_levelReading,
+							stm_ref0::get_levelReading <- get_levelReading,
+							stm_ref0::set_predictedLevelLow <- set_predictedLevelLow,
+							stm_ref0::get_predictedLevelLow <- get_predictedLevelLow,
+							stm_ref0::set_predictedLevelHigh <- set_predictedLevelHigh,
+							stm_ref0::get_predictedLevelHigh <- get_predictedLevelHigh,
+							stm_ref0::set_levelEstimate <- set_levelEstimate,
+							stm_ref0::get_levelEstimate <- get_levelEstimate
+						]]
+					)
+						[|
+							union(
+								{|
+								|},
+								{|
+									stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_PUMPS,stm_ref0::set_EXT_SETTLED,stm_ref0::set_EXT_stopReceived,stm_ref0::set_EXT_waitingReceived,stm_ref0::set_EXT_unitsReadyReceived,stm_ref0::set_EXT_aberrantMessage,stm_ref0::set_EXT_levelMessages,stm_ref0::set_EXT_steamMessages,stm_ref0::set_EXT_levelValue,stm_ref0::set_EXT_steamValue,stm_ref0::set_EXT_programReadySentPrevious,stm_ref0::set_EXT_programReadySentCurrent,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_valveOpenDuringCycle,stm_ref0::set_EXT_q,stm_ref0::set_EXT_v,stm_ref0::set_EXT_p,stm_ref0::set_EXT_levelLow,stm_ref0::set_EXT_levelHigh,stm_ref0::set_EXT_steamRateLow,stm_ref0::set_EXT_steamRateHigh,stm_ref0::set_EXT_predictedLow,stm_ref0::set_EXT_predictedHigh,stm_ref0::set_EXT_stopCount,stm_ref0::set_EXT_transmissionFailed,stm_ref0::set_EXT_boundsKnown,stm_ref0::set_EXT_successiveStops,stm_ref0::set_EXT_waitingNow,stm_ref0::set_EXT_transmissionFault,stm_ref0::set_EXT_steamReading,stm_ref0::set_EXT_levelFault,stm_ref0::set_EXT_unitsReady,stm_ref0::set_EXT_steamFault,stm_ref0::set_EXT_pumpFault,stm_ref0::set_EXT_pumpControlFault,stm_ref0::set_EXT_levelReading,stm_ref0::set_EXT_predictedLevelLow,stm_ref0::set_EXT_predictedLevelHigh,stm_ref0::set_EXT_levelEstimate
+								|}
+							)
+						|]
+					Memory(id__, false, false, 0, 0, true, true, true, true, 0, 0, 0, 0, true, true, true, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, true, 0, true, true, 0, true, true, true, true, true, 0, 0, 0, 0, const_SteamBoilerController_Ctrl_stopRepetitions, const_SteamBoilerController_Ctrl_maxNormalN2, const_SteamBoilerController_Ctrl_minNormalN1, const_SteamBoilerController_Ctrl_minLimitM1, const_SteamBoilerController_Ctrl_maxLimitM2)
+				)
+				\ union(
+					{|
+					|},
+					{|
+						stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_PUMPS,stm_ref0::set_EXT_SETTLED,stm_ref0::set_EXT_stopReceived,stm_ref0::set_EXT_waitingReceived,stm_ref0::set_EXT_unitsReadyReceived,stm_ref0::set_EXT_aberrantMessage,stm_ref0::set_EXT_levelMessages,stm_ref0::set_EXT_steamMessages,stm_ref0::set_EXT_levelValue,stm_ref0::set_EXT_steamValue,stm_ref0::set_EXT_programReadySentPrevious,stm_ref0::set_EXT_programReadySentCurrent,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_valveOpenDuringCycle,stm_ref0::set_EXT_q,stm_ref0::set_EXT_v,stm_ref0::set_EXT_p,stm_ref0::set_EXT_levelLow,stm_ref0::set_EXT_levelHigh,stm_ref0::set_EXT_steamRateLow,stm_ref0::set_EXT_steamRateHigh,stm_ref0::set_EXT_predictedLow,stm_ref0::set_EXT_predictedHigh,stm_ref0::set_EXT_stopCount,stm_ref0::set_EXT_transmissionFailed,stm_ref0::set_EXT_boundsKnown,stm_ref0::set_EXT_successiveStops,stm_ref0::set_EXT_waitingNow,stm_ref0::set_EXT_transmissionFault,stm_ref0::set_EXT_steamReading,stm_ref0::set_EXT_levelFault,stm_ref0::set_EXT_unitsReady,stm_ref0::set_EXT_steamFault,stm_ref0::set_EXT_pumpFault,stm_ref0::set_EXT_pumpControlFault,stm_ref0::set_EXT_levelReading,stm_ref0::set_EXT_predictedLevelLow,stm_ref0::set_EXT_predictedLevelHigh,stm_ref0::set_EXT_levelEstimate
+					|}
+				)
+				[|{|terminate|}|>SKIP
+				,<visibleMemoryEvents,{tock}>)
+				
+				-- VS version
+				VS__(id__,
+						    const_SteamBoilerController_Ctrl_stopRepetitions,
+						    const_SteamBoilerController_Ctrl_maxNormalN2,
+						    const_SteamBoilerController_Ctrl_minNormalN1,
+						    const_SteamBoilerController_Ctrl_minLimitM1,
+						    const_SteamBoilerController_Ctrl_maxLimitM2) = prioritise(	((
+						let
+							const_SteamBoilerController_stopRepetitions = const_SteamBoilerController_Ctrl_stopRepetitions
+							const_SteamBoilerController_maxNormalN2 = const_SteamBoilerController_Ctrl_maxNormalN2
+							const_SteamBoilerController_minNormalN1 = const_SteamBoilerController_Ctrl_minNormalN1
+							const_SteamBoilerController_minLimitM1 = const_SteamBoilerController_Ctrl_minLimitM1
+							const_SteamBoilerController_maxLimitM2 = const_SteamBoilerController_Ctrl_maxLimitM2
+						within 
+						stm_ref0::VS__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2)[[
+							stm_ref0::terminate <- terminate,
+							stm_ref0::transmissionComplete <- transmissionComplete,
+							stm_ref0::broadcastMode <- broadcastMode,
+							stm_ref0::commandValveClosed <- commandValveClosed,
+							stm_ref0::reportUnitStatus <- reportUnitStatus,
+							stm_ref0::announceProgramReady <- announceProgramReady,
+							stm_ref0::commandPumpOff <- commandPumpOff,
+							stm_ref0::commandValveOpen <- commandValveOpen,
+							stm_ref0::commandPumpOn <- commandPumpOn,
+							stm_ref0::set_plantWaiting <- set_plantWaiting,
+							stm_ref0::get_plantWaiting <- get_plantWaiting,
+							stm_ref0::set_readyAnnounced <- set_readyAnnounced,
+							stm_ref0::get_readyAnnounced <- get_readyAnnounced,
+							stm_ref0::set_PUMPS <- set_PUMPS,
+							stm_ref0::get_PUMPS <- get_PUMPS,
+							stm_ref0::set_SETTLED <- set_SETTLED,
+							stm_ref0::get_SETTLED <- get_SETTLED,
+							stm_ref0::set_stopReceived <- set_stopReceived,
+							stm_ref0::get_stopReceived <- get_stopReceived,
+							stm_ref0::set_waitingReceived <- set_waitingReceived,
+							stm_ref0::get_waitingReceived <- get_waitingReceived,
+							stm_ref0::set_unitsReadyReceived <- set_unitsReadyReceived,
+							stm_ref0::get_unitsReadyReceived <- get_unitsReadyReceived,
+							stm_ref0::set_aberrantMessage <- set_aberrantMessage,
+							stm_ref0::get_aberrantMessage <- get_aberrantMessage,
+							stm_ref0::set_levelMessages <- set_levelMessages,
+							stm_ref0::get_levelMessages <- get_levelMessages,
+							stm_ref0::set_steamMessages <- set_steamMessages,
+							stm_ref0::get_steamMessages <- get_steamMessages,
+							stm_ref0::set_levelValue <- set_levelValue,
+							stm_ref0::get_levelValue <- get_levelValue,
+							stm_ref0::set_steamValue <- set_steamValue,
+							stm_ref0::get_steamValue <- get_steamValue,
+							stm_ref0::set_programReadySentPrevious <- set_programReadySentPrevious,
+							stm_ref0::get_programReadySentPrevious <- get_programReadySentPrevious,
+							stm_ref0::set_programReadySentCurrent <- set_programReadySentCurrent,
+							stm_ref0::get_programReadySentCurrent <- get_programReadySentCurrent,
+							stm_ref0::set_valveOpen <- set_valveOpen,
+							stm_ref0::get_valveOpen <- get_valveOpen,
+							stm_ref0::set_valveOpenDuringCycle <- set_valveOpenDuringCycle,
+							stm_ref0::get_valveOpenDuringCycle <- get_valveOpenDuringCycle,
+							stm_ref0::set_q <- set_q,
+							stm_ref0::get_q <- get_q,
+							stm_ref0::set_v <- set_v,
+							stm_ref0::get_v <- get_v,
+							stm_ref0::set_p <- set_p,
+							stm_ref0::get_p <- get_p,
+							stm_ref0::set_levelLow <- set_levelLow,
+							stm_ref0::get_levelLow <- get_levelLow,
+							stm_ref0::set_levelHigh <- set_levelHigh,
+							stm_ref0::get_levelHigh <- get_levelHigh,
+							stm_ref0::set_steamRateLow <- set_steamRateLow,
+							stm_ref0::get_steamRateLow <- get_steamRateLow,
+							stm_ref0::set_steamRateHigh <- set_steamRateHigh,
+							stm_ref0::get_steamRateHigh <- get_steamRateHigh,
+							stm_ref0::set_predictedLow <- set_predictedLow,
+							stm_ref0::get_predictedLow <- get_predictedLow,
+							stm_ref0::set_predictedHigh <- set_predictedHigh,
+							stm_ref0::get_predictedHigh <- get_predictedHigh,
+							stm_ref0::set_stopCount <- set_stopCount,
+							stm_ref0::get_stopCount <- get_stopCount,
+							stm_ref0::set_transmissionFailed <- set_transmissionFailed,
+							stm_ref0::get_transmissionFailed <- get_transmissionFailed,
+							stm_ref0::set_boundsKnown <- set_boundsKnown,
+							stm_ref0::get_boundsKnown <- get_boundsKnown,
+							stm_ref0::set_successiveStops <- set_successiveStops,
+							stm_ref0::get_successiveStops <- get_successiveStops,
+							stm_ref0::set_waitingNow <- set_waitingNow,
+							stm_ref0::get_waitingNow <- get_waitingNow,
+							stm_ref0::set_transmissionFault <- set_transmissionFault,
+							stm_ref0::get_transmissionFault <- get_transmissionFault,
+							stm_ref0::set_steamReading <- set_steamReading,
+							stm_ref0::get_steamReading <- get_steamReading,
+							stm_ref0::set_levelFault <- set_levelFault,
+							stm_ref0::get_levelFault <- get_levelFault,
+							stm_ref0::set_unitsReady <- set_unitsReady,
+							stm_ref0::get_unitsReady <- get_unitsReady,
+							stm_ref0::set_steamFault <- set_steamFault,
+							stm_ref0::get_steamFault <- get_steamFault,
+							stm_ref0::set_pumpFault <- set_pumpFault,
+							stm_ref0::get_pumpFault <- get_pumpFault,
+							stm_ref0::set_pumpControlFault <- set_pumpControlFault,
+							stm_ref0::get_pumpControlFault <- get_pumpControlFault,
+							stm_ref0::set_levelReading <- set_levelReading,
+							stm_ref0::get_levelReading <- get_levelReading,
+							stm_ref0::set_predictedLevelLow <- set_predictedLevelLow,
+							stm_ref0::get_predictedLevelLow <- get_predictedLevelLow,
+							stm_ref0::set_predictedLevelHigh <- set_predictedLevelHigh,
+							stm_ref0::get_predictedLevelHigh <- get_predictedLevelHigh,
+							stm_ref0::set_levelEstimate <- set_levelEstimate,
+							stm_ref0::get_levelEstimate <- get_levelEstimate
+						]]
+					)
+						[|
+							union(
+								{|
+								|},
+								{|
+									stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_PUMPS,stm_ref0::set_EXT_SETTLED,stm_ref0::set_EXT_stopReceived,stm_ref0::set_EXT_waitingReceived,stm_ref0::set_EXT_unitsReadyReceived,stm_ref0::set_EXT_aberrantMessage,stm_ref0::set_EXT_levelMessages,stm_ref0::set_EXT_steamMessages,stm_ref0::set_EXT_levelValue,stm_ref0::set_EXT_steamValue,stm_ref0::set_EXT_programReadySentPrevious,stm_ref0::set_EXT_programReadySentCurrent,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_valveOpenDuringCycle,stm_ref0::set_EXT_q,stm_ref0::set_EXT_v,stm_ref0::set_EXT_p,stm_ref0::set_EXT_levelLow,stm_ref0::set_EXT_levelHigh,stm_ref0::set_EXT_steamRateLow,stm_ref0::set_EXT_steamRateHigh,stm_ref0::set_EXT_predictedLow,stm_ref0::set_EXT_predictedHigh,stm_ref0::set_EXT_stopCount,stm_ref0::set_EXT_transmissionFailed,stm_ref0::set_EXT_boundsKnown,stm_ref0::set_EXT_successiveStops,stm_ref0::set_EXT_waitingNow,stm_ref0::set_EXT_transmissionFault,stm_ref0::set_EXT_steamReading,stm_ref0::set_EXT_levelFault,stm_ref0::set_EXT_unitsReady,stm_ref0::set_EXT_steamFault,stm_ref0::set_EXT_pumpFault,stm_ref0::set_EXT_pumpControlFault,stm_ref0::set_EXT_levelReading,stm_ref0::set_EXT_predictedLevelLow,stm_ref0::set_EXT_predictedLevelHigh,stm_ref0::set_EXT_levelEstimate
+								|}
+							)
+						|]
+					Memory(id__, false, false, 0, 0, true, true, true, true, 0, 0, 0, 0, true, true, true, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, true, 0, true, true, 0, true, true, true, true, true, 0, 0, 0, 0, const_SteamBoilerController_Ctrl_stopRepetitions, const_SteamBoilerController_Ctrl_maxNormalN2, const_SteamBoilerController_Ctrl_minNormalN1, const_SteamBoilerController_Ctrl_minLimitM1, const_SteamBoilerController_Ctrl_maxLimitM2)
+				)
+				\ union(
+					{|
+					|},
+					{|
+						stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_PUMPS,stm_ref0::set_EXT_SETTLED,stm_ref0::set_EXT_stopReceived,stm_ref0::set_EXT_waitingReceived,stm_ref0::set_EXT_unitsReadyReceived,stm_ref0::set_EXT_aberrantMessage,stm_ref0::set_EXT_levelMessages,stm_ref0::set_EXT_steamMessages,stm_ref0::set_EXT_levelValue,stm_ref0::set_EXT_steamValue,stm_ref0::set_EXT_programReadySentPrevious,stm_ref0::set_EXT_programReadySentCurrent,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_valveOpenDuringCycle,stm_ref0::set_EXT_q,stm_ref0::set_EXT_v,stm_ref0::set_EXT_p,stm_ref0::set_EXT_levelLow,stm_ref0::set_EXT_levelHigh,stm_ref0::set_EXT_steamRateLow,stm_ref0::set_EXT_steamRateHigh,stm_ref0::set_EXT_predictedLow,stm_ref0::set_EXT_predictedHigh,stm_ref0::set_EXT_stopCount,stm_ref0::set_EXT_transmissionFailed,stm_ref0::set_EXT_boundsKnown,stm_ref0::set_EXT_successiveStops,stm_ref0::set_EXT_waitingNow,stm_ref0::set_EXT_transmissionFault,stm_ref0::set_EXT_steamReading,stm_ref0::set_EXT_levelFault,stm_ref0::set_EXT_unitsReady,stm_ref0::set_EXT_steamFault,stm_ref0::set_EXT_pumpFault,stm_ref0::set_EXT_pumpControlFault,stm_ref0::set_EXT_levelReading,stm_ref0::set_EXT_predictedLevelLow,stm_ref0::set_EXT_predictedLevelHigh,stm_ref0::set_EXT_levelEstimate
+					|}
+				)
+				[|{|terminate|}|>SKIP
+				,<visibleMemoryEvents,{tock}>)
+			
+				-- O version (optimised) THESE TWO PROCESSES SHOULD BE KEPT IN SYNC WITH THE ABOVE TWO
+				O__(id__,
+						    const_SteamBoilerController_Ctrl_stopRepetitions,
+						    const_SteamBoilerController_Ctrl_maxNormalN2,
+						    const_SteamBoilerController_Ctrl_minNormalN1,
+						    const_SteamBoilerController_Ctrl_minLimitM1,
+						    const_SteamBoilerController_Ctrl_maxLimitM2) = dbisim(prioritise(	((
+						let
+							const_SteamBoilerController_stopRepetitions = const_SteamBoilerController_Ctrl_stopRepetitions
+							const_SteamBoilerController_maxNormalN2 = const_SteamBoilerController_Ctrl_maxNormalN2
+							const_SteamBoilerController_minNormalN1 = const_SteamBoilerController_Ctrl_minNormalN1
+							const_SteamBoilerController_minLimitM1 = const_SteamBoilerController_Ctrl_minLimitM1
+							const_SteamBoilerController_maxLimitM2 = const_SteamBoilerController_Ctrl_maxLimitM2
+						within 
+						stm_ref0::O__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2)[[
+							stm_ref0::terminate <- terminate,
+							stm_ref0::transmissionComplete <- transmissionComplete,
+							stm_ref0::broadcastMode <- broadcastMode,
+							stm_ref0::commandValveClosed <- commandValveClosed,
+							stm_ref0::reportUnitStatus <- reportUnitStatus,
+							stm_ref0::announceProgramReady <- announceProgramReady,
+							stm_ref0::commandPumpOff <- commandPumpOff,
+							stm_ref0::commandValveOpen <- commandValveOpen,
+							stm_ref0::commandPumpOn <- commandPumpOn,
+							stm_ref0::set_plantWaiting <- set_plantWaiting,
+							stm_ref0::get_plantWaiting <- get_plantWaiting,
+							stm_ref0::set_readyAnnounced <- set_readyAnnounced,
+							stm_ref0::get_readyAnnounced <- get_readyAnnounced,
+							stm_ref0::set_PUMPS <- set_PUMPS,
+							stm_ref0::get_PUMPS <- get_PUMPS,
+							stm_ref0::set_SETTLED <- set_SETTLED,
+							stm_ref0::get_SETTLED <- get_SETTLED,
+							stm_ref0::set_stopReceived <- set_stopReceived,
+							stm_ref0::get_stopReceived <- get_stopReceived,
+							stm_ref0::set_waitingReceived <- set_waitingReceived,
+							stm_ref0::get_waitingReceived <- get_waitingReceived,
+							stm_ref0::set_unitsReadyReceived <- set_unitsReadyReceived,
+							stm_ref0::get_unitsReadyReceived <- get_unitsReadyReceived,
+							stm_ref0::set_aberrantMessage <- set_aberrantMessage,
+							stm_ref0::get_aberrantMessage <- get_aberrantMessage,
+							stm_ref0::set_levelMessages <- set_levelMessages,
+							stm_ref0::get_levelMessages <- get_levelMessages,
+							stm_ref0::set_steamMessages <- set_steamMessages,
+							stm_ref0::get_steamMessages <- get_steamMessages,
+							stm_ref0::set_levelValue <- set_levelValue,
+							stm_ref0::get_levelValue <- get_levelValue,
+							stm_ref0::set_steamValue <- set_steamValue,
+							stm_ref0::get_steamValue <- get_steamValue,
+							stm_ref0::set_programReadySentPrevious <- set_programReadySentPrevious,
+							stm_ref0::get_programReadySentPrevious <- get_programReadySentPrevious,
+							stm_ref0::set_programReadySentCurrent <- set_programReadySentCurrent,
+							stm_ref0::get_programReadySentCurrent <- get_programReadySentCurrent,
+							stm_ref0::set_valveOpen <- set_valveOpen,
+							stm_ref0::get_valveOpen <- get_valveOpen,
+							stm_ref0::set_valveOpenDuringCycle <- set_valveOpenDuringCycle,
+							stm_ref0::get_valveOpenDuringCycle <- get_valveOpenDuringCycle,
+							stm_ref0::set_q <- set_q,
+							stm_ref0::get_q <- get_q,
+							stm_ref0::set_v <- set_v,
+							stm_ref0::get_v <- get_v,
+							stm_ref0::set_p <- set_p,
+							stm_ref0::get_p <- get_p,
+							stm_ref0::set_levelLow <- set_levelLow,
+							stm_ref0::get_levelLow <- get_levelLow,
+							stm_ref0::set_levelHigh <- set_levelHigh,
+							stm_ref0::get_levelHigh <- get_levelHigh,
+							stm_ref0::set_steamRateLow <- set_steamRateLow,
+							stm_ref0::get_steamRateLow <- get_steamRateLow,
+							stm_ref0::set_steamRateHigh <- set_steamRateHigh,
+							stm_ref0::get_steamRateHigh <- get_steamRateHigh,
+							stm_ref0::set_predictedLow <- set_predictedLow,
+							stm_ref0::get_predictedLow <- get_predictedLow,
+							stm_ref0::set_predictedHigh <- set_predictedHigh,
+							stm_ref0::get_predictedHigh <- get_predictedHigh,
+							stm_ref0::set_stopCount <- set_stopCount,
+							stm_ref0::get_stopCount <- get_stopCount,
+							stm_ref0::set_transmissionFailed <- set_transmissionFailed,
+							stm_ref0::get_transmissionFailed <- get_transmissionFailed,
+							stm_ref0::set_boundsKnown <- set_boundsKnown,
+							stm_ref0::get_boundsKnown <- get_boundsKnown,
+							stm_ref0::set_successiveStops <- set_successiveStops,
+							stm_ref0::get_successiveStops <- get_successiveStops,
+							stm_ref0::set_waitingNow <- set_waitingNow,
+							stm_ref0::get_waitingNow <- get_waitingNow,
+							stm_ref0::set_transmissionFault <- set_transmissionFault,
+							stm_ref0::get_transmissionFault <- get_transmissionFault,
+							stm_ref0::set_steamReading <- set_steamReading,
+							stm_ref0::get_steamReading <- get_steamReading,
+							stm_ref0::set_levelFault <- set_levelFault,
+							stm_ref0::get_levelFault <- get_levelFault,
+							stm_ref0::set_unitsReady <- set_unitsReady,
+							stm_ref0::get_unitsReady <- get_unitsReady,
+							stm_ref0::set_steamFault <- set_steamFault,
+							stm_ref0::get_steamFault <- get_steamFault,
+							stm_ref0::set_pumpFault <- set_pumpFault,
+							stm_ref0::get_pumpFault <- get_pumpFault,
+							stm_ref0::set_pumpControlFault <- set_pumpControlFault,
+							stm_ref0::get_pumpControlFault <- get_pumpControlFault,
+							stm_ref0::set_levelReading <- set_levelReading,
+							stm_ref0::get_levelReading <- get_levelReading,
+							stm_ref0::set_predictedLevelLow <- set_predictedLevelLow,
+							stm_ref0::get_predictedLevelLow <- get_predictedLevelLow,
+							stm_ref0::set_predictedLevelHigh <- set_predictedLevelHigh,
+							stm_ref0::get_predictedLevelHigh <- get_predictedLevelHigh,
+							stm_ref0::set_levelEstimate <- set_levelEstimate,
+							stm_ref0::get_levelEstimate <- get_levelEstimate
+						]]
+					)
+						[|
+							union(
+								{|
+								|},
+								{|
+									stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_PUMPS,stm_ref0::set_EXT_SETTLED,stm_ref0::set_EXT_stopReceived,stm_ref0::set_EXT_waitingReceived,stm_ref0::set_EXT_unitsReadyReceived,stm_ref0::set_EXT_aberrantMessage,stm_ref0::set_EXT_levelMessages,stm_ref0::set_EXT_steamMessages,stm_ref0::set_EXT_levelValue,stm_ref0::set_EXT_steamValue,stm_ref0::set_EXT_programReadySentPrevious,stm_ref0::set_EXT_programReadySentCurrent,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_valveOpenDuringCycle,stm_ref0::set_EXT_q,stm_ref0::set_EXT_v,stm_ref0::set_EXT_p,stm_ref0::set_EXT_levelLow,stm_ref0::set_EXT_levelHigh,stm_ref0::set_EXT_steamRateLow,stm_ref0::set_EXT_steamRateHigh,stm_ref0::set_EXT_predictedLow,stm_ref0::set_EXT_predictedHigh,stm_ref0::set_EXT_stopCount,stm_ref0::set_EXT_transmissionFailed,stm_ref0::set_EXT_boundsKnown,stm_ref0::set_EXT_successiveStops,stm_ref0::set_EXT_waitingNow,stm_ref0::set_EXT_transmissionFault,stm_ref0::set_EXT_steamReading,stm_ref0::set_EXT_levelFault,stm_ref0::set_EXT_unitsReady,stm_ref0::set_EXT_steamFault,stm_ref0::set_EXT_pumpFault,stm_ref0::set_EXT_pumpControlFault,stm_ref0::set_EXT_levelReading,stm_ref0::set_EXT_predictedLevelLow,stm_ref0::set_EXT_predictedLevelHigh,stm_ref0::set_EXT_levelEstimate
+								|}
+							)
+						|]
+					dbisim(Memory(id__, false, false, 0, 0, true, true, true, true, 0, 0, 0, 0, true, true, true, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, true, 0, true, true, 0, true, true, true, true, true, 0, 0, 0, 0, const_SteamBoilerController_Ctrl_stopRepetitions, const_SteamBoilerController_Ctrl_maxNormalN2, const_SteamBoilerController_Ctrl_minNormalN1, const_SteamBoilerController_Ctrl_minLimitM1, const_SteamBoilerController_Ctrl_maxLimitM2))
+				)
+				\ union(
+					{|
+					|},
+					{|
+						stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_PUMPS,stm_ref0::set_EXT_SETTLED,stm_ref0::set_EXT_stopReceived,stm_ref0::set_EXT_waitingReceived,stm_ref0::set_EXT_unitsReadyReceived,stm_ref0::set_EXT_aberrantMessage,stm_ref0::set_EXT_levelMessages,stm_ref0::set_EXT_steamMessages,stm_ref0::set_EXT_levelValue,stm_ref0::set_EXT_steamValue,stm_ref0::set_EXT_programReadySentPrevious,stm_ref0::set_EXT_programReadySentCurrent,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_valveOpenDuringCycle,stm_ref0::set_EXT_q,stm_ref0::set_EXT_v,stm_ref0::set_EXT_p,stm_ref0::set_EXT_levelLow,stm_ref0::set_EXT_levelHigh,stm_ref0::set_EXT_steamRateLow,stm_ref0::set_EXT_steamRateHigh,stm_ref0::set_EXT_predictedLow,stm_ref0::set_EXT_predictedHigh,stm_ref0::set_EXT_stopCount,stm_ref0::set_EXT_transmissionFailed,stm_ref0::set_EXT_boundsKnown,stm_ref0::set_EXT_successiveStops,stm_ref0::set_EXT_waitingNow,stm_ref0::set_EXT_transmissionFault,stm_ref0::set_EXT_steamReading,stm_ref0::set_EXT_levelFault,stm_ref0::set_EXT_unitsReady,stm_ref0::set_EXT_steamFault,stm_ref0::set_EXT_pumpFault,stm_ref0::set_EXT_pumpControlFault,stm_ref0::set_EXT_levelReading,stm_ref0::set_EXT_predictedLevelLow,stm_ref0::set_EXT_predictedLevelHigh,stm_ref0::set_EXT_levelEstimate
+					|}
+				)
+				[|{|terminate|}|>SKIP
+				,<visibleMemoryEvents,{tock}>))
+								
+				-- VS_O version
+				VS_O__(id__,
+						    const_SteamBoilerController_Ctrl_stopRepetitions,
+						    const_SteamBoilerController_Ctrl_maxNormalN2,
+						    const_SteamBoilerController_Ctrl_minNormalN1,
+						    const_SteamBoilerController_Ctrl_minLimitM1,
+						    const_SteamBoilerController_Ctrl_maxLimitM2) = dbisim(prioritise(	((
+						let
+							const_SteamBoilerController_stopRepetitions = const_SteamBoilerController_Ctrl_stopRepetitions
+							const_SteamBoilerController_maxNormalN2 = const_SteamBoilerController_Ctrl_maxNormalN2
+							const_SteamBoilerController_minNormalN1 = const_SteamBoilerController_Ctrl_minNormalN1
+							const_SteamBoilerController_minLimitM1 = const_SteamBoilerController_Ctrl_minLimitM1
+							const_SteamBoilerController_maxLimitM2 = const_SteamBoilerController_Ctrl_maxLimitM2
+						within 
+						stm_ref0::VS_O__(id__,
+								    const_SteamBoilerController_stopRepetitions,
+								    const_SteamBoilerController_maxNormalN2,
+								    const_SteamBoilerController_minNormalN1,
+								    const_SteamBoilerController_minLimitM1,
+								    const_SteamBoilerController_maxLimitM2)[[
+							stm_ref0::terminate <- terminate,
+							stm_ref0::transmissionComplete <- transmissionComplete,
+							stm_ref0::broadcastMode <- broadcastMode,
+							stm_ref0::commandValveClosed <- commandValveClosed,
+							stm_ref0::reportUnitStatus <- reportUnitStatus,
+							stm_ref0::announceProgramReady <- announceProgramReady,
+							stm_ref0::commandPumpOff <- commandPumpOff,
+							stm_ref0::commandValveOpen <- commandValveOpen,
+							stm_ref0::commandPumpOn <- commandPumpOn,
+							stm_ref0::set_plantWaiting <- set_plantWaiting,
+							stm_ref0::get_plantWaiting <- get_plantWaiting,
+							stm_ref0::set_readyAnnounced <- set_readyAnnounced,
+							stm_ref0::get_readyAnnounced <- get_readyAnnounced,
+							stm_ref0::set_PUMPS <- set_PUMPS,
+							stm_ref0::get_PUMPS <- get_PUMPS,
+							stm_ref0::set_SETTLED <- set_SETTLED,
+							stm_ref0::get_SETTLED <- get_SETTLED,
+							stm_ref0::set_stopReceived <- set_stopReceived,
+							stm_ref0::get_stopReceived <- get_stopReceived,
+							stm_ref0::set_waitingReceived <- set_waitingReceived,
+							stm_ref0::get_waitingReceived <- get_waitingReceived,
+							stm_ref0::set_unitsReadyReceived <- set_unitsReadyReceived,
+							stm_ref0::get_unitsReadyReceived <- get_unitsReadyReceived,
+							stm_ref0::set_aberrantMessage <- set_aberrantMessage,
+							stm_ref0::get_aberrantMessage <- get_aberrantMessage,
+							stm_ref0::set_levelMessages <- set_levelMessages,
+							stm_ref0::get_levelMessages <- get_levelMessages,
+							stm_ref0::set_steamMessages <- set_steamMessages,
+							stm_ref0::get_steamMessages <- get_steamMessages,
+							stm_ref0::set_levelValue <- set_levelValue,
+							stm_ref0::get_levelValue <- get_levelValue,
+							stm_ref0::set_steamValue <- set_steamValue,
+							stm_ref0::get_steamValue <- get_steamValue,
+							stm_ref0::set_programReadySentPrevious <- set_programReadySentPrevious,
+							stm_ref0::get_programReadySentPrevious <- get_programReadySentPrevious,
+							stm_ref0::set_programReadySentCurrent <- set_programReadySentCurrent,
+							stm_ref0::get_programReadySentCurrent <- get_programReadySentCurrent,
+							stm_ref0::set_valveOpen <- set_valveOpen,
+							stm_ref0::get_valveOpen <- get_valveOpen,
+							stm_ref0::set_valveOpenDuringCycle <- set_valveOpenDuringCycle,
+							stm_ref0::get_valveOpenDuringCycle <- get_valveOpenDuringCycle,
+							stm_ref0::set_q <- set_q,
+							stm_ref0::get_q <- get_q,
+							stm_ref0::set_v <- set_v,
+							stm_ref0::get_v <- get_v,
+							stm_ref0::set_p <- set_p,
+							stm_ref0::get_p <- get_p,
+							stm_ref0::set_levelLow <- set_levelLow,
+							stm_ref0::get_levelLow <- get_levelLow,
+							stm_ref0::set_levelHigh <- set_levelHigh,
+							stm_ref0::get_levelHigh <- get_levelHigh,
+							stm_ref0::set_steamRateLow <- set_steamRateLow,
+							stm_ref0::get_steamRateLow <- get_steamRateLow,
+							stm_ref0::set_steamRateHigh <- set_steamRateHigh,
+							stm_ref0::get_steamRateHigh <- get_steamRateHigh,
+							stm_ref0::set_predictedLow <- set_predictedLow,
+							stm_ref0::get_predictedLow <- get_predictedLow,
+							stm_ref0::set_predictedHigh <- set_predictedHigh,
+							stm_ref0::get_predictedHigh <- get_predictedHigh,
+							stm_ref0::set_stopCount <- set_stopCount,
+							stm_ref0::get_stopCount <- get_stopCount,
+							stm_ref0::set_transmissionFailed <- set_transmissionFailed,
+							stm_ref0::get_transmissionFailed <- get_transmissionFailed,
+							stm_ref0::set_boundsKnown <- set_boundsKnown,
+							stm_ref0::get_boundsKnown <- get_boundsKnown,
+							stm_ref0::set_successiveStops <- set_successiveStops,
+							stm_ref0::get_successiveStops <- get_successiveStops,
+							stm_ref0::set_waitingNow <- set_waitingNow,
+							stm_ref0::get_waitingNow <- get_waitingNow,
+							stm_ref0::set_transmissionFault <- set_transmissionFault,
+							stm_ref0::get_transmissionFault <- get_transmissionFault,
+							stm_ref0::set_steamReading <- set_steamReading,
+							stm_ref0::get_steamReading <- get_steamReading,
+							stm_ref0::set_levelFault <- set_levelFault,
+							stm_ref0::get_levelFault <- get_levelFault,
+							stm_ref0::set_unitsReady <- set_unitsReady,
+							stm_ref0::get_unitsReady <- get_unitsReady,
+							stm_ref0::set_steamFault <- set_steamFault,
+							stm_ref0::get_steamFault <- get_steamFault,
+							stm_ref0::set_pumpFault <- set_pumpFault,
+							stm_ref0::get_pumpFault <- get_pumpFault,
+							stm_ref0::set_pumpControlFault <- set_pumpControlFault,
+							stm_ref0::get_pumpControlFault <- get_pumpControlFault,
+							stm_ref0::set_levelReading <- set_levelReading,
+							stm_ref0::get_levelReading <- get_levelReading,
+							stm_ref0::set_predictedLevelLow <- set_predictedLevelLow,
+							stm_ref0::get_predictedLevelLow <- get_predictedLevelLow,
+							stm_ref0::set_predictedLevelHigh <- set_predictedLevelHigh,
+							stm_ref0::get_predictedLevelHigh <- get_predictedLevelHigh,
+							stm_ref0::set_levelEstimate <- set_levelEstimate,
+							stm_ref0::get_levelEstimate <- get_levelEstimate
+						]]
+					)
+						[|
+							union(
+								{|
+								|},
+								{|
+									stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_PUMPS,stm_ref0::set_EXT_SETTLED,stm_ref0::set_EXT_stopReceived,stm_ref0::set_EXT_waitingReceived,stm_ref0::set_EXT_unitsReadyReceived,stm_ref0::set_EXT_aberrantMessage,stm_ref0::set_EXT_levelMessages,stm_ref0::set_EXT_steamMessages,stm_ref0::set_EXT_levelValue,stm_ref0::set_EXT_steamValue,stm_ref0::set_EXT_programReadySentPrevious,stm_ref0::set_EXT_programReadySentCurrent,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_valveOpenDuringCycle,stm_ref0::set_EXT_q,stm_ref0::set_EXT_v,stm_ref0::set_EXT_p,stm_ref0::set_EXT_levelLow,stm_ref0::set_EXT_levelHigh,stm_ref0::set_EXT_steamRateLow,stm_ref0::set_EXT_steamRateHigh,stm_ref0::set_EXT_predictedLow,stm_ref0::set_EXT_predictedHigh,stm_ref0::set_EXT_stopCount,stm_ref0::set_EXT_transmissionFailed,stm_ref0::set_EXT_boundsKnown,stm_ref0::set_EXT_successiveStops,stm_ref0::set_EXT_waitingNow,stm_ref0::set_EXT_transmissionFault,stm_ref0::set_EXT_steamReading,stm_ref0::set_EXT_levelFault,stm_ref0::set_EXT_unitsReady,stm_ref0::set_EXT_steamFault,stm_ref0::set_EXT_pumpFault,stm_ref0::set_EXT_pumpControlFault,stm_ref0::set_EXT_levelReading,stm_ref0::set_EXT_predictedLevelLow,stm_ref0::set_EXT_predictedLevelHigh,stm_ref0::set_EXT_levelEstimate
+								|}
+							)
+						|]
+					dbisim(Memory(id__, false, false, 0, 0, true, true, true, true, 0, 0, 0, 0, true, true, true, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, true, 0, true, true, 0, true, true, true, true, true, 0, 0, 0, 0, const_SteamBoilerController_Ctrl_stopRepetitions, const_SteamBoilerController_Ctrl_maxNormalN2, const_SteamBoilerController_Ctrl_minNormalN1, const_SteamBoilerController_Ctrl_minLimitM1, const_SteamBoilerController_Ctrl_maxLimitM2))
+				)
+				\ union(
+					{|
+					|},
+					{|
+						stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_PUMPS,stm_ref0::set_EXT_SETTLED,stm_ref0::set_EXT_stopReceived,stm_ref0::set_EXT_waitingReceived,stm_ref0::set_EXT_unitsReadyReceived,stm_ref0::set_EXT_aberrantMessage,stm_ref0::set_EXT_levelMessages,stm_ref0::set_EXT_steamMessages,stm_ref0::set_EXT_levelValue,stm_ref0::set_EXT_steamValue,stm_ref0::set_EXT_programReadySentPrevious,stm_ref0::set_EXT_programReadySentCurrent,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_valveOpenDuringCycle,stm_ref0::set_EXT_q,stm_ref0::set_EXT_v,stm_ref0::set_EXT_p,stm_ref0::set_EXT_levelLow,stm_ref0::set_EXT_levelHigh,stm_ref0::set_EXT_steamRateLow,stm_ref0::set_EXT_steamRateHigh,stm_ref0::set_EXT_predictedLow,stm_ref0::set_EXT_predictedHigh,stm_ref0::set_EXT_stopCount,stm_ref0::set_EXT_transmissionFailed,stm_ref0::set_EXT_boundsKnown,stm_ref0::set_EXT_successiveStops,stm_ref0::set_EXT_waitingNow,stm_ref0::set_EXT_transmissionFault,stm_ref0::set_EXT_steamReading,stm_ref0::set_EXT_levelFault,stm_ref0::set_EXT_unitsReady,stm_ref0::set_EXT_steamFault,stm_ref0::set_EXT_pumpFault,stm_ref0::set_EXT_pumpControlFault,stm_ref0::set_EXT_levelReading,stm_ref0::set_EXT_predictedLevelLow,stm_ref0::set_EXT_predictedLevelHigh,stm_ref0::set_EXT_levelEstimate
+					|}
+				)
+				[|{|terminate|}|>SKIP
+				,<visibleMemoryEvents,{tock}>))
+			
+				HEXT(id__,
+						    const_SteamBoilerController_Ctrl_stopRepetitions,
+						    const_SteamBoilerController_Ctrl_maxNormalN2,
+						    const_SteamBoilerController_Ctrl_minNormalN1,
+						    const_SteamBoilerController_Ctrl_minLimitM1,
+						    const_SteamBoilerController_Ctrl_maxLimitM2) = O__(id__,
+						    const_SteamBoilerController_Ctrl_stopRepetitions,
+						    const_SteamBoilerController_Ctrl_maxNormalN2,
+						    const_SteamBoilerController_Ctrl_minNormalN1,
+						    const_SteamBoilerController_Ctrl_minLimitM1,
+						    const_SteamBoilerController_Ctrl_maxLimitM2) [|shared_variable_events|] SKIP			
+		}
+
+	endmodule

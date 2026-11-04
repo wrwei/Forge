@@ -1,0 +1,436 @@
+===== command 1
+cd /Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler 2>/dev/null || { echo "FAIL no worktree"; exit 1; }
+export FORGE_ARM_DIR=/Users/ranwei/Gitee/formal_method_guided_vibe_coding/experiments/v3-cold
+export FORGE_WT_PREFIX=forge-v3c16
+export FORGE_STAGE_DIR=/Users/ranwei/Gitee/v3c16-staging
+export FORGE_SHA=aaddf2225b38eb1eb749e816f6f5874d7ec93eaa
+[ "$(git rev-parse HEAD)" = "$FORGE_SHA" ] && echo "OK   pinned commit" || echo "FAIL wrong commit"
+[ "$(find java.generated.project/src -name '*.java' 2>/dev/null | wc -l | tr -d ' ')" = "0" ] && echo "OK   no Java present" || echo "FAIL Java present"
+[ "$(grep -m1 active_case_study pipeline.yaml | awk '{print $2}')" = "steam_boiler" ] && echo "OK   study is steam_boiler" || echo "FAIL wrong study"
+[ "$(ls forge.assets/case-studies)" = "steam_boiler" ] && echo "OK   only this study's inputs" || echo "FAIL other case studies present"
+[ ! -e docs/archive ] && echo "OK   no archive" || echo "FAIL docs/archive present"
+===== command 2
+cat forge.assets/case-studies/steam_boiler/requirements/README.md && ls forge.assets/case-studies/steam_boiler/ forge.assets/case-studies/steam_boiler/* forge.assets/prompts forge.assets/vibe-coding-prompts && ls java.generated.project && find java.generated.project -type f | grep -v build/ | head -50
+===== Read 1: {"file_path": "/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/case-studies/steam_boiler/requirements/requirement_all.json"}
+===== Read 2: {"file_path": "/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/prompts/java_codegen_rules.txt"}
+===== Read 3: {"file_path": "/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/prompts/chain_of_thought_codegen.txt"}
+===== Read 4: {"file_path": "/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/prompts/few_shot_codegen.txt"}
+===== Read 5: {"file_path": "/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/prompts/codegen_trace_rules.txt"}
+===== Read 6: {"file_path": "/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/prompts/fdr4_system.txt"}
+===== command 3
+cd /Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/vibe-coding-prompts && for f in README.md 01_architecture.md 02_skeleton.md; do echo "=================== $f"; cat "$f"; done
+===== command 4
+for f in 03_leaves.md 04_controller.md 05_review.md; do echo "=================== $f"; cat "$f"; done; cd /Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler
+===== command 5
+cat java.generated.project/build.gradle java.generated.project/settings.gradle java.generated.project/gradle.properties; ls -la forge.assets/corrections 2>&1 | head; java -version 2>&1; which javac
+===== command 6
+ls -R docs/corpus | head -80; du -sh docs/corpus
+===== command 7
+cat docs/corpus/README.md; sed -n 1,80p docs/corpus/zmachine-examples/DwarfSignal.thy
+===== command 8
+cd /Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/java.generated.project && mkdir -p src/main/java/steam_boiler/{annotation,domain,event,sensor,monitor,actuator,controller} && ls src/main/java/steam_boiler
+===== command 9
+SCR=/private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad && mkdir -p $SCR/classes && javac --release 17 -Xlint:all -d $SCR/classes $(find src/main/java -name '*.java') && echo COMPILED
+===== command 10
+SCR=/private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad && mkdir -p $SCR/sim && cat > $SCR/sim/Sim.java <<'EOF'
+import java.util.*;
+import steam_boiler.*;
+import steam_boiler.domain.*;
+import steam_boiler.event.*;
+
+public class Sim {
+    double level; double steam; boolean[] on = new boolean[4]; boolean[] onBefore = new boolean[4];
+    boolean valve; boolean waiting = true; boolean ready = false; boolean programReady = false;
+    int cycle = 0; double steamTarget = 8.0; boolean steamStarted = false;
+    boolean levelBroken = false; boolean sendLevelRepair = false;
+    List<InputEvent> extra = new ArrayList<>();
+    SteamBoilerProgram p = new SteamBoilerProgram();
+
+    List<OutputEvent> run() {
+        List<InputEvent> in = new ArrayList<>();
+        if (waiting) in.add(new InputEvent.SteamBoilerWaiting());
+        if (programReady && p.currentMode() == OperatingMode.INITIALIZATION) in.add(new InputEvent.PhysicalUnitsReady());
+        in.add(new InputEvent.Level(levelBroken ? 2000.0 : level));
+        in.add(new InputEvent.Steam(steam));
+        for (int n = 0; n < 4; n++) {
+            in.add(new InputEvent.PumpState(new PumpReport(n, on[n])));
+            boolean flow = on[n] && onBefore[n];
+            in.add(new InputEvent.PumpControlState(new FlowReport(n, flow ? WaterFlow.WATER_FLOWING : WaterFlow.WATER_NOT_FLOWING)));
+        }
+        in.addAll(extra); extra.clear();
+        List<OutputEvent> out = p.runCycle(in);
+        boolean[] prevOn = on.clone();
+        for (OutputEvent o : out) {
+            if (o instanceof OutputEvent.OpenPump) on[((OutputEvent.OpenPump) o).pumpNumber()] = true;
+            if (o instanceof OutputEvent.ClosePump) on[((OutputEvent.ClosePump) o).pumpNumber()] = false;
+            if (o instanceof OutputEvent.Valve) valve = !valve;
+            if (o instanceof OutputEvent.ProgramReady) programReady = true;
+            if (o instanceof OutputEvent.LevelFailureDetection) extra.add(new InputEvent.LevelFailureAcknowledgement());
+        }
+        // physics over the next 5 s
+        int pouring = 0;
+        for (int n = 0; n < 4; n++) { if (on[n] && prevOn[n]) pouring++; }
+        double oldSteam = steam;
+        if (steamStarted && steam < steamTarget) steam = Math.min(steamTarget, steam + 4.0);
+        double steamOut = 5.0 * (oldSteam + steam) / 2.0;
+        level = level + pouring * 5.0 * 5.0 - steamOut - (valve ? 50.0 : 0.0);
+        onBefore = prevOn;   // state reported next cycle: on now, and was on before
+        for (int n = 0; n < 4; n++) onBefore[n] = prevOn[n] && on[n];
+        cycle++;
+        return out;
+    }
+
+    static String brief(List<OutputEvent> out) {
+        StringBuilder sb = new StringBuilder();
+        for (OutputEvent o : out) sb.append(o.getClass().getSimpleName()).append(o instanceof OutputEvent.OpenPump || o instanceof OutputEvent.ClosePump ? "" : "").append(' ');
+        return sb.toString();
+    }
+
+    public static void main(String[] a) {
+        for (double start : new double[] {300.0, 500.0, 700.0}) {
+            Sim s = new Sim(); s.level = start;
+            OperatingMode last = null; int modeChanges = 0;
+            for (int i = 0; i < 120; i++) {
+                if (s.p.currentMode() == OperatingMode.NORMAL) s.steamStarted = true;
+                if (i == 60) s.levelBroken = true;            // level device fails
+                if (i == 63) { s.levelBroken = false; s.extra.add(new InputEvent.LevelRepaired()); }
+                double lv = s.level;
+                List<OutputEvent> out = s.run();
+                OperatingMode m = s.p.currentMode();
+                if (m != last) { System.out.printf("start=%5.0f cycle %3d level %6.1f steam %4.1f -> %s  [%s]%n", start, i, lv, s.steam, m, brief(out)); last = m; }
+                if (s.p.hasStopped()) break;
+            }
+            System.out.printf("start=%5.0f final mode %s level %.1f%n%n", start, s.p.currentMode(), s.level);
+        }
+        // STOP three times
+        Sim s = new Sim(); s.level = 500.0;
+        for (int i = 0; i < 6; i++) { s.run(); }
+        for (int i = 0; i < 3; i++) { s.extra.add(new InputEvent.StopRequest()); s.run(); System.out.println("after STOP " + (i+1) + ": " + s.p.currentMode()); }
+        // missing message => transmission failure
+        Sim t = new Sim(); t.level = 500.0;
+        for (int i = 0; i < 6; i++) { t.run(); }
+        List<InputEvent> partial = new ArrayList<>(); partial.add(new InputEvent.Level(500.0));
+        t.p.runCycle(partial); System.out.println("after missing data: " + t.p.currentMode());
+    }
+}
+EOF
+javac --release 17 -cp $SCR/classes -d $SCR/sim $SCR/sim/Sim.java && java -cp $SCR/classes:$SCR/sim Sim
+===== command 11
+SCR=/private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad && cd $SCR/sim && sed -i '' 's/if (waiting) in.add/if (waiting \&\& p.currentMode() == OperatingMode.INITIALIZATION) in.add/' Sim.java && javac --release 17 -cp $SCR/classes -d $SCR/sim Sim.java && java -cp $SCR/classes:$SCR/sim Sim
+===== command 12
+SCR=/private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad && cd $SCR/sim && cat > Sim2.java <<'EOF'
+import java.util.*;
+import steam_boiler.domain.*;
+import steam_boiler.event.*;
+public class Sim2 {
+    public static void main(String[] a) {
+        Sim s = new Sim(); s.level = 500.0;
+        OperatingMode last = null;
+        boolean stuck = false;
+        for (int i = 0; i < 80; i++) {
+            if (s.p.currentMode() == OperatingMode.NORMAL) s.steamStarted = true;
+            if (i == 20) stuck = true;
+            if (i == 40) { stuck = false; s.extra.add(new InputEvent.PumpRepaired(2)); }
+            if (stuck) s.on[2] = false;
+            List<OutputEvent> out = s.run();
+            if (stuck) s.on[2] = false;
+            StringBuilder sb = new StringBuilder();
+            for (OutputEvent o : out) if (!(o instanceof OutputEvent.OpenPump) && !(o instanceof OutputEvent.ClosePump)) sb.append(o).append(' ');
+            if (s.p.currentMode() != last || out.toString().contains("Failure") || out.toString().contains("Repaired")) {
+                System.out.printf("cycle %2d level %6.1f -> %s %s%n", i, s.level, s.p.currentMode(), sb);
+                last = s.p.currentMode();
+            }
+            for (OutputEvent o : out) if (o instanceof OutputEvent.PumpFailureDetection) s.extra.add(new InputEvent.PumpFailureAcknowledgement(((OutputEvent.PumpFailureDetection) o).pumpNumber()));
+            if (s.p.hasStopped()) break;
+        }
+    }
+}
+EOF
+javac --release 17 -cp $SCR/classes:$SCR/sim -d $SCR/sim Sim2.java && java -cp $SCR/classes:$SCR/sim Sim2
+===== command 13
+cd /Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/java.generated.project/src/main/java/steam_boiler/monitor && python3 - <<'EOF'
+import re
+p='PlantMonitor.java'
+s=open(p).read()
+s=s.replace('    private static final int PUMPS = BoilerConstants.PUMP_COUNT;\n    private static final double DT = BoilerConstants.CYCLE_SECONDS;',
+            '    @RoboChartType("nat") private static final int PUMPS = BoilerConstants.PUMP_COUNT;\n    @RoboChartType("real") private static final double DT = BoilerConstants.CYCLE_SECONDS;')
+# turn Javadoc on private methods into block comments
+out=[]; lines=s.split('\n')
+i=0
+while i < len(lines):
+    l=lines[i]
+    if l.strip().startswith('/**'):
+        # find end of comment and the declaration after it
+        j=i
+        while '*/' not in lines[j]: j+=1
+        decl=lines[j+1].strip()
+        if decl.startswith('private') or decl.startswith('static'):
+            for k in range(i, j+1):
+                lines[k]=lines[k].replace('/**','/*',1) if k==i else lines[k]
+    i+=1
+s='\n'.join(lines)
+open(p,'w').write(s)
+u='UnitStatus.java'
+t=open(u).read().replace('/**','/*')
+open(u,'w').write(t)
+EOF
+grep -n '/\*\*' PlantMonitor.java | head -30; grep -n 'static final' PlantMonitor.java; grep -c '/\*\*' UnitStatus.java
+===== command 14
+cd /Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/java.generated.project && (./gradlew compileJava -q --offline 2>&1 | tail -20; echo "gradle exit: ${PIPESTATUS[0]}") && SCR=/private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad && rm -rf $SCR/classes && mkdir -p $SCR/classes && javac --release 17 -Xlint:all -d $SCR/classes $(find src/main/java -name '*.java') && echo JAVAC_OK && java -cp $SCR/classes:$SCR/sim Sim | grep -E 'final|STOP|missing' && java -cp $SCR/classes:$SCR/sim Sim2 | tail -2
+===== command 15
+./gradlew compileJava --offline -q; echo "gradle exit: $?"; ls build/classes/java/main/steam_boiler/controller/ 2>&1
+===== command 16
+SCR=/private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad && cat > $SCR/trace.py <<'EOF'
+import json, re, os, sys
+root = '/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler'
+proj = root + '/java.generated.project'
+B = 'src/main/java/steam_boiler/'
+F = {
+ 'ann': B+'annotation/RoboChartType.java', 'mode': B+'domain/OperatingMode.java', 'flow': B+'domain/WaterFlow.java',
+ 'pr': B+'domain/PumpReport.java', 'fr': B+'domain/FlowReport.java', 'in': B+'event/InputEvent.java',
+ 'out': B+'event/OutputEvent.java', 'k': B+'BoilerConstants.java', 'sen': B+'sensor/BoilerSensor.java',
+ 'mon': B+'monitor/PlantMonitor.java', 'us': B+'monitor/UnitStatus.java', 'act': B+'actuator/BoilerActuator.java',
+ 'ctl': B+'controller/SteamBoilerController.java', 'prog': B+'SteamBoilerProgram.java',
+}
+rows = []  # (file, element, type, [reqs])
+def add(f, el, t, reqs): rows.append((F[f], el, t, reqs))
+add('ann','RoboChartType','interface',['SB-V5','SB-V6','SB-V7','SB-V8','SB-V10'])
+add('ann','value','method',['SB-V5','SB-V6','SB-V7','SB-V8','SB-V10'])
+add('mode','OperatingMode','enum',['SB-V2','SB-DM10','SB-Beh1'])
+add('mode','INITIALIZATION','field',['SB-V2','SB-DM10','SB-Beh1'])
+add('mode','NORMAL','field',['SB-V2','SB-DM10','SB-Beh10'])
+add('mode','DEGRADED','field',['SB-V2','SB-DM10','SB-Beh15'])
+add('mode','RESCUE','field',['SB-V2','SB-DM10','SB-Beh19'])
+add('mode','EMERGENCY_STOP','field',['SB-V2','SB-DM10','SB-Beh22'])
+add('flow','WaterFlow','enum',['SB-DM4'])
+add('flow','WATER_FLOWING','field',['SB-DM4'])
+add('flow','WATER_NOT_FLOWING','field',['SB-DM4'])
+add('pr','PumpReport','record',['SB-DM3','SB-DM9'])
+add('pr','pumpIndex','field',['SB-DM3','SB-DM9'])
+add('pr','pumpOn','field',['SB-DM3','SB-DM9'])
+add('fr','FlowReport','record',['SB-DM4','SB-DM9'])
+add('fr','controllerIndex','field',['SB-DM4','SB-DM9'])
+add('fr','flow','field',['SB-DM4','SB-DM9'])
+add('in','InputEvent','interface',['SB-DM9','SB-V3'])
+add('in','CycleStart','record',['SB-V3'])
+add('in','StopRequest','record',['SB-DM9','SB-Beh23'])
+add('in','SteamBoilerWaiting','record',['SB-DM9','SB-Beh2'])
+add('in','PhysicalUnitsReady','record',['SB-DM9','SB-Beh8'])
+add('in','PumpState','record',['SB-DM9','SB-FR5'])
+add('in','PumpControlState','record',['SB-DM9','SB-FR5'])
+add('in','Level','record',['SB-DM5','SB-DM9','SB-FR5'])
+add('in','Steam','record',['SB-DM6','SB-DM9','SB-FR5'])
+add('in','PumpRepaired','record',['SB-DM9','SB-FR7'])
+add('in','PumpControlRepaired','record',['SB-DM9','SB-FR7'])
+add('in','LevelRepaired','record',['SB-DM9','SB-FR7'])
+add('in','SteamRepaired','record',['SB-DM9','SB-FR7'])
+add('in','PumpFailureAcknowledgement','record',['SB-DM9','SB-FR6'])
+add('in','PumpControlFailureAcknowledgement','record',['SB-DM9','SB-FR6'])
+add('in','LevelFailureAcknowledgement','record',['SB-DM9','SB-FR6'])
+add('in','SteamOutcomeFailureAcknowledgement','record',['SB-DM9','SB-FR6'])
+add('in','report','field',['SB-DM9'])
+add('in','litres','field',['SB-DM5','SB-DM9'])
+add('in','litresPerSecond','field',['SB-DM6','SB-DM9'])
+add('in','pumpNumber','field',['SB-DM9'])
+add('out','OutputEvent','interface',['SB-DM8'])
+add('out','ModeReport','record',['SB-DM8','SB-DM10','SB-Beh24'])
+add('out','operatingMode','field',['SB-DM8','SB-DM10'])
+add('out','ProgramReady','record',['SB-DM8','SB-Beh7'])
+add('out','Valve','record',['SB-DM7','SB-DM8','SB-Beh4'])
+add('out','OpenPump','record',['SB-DM8','SB-Beh5','SB-Beh10'])
+add('out','ClosePump','record',['SB-DM8','SB-Beh10'])
+add('out','PumpFailureDetection','record',['SB-DM8','SB-FR6'])
+add('out','PumpControlFailureDetection','record',['SB-DM8','SB-FR6'])
+add('out','LevelFailureDetection','record',['SB-DM8','SB-FR6'])
+add('out','SteamFailureDetection','record',['SB-DM8','SB-FR6'])
+add('out','PumpRepairedAcknowledgement','record',['SB-DM8','SB-FR7'])
+add('out','PumpControlRepairedAcknowledgement','record',['SB-DM8','SB-FR7'])
+add('out','LevelRepairedAcknowledgement','record',['SB-DM8','SB-FR7'])
+add('out','SteamRepairedAcknowledgement','record',['SB-DM8','SB-FR7'])
+add('out','pumpNumber','field',['SB-DM8'])
+add('k','BoilerConstants','class',['SB-DM1','SB-DM2','SB-DM3'])
+add('k','CAPACITY_C','field',['SB-DM1','SB-V5'])
+for c in ['LEVEL_M1','LEVEL_M2','LEVEL_N1','LEVEL_N2']: add('k',c,'field',['SB-DM1','SB-V4'])
+for c in ['STEAM_MAX_W','STEAM_RISE_U1','STEAM_FALL_U2']: add('k',c,'field',['SB-DM2'])
+add('k','STEAM_AT_REST','field',['SB-Beh3'])
+add('k','PUMP_CAPACITY_P','field',['SB-DM3','SB-V7'])
+add('k','PUMP_COUNT','field',['SB-DM3','SB-V1'])
+add('k','CYCLE_SECONDS','field',['SB-V3','SB-DM3','SB-Beh25'])
+add('k','STOP_REPETITIONS','field',['SB-DM9','SB-Beh23'])
+add('sen','BoilerSensor','class',['SB-V3','SB-V5','SB-V6','SB-V9'])
+for m in ['updateMessages','updateUnits','updateLevels']: add('sen',m,'method',['SB-V3'])
+add('sen','successiveStops','method',['SB-V10','SB-Beh23'])
+add('sen','transmissionFailure','method',['SB-FR5','SB-Beh9','SB-Beh14','SB-Beh18','SB-Beh21'])
+add('sen','waitingSignalled','method',['SB-Beh2'])
+add('sen','unitsReadyReceived','method',['SB-Beh8'])
+add('sen','valveOpen','method',['SB-DM7','SB-Beh4'])
+add('sen','levelDeviceFailed','method',['SB-V9','SB-FR3','SB-Beh6','SB-Beh11','SB-Beh17','SB-Beh20'])
+add('sen','steamDeviceFailed','method',['SB-V9','SB-FR4','SB-Beh21'])
+add('sen','pumpControlFailed','method',['SB-V9','SB-FR2','SB-Beh21'])
+add('sen','allUnitsSound','method',['SB-V9','SB-Beh8','SB-Beh12','SB-Beh16','SB-Beh20'])
+add('sen','waterLevel','method',['SB-V5','SB-DM5','SB-Beh4','SB-Beh5','SB-Beh7','SB-Beh10','SB-Beh15'])
+add('sen','steamRate','method',['SB-V6','SB-DM6','SB-Beh3'])
+add('sen','estimatedLevel','method',['SB-V8','SB-Beh19'])
+add('sen','predictedMinimumLevel','method',['SB-V4','SB-Beh13','SB-Beh18','SB-Beh21','SB-Beh25'])
+add('sen','predictedMaximumLevel','method',['SB-V4','SB-Beh13','SB-Beh18','SB-Beh21','SB-Beh25'])
+add('mon','PlantMonitor','class',['SB-V3','SB-FR1','SB-FR2','SB-FR3','SB-FR4','SB-FR5','SB-FR6','SB-FR7'])
+add('mon','beginCycle','method',['SB-V3'])
+add('mon','receive','method',['SB-V3','SB-DM9'])
+add('mon','analyse','method',['SB-V3','SB-V10','SB-Beh2'])
+add('mon','unitStatusMessages','method',['SB-FR6','SB-FR7'])
+add('mon','recordTransmission','method',['SB-FR1','SB-DM7','SB-Beh7'])
+add('mon','levelQ','field',['SB-V5'])
+add('mon','steamV','field',['SB-V6'])
+add('mon','pumpThroughput','field',['SB-V7'])
+add('mon','estimateLow','field',['SB-V8'])
+add('mon','estimateHigh','field',['SB-V8'])
+add('mon','successiveStops','field',['SB-V10'])
+for f_ in ['pumpUnits','controlUnits','levelUnit','steamUnit']: add('mon',f_,'field',['SB-V9'])
+add('mon','detectTransmissionFailure','method',['SB-FR5'])
+add('mon','processRepairsAndAcknowledgements','method',['SB-FR6','SB-FR7','SB-V9'])
+add('mon','detectSteamFailure','method',['SB-FR4'])
+add('mon','detectPumpFailures','method',['SB-FR1'])
+add('mon','detectPumpControlFailures','method',['SB-FR2','SB-Beh25'])
+add('mon','computeThroughput','method',['SB-V7'])
+add('mon','detectLevelFailure','method',['SB-FR3'])
+add('mon','estimateLevel','method',['SB-V8','SB-Beh19'])
+add('mon','predictLevel','method',['SB-V4','SB-Beh13','SB-Beh25'])
+add('us','UnitStatus','class',['SB-V9','SB-FR6','SB-FR7'])
+add('act','BoilerActuator','class',['SB-DM8','SB-V3'])
+add('act','apply','method',['SB-DM8'])
+add('act','clear','method',['SB-V3'])
+add('act','outgoing','method',['SB-V3'])
+add('ctl','SteamBoilerController','class',['SB-V1','SB-V2','SB-V4','SB-FR8','SB-Beh22','SB-Beh24','SB-Beh25'])
+add('ctl','currentMode','field',['SB-V2','SB-Beh1'])
+add('ctl','currentMode','method',['SB-V2'])
+add('ctl','step','method',['SB-V3','SB-V4','SB-FR8','SB-Beh24'] + ['SB-Beh%d'%i for i in range(1,24)])
+add('prog','SteamBoilerProgram','class',['SB-V1','SB-V3'])
+add('prog','runCycle','method',['SB-V3','SB-Beh22'])
+add('prog','currentMode','method',['SB-V2'])
+add('prog','hasStopped','method',['SB-Beh22'])
+
+reqs = [r['id'] for r in json.load(open(root+'/forge.assets/case-studies/steam_boiler/requirements/requirement_all.json'))['requirements']]
+ok = True
+covered = set(x for r in rows for x in r[3])
+for r in reqs:
+    if r not in covered: print('UNCOVERED', r); ok = False
+for r in covered:
+    if r not in reqs: print('UNKNOWN ID', r); ok = False
+javafiles = set(os.path.relpath(os.path.join(d,f), proj) for d,_,fs in os.walk(proj+'/src/main/java') for f in fs if f.endswith('.java'))
+for jf in javafiles:
+    if jf not in set(r[0] for r in rows): print('FILE WITHOUT ENTRY', jf); ok = False
+for f_, el, t, rs in rows:
+    src = open(os.path.join(proj, f_)).read()
+    if not re.search(r'\b%s\b' % re.escape(el), src): print('MISSING ELEMENT', f_, el); ok = False
+entries = [{'requirement_gid': rq, 'java_file': f_, 'java_element': el, 'element_type': t} for f_, el, t, rs in rows for rq in rs]
+print('requirements', len(reqs), 'covered', len(covered & set(reqs)), 'files', len(javafiles), 'entries', len(entries), 'OK' if ok else 'PROBLEMS')
+if ok:
+    with open(proj + '/result_codegen.json', 'w') as fh:
+        json.dump({'codegen_trace': entries}, fh, indent=4); fh.write('\n')
+EOF
+python3 -I $SCR/trace.py
+===== command 17
+python3 -I - <<'EOF'
+import json, re, os
+t = json.load(open('result_codegen.json'))['codegen_trace']
+have = set((e['java_file'], e['java_element']) for e in t)
+missing = []
+for d,_,fs in os.walk('src/main/java'):
+    for f in fs:
+        p = os.path.join(d,f); src = open(p).read()
+        for m in re.finditer(r'public\s+(?:static\s+)?(?:final\s+)?(?:sealed\s+)?(?:@interface|class|enum|record|interface|[\w<>\[\]]+)\s+(\w+)\s*[({=;<]?', src):
+            name = m.group(1)
+            if (p, name) not in have: missing.append((p, name))
+        for m in re.finditer(r'^\s+record\s+(\w+)', src, re.M):
+            if (p, m.group(1)) not in have: missing.append((p, m.group(1)))
+print(missing if missing else 'every public declaration has a trace entry')
+EOF
+===== command 18
+cd /Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/java.generated.project/src/main/java/steam_boiler && grep -n -E 'CAPACITY_C =|LEVEL_M1 =|PUMP_CAPACITY_P =|STEAM_AT_REST =|STOP_REPETITIONS =' BoilerConstants.java; grep -n -E 'allUnitsSound = true|predictedMaximumLevel;' sensor/BoilerSensor.java; grep -n -E 'public void step|if \(currentMode == |else if \(currentMode == |boolean initIdle|boolean levelLossBlocked|boolean rescueUnsupported|OpenPump\(0\)\);|SB-Beh22: terminal' controller/SteamBoilerController.java | head -40; grep -n -E 'public void analyse|private boolean detectTransmissionFailure|private boolean processRepairs|private void detectSteamFailure|private void detectPumpFailures|private void detectPumpControlFailures|private void computeThroughput|private void detectLevelFailure|private void estimateLevel|private void predictLevel|private void publish|public List<OutputEvent> unitStatusMessages|public void recordTransmission|private void receivePumpState|if \(waitingSignalled\) \{' monitor/PlantMonitor.java; grep -n -E 'public List<OutputEvent> runCycle|hasStopped\(\) \{' SteamBoilerProgram.java; wc -l controller/SteamBoilerController.java monitor/PlantMonitor.java
+===== command 19
+SCR=/private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad && cat > $SCR/review.py <<'EOF'
+import json
+B = 'src/main/java/steam_boiler/'
+K, S, C, M, P, IE = B+'BoilerConstants.java', B+'sensor/BoilerSensor.java', B+'controller/SteamBoilerController.java', B+'monitor/PlantMonitor.java', B+'SteamBoilerProgram.java', B+'event/InputEvent.java'
+def tr(f, a, b, el, ids): return {'java_file': f, 'line_start': a, 'line_end': b, 'element': el, 'requirement_ids': ids}
+issues = [
+ {'kind': 'invented_default', 'title': 'Values of the boiler, steam and pump constants',
+  'raw': 'SB-DM1, SB-DM2 and SB-DM3 name C, M1, M2, N1, N2, W, U1, U2 and P but give no values. Chosen: C=1000, M1=100, N1=400, N2=600, M2=900 litres; W=10 l/s; U1=U2=1 l/s/s; P=5 l/s. Given by the requirements: 4 pumps, 5 s cycle, 3 successive STOPs. All values are integral, so rounding in the model constants interface changes none of them.',
+  'fix_directive': 'Replace with the plant\'s real values if known. Keep M1 < N1 < N2 < M2 < C. With bang-bang regulation, the worst-case one-cycle rise from four pumps (4 x P x 5 s) must stay below M2 - N2, and about two cycles of maximal steam must stay below N1 - M1, or the risk rule stops the boiler during ordinary regulation.',
+  'java_trace': [tr(K, 11, 50, 'BoilerConstants', ['SB-DM1', 'SB-DM2', 'SB-DM3'])]},
+ {'kind': 'invented_default', 'title': 'Pump numbering and analysed values before the first cycle',
+  'raw': 'The requirements do not number the pumps. Pumps and pump controllers are numbered 0 to 3. Before the first analysed cycle, the sensor reports level, steam, estimate and predicted levels of 0.0 and all units sound. The controller reads none of these until STEAM_BOILER_WAITING has arrived.',
+  'fix_directive': 'If the plant numbers pumps 1 to 4, shift the index in the monitor and in the controller\'s OpenPump and ClosePump literals.',
+  'java_trace': [tr(S, 10, 24, 'BoilerSensor', ['SB-V5', 'SB-V6', 'SB-V8', 'SB-V9']), tr(B+'domain/PumpReport.java', 1, 14, 'PumpReport', ['SB-DM3'])]},
+ {'kind': 'design_choice', 'title': 'One cycle event triggers every transition; the cycle\'s messages reach the controller through the sensor',
+  'raw': 'SB-V3 says all messages of a cycle are received simultaneously. The program collects them in PlantMonitor and analyses them. The controller\'s step runs once per cycle on InputEvent.CycleStart, with guards over BoilerSensor queries. All transitions are triggered by CycleStart, so there are no autonomous transitions. Each mode\'s guards are mutually exclusive and together exhaustive. The other InputEvent records are messages to the monitor, not triggers.',
+  'fix_directive': 'None expected. If a verifier needs the individual messages as model events, they would have to become triggers, which would break the simultaneous-reception rule.',
+  'java_trace': [tr(C, 42, 321, 'step', ['SB-V3']), tr(IE, 13, 14, 'CycleStart', ['SB-V3'])]},
+ {'kind': 'scope_question', 'title': 'Failure detection, the repair and acknowledgement protocol, and level estimation are outside the extracted state machine',
+  'raw': 'SB-FR1 to SB-FR7, SB-V5 to SB-V10 and the estimate of SB-Beh19 are implemented in PlantMonitor (Java only). The controller sees their results only as sensor functions: levelDeviceFailed, transmissionFailure, predictedMinimumLevel and the others. The program driver sends the FAILURE_DETECTION and REPAIRED_ACKNOWLEDGEMENT messages after step, from the monitor\'s unit status, because one transition cannot send a variable subset of 20 per-unit messages within the profile. The verifiers therefore check the mode logic, not the detection rules.',
+  'fix_directive': 'Accept, or move selected bookkeeping into controller fields if the model must cover it (at the cost of state space).',
+  'java_trace': [tr(M, 177, 205, 'analyse', ['SB-FR1', 'SB-FR2', 'SB-FR3', 'SB-FR4', 'SB-FR5']), tr(M, 211, 240, 'unitStatusMessages', ['SB-FR6', 'SB-FR7']), tr(P, 39, 57, 'runCycle', ['SB-FR6', 'SB-FR7'])]},
+ {'kind': 'design_choice', 'title': 'Regulation policy: all four pumps on below N1, all off above N2',
+  'raw': 'SB-Beh10, SB-Beh15 and SB-Beh19 require switching pumps on or off without naming which ones. Below N1 the program sends OPEN_PUMP for all four pumps; above N2 it sends CLOSE_PUMP for all four; between N1 and N2 it sends no pump order. In rescue mode the middle of the estimated interval is used. On a cycle that changes mode, no pump order is sent.',
+  'fix_directive': 'A finer policy (a number of pumps chosen from the predicted level) would need per-pump branches or computed pump numbers.',
+  'java_trace': [tr(C, 194, 218, 'step', ['SB-Beh10']), tr(C, 245, 266, 'step', ['SB-Beh15']), tr(C, 293, 316, 'step', ['SB-Beh19'])]},
+ {'kind': 'design_choice', 'title': 'How the risk of reaching M1 or M2 is judged',
+  'raw': 'SB-Beh13, SB-Beh18 and SB-Beh21 say "risks reaching M1 or M2" under worst-case behaviour. The program predicts the level range at the next cycle. It starts from the current level, or the estimated interval. Steam may change at its maximal gradients (anywhere in [0, W] if the steam device is down). Inflow lies in [0, P x 5 s x pumps now on]; a pump not yet on contributes nothing, because it takes one cycle to start (SB-Beh25). Emergency stop follows if the predicted minimum is at or below M1, or the predicted maximum at or above M2. The prediction does not credit the program\'s own pump orders of this cycle.',
+  'fix_directive': 'Confirm the intended reading of "risk".',
+  'java_trace': [tr(M, 482, 508, 'predictLevel', ['SB-Beh13', 'SB-Beh25', 'SB-V4']), tr(C, 59, 62, 'step', ['SB-Beh13', 'SB-Beh18', 'SB-Beh21'])]},
+ {'kind': 'ambiguous_requirement', 'title': 'Initialization before STEAM_BOILER_WAITING: transmission failures not checked',
+  'raw': 'SB-Beh2 says nothing else happens until STEAM_BOILER_WAITING arrives; SB-Beh9 and SB-FR5 say a transmission failure during initialization forces emergency stop, and that the data messages are required in every transmission. Resolved: before the plant signals waiting, the program only counts STOP messages (SB-Beh23 applies in every mode) and sends MODE. Transmission, steam and level checks start in the cycle STEAM_BOILER_WAITING arrives, and the steam-zero check (SB-Beh3) is repeated on every cycle of initialization after that.',
+  'fix_directive': 'If transmission failures must be detected from the very first cycle, remove the waitingSignalled gate in PlantMonitor.analyse and plantWaiting from initTransmissionStop.',
+  'java_trace': [tr(M, 177, 205, 'analyse', ['SB-Beh2', 'SB-Beh9']), tr(C, 72, 81, 'step', ['SB-Beh2', 'SB-Beh3', 'SB-Beh9'])]},
+ {'kind': 'ambiguous_requirement', 'title': 'MODE on every cycle versus a terminal emergency stop',
+  'raw': 'SB-Beh24 requires MODE(m) on every cycle in whatever mode; SB-Beh22 says that on entering emergency stop the program stops. Resolved: MODE(EMERGENCY_STOP) is sent on the cycle that enters emergency stop, which has no outgoing transition. After that the program runs no more cycles and transmits nothing.',
+  'fix_directive': 'If MODE must keep being sent after emergency stop, add a CycleStart self-transition to EMERGENCY_STOP that sends ModeReport, and remove the hasStopped gate in SteamBoilerProgram.runCycle.',
+  'java_trace': [tr(C, 318, 320, 'step', ['SB-Beh22', 'SB-Beh24']), tr(P, 39, 43, 'runCycle', ['SB-Beh22'])]},
+ {'kind': 'ambiguous_requirement', 'title': '"If the pump-controller units fail" in rescue mode',
+  'raw': 'SB-Beh21 does not say whether one failed pump controller suffices. Resolved: any pump controller out of order forces emergency stop from rescue, because the estimate relies on the pump-controller information (SB-Beh19).',
+  'fix_directive': 'If only the failure of all controllers is meant, the sensor should report that instead of pumpControlFailed.',
+  'java_trace': [tr(C, 65, 65, 'step', ['SB-Beh21']), tr(S, 117, 120, 'pumpControlFailed', ['SB-Beh21'])]},
+ {'kind': 'design_choice', 'title': 'A level-device failure while rescue cannot run goes straight to emergency stop',
+  'raw': 'SB-Beh11 and SB-Beh17 send the program to rescue on a level-device failure. SB-Beh21 stops rescue if the steam device or a pump controller is out of order, and SB-FR8 lets emergency conditions dominate a change to rescue. Resolved: in normal and degraded modes, if the level device fails while the steam device or a pump controller is already out of order, the program enters emergency stop directly instead of passing through rescue for one cycle.',
+  'fix_directive': 'If a one-cycle stay in rescue is wanted, drop the levelLossBlocked branches.',
+  'java_trace': [tr(C, 84, 85, 'step', ['SB-FR8', 'SB-Beh11', 'SB-Beh17', 'SB-Beh21'])]},
+ {'kind': 'design_choice', 'title': 'Which messages count as aberrant',
+  'raw': 'SB-FR5 does not list the aberrant messages. Treated as transmission failures: a duplicated LEVEL, STEAM, PUMP_STATE or PUMP_CONTROL_STATE in one transmission; a pump number outside 0..3; STEAM_BOILER_WAITING outside initialization; PHYSICAL_UNITS_READY outside initialization or before PROGRAM_READY has been sent; a REPAIRED message for a unit that is not out of order. Tolerated (ignored): a failure acknowledgement with no announcement outstanding, and a repeated STOP or STEAM_BOILER_WAITING within one transmission. A repair report ends any outstanding failure announcement for that unit.',
+  'fix_directive': 'Adjust detectTransmissionFailure and processRepairsAndAcknowledgements if the plant protocol differs.',
+  'java_trace': [tr(M, 314, 333, 'detectTransmissionFailure', ['SB-FR5']), tr(M, 340, 371, 'processRepairsAndAcknowledgements', ['SB-FR5', 'SB-FR6', 'SB-FR7'])]},
+ {'kind': 'design_choice', 'title': 'Failure-detection timing for pumps and pump controllers',
+  'raw': 'SB-FR1: a pump must report, in the next transmission, the state it was last ordered to; with no order, the state it reported before. SB-FR2: a pump controller is judged only when its pump is sound and has kept the same state over the last two transmissions, which is the second transmission after an order. It must then report flow exactly when the pump is on. Units already out of order, or repaired in this cycle, are not judged. Level dynamics (SB-FR3) are checked against the previous cycle\'s worst-case prediction; while the evacuation valve is open the lower bound is 0, because no drainage rate is given.',
+  'fix_directive': 'None expected.',
+  'java_trace': [tr(M, 399, 423, 'detectPumpFailures', ['SB-FR1', 'SB-FR2', 'SB-Beh25']), tr(M, 444, 456, 'detectLevelFailure', ['SB-FR3'])]},
+ {'kind': 'design_choice', 'title': 'Initialization adjustments use pump 0 and the valve toggle',
+  'raw': 'SB-Beh5 says "activates a pump": pump 0 is used. When the level is above N2, the valve is opened (VALVE toggles it) and pump 0 is closed. When the level is back between N1 and N2, the valve is closed if open, pump 0 is closed, and PROGRAM_READY is sent on every cycle until PHYSICAL_UNITS_READY arrives. If the level falls below N1 with the valve open, the valve is closed and pump 0 opened. The program knows the valve\'s state only from the VALVE messages it has sent.',
+  'fix_directive': 'None expected.',
+  'java_trace': [tr(C, 127, 168, 'step', ['SB-Beh4', 'SB-Beh5', 'SB-Beh7'])]},
+]
+doc = {
+ 'phase': 'codegen', 'status': 'uncertain',
+ 'summary': 'Steam boiler controller written in five layers: 14 Java files, 53 of 53 requirements traced. The mode logic is the controller\'s step: five modes, 40 transitions, all triggered by the per-cycle CycleStart event, with mutually exclusive, exhaustive guards per mode. Failure detection and the unit bookkeeping are in PlantMonitor. 13 items need confirmation: invented constants, interpretations of SB-Beh2/SB-Beh9, SB-Beh22/SB-Beh24, SB-Beh21 and SB-FR5, and design choices.',
+ 'issues': issues,
+ 'next_step': 'Run the pipeline (compile, coverage, profile check, transformations, FDR4, Dafny, Isabelle, vacuity).',
+}
+base = '/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/corrections/post_codegen'
+with open(base + '.json', 'w') as fh: json.dump(doc, fh, indent=2); fh.write('\n')
+md = ['# post_codegen', '', '**status:** ' + doc['status'], '', '**summary:** ' + doc['summary'], '', '## Issues', '']
+for i, it in enumerate(issues, 1):
+    md += ['### %d. [%s] %s' % (i, it['kind'], it['title']), '', '- **raw:** ' + it['raw'], '- **fix_directive:** ' + it['fix_directive'], '- **java_trace:**']
+    for t in it['java_trace']:
+        md.append('  - `%s` lines %d-%d, `%s`, requirements %s' % (t['java_file'], t['line_start'], t['line_end'], t['element'], ', '.join(t['requirement_ids'])))
+    md.append('')
+md += ['## next_step', '', doc['next_step'], '']
+open(base + '.md', 'w').write('\n'.join(md))
+print(len(issues), 'issues written')
+EOF
+python3 -I $SCR/review.py && python3 -I -c "import json;json.load(open('/Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler/forge.assets/corrections/post_codegen.json'));print('json valid')"
+===== command 20
+cd /Users/ranwei/Gitee/forge-v3c16-run10-steam_boiler && wc -w forge.assets/corrections/ITER_SUMMARY.md && rm -rf java.generated.project/build && git status --short | grep -v -E '^ D (\.claude|\.remember)' | head -30
+===== command 21
+wc -w forge.assets/corrections/ITER_SUMMARY.md && find java.generated.project/src -name '*.java' | wc -l && ls java.generated.project forge.assets/corrections
+===== command 22
+export FORGE_ARM_DIR=/Users/ranwei/Gitee/formal_method_guided_vibe_coding/experiments/v3-cold && export FORGE_WT_PREFIX=forge-v3c16 && export FORGE_STAGE_DIR=/Users/ranwei/Gitee/v3c16-staging && export FORGE_SHA=aaddf2225b38eb1eb749e816f6f5874d7ec93eaa && bash /Users/ranwei/Gitee/formal_method_guided_vibe_coding/scripts/run_claude_iteration.sh steam_boiler 10 1 unavailable > /private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad/runner_output.txt 2>&1; echo "runner exit: $?" >> /private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad/runner_output.txt
+===== command 23
+grep -n -A3 '=== iteration 1 : what to do next ===' /private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad/runner_output.txt; tail -5 /private/tmp/claude-501/-Users-ranwei-Gitee-forge-v3c16-run10-steam-boiler/d449b8d0-73bb-4e07-aad8-d769506ea9e8/scratchpad/runner_output.txt

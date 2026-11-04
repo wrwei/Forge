@@ -240,7 +240,48 @@ for(e in ordered){
 		// run-1 v2's `record GasSensorReading(List<GasSensor> values)`
 		// died at the record line even after the fix quoted its type. Same
 		// mangling as `value`: trailing underscore.
-		var isabelleReservedFieldNames = Sequence{"value", "values", "term", "prop"};
+		// Amendment 16 (pre-registration v3): every keyword of Isabelle/Pure and
+		// Isabelle/HOL (the `keywords` clauses of Pure.thy and HOL.thy in the
+		// pinned distribution), plus the four names above. A Steam Boiler record
+		// `PumpReading(int pump, boolean open)` died at outer syntax on `open`.
+		var isabelleReservedFieldNames = Sequence{
+			"ML", "ML_command", "ML_export", "ML_file", "ML_file_debug", "ML_file_no_debug",
+			"ML_prf", "ML_val", "ROOTS_file", "SML_export", "SML_file", "SML_file_debug",
+			"SML_file_no_debug", "SML_import", "abbreviation", "alias", "also", "apply",
+			"apply_end", "assume", "assumes", "attribute_setup", "axiomatization", "back",
+			"bibtex_file", "binder", "bundle", "by", "case", "class", "class_deps",
+			"code_datatype", "compile_generated_files", "consider", "constrains", "consts",
+			"context", "corollary", "declaration", "declare", "default_sort", "defer", "define",
+			"defines", "definition", "done", "end", "experiment", "export_classpath",
+			"export_files", "export_generated_files", "export_prefix", "external_file",
+			"external_files", "extract", "extract_type", "finally", "find_consts", "find_theorems",
+			"fix", "fixes", "for", "from", "full_prf", "generate_file", "global_interpretation",
+			"have", "help", "hence", "hide_class", "hide_const", "hide_fact", "hide_type", "if",
+			"in", "include", "includes", "including", "infix", "infixl", "infixr", "instance",
+			"instantiation", "interpret", "interpretation", "is", "judgment", "lemma", "lemmas",
+			"let", "local_setup", "locale", "locale_deps", "method_setup", "moreover",
+			"named_theorems", "next", "no_notation", "no_syntax", "no_translations",
+			"no_type_notation", "nonterminal", "notation", "note", "notepad", "notes", "obtain",
+			"obtains", "oops", "open", "opening", "oracle", "output", "overloaded", "overloading",
+			"parse_ast_translation", "parse_translation", "pervasive", "prefer", "premises",
+			"presume", "prf", "print_ML_antiquotations", "print_abbrevs", "print_antiquotations",
+			"print_ast_translation", "print_attributes", "print_bundles", "print_cases",
+			"print_claset", "print_classes", "print_codesetup", "print_coercions",
+			"print_commands", "print_context", "print_context_tracing", "print_definitions",
+			"print_defn_rules", "print_facts", "print_induct_rules", "print_interps",
+			"print_locale", "print_locales", "print_methods", "print_options", "print_rules",
+			"print_simpset", "print_state", "print_statement", "print_syntax",
+			"print_term_bindings", "print_theorems", "print_theory", "print_trans_rules",
+			"print_translation", "private", "proof", "prop", "proposition", "qed", "qed_script",
+			"qualified", "quickcheck", "quickcheck_params", "realizability", "realizers",
+			"rewrites", "scala_build_generated_files", "schematic_goal", "setup", "show", "shows",
+			"simproc_setup", "solve_direct", "sorry", "structure", "subclass", "subgoal",
+			"sublocale", "supply", "syntax", "syntax_declaration", "term", "text", "text_raw",
+			"then", "theorem", "thm", "thm_deps", "thm_oracles", "thus", "thy_deps",
+			"translations", "try", "txt", "typ", "type_alias", "type_notation", "type_synonym",
+			"typed_print_translation", "typedecl", "ultimately", "unbundle", "unchecked",
+			"unfolding", "unused_thms", "using", "value", "values", "welcome", "when", "where",
+			"with", "write"};
 		var fieldList = "";
 		var i=0;
 		while(i<e.fields.size()){
@@ -333,6 +374,29 @@ for(iface in p.interfaces){
 			for(v in vrl.vars){
 				stateVarNames.add(v.name);
 				stateVarTypes.put(v.name, v.type);
+			}
+		}
+	}
+}
+// Amendment 14 (pre-registration v3): the types the model DECLARES for the
+// sensor queries (variables of the `Sensors` interface, e.g.
+// `var levelAboveNormalBand : boolean`). The auto-consts fallback below used to
+// guess a guard function's return type from usage only (bool iff it appears
+// directly under Not, else real), so a boolean query used only positively was
+// declared `unit \<Rightarrow> real` and the theory failed to type-check (or
+// aborted with `exception Empty` inside a zoperation precondition). A declared
+// simple type now wins over the usage guess.
+var sensorVarTypes: Map;
+for(iface in p.interfaces){
+	if(iface.name = "Sensors"){
+		for(vrl in iface.variableList){
+			for(v in vrl.vars){
+				// `nat` is the extractor's marker for a name it could not resolve
+				// to a Java method (java2robochart.etl, zero-arg Sensors sweep), so
+				// it is not a declaration; the usage guess stays for those names.
+				if(v.type.isDefined() and v.type.isTypeOf(TypeRef) and v.type.zmType() <> "nat"){
+					sensorVarTypes.put(v.name, v.type);
+				}
 			}
 		}
 	}
@@ -940,6 +1004,10 @@ for (funcName in undeclaredFuncNames){
 	// `sts = noGas` typecheck in pre conditions (sts :: Status).
 	if(enumLiteralNames.includes(funcName)){ continue; }
 	var sigType: String;
+	// Amendment 14: a type the model declares for the name wins.
+	if (sensorVarTypes.containsKey(funcName)){
+		sigType = sensorVarTypes.get(funcName).zmType();
+	} else
 	// FORK (I1): an assignment context (`<lens> = <fn>()`) fixes the
 	// return type exactly — prefer it over the usage heuristic below.
 	if (assignCtxType.containsKey(funcName)){
@@ -2345,25 +2413,15 @@ for (nd in p.machines.at(stm_index).nodes) {
   }
 }
 if (not nonSourceStates.isEmpty()) {
-  ("  !! states with NO outgoing transition in " + stm_name + ": "
-   + nonSourceStates.concat(", ")
-   + " -- deadlock_free is FALSE for this machine (loop semantics: a state"
-   + " enabling no operation offers Vis {} = deadlock). Add a tick-triggered"
-   + " self-loop in the Java for each. Emitting the lemma with an explicit"
-   + " marker rather than a silent unprovable goal.").println();
+  ("  terminal state(s) in " + stm_name + ": " + nonSourceStates.concat(", ")
+   + " (no outgoing transition; exempt from deadlock freedom through the"
+   + " machine's `until` clause)").println();
 }
 %]
 [% if (not nonSourceStates.isEmpty()) { %]
-(* WARNING -- THIS OBLIGATION IS FALSE AS EMITTED.
-   State(s) with no outgoing transition: [%=nonSourceStates.concat(", ")%].
-   Under `loop` semantics such a state offers Vis {} = deadlock, so
-   deadlock_free does not hold. This is a MODEL defect (a missing tick-triggered
-   self-loop in the Java), not a proof-search problem: no tactic can close it.
-   Measured on chemical_detector v2 -- auto OOM 978s, metis 1825s, blast 922s,
-   fastforce 923s; refuted by probe_Y3_obligation_refuted with witness
-   st = [%=nonSourceStates.at(0)%].
-   Fix the Java per forge.assets/prompts/java_codegen_rules.txt ("EVERY MODE
-   MUST HAVE AN OUTGOING TRANSITION"), re-extract, and this marker disappears. *)
+(* Terminal state(s), with no outgoing transition: [%=nonSourceStates.concat(", ")%].
+   The machine's `until` clause exempts them from the deadlock-freedom
+   obligation below: the machine has finished there. *)
 [% } %]
 lemma [%=stm_name%]_deadlock_free: "[%=stm_name%]_axioms  \<Longrightarrow> deadlock_free [%=stm_name%]Machine"
   unfolding [%=stm_name%]Machine_def

@@ -222,6 +222,39 @@ def _start_watchdog(proc: "subprocess.Popen", timeout_s: float) -> tuple[threadi
     return timer, fired
 
 
+def _darwin_phys_footprint_mb(pid: int):
+    """macOS physical footprint of one process in MB (proc_pid_rusage, RUSAGE_INFO_V2), or None."""
+    try:
+        import ctypes, ctypes.util
+
+        class _RusageInfoV2(ctypes.Structure):
+            _fields_ = [("ri_uuid", ctypes.c_uint8 * 16)] + [(n, ctypes.c_uint64) for n in (
+                "ri_user_time", "ri_system_time", "ri_pkg_idle_wkups", "ri_interrupt_wkups",
+                "ri_pageins", "ri_wired_size", "ri_resident_size", "ri_phys_footprint",
+                "ri_proc_start_abstime", "ri_proc_exit_abstime", "ri_child_user_time",
+                "ri_child_system_time", "ri_child_pkg_idle_wkups", "ri_child_interrupt_wkups",
+                "ri_child_pageins", "ri_child_elapsed_abstime", "ri_diskio_bytesread",
+                "ri_diskio_byteswritten")]
+
+        lib = ctypes.CDLL(ctypes.util.find_library("proc") or "/usr/lib/libproc.dylib", use_errno=True)
+        info = _RusageInfoV2()
+        if lib.proc_pid_rusage(ctypes.c_int(pid), ctypes.c_int(2), ctypes.byref(info)) != 0:
+            return None
+        total = info.ri_phys_footprint
+        # The FDR4 launcher may start `_refines` as a child: add the footprints
+        # of child processes, recursively (proc_listchildpids).
+        buf = (ctypes.c_int * 256)()
+        n = lib.proc_listchildpids(ctypes.c_int(pid), buf, ctypes.sizeof(buf))
+        for child in list(buf)[:max(0, n)]:
+            if child > 0 and child != pid:
+                sub = _darwin_phys_footprint_mb(child)
+                if sub is not None:
+                    total += sub * 1024 * 1024
+        return total / (1024 * 1024)
+    except Exception:
+        return None
+
+
 def _get_process_memory_mb(pid: int) -> float:
     """Get total RSS memory usage of a process tree in MB."""
     try:
@@ -238,6 +271,14 @@ def _get_process_memory_mb(pid: int) -> float:
                                    .replace(' K', '').replace(' ', ''))
                         return int(mem_str) / 1024
         elif sys.platform == "darwin":
+            # Amendment 14 (pre-registration v3): resident memory (`ps -o rss`)
+            # leaves out what macOS has compressed, so the budget never fired
+            # while FDR4 grew to 79-98 GB and the system's memory-pressure
+            # killer ended it. The physical footprint (resident + compressed,
+            # macOS's own accounting) is read first; `ps` stays as a fallback.
+            fp = _darwin_phys_footprint_mb(pid)
+            if fp is not None:
+                return fp
             result = subprocess.run(
                 ["ps", "-o", "rss=", "-p", str(pid)],
                 capture_output=True, text=True, timeout=5,
@@ -720,6 +761,18 @@ def _scan_isabelle_lemmas(session_dir: Path) -> dict:
     return out
 
 
+# Amendment 14 (pre-registration v3): the budget is already the machine's limit
+# (Amendment 10), so the directive no longer asks for a pipeline.yaml change.
+_FDR4_MEMORY_DIRECTIVE = (
+    "The model's state space exceeded the machine's memory, so FDR4 gave no "
+    "verdict. The memory budget is already at the machine's limit and cannot be "
+    "raised. This is not a parse error or a template defect. You may reduce the "
+    "controller's state space in the Java (fewer transitions, fewer or narrower "
+    "state variables, merged conditions), but only without changing the behaviour "
+    "the requirements specify; otherwise record the FDR4 assertions as unmeasured."
+)
+
+
 def _classify_fdr4_stderr(stderr_text: str, memory_limit_mb: int) -> dict:
     """Classify FDR4 stderr to distinguish memory/runtime errors from parse errors.
 
@@ -730,6 +783,23 @@ def _classify_fdr4_stderr(stderr_text: str, memory_limit_mb: int) -> dict:
     present it bypasses the default parse_error builder.
     """
     low = stderr_text.lower()
+
+    # Amendment 14 (pre-registration v3): FDR4 ended by a signal with no verdict
+    # (the operating system's memory-pressure killer sends SIGKILL). It used to
+    # fall through to the parse_error builder below.
+    if low.startswith("fdr4 was killed by signal"):
+        return {
+            "headline": "FDR4 was killed before giving a verdict.",
+            "summary": (
+                "FDR4 loaded the CSP and was exploring the state space when it was "
+                "killed by a signal (on macOS, the system's memory-pressure killer "
+                "ends the largest process when memory runs out). Not a parse error."
+            ),
+            "kind": "fdr4_signal_kill",
+            "title": "FDR4 killed — verdict unmeasured",
+            "fix_directive": _FDR4_MEMORY_DIRECTIVE,
+            "error": stderr_text[:2000],
+        }
 
     # Timeout is NOT a parse error: the CSP loaded and FDR4 was still
     # exploring the state space when the subprocess budget expired.
@@ -750,13 +820,7 @@ def _classify_fdr4_stderr(stderr_text: str, memory_limit_mb: int) -> dict:
             ),
             "kind": "fdr4_memory_kill",
             "title": "FDR4 memory kill — verdict unmeasured",
-            "fix_directive": (
-                "Do NOT edit Java or templates for this issue. Either raise "
-                "phases.fdr4.memory_limit_mb in pipeline.yaml (machine "
-                "permitting) and re-run, or record the assertion set as "
-                "unmeasured under the memory budget. Sequence- or "
-                "record-typed channel domains are the usual driver."
-            ),
+            "fix_directive": _FDR4_MEMORY_DIRECTIVE,   # Amendment 14
             "error": stderr_text[:2000],
         }
 
@@ -1116,6 +1180,11 @@ def run_fdr4(ctx: RunnerContext) -> RunnerResult:
         raw_results = _parse_framed_json(full_output)
         stderr_stats = _parse_stderr_stats(stderr_text)
 
+        if not raw_results and proc.returncode is not None and proc.returncode < 0:
+            # Amendment 14: a signal ended FDR4 (returncode -N) with no verdict.
+            stderr_text = (f"FDR4 was killed by signal {-proc.returncode} before giving a verdict "
+                           f"(peak memory seen by the monitor: {peak_memory_mb[0]:.0f} MB).\n"
+                           + (stderr_text or "") + "\n" + "\n".join(output_lines[-20:]))
         if not raw_results and stderr_text:
             classified = _classify_fdr4_stderr(stderr_text, memory_limit_mb)
             ctx.sys_msg(f"{classified['headline']}\n{stderr_text[:2000]}")

@@ -2870,6 +2870,15 @@ operation collectZeroArgFuncNamesFromAction(stmt : Any, names : OrderedSet) {
         collectZeroArgCallExpNames(stmt.right, names);
         return;
     }
+    // Amendment 14: a sent value can now be a sensor call (`openPump ! fillPump`);
+    // declare it like any other zero-arg sensor read, typed from the Java method.
+    if (stmt.isKindOf(RoboChart!CommunicationStmt)) {
+        var comm = stmt.communication;
+        if (comm.isDefined() and comm.value.isDefined()) {
+            collectZeroArgCallExpNames(comm.value, names);
+        }
+        return;
+    }
 }
 
 // I1 (remainder): collect EVERY CallExp name in a RoboChart expression tree,
@@ -3388,6 +3397,23 @@ operation buildGuardLeafExpr(leaf : Any, syntheticName : String, predDefs : Map)
 
 // E1 fix: Recursively translate a Spoon AST expression node to a RoboChart Expression tree.
 // Replaces the opaque guard_tN fallback with faithful expression structure.
+// Amendment 14: does a Spoon expression read a LOCAL variable anywhere (a call's
+// target and arguments, operator operands)? CtFieldRead is a subtype of
+// CtVariableRead, so the exact-type test leaves field reads (e.g. `sensor`) out.
+operation spoonExprReadsLocal(e : Any) : Boolean {
+    if (e.isUndefined()) { return false; }
+    if (e.isTypeOf(Spoon!CtVariableRead)) { return true; }
+    for (fname in Sequence{"target", "leftOperand", "rightOperand", "expression"}) {
+        var sub = getFeature(e, fname);
+        if (sub.isDefined() and not sub.isKindOf(Collection) and spoonExprReadsLocal(sub)) { return true; }
+    }
+    var args = getFeature(e, "argument");
+    if (args.isDefined()) {
+        for (a in args) { if (spoonExprReadsLocal(a)) { return true; } }
+    }
+    return false;
+}
+
 operation translateSpoonExpr(expr : Any) : Any {
     if (expr.isUndefined()) {
         return;
@@ -5064,6 +5090,28 @@ operation buildCommunication(invocation : Any, stm : Any, eventMap : Map, patter
             // resolveArgumentValue doesn't handle raw CtLiteral without pattern variable;
             // fall back to direct literal resolution for constructor args like 1.0, 0.0
             valueExpr = resolveLiteralValue(ctorValueArg);
+        }
+        // Amendment 14 (pre-registration v3): a constructor argument that is
+        // neither a literal nor a named constant (e.g. `new OpenPump(sensor.fillPump())`)
+        // used to be dropped, leaving `send openPump` on an event another branch
+        // types with a literal. Translate it as an expression instead; a sensor
+        // call becomes the model's call of that function.
+        // Only expressions over fields and calls: one that reads a LOCAL variable
+        // (e.g. an event payload `rv.value()` outside its trigger's branch) is
+        // left as before, so it can never become a spurious sensor variable.
+        var readsLocal = spoonExprReadsLocal(ctorValueArg);
+        if (valueExpr.isUndefined() and not readsLocal and not ctorValueArg.isKindOf(Spoon!CtLiteral)
+                and not ctorValueArg.isKindOf(Spoon!CtFieldRead)) {
+            valueExpr = translateSpoonExpr(ctorValueArg);
+            if (valueExpr.isDefined()) {
+                var vNames = new OrderedSet;
+                collectAllRcCallExpNames(valueExpr, vNames);
+                if (vNames.includes("unknown_expr")) {
+                    ("[m2m] WARNING: output event " + actualEventName
+                        + ": untranslatable value expression dropped").println();
+                    valueExpr = null;
+                }
+            }
         }
         if (valueExpr.isDefined()) {
             comm.value = valueExpr;

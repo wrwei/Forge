@@ -1,0 +1,2458 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 02-11-2026 18:51:27
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+module SteamBoilerController
+exports
+	transparent diamond
+	transparent sbisim
+	transparent dbisim
+	transparent chase
+
+	-- Transition identifiers
+	-- declaring identifiers of transitions
+	datatype NIDS = 
+	              NID_NORMAL|
+	              NID_INITIALIZATION|
+	              NID_EMERGENCY_STOP|
+	              NID_DEGRADED|
+	              NID_RESCUE|
+	              NID_i0
+	
+	channel internal__ : NIDS
+	
+	-- Flow channels		
+	channel interrupt
+	channel exited
+	channel exit
+	channel terminate
+	
+	-- Variable channels
+	channel get_waterLevel, set_waterLevel, setL_waterLevel, setR_waterLevel: core_real
+	channel get_steamRate, set_steamRate, setL_steamRate, setR_steamRate: core_real
+	channel get_pumpRate, set_pumpRate, setL_pumpRate, setR_pumpRate: core_real
+	channel get_levelLowBound, set_levelLowBound, setL_levelLowBound, setR_levelLowBound: core_real
+	channel get_levelHighBound, set_levelHighBound, setL_levelHighBound, setR_levelHighBound: core_real
+	channel get_PUMPS, set_PUMPS, setL_PUMPS, setR_PUMPS: core_int
+	channel get_DT, set_DT, setL_DT, setR_DT: core_real
+	channel get_consecutiveStops, set_consecutiveStops, setL_consecutiveStops, setR_consecutiveStops: core_int
+	channel get_boilerWaitingSeen, set_boilerWaitingSeen, setL_boilerWaitingSeen, setR_boilerWaitingSeen: core_boolean
+	channel get_programReadySent, set_programReadySent, setL_programReadySent, setR_programReadySent: core_boolean
+	channel get_valveOpen, set_valveOpen, setL_valveOpen, setR_valveOpen: core_boolean
+	channel get_initializationOver, set_initializationOver, setL_initializationOver, setR_initializationOver: core_boolean
+	channel get_transmissionFailed, set_transmissionFailed, setL_transmissionFailed, setR_transmissionFailed: core_boolean
+	channel get_steamNonZero, set_steamNonZero, setL_steamNonZero, setR_steamNonZero: core_boolean
+	channel get_levelValue, set_levelValue, setL_levelValue, setR_levelValue: core_real
+	channel get_steamValue, set_steamValue, setL_steamValue, setR_steamValue: core_real
+	channel get_pumpThroughput, set_pumpThroughput, setL_pumpThroughput, setR_pumpThroughput: core_real
+	channel get_knownLow, set_knownLow, setL_knownLow, setR_knownLow: core_real
+	channel get_knownHigh, set_knownHigh, setL_knownHigh, setR_knownHigh: core_real
+	channel get_worstLow, set_worstLow, setL_worstLow, setR_worstLow: core_real
+	channel get_worstHigh, set_worstHigh, setL_worstHigh, setR_worstHigh: core_real
+	channel get_steamOutMin, set_steamOutMin, setL_steamOutMin, setR_steamOutMin: core_real
+	channel get_steamOutMax, set_steamOutMax, setL_steamOutMax, setR_steamOutMax: core_real
+	channel get_estimateLow, set_estimateLow, setL_estimateLow, setR_estimateLow: core_real
+	channel get_estimateHigh, set_estimateHigh, setL_estimateHigh, setR_estimateHigh: core_real
+	channel get_estimateKnown, set_estimateKnown, setL_estimateKnown, setR_estimateKnown: core_boolean
+	channel get_plausibleLow, set_plausibleLow, setL_plausibleLow, setR_plausibleLow: core_real
+	channel get_plausibleHigh, set_plausibleHigh, setL_plausibleHigh, setR_plausibleHigh: core_real
+	channel get_plausibleKnown, set_plausibleKnown, setL_plausibleKnown, setR_plausibleKnown: core_boolean
+	channel get_plausibleLowKnown, set_plausibleLowKnown, setL_plausibleLowKnown, setR_plausibleLowKnown: core_boolean
+	channel get_previousSteam, set_previousSteam, setL_previousSteam, setR_previousSteam: core_real
+	channel get_previousSteamValid, set_previousSteamValid, setL_previousSteamValid, setR_previousSteamValid: core_boolean
+	channel get_levelReading, set_levelReading, setL_levelReading, setR_levelReading: core_real
+	channel get_steamReading, set_steamReading, setL_steamReading, setR_steamReading: core_real
+	channel get_levelEstimateLow, set_levelEstimateLow, setL_levelEstimateLow, setR_levelEstimateLow: core_real
+	channel get_levelEstimateHigh, set_levelEstimateHigh, setL_levelEstimateHigh, setR_levelEstimateHigh: core_real
+	channel get_plantWaiting, set_plantWaiting, setL_plantWaiting, setR_plantWaiting: core_boolean
+	channel get_transmissionFailure, set_transmissionFailure, setL_transmissionFailure, setR_transmissionFailure: core_boolean
+	channel get_steamNotZero, set_steamNotZero, setL_steamNotZero, setR_steamNotZero: core_boolean
+	channel get_levelFailure, set_levelFailure, setL_levelFailure, setR_levelFailure: core_boolean
+	channel get_readyAnnounced, set_readyAnnounced, setL_readyAnnounced, setR_readyAnnounced: core_boolean
+	channel get_unitsReady, set_unitsReady, setL_unitsReady, setR_unitsReady: core_boolean
+	channel get_steamFailure, set_steamFailure, setL_steamFailure, setR_steamFailure: core_boolean
+	channel get_pumpFailure, set_pumpFailure, setL_pumpFailure, setR_pumpFailure: core_boolean
+	channel get_pumpControlFailure, set_pumpControlFailure, setL_pumpControlFailure, setR_pumpControlFailure: core_boolean
+	channel get_knownLevelHigh, set_knownLevelHigh, setL_knownLevelHigh, setR_knownLevelHigh: core_real
+	channel get_knownLevelLow, set_knownLevelLow, setL_knownLevelLow, setR_knownLevelLow: core_real
+	channel get_valveIsOpen, set_valveIsOpen, setL_valveIsOpen, setR_valveIsOpen: core_boolean
+	channel get_worstCaseLevelLow, set_worstCaseLevelLow, setL_worstCaseLevelLow, setR_worstCaseLevelLow: core_real
+	channel get_worstCaseLevelHigh, set_worstCaseLevelHigh, setL_worstCaseLevelHigh, setR_worstCaseLevelHigh: core_real
+	
+	-- Shared variable channels
+	channel set_EXT_waterLevel: core_real
+	channel set_EXT_steamRate: core_real
+	channel set_EXT_pumpRate: core_real
+	channel set_EXT_levelLowBound: core_real
+	channel set_EXT_levelHighBound: core_real
+	channel set_EXT_PUMPS: core_int
+	channel set_EXT_DT: core_real
+	channel set_EXT_consecutiveStops: core_int
+	channel set_EXT_boilerWaitingSeen: core_boolean
+	channel set_EXT_programReadySent: core_boolean
+	channel set_EXT_valveOpen: core_boolean
+	channel set_EXT_initializationOver: core_boolean
+	channel set_EXT_transmissionFailed: core_boolean
+	channel set_EXT_steamNonZero: core_boolean
+	channel set_EXT_levelValue: core_real
+	channel set_EXT_steamValue: core_real
+	channel set_EXT_pumpThroughput: core_real
+	channel set_EXT_knownLow: core_real
+	channel set_EXT_knownHigh: core_real
+	channel set_EXT_worstLow: core_real
+	channel set_EXT_worstHigh: core_real
+	channel set_EXT_steamOutMin: core_real
+	channel set_EXT_steamOutMax: core_real
+	channel set_EXT_estimateLow: core_real
+	channel set_EXT_estimateHigh: core_real
+	channel set_EXT_estimateKnown: core_boolean
+	channel set_EXT_plausibleLow: core_real
+	channel set_EXT_plausibleHigh: core_real
+	channel set_EXT_plausibleKnown: core_boolean
+	channel set_EXT_plausibleLowKnown: core_boolean
+	channel set_EXT_previousSteam: core_real
+	channel set_EXT_previousSteamValid: core_boolean
+	channel set_EXT_levelReading: core_real
+	channel set_EXT_steamReading: core_real
+	channel set_EXT_levelEstimateLow: core_real
+	channel set_EXT_levelEstimateHigh: core_real
+	channel set_EXT_plantWaiting: core_boolean
+	channel set_EXT_transmissionFailure: core_boolean
+	channel set_EXT_steamNotZero: core_boolean
+	channel set_EXT_levelFailure: core_boolean
+	channel set_EXT_readyAnnounced: core_boolean
+	channel set_EXT_unitsReady: core_boolean
+	channel set_EXT_steamFailure: core_boolean
+	channel set_EXT_pumpFailure: core_boolean
+	channel set_EXT_pumpControlFailure: core_boolean
+	channel set_EXT_knownLevelHigh: core_real
+	channel set_EXT_knownLevelLow: core_real
+	channel set_EXT_valveIsOpen: core_boolean
+	channel set_EXT_worstCaseLevelLow: core_real
+	channel set_EXT_worstCaseLevelHigh: core_real
+	
+	-- Local variable channels for defined operations that are required by the state machine
+	
+	-- Declaring state machine events
+	channel transmission__: NIDS.InOut
+	channel transmission: InOut
+	channel mode__: NIDS.InOut
+	channel mode: InOut
+	channel programReady__: NIDS.InOut
+	channel programReady: InOut
+	channel valve__: NIDS.InOut
+	channel valve: InOut
+	channel closePump__: NIDS.InOut.{0..4}
+	channel closePump: InOut.{0..4}
+	channel openPump__: NIDS.InOut.{0..4}
+	channel openPump: InOut.{0..4}
+	
+	-- Declaring call and ret events for undefined operations
+	
+	enterSS = {|
+	NORMAL::enter,
+	INITIALIZATION::enter,
+	EMERGENCY_STOP::enter,
+	DEGRADED::enter,
+	RESCUE::enter,
+	i0::enter
+	|}
+	
+	enteredSS = 	{|
+	NORMAL::entered,
+	INITIALIZATION::entered,
+	EMERGENCY_STOP::entered,
+	DEGRADED::entered,
+	RESCUE::entered
+	|}
+	
+	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
+	
+	shared_variable_events = {|
+		set_EXT_waterLevel,
+		set_EXT_steamRate,
+		set_EXT_pumpRate,
+		set_EXT_levelLowBound,
+		set_EXT_levelHighBound,
+		set_EXT_PUMPS,
+		set_EXT_DT,
+		set_EXT_consecutiveStops,
+		set_EXT_boilerWaitingSeen,
+		set_EXT_programReadySent,
+		set_EXT_valveOpen,
+		set_EXT_initializationOver,
+		set_EXT_transmissionFailed,
+		set_EXT_steamNonZero,
+		set_EXT_levelValue,
+		set_EXT_steamValue,
+		set_EXT_pumpThroughput,
+		set_EXT_knownLow,
+		set_EXT_knownHigh,
+		set_EXT_worstLow,
+		set_EXT_worstHigh,
+		set_EXT_steamOutMin,
+		set_EXT_steamOutMax,
+		set_EXT_estimateLow,
+		set_EXT_estimateHigh,
+		set_EXT_estimateKnown,
+		set_EXT_plausibleLow,
+		set_EXT_plausibleHigh,
+		set_EXT_plausibleKnown,
+		set_EXT_plausibleLowKnown,
+		set_EXT_previousSteam,
+		set_EXT_previousSteamValid,
+		set_EXT_levelReading,
+		set_EXT_steamReading,
+		set_EXT_levelEstimateLow,
+		set_EXT_levelEstimateHigh,
+		set_EXT_plantWaiting,
+		set_EXT_transmissionFailure,
+		set_EXT_steamNotZero,
+		set_EXT_levelFailure,
+		set_EXT_readyAnnounced,
+		set_EXT_unitsReady,
+		set_EXT_steamFailure,
+		set_EXT_pumpFailure,
+		set_EXT_pumpControlFailure,
+		set_EXT_knownLevelHigh,
+		set_EXT_knownLevelLow,
+		set_EXT_valveIsOpen,
+		set_EXT_worstCaseLevelLow,
+		set_EXT_worstCaseLevelHigh
+	|}
+	
+	-- channel set with all visible events
+	sem__events = {|
+		terminate
+	,	set_EXT_waterLevel, set_waterLevel,
+		set_EXT_steamRate, set_steamRate,
+		set_EXT_pumpRate, set_pumpRate,
+		set_EXT_levelLowBound, set_levelLowBound,
+		set_EXT_levelHighBound, set_levelHighBound,
+		set_EXT_PUMPS, set_PUMPS,
+		set_EXT_DT, set_DT,
+		set_EXT_consecutiveStops, set_consecutiveStops,
+		set_EXT_boilerWaitingSeen, set_boilerWaitingSeen,
+		set_EXT_programReadySent, set_programReadySent,
+		set_EXT_valveOpen, set_valveOpen,
+		set_EXT_initializationOver, set_initializationOver,
+		set_EXT_transmissionFailed, set_transmissionFailed,
+		set_EXT_steamNonZero, set_steamNonZero,
+		set_EXT_levelValue, set_levelValue,
+		set_EXT_steamValue, set_steamValue,
+		set_EXT_pumpThroughput, set_pumpThroughput,
+		set_EXT_knownLow, set_knownLow,
+		set_EXT_knownHigh, set_knownHigh,
+		set_EXT_worstLow, set_worstLow,
+		set_EXT_worstHigh, set_worstHigh,
+		set_EXT_steamOutMin, set_steamOutMin,
+		set_EXT_steamOutMax, set_steamOutMax,
+		set_EXT_estimateLow, set_estimateLow,
+		set_EXT_estimateHigh, set_estimateHigh,
+		set_EXT_estimateKnown, set_estimateKnown,
+		set_EXT_plausibleLow, set_plausibleLow,
+		set_EXT_plausibleHigh, set_plausibleHigh,
+		set_EXT_plausibleKnown, set_plausibleKnown,
+		set_EXT_plausibleLowKnown, set_plausibleLowKnown,
+		set_EXT_previousSteam, set_previousSteam,
+		set_EXT_previousSteamValid, set_previousSteamValid,
+		set_EXT_levelReading, set_levelReading,
+		set_EXT_steamReading, set_steamReading,
+		set_EXT_levelEstimateLow, set_levelEstimateLow,
+		set_EXT_levelEstimateHigh, set_levelEstimateHigh,
+		set_EXT_plantWaiting, set_plantWaiting,
+		set_EXT_transmissionFailure, set_transmissionFailure,
+		set_EXT_steamNotZero, set_steamNotZero,
+		set_EXT_levelFailure, set_levelFailure,
+		set_EXT_readyAnnounced, set_readyAnnounced,
+		set_EXT_unitsReady, set_unitsReady,
+		set_EXT_steamFailure, set_steamFailure,
+		set_EXT_pumpFailure, set_pumpFailure,
+		set_EXT_pumpControlFailure, set_pumpControlFailure,
+		set_EXT_knownLevelHigh, set_knownLevelHigh,
+		set_EXT_knownLevelLow, set_knownLevelLow,
+		set_EXT_valveIsOpen, set_valveIsOpen,
+		set_EXT_worstCaseLevelLow, set_worstCaseLevelLow,
+		set_EXT_worstCaseLevelHigh, set_worstCaseLevelHigh
+	,	transmission,
+		mode,
+		programReady,
+		valve,
+		closePump,
+		openPump
+		|}
+	
+	channel clockReset, clockResetL, clockResetR 
+	
+	localClockResets = {||}
+	
+	
+	channel get_CLID_DEGRADED : core_clock_type 
+	channel get_CLID_RESCUE : core_clock_type 
+	channel get_CLID_NORMAL : core_clock_type 
+	channel get_CLID_INITIALIZATION : core_clock_type 
+	channel get_CLID_EMERGENCY_STOP : core_clock_type 
+	--channel increment__
+	
+	CLID_DEGRADED_clock_type(id__,
+			          const_SteamBoilerController_stopLimit,
+			          const_SteamBoilerController_normalN2,
+			          const_SteamBoilerController_normalN1,
+			          const_SteamBoilerController_limitM1,
+			          const_SteamBoilerController_limitM2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_RESCUE_clock_type(id__,
+			          const_SteamBoilerController_stopLimit,
+			          const_SteamBoilerController_normalN2,
+			          const_SteamBoilerController_normalN1,
+			          const_SteamBoilerController_limitM1,
+			          const_SteamBoilerController_limitM2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_NORMAL_clock_type(id__,
+			          const_SteamBoilerController_stopLimit,
+			          const_SteamBoilerController_normalN2,
+			          const_SteamBoilerController_normalN1,
+			          const_SteamBoilerController_limitM1,
+			          const_SteamBoilerController_limitM2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_INITIALIZATION_clock_type(id__,
+			          const_SteamBoilerController_stopLimit,
+			          const_SteamBoilerController_normalN2,
+			          const_SteamBoilerController_normalN1,
+			          const_SteamBoilerController_limitM1,
+			          const_SteamBoilerController_limitM2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_EMERGENCY_STOP_clock_type(id__,
+			          const_SteamBoilerController_stopLimit,
+			          const_SteamBoilerController_normalN2,
+			          const_SteamBoilerController_normalN1,
+			          const_SteamBoilerController_limitM1,
+			          const_SteamBoilerController_limitM2) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	
+
+		-- Nodes --
+		-- declaring all nodes
+		
+		----------------------------------------------------------------------
+		-- State: NORMAL
+		module NORMAL
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(mode.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(mode.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: INITIALIZATION
+		module INITIALIZATION
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: EMERGENCY_STOP
+		module EMERGENCY_STOP
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(mode.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(mode.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: DEGRADED
+		module DEGRADED
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(mode.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(mode.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: RESCUE
+		module RESCUE
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(mode.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(mode.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- Initial: i0
+		module i0
+		exports
+		
+			channel enter, interrupt
+			
+			Timed(OneStep) {
+				D__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = 
+					dbisim(let
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= share__choice(interrupt -> SKIP) ; Inactive
+					within
+						Inactive [| {terminate} |> SKIP)
+				
+				VS_O__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) = D__(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2)
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		-- END of Nodes --
+		
+		Timed(OneStep) {
+		-- Operation calls --
+		-- Only the undefined operations are declared here.
+		-- If the state machine is in isolation, all required operations will be undefined.
+		-- If it is in the context of a controller, the required operations not provided by the
+		-- controller will be declared here, and the defined operations will be defined in the
+		-- context of the Controller module, and therefore within scope of the state machine module.
+		
+		-- END of Operation calls --
+	
+		-- STM processes
+		STM(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+		( 
+			(
+				(
+					(IteratedStateful(id__,
+							    const_SteamBoilerController_stopLimit,
+							    const_SteamBoilerController_normalN2,
+							    const_SteamBoilerController_normalN1,
+							    const_SteamBoilerController_limitM1,
+							    const_SteamBoilerController_limitM2) \ {terminate} ; share__choice(terminate -> SKIP))
+				 	[[ share__ <- x__ | x__ <- {|set_EXT_waterLevel,set_EXT_steamRate,set_EXT_pumpRate,set_EXT_levelLowBound,set_EXT_levelHighBound,set_EXT_PUMPS,set_EXT_DT,set_EXT_consecutiveStops,set_EXT_boilerWaitingSeen,set_EXT_programReadySent,set_EXT_valveOpen,set_EXT_initializationOver,set_EXT_transmissionFailed,set_EXT_steamNonZero,set_EXT_levelValue,set_EXT_steamValue,set_EXT_pumpThroughput,set_EXT_knownLow,set_EXT_knownHigh,set_EXT_worstLow,set_EXT_worstHigh,set_EXT_steamOutMin,set_EXT_steamOutMax,set_EXT_estimateLow,set_EXT_estimateHigh,set_EXT_estimateKnown,set_EXT_plausibleLow,set_EXT_plausibleHigh,set_EXT_plausibleKnown,set_EXT_plausibleLowKnown,set_EXT_previousSteam,set_EXT_previousSteamValid,set_EXT_levelReading,set_EXT_steamReading,set_EXT_levelEstimateLow,set_EXT_levelEstimateHigh,set_EXT_plantWaiting,set_EXT_transmissionFailure,set_EXT_steamNotZero,set_EXT_levelFailure,set_EXT_readyAnnounced,set_EXT_unitsReady,set_EXT_steamFailure,set_EXT_pumpFailure,set_EXT_pumpControlFailure,set_EXT_knownLevelHigh,set_EXT_knownLevelLow,set_EXT_valveIsOpen,set_EXT_worstCaseLevelLow,set_EXT_worstCaseLevelHigh|} ]]
+				)
+			[| {share__} |]
+			SKIP
+			)
+			[| union(sharedVarSync,{terminate}) |]
+			dbisim(sharedVarMemory(id__,
+					    const_SteamBoilerController_stopLimit,
+					    const_SteamBoilerController_normalN2,
+					    const_SteamBoilerController_normalN1,
+					    const_SteamBoilerController_limitM1,
+					    const_SteamBoilerController_limitM2))
+		)\sharedVarHide
+		
+		STM_VS_O(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+		( 
+			(
+				(
+					(IteratedStateful_VS_O(id__,
+							    const_SteamBoilerController_stopLimit,
+							    const_SteamBoilerController_normalN2,
+							    const_SteamBoilerController_normalN1,
+							    const_SteamBoilerController_limitM1,
+							    const_SteamBoilerController_limitM2) \ {terminate} ; share__choice(terminate -> SKIP))
+				 	[[ share__ <- x__ | x__ <- {|set_EXT_waterLevel,set_EXT_steamRate,set_EXT_pumpRate,set_EXT_levelLowBound,set_EXT_levelHighBound,set_EXT_PUMPS,set_EXT_DT,set_EXT_consecutiveStops,set_EXT_boilerWaitingSeen,set_EXT_programReadySent,set_EXT_valveOpen,set_EXT_initializationOver,set_EXT_transmissionFailed,set_EXT_steamNonZero,set_EXT_levelValue,set_EXT_steamValue,set_EXT_pumpThroughput,set_EXT_knownLow,set_EXT_knownHigh,set_EXT_worstLow,set_EXT_worstHigh,set_EXT_steamOutMin,set_EXT_steamOutMax,set_EXT_estimateLow,set_EXT_estimateHigh,set_EXT_estimateKnown,set_EXT_plausibleLow,set_EXT_plausibleHigh,set_EXT_plausibleKnown,set_EXT_plausibleLowKnown,set_EXT_previousSteam,set_EXT_previousSteamValid,set_EXT_levelReading,set_EXT_steamReading,set_EXT_levelEstimateLow,set_EXT_levelEstimateHigh,set_EXT_plantWaiting,set_EXT_transmissionFailure,set_EXT_steamNotZero,set_EXT_levelFailure,set_EXT_readyAnnounced,set_EXT_unitsReady,set_EXT_steamFailure,set_EXT_pumpFailure,set_EXT_pumpControlFailure,set_EXT_knownLevelHigh,set_EXT_knownLevelLow,set_EXT_valveIsOpen,set_EXT_worstCaseLevelLow,set_EXT_worstCaseLevelHigh|} ]]
+				)
+			[| {share__} |]
+			SKIP
+			)
+			[| union(sharedVarSync,{terminate}) |]
+			dbisim(sharedVarMemory(id__,
+					    const_SteamBoilerController_stopLimit,
+					    const_SteamBoilerController_normalN2,
+					    const_SteamBoilerController_normalN1,
+					    const_SteamBoilerController_limitM1,
+					    const_SteamBoilerController_limitM2))
+		)\sharedVarHide
+		
+		-- Transitions
+		Transitions(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = ((let
+			Trans = share__choice(get_levelFailure?levelFailure -> get_worstCaseLevelHigh?worstCaseLevelHigh -> get_steamFailure?steamFailure -> get_pumpControlFailure?pumpControlFailure -> get_knownLevelLow?knownLevelLow -> get_readyAnnounced?readyAnnounced -> get_valveIsOpen?valveIsOpen -> get_transmissionFailure?transmissionFailure -> get_consecutiveStops?consecutiveStops -> get_plantWaiting?plantWaiting -> get_unitsReady?unitsReady -> get_worstCaseLevelLow?worstCaseLevelLow -> get_knownLevelHigh?knownLevelHigh -> get_pumpFailure?pumpFailure -> get_steamNotZero?steamNotZero -> TimeOut_1(
+				 (share__ -> SKIP
+				 [] dbisim((true)&(internal__!NID_i0 -> SKIP ;  ((SKIP ; INITIALIZATION::enter -> SKIP))))
+				 [] dbisim(((consecutiveStops>=const_SteamBoilerController_stopLimit))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and plantWaiting) and (((transmissionFailure or steamNotZero) or levelFailure))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and (not ((plantWaiting)))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and readyAnnounced) and unitsReady) and (not ((((steamFailure or pumpFailure) or pumpControlFailure))))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+				 [] dbisim((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and readyAnnounced) and unitsReady) and (((steamFailure or pumpFailure) or pumpControlFailure))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+				 [] dbisim(((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and readyAnnounced) and (not ((unitsReady)))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(programReady.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim(((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and (not ((readyAnnounced)))) and (knownLevelHigh>const_SteamBoilerController_normalN2)) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))) and (not ((valveIsOpen)))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(valve.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim(((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and (not ((readyAnnounced)))) and (knownLevelHigh>const_SteamBoilerController_normalN2)) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))) and valveIsOpen))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and (not ((readyAnnounced)))) and (knownLevelLow<const_SteamBoilerController_normalN1)) and valveIsOpen))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(valve.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and (not ((readyAnnounced)))) and (knownLevelLow<const_SteamBoilerController_normalN1)) and (not ((valveIsOpen)))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim(((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and (not ((readyAnnounced)))) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))) and (not ((((knownLevelHigh>const_SteamBoilerController_normalN2) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))))))) and valveIsOpen))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(valve.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP));true&(share__choice(programReady.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim(((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((plantWaiting and (((transmissionFailure or steamNotZero) or levelFailure))))))) and plantWaiting) and (not ((readyAnnounced)))) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))) and (not ((((knownLevelHigh>const_SteamBoilerController_normalN2) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))))))) and (not ((valveIsOpen)))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP));true&(share__choice(programReady.out -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; INITIALIZATION::enter -> SKIP)))
+				 [] dbisim(((consecutiveStops>=const_SteamBoilerController_stopLimit))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and ((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and levelFailure))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+				 [] dbisim((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and (not ((levelFailure)))) and (((steamFailure or pumpFailure) or pumpControlFailure))))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+				 [] dbisim(((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and (not ((levelFailure)))) and (not ((((steamFailure or pumpFailure) or pumpControlFailure))))) and (knownLevelLow<const_SteamBoilerController_normalN1)))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; NORMAL::enter -> SKIP)))
+				 [] dbisim((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and (not ((levelFailure)))) and (not ((((steamFailure or pumpFailure) or pumpControlFailure))))) and (knownLevelHigh>const_SteamBoilerController_normalN2)) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; NORMAL::enter -> SKIP)))
+				 [] dbisim((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and (not ((levelFailure)))) and (not ((((steamFailure or pumpFailure) or pumpControlFailure))))) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))) and (not ((((knownLevelHigh>const_SteamBoilerController_normalN2) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))))))))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+				 [] dbisim(((consecutiveStops>=const_SteamBoilerController_stopLimit))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and ((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim(((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and levelFailure))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+				 [] dbisim((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and (not ((levelFailure)))) and (not ((((steamFailure or pumpFailure) or pumpControlFailure))))))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+				 [] dbisim(((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and (not ((levelFailure)))) and (((steamFailure or pumpFailure) or pumpControlFailure))) and (knownLevelLow<const_SteamBoilerController_normalN1)))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; DEGRADED::enter -> SKIP)))
+				 [] dbisim((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and (not ((levelFailure)))) and (((steamFailure or pumpFailure) or pumpControlFailure))) and (knownLevelHigh>const_SteamBoilerController_normalN2)) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; DEGRADED::enter -> SKIP)))
+				 [] dbisim((((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or (levelFailure and ((steamFailure or pumpControlFailure)))))))) and (not ((levelFailure)))) and (((steamFailure or pumpFailure) or pumpControlFailure))) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))) and (not ((((knownLevelHigh>const_SteamBoilerController_normalN2) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))))))))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+				 [] dbisim(((consecutiveStops>=const_SteamBoilerController_stopLimit))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or steamFailure) or pumpControlFailure))))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+				 [] dbisim((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not ((((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or steamFailure) or pumpControlFailure))))) and (not ((levelFailure)))) and (not ((((steamFailure or pumpFailure) or pumpControlFailure))))))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+				 [] dbisim((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not ((((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or steamFailure) or pumpControlFailure))))) and (not ((levelFailure)))) and (((steamFailure or pumpFailure) or pumpControlFailure))))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+				 [] dbisim((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not ((((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or steamFailure) or pumpControlFailure))))) and levelFailure) and (knownLevelLow<const_SteamBoilerController_normalN1)))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; RESCUE::enter -> SKIP)))
+				 [] dbisim(((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not ((((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or steamFailure) or pumpControlFailure))))) and levelFailure) and (knownLevelHigh>const_SteamBoilerController_normalN2)) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(mode.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP));share__choice(share__choice(get_levelReading?levelReading -> true & (share__choice(set_waterLevel!levelReading -> SKIP))));share__choice(share__choice(get_steamReading?steamReading -> true & (share__choice(set_steamRate!steamReading -> SKIP))));share__choice(share__choice(get_pumpThroughput?pumpThroughput -> true & (share__choice(set_pumpRate!pumpThroughput -> SKIP))));share__choice(share__choice(get_levelEstimateLow?levelEstimateLow -> true & (share__choice(set_levelLowBound!levelEstimateLow -> SKIP))));share__choice(share__choice(get_levelEstimateHigh?levelEstimateHigh -> true & (share__choice(set_levelHighBound!levelEstimateHigh -> SKIP)))) ; RESCUE::enter -> SKIP)))
+				 [] dbisim(((((((not (((consecutiveStops>=const_SteamBoilerController_stopLimit)))) and (not ((((((transmissionFailure or (worstCaseLevelLow<=const_SteamBoilerController_limitM1)) or (worstCaseLevelHigh>=const_SteamBoilerController_limitM2)) or steamFailure) or pumpControlFailure))))) and levelFailure) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))) and (not ((((knownLevelHigh>const_SteamBoilerController_normalN2) and (not (((knownLevelLow<const_SteamBoilerController_normalN1))))))))))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+				 []
+				 (interrupt -> share__choice(exit -> SKIP) ; share__choice(exited -> terminate -> SKIP))
+				 []
+				 terminate -> SKIP
+				 )
+			,SKIP);Trans
+			)
+		within
+			Trans [|{terminate}|> SKIP
+		)
+		)
+		
+		-- Stateful
+		-- RULE: Stateful(stm:StateMachineBody) : CSPProcess
+		
+		-- Named process definitions
+		MachineBody(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = 
+			dbisim((
+			let
+				finalNodesEntered = {||}
+			within
+				(dbisim((dbisim((let
+					-- IMPLEMENTATION NOTE:
+					-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+					-- modules for defining the semantics of each node.
+					enterSS = {|
+					NORMAL::enter,
+					INITIALIZATION::enter,
+					EMERGENCY_STOP::enter,
+					DEGRADED::enter,
+					RESCUE::enter,
+					i0::enter
+					|}
+					hideSet = union(enterSS,{|exit,exited,internal__|})
+				within 
+					((let
+						-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+						-- because CSPM modules are used for the semantics of Node.
+						flowevts = union(enterSS,{|exit,exited,interrupt|})
+						transSync = {|internal__.NID_i0,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in|}
+					within
+						((
+						 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+						   NORMAL::D__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   INITIALIZATION::D__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   EMERGENCY_STOP::D__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   DEGRADED::D__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   RESCUE::D__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   i0::D__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   )
+						   )
+						   )
+						   )
+						   )
+						 )
+						 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in|}]]
+						 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in|}]]
+						 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+						 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in|}]]
+						 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in|}]]
+						 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+						 )
+						  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+						  [[set_levelFailure <- setL_levelFailure,set_worstCaseLevelHigh <- setL_worstCaseLevelHigh,set_steamFailure <- setL_steamFailure,set_pumpControlFailure <- setL_pumpControlFailure,set_knownLevelLow <- setL_knownLevelLow,set_readyAnnounced <- setL_readyAnnounced,set_valveIsOpen <- setL_valveIsOpen,set_transmissionFailure <- setL_transmissionFailure,set_consecutiveStops <- setL_consecutiveStops,set_plantWaiting <- setL_plantWaiting,set_unitsReady <- setL_unitsReady,set_worstCaseLevelLow <- setL_worstCaseLevelLow,set_knownLevelHigh <- setL_knownLevelHigh,set_pumpFailure <- setL_pumpFailure,set_steamNotZero <- setL_steamNotZero]]
+						 )
+						 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+						 			,setL_levelFailure
+						 			,setL_worstCaseLevelHigh
+						 			,setL_steamFailure
+						 			,setL_pumpControlFailure
+						 			,setL_knownLevelLow
+						 			,setL_readyAnnounced
+						 			,setL_valveIsOpen
+						 			,setL_transmissionFailure
+						 			,setL_consecutiveStops
+						 			,setL_plantWaiting
+						 			,setL_unitsReady
+						 			,setL_worstCaseLevelLow
+						 			,setL_knownLevelHigh
+						 			,setL_pumpFailure
+						 			,setL_steamNotZero
+						|}) |]
+						 ((i0::enter -> Transitions(id__,
+						 		    const_SteamBoilerController_stopLimit,
+						 		    const_SteamBoilerController_normalN2,
+						 		    const_SteamBoilerController_normalN1,
+						 		    const_SteamBoilerController_limitM1,
+						 		    const_SteamBoilerController_limitM2))
+						  [[ share__ <- x__ | x__ <- {| share__,setL_levelFailure,setL_worstCaseLevelHigh,setL_steamFailure,setL_pumpControlFailure,setL_knownLevelLow,setL_readyAnnounced,setL_valveIsOpen,setL_transmissionFailure,setL_consecutiveStops,setL_plantWaiting,setL_unitsReady,setL_worstCaseLevelLow,setL_knownLevelHigh,setL_pumpFailure,setL_steamNotZero |} ]]
+						 )
+						)[[setL_levelFailure <- set_levelFailure,setL_worstCaseLevelHigh <- set_worstCaseLevelHigh,setL_steamFailure <- set_steamFailure,setL_pumpControlFailure <- set_pumpControlFailure,setL_knownLevelLow <- set_knownLevelLow,setL_readyAnnounced <- set_readyAnnounced,setL_valveIsOpen <- set_valveIsOpen,setL_transmissionFailure <- set_transmissionFailure,setL_consecutiveStops <- set_consecutiveStops,setL_plantWaiting <- set_plantWaiting,setL_unitsReady <- set_unitsReady,setL_worstCaseLevelLow <- set_worstCaseLevelLow,setL_knownLevelHigh <- set_knownLevelHigh,setL_pumpFailure <- set_pumpFailure,setL_steamNotZero <- set_steamNotZero]]
+						)
+					)
+					 \ hideSet)
+					[[
+						transmission__.x____ <- transmission,
+						mode__.x____ <- mode,
+						programReady__.x____ <- programReady,
+						valve__.x____ <- valve,
+						closePump__.x____ <- closePump,
+						openPump__.x____ <- openPump
+						| x____ <- NIDS
+					]]
+				)
+				)
+				 [| union(stateClockSync,{terminate}) |]
+				 StateClocks(id__,
+				 		          const_SteamBoilerController_stopLimit,
+				 		          const_SteamBoilerController_normalN2,
+				 		          const_SteamBoilerController_normalN1,
+				 		          const_SteamBoilerController_limitM1,
+				 		          const_SteamBoilerController_limitM2)
+				)\diff(stateClockSync,enteredSS))
+				 [| {| interrupt |} |] SKIP)
+			)
+			)
+		
+		Behaviour(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = 
+			dbisim((let
+				stateClockSync = {|get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered|}
+			 within
+				(MachineBody(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)) \ union(stateClockSync,enteredSS)
+			)
+			)
+		
+		IteratedBehaviour(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = 
+			dbisim((let
+				stateClockSync = {|get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered|}
+			 within
+				(dbisim(
+					sbisim(
+						dbisim(
+							sbisim(
+								dbisim(
+									sbisim(
+										dbisim(
+											sbisim(
+												dbisim(
+													sbisim(
+														MachineBody(id__,
+																    const_SteamBoilerController_stopLimit,
+																    const_SteamBoilerController_normalN2,
+																    const_SteamBoilerController_normalN1,
+																    const_SteamBoilerController_limitM1,
+																    const_SteamBoilerController_limitM2)
+														[| {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,terminate|} |]
+														dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+																          const_SteamBoilerController_stopLimit,
+																          const_SteamBoilerController_normalN2,
+																          const_SteamBoilerController_normalN1,
+																          const_SteamBoilerController_limitM1,
+																          const_SteamBoilerController_limitM2))
+													)\{|get_CLID_EMERGENCY_STOP|}
+												)
+												[| {|get_CLID_INITIALIZATION,INITIALIZATION::entered,terminate|} |]
+												dbisim(Clock_CLID_INITIALIZATION(id__,0,
+														          const_SteamBoilerController_stopLimit,
+														          const_SteamBoilerController_normalN2,
+														          const_SteamBoilerController_normalN1,
+														          const_SteamBoilerController_limitM1,
+														          const_SteamBoilerController_limitM2))
+											)\{|get_CLID_INITIALIZATION|}
+										)
+										[| {|get_CLID_NORMAL,NORMAL::entered,terminate|} |]
+										dbisim(Clock_CLID_NORMAL(id__,0,
+												          const_SteamBoilerController_stopLimit,
+												          const_SteamBoilerController_normalN2,
+												          const_SteamBoilerController_normalN1,
+												          const_SteamBoilerController_limitM1,
+												          const_SteamBoilerController_limitM2))
+									)\{|get_CLID_NORMAL|}
+								)
+								[| {|get_CLID_RESCUE,RESCUE::entered,terminate|} |]
+								dbisim(Clock_CLID_RESCUE(id__,0,
+										          const_SteamBoilerController_stopLimit,
+										          const_SteamBoilerController_normalN2,
+										          const_SteamBoilerController_normalN1,
+										          const_SteamBoilerController_limitM1,
+										          const_SteamBoilerController_limitM2))
+							)\{|get_CLID_RESCUE|}
+						)
+						[| {|get_CLID_DEGRADED,DEGRADED::entered,terminate|} |]
+						dbisim(Clock_CLID_DEGRADED(id__,0,
+								          const_SteamBoilerController_stopLimit,
+								          const_SteamBoilerController_normalN2,
+								          const_SteamBoilerController_normalN1,
+								          const_SteamBoilerController_limitM1,
+								          const_SteamBoilerController_limitM2))
+					)\{|get_CLID_DEGRADED|}
+				)
+				) \ union(stateClockSync,enteredSS)
+			)
+			)
+		
+		Stateful(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = 
+			((let
+				getsetLocalChannels = {||}
+				clockSync = {||}
+			within
+				(Behaviour(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) 
+				 [| union(union(getsetLocalChannels,clockSync),{terminate}) |] 
+				 (varMemory(id__,
+				 		    const_SteamBoilerController_stopLimit,
+				 		    const_SteamBoilerController_normalN2,
+				 		    const_SteamBoilerController_normalN1,
+				 		    const_SteamBoilerController_limitM1,
+				 		    const_SteamBoilerController_limitM2) [| {terminate} |] Clocks(id__,
+				 		          const_SteamBoilerController_stopLimit,
+				 		          const_SteamBoilerController_normalN2,
+				 		          const_SteamBoilerController_normalN1,
+				 		          const_SteamBoilerController_limitM1,
+				 		          const_SteamBoilerController_limitM2))
+			 	)\union(getsetLocalChannels,clockSync)
+			)
+			)
+		
+		IteratedStateful(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) =
+			(IteratedBehaviour(id__,
+					    const_SteamBoilerController_stopLimit,
+					    const_SteamBoilerController_normalN2,
+					    const_SteamBoilerController_normalN1,
+					    const_SteamBoilerController_limitM1,
+					    const_SteamBoilerController_limitM2))
+		
+		-- Visible counterparts
+		MachineBody_VS_O(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = 
+			dbisim((
+			let
+				finalNodesEntered = {||}
+			within
+				(dbisim((dbisim((let
+					-- IMPLEMENTATION NOTE:
+					-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+					-- modules for defining the semantics of each node.
+					enterSS = {|
+					NORMAL::enter,
+					INITIALIZATION::enter,
+					EMERGENCY_STOP::enter,
+					DEGRADED::enter,
+					RESCUE::enter,
+					i0::enter
+					|}
+					hideSet = union(enterSS,{|exit,exited,internal__|})
+				within 
+					((let
+						-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+						-- because CSPM modules are used for the semantics of Node.
+						flowevts = union(enterSS,{|exit,exited,interrupt|})
+						transSync = {|internal__.NID_i0,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in|}
+					within
+						((
+						 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+						   NORMAL::VS_O__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   INITIALIZATION::VS_O__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   EMERGENCY_STOP::VS_O__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   DEGRADED::VS_O__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   RESCUE::VS_O__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   [| { share__, terminate } |] (
+						   i0::VS_O__(id__,
+						   		    const_SteamBoilerController_stopLimit,
+						   		    const_SteamBoilerController_normalN2,
+						   		    const_SteamBoilerController_normalN1,
+						   		    const_SteamBoilerController_limitM1,
+						   		    const_SteamBoilerController_limitM2)
+						   )
+						   )
+						   )
+						   )
+						   )
+						 )
+						 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in|}]]
+						 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in|}]]
+						 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+						 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in|}]]
+						 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in|}]]
+						 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+						 )
+						  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+						  [[set_levelFailure <- setL_levelFailure,set_worstCaseLevelHigh <- setL_worstCaseLevelHigh,set_steamFailure <- setL_steamFailure,set_pumpControlFailure <- setL_pumpControlFailure,set_knownLevelLow <- setL_knownLevelLow,set_readyAnnounced <- setL_readyAnnounced,set_valveIsOpen <- setL_valveIsOpen,set_transmissionFailure <- setL_transmissionFailure,set_consecutiveStops <- setL_consecutiveStops,set_plantWaiting <- setL_plantWaiting,set_unitsReady <- setL_unitsReady,set_worstCaseLevelLow <- setL_worstCaseLevelLow,set_knownLevelHigh <- setL_knownLevelHigh,set_pumpFailure <- setL_pumpFailure,set_steamNotZero <- setL_steamNotZero]]
+						 )
+						 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+						 			,setL_levelFailure
+						 			,setL_worstCaseLevelHigh
+						 			,setL_steamFailure
+						 			,setL_pumpControlFailure
+						 			,setL_knownLevelLow
+						 			,setL_readyAnnounced
+						 			,setL_valveIsOpen
+						 			,setL_transmissionFailure
+						 			,setL_consecutiveStops
+						 			,setL_plantWaiting
+						 			,setL_unitsReady
+						 			,setL_worstCaseLevelLow
+						 			,setL_knownLevelHigh
+						 			,setL_pumpFailure
+						 			,setL_steamNotZero
+						|}) |]
+						 ((i0::enter -> Transitions(id__,
+						 		    const_SteamBoilerController_stopLimit,
+						 		    const_SteamBoilerController_normalN2,
+						 		    const_SteamBoilerController_normalN1,
+						 		    const_SteamBoilerController_limitM1,
+						 		    const_SteamBoilerController_limitM2))
+						  [[ share__ <- x__ | x__ <- {| share__,setL_levelFailure,setL_worstCaseLevelHigh,setL_steamFailure,setL_pumpControlFailure,setL_knownLevelLow,setL_readyAnnounced,setL_valveIsOpen,setL_transmissionFailure,setL_consecutiveStops,setL_plantWaiting,setL_unitsReady,setL_worstCaseLevelLow,setL_knownLevelHigh,setL_pumpFailure,setL_steamNotZero |} ]]
+						 )
+						)[[setL_levelFailure <- set_levelFailure,setL_worstCaseLevelHigh <- set_worstCaseLevelHigh,setL_steamFailure <- set_steamFailure,setL_pumpControlFailure <- set_pumpControlFailure,setL_knownLevelLow <- set_knownLevelLow,setL_readyAnnounced <- set_readyAnnounced,setL_valveIsOpen <- set_valveIsOpen,setL_transmissionFailure <- set_transmissionFailure,setL_consecutiveStops <- set_consecutiveStops,setL_plantWaiting <- set_plantWaiting,setL_unitsReady <- set_unitsReady,setL_worstCaseLevelLow <- set_worstCaseLevelLow,setL_knownLevelHigh <- set_knownLevelHigh,setL_pumpFailure <- set_pumpFailure,setL_steamNotZero <- set_steamNotZero]]
+						)
+					)
+					 \ hideSet)
+					[[
+						transmission__.x____ <- transmission,
+						mode__.x____ <- mode,
+						programReady__.x____ <- programReady,
+						valve__.x____ <- valve,
+						closePump__.x____ <- closePump,
+						openPump__.x____ <- openPump
+						| x____ <- NIDS
+					]]
+				)
+				)
+				 [| union(stateClockSync,{terminate}) |]
+				 StateClocks(id__,
+				 		          const_SteamBoilerController_stopLimit,
+				 		          const_SteamBoilerController_normalN2,
+				 		          const_SteamBoilerController_normalN1,
+				 		          const_SteamBoilerController_limitM1,
+				 		          const_SteamBoilerController_limitM2)
+				)\diff(stateClockSync,enteredSS))
+				 [| {| interrupt |} |] SKIP)
+			)
+			)
+		
+		Behaviour_VS_O(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = 
+			dbisim((let
+				stateClockSync = {|get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered|}
+			 within
+				(MachineBody_VS_O(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)) \ diff(union(stateClockSync,enteredSS),enteredSS)
+			)
+			)
+		
+		IteratedBehaviour_VS_O(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = 
+			dbisim((let
+				stateClockSync = {|get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered|}
+			 within
+				(dbisim(
+					sbisim(
+						dbisim(
+							sbisim(
+								dbisim(
+									sbisim(
+										dbisim(
+											sbisim(
+												dbisim(
+													sbisim(
+														MachineBody_VS_O(id__,
+																    const_SteamBoilerController_stopLimit,
+																    const_SteamBoilerController_normalN2,
+																    const_SteamBoilerController_normalN1,
+																    const_SteamBoilerController_limitM1,
+																    const_SteamBoilerController_limitM2)
+														[| {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,terminate|} |]
+														dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+																          const_SteamBoilerController_stopLimit,
+																          const_SteamBoilerController_normalN2,
+																          const_SteamBoilerController_normalN1,
+																          const_SteamBoilerController_limitM1,
+																          const_SteamBoilerController_limitM2))
+													)\{|get_CLID_EMERGENCY_STOP|}
+												)
+												[| {|get_CLID_INITIALIZATION,INITIALIZATION::entered,terminate|} |]
+												dbisim(Clock_CLID_INITIALIZATION(id__,0,
+														          const_SteamBoilerController_stopLimit,
+														          const_SteamBoilerController_normalN2,
+														          const_SteamBoilerController_normalN1,
+														          const_SteamBoilerController_limitM1,
+														          const_SteamBoilerController_limitM2))
+											)\{|get_CLID_INITIALIZATION|}
+										)
+										[| {|get_CLID_NORMAL,NORMAL::entered,terminate|} |]
+										dbisim(Clock_CLID_NORMAL(id__,0,
+												          const_SteamBoilerController_stopLimit,
+												          const_SteamBoilerController_normalN2,
+												          const_SteamBoilerController_normalN1,
+												          const_SteamBoilerController_limitM1,
+												          const_SteamBoilerController_limitM2))
+									)\{|get_CLID_NORMAL|}
+								)
+								[| {|get_CLID_RESCUE,RESCUE::entered,terminate|} |]
+								dbisim(Clock_CLID_RESCUE(id__,0,
+										          const_SteamBoilerController_stopLimit,
+										          const_SteamBoilerController_normalN2,
+										          const_SteamBoilerController_normalN1,
+										          const_SteamBoilerController_limitM1,
+										          const_SteamBoilerController_limitM2))
+							)\{|get_CLID_RESCUE|}
+						)
+						[| {|get_CLID_DEGRADED,DEGRADED::entered,terminate|} |]
+						dbisim(Clock_CLID_DEGRADED(id__,0,
+								          const_SteamBoilerController_stopLimit,
+								          const_SteamBoilerController_normalN2,
+								          const_SteamBoilerController_normalN1,
+								          const_SteamBoilerController_limitM1,
+								          const_SteamBoilerController_limitM2))
+					)\{|get_CLID_DEGRADED|}
+				)
+				) \ diff(union(stateClockSync,enteredSS),enteredSS)
+			)
+			)
+		
+		Stateful_VS_O(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = 
+			dbisim((let
+				getsetLocalChannels = {||}
+				clockSync = {||}
+			within
+				(Behaviour_VS_O(id__,
+						    const_SteamBoilerController_stopLimit,
+						    const_SteamBoilerController_normalN2,
+						    const_SteamBoilerController_normalN1,
+						    const_SteamBoilerController_limitM1,
+						    const_SteamBoilerController_limitM2) 
+				 [| union(union(getsetLocalChannels,clockSync),{terminate}) |] 
+				 (varMemory(id__,
+				 		    const_SteamBoilerController_stopLimit,
+				 		    const_SteamBoilerController_normalN2,
+				 		    const_SteamBoilerController_normalN1,
+				 		    const_SteamBoilerController_limitM1,
+				 		    const_SteamBoilerController_limitM2) [| {terminate} |] Clocks(id__,
+				 		          const_SteamBoilerController_stopLimit,
+				 		          const_SteamBoilerController_normalN2,
+				 		          const_SteamBoilerController_normalN1,
+				 		          const_SteamBoilerController_limitM1,
+				 		          const_SteamBoilerController_limitM2))
+			 	)\union(getsetLocalChannels,clockSync)
+			)
+			)
+		
+		IteratedStateful_VS_O(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) =
+			(IteratedBehaviour_VS_O(id__,
+					    const_SteamBoilerController_stopLimit,
+					    const_SteamBoilerController_normalN2,
+					    const_SteamBoilerController_normalN1,
+					    const_SteamBoilerController_limitM1,
+					    const_SteamBoilerController_limitM2))
+		
+		-- END
+		
+		-- Memory
+		-- Memory variables
+		
+		-- varMemory process
+		varMemory(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = terminate -> SKIP
+		
+		getsetLocalChannels = {||}
+		
+		-- Definition of the behaviour of state machines (default, optimised, visible, visible and optimised)
+		FVS__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = STM_VS_O(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) \ localClockResets
+		D__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = timed_priority(STM(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) \ union(internal_events,localClockResets))
+		O__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = dbisim(D__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2))
+		VS__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = FVS__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2)
+		VS_O__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = dbisim(FVS__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2))
+		HEXT__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = O__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) [|shared_variable_events|] SKIP
+		FVS_C__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = dbisim(timed_priority(STM(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) \ internal_events))
+		HUP__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = timed_priority(O__(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) [|{share__}|] SKIP)
+		
+		-- Clocks
+		
+		Clocks(id__,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2) = terminate -> SKIP
+		
+		clockSync = {||}
+		
+		Clock_CLID_DEGRADED(id__,x__,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2) = 
+			TimeOut_1(
+				DEGRADED::entered -> Clock_CLID_DEGRADED(id__,0,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				get_CLID_DEGRADED!x__ -> Clock_CLID_DEGRADED(id__,x__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				terminate -> SKIP,Clock_CLID_DEGRADED(id__,clock_type_plus(x__,1,CLID_DEGRADED_clock_type(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)),
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2))
+		Clock_CLID_RESCUE(id__,x__,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2) = 
+			TimeOut_1(
+				RESCUE::entered -> Clock_CLID_RESCUE(id__,0,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				get_CLID_RESCUE!x__ -> Clock_CLID_RESCUE(id__,x__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				terminate -> SKIP,Clock_CLID_RESCUE(id__,clock_type_plus(x__,1,CLID_RESCUE_clock_type(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)),
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2))
+		Clock_CLID_NORMAL(id__,x__,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2) = 
+			TimeOut_1(
+				NORMAL::entered -> Clock_CLID_NORMAL(id__,0,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				get_CLID_NORMAL!x__ -> Clock_CLID_NORMAL(id__,x__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				terminate -> SKIP,Clock_CLID_NORMAL(id__,clock_type_plus(x__,1,CLID_NORMAL_clock_type(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)),
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2))
+		Clock_CLID_INITIALIZATION(id__,x__,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2) = 
+			TimeOut_1(
+				INITIALIZATION::entered -> Clock_CLID_INITIALIZATION(id__,0,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				get_CLID_INITIALIZATION!x__ -> Clock_CLID_INITIALIZATION(id__,x__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				terminate -> SKIP,Clock_CLID_INITIALIZATION(id__,clock_type_plus(x__,1,CLID_INITIALIZATION_clock_type(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)),
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2))
+		Clock_CLID_EMERGENCY_STOP(id__,x__,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2) = 
+			TimeOut_1(
+				EMERGENCY_STOP::entered -> Clock_CLID_EMERGENCY_STOP(id__,0,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				get_CLID_EMERGENCY_STOP!x__ -> Clock_CLID_EMERGENCY_STOP(id__,x__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)
+				[]
+				terminate -> SKIP,Clock_CLID_EMERGENCY_STOP(id__,clock_type_plus(x__,1,CLID_EMERGENCY_STOP_clock_type(id__,
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2)),
+						          const_SteamBoilerController_stopLimit,
+						          const_SteamBoilerController_normalN2,
+						          const_SteamBoilerController_normalN1,
+						          const_SteamBoilerController_limitM1,
+						          const_SteamBoilerController_limitM2))
+		
+		StateClocks(id__,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2) = dbisim(Clock_CLID_DEGRADED(id__,0,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_RESCUE(id__,0,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_NORMAL(id__,0,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_INITIALIZATION(id__,0,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_EMERGENCY_STOP(id__,0,
+				          const_SteamBoilerController_stopLimit,
+				          const_SteamBoilerController_normalN2,
+				          const_SteamBoilerController_normalN1,
+				          const_SteamBoilerController_limitM1,
+				          const_SteamBoilerController_limitM2))
+		)
+		)
+		)
+		)
+		
+		stateClockSync = {|get_CLID_DEGRADED,DEGRADED::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_NORMAL,NORMAL::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered|}
+		
+		-- Shared memory
+		-- Shared memory variables
+		Memory_waterLevel(waterLevel) =
+			get_waterLevel!waterLevel -> Memory_waterLevel(waterLevel)
+			[]
+			set_waterLevel?x__ -> Memory_waterLevel(x__)
+			[]
+			set_EXT_waterLevel?x__ -> Memory_waterLevel(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamRate(steamRate) =
+			get_steamRate!steamRate -> Memory_steamRate(steamRate)
+			[]
+			set_steamRate?x__ -> Memory_steamRate(x__)
+			[]
+			set_EXT_steamRate?x__ -> Memory_steamRate(x__)
+			[]
+			terminate -> SKIP
+		Memory_pumpRate(pumpRate) =
+			get_pumpRate!pumpRate -> Memory_pumpRate(pumpRate)
+			[]
+			set_pumpRate?x__ -> Memory_pumpRate(x__)
+			[]
+			set_EXT_pumpRate?x__ -> Memory_pumpRate(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelLowBound(levelLowBound) =
+			get_levelLowBound!levelLowBound -> Memory_levelLowBound(levelLowBound)
+			[]
+			set_levelLowBound?x__ -> Memory_levelLowBound(x__)
+			[]
+			set_EXT_levelLowBound?x__ -> Memory_levelLowBound(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelHighBound(levelHighBound) =
+			get_levelHighBound!levelHighBound -> Memory_levelHighBound(levelHighBound)
+			[]
+			set_levelHighBound?x__ -> Memory_levelHighBound(x__)
+			[]
+			set_EXT_levelHighBound?x__ -> Memory_levelHighBound(x__)
+			[]
+			terminate -> SKIP
+		Memory_PUMPS(PUMPS) =
+			get_PUMPS!PUMPS -> Memory_PUMPS(PUMPS)
+			[]
+			set_PUMPS?x__ -> Memory_PUMPS(x__)
+			[]
+			set_EXT_PUMPS?x__ -> Memory_PUMPS(x__)
+			[]
+			terminate -> SKIP
+		Memory_DT(DT) =
+			get_DT!DT -> Memory_DT(DT)
+			[]
+			set_DT?x__ -> Memory_DT(x__)
+			[]
+			set_EXT_DT?x__ -> Memory_DT(x__)
+			[]
+			terminate -> SKIP
+		Memory_consecutiveStops(consecutiveStops) =
+			get_consecutiveStops!consecutiveStops -> Memory_consecutiveStops(consecutiveStops)
+			[]
+			set_consecutiveStops?x__ -> Memory_consecutiveStops(x__)
+			[]
+			set_EXT_consecutiveStops?x__ -> Memory_consecutiveStops(x__)
+			[]
+			terminate -> SKIP
+		Memory_boilerWaitingSeen(boilerWaitingSeen) =
+			get_boilerWaitingSeen!boilerWaitingSeen -> Memory_boilerWaitingSeen(boilerWaitingSeen)
+			[]
+			set_boilerWaitingSeen?x__ -> Memory_boilerWaitingSeen(x__)
+			[]
+			set_EXT_boilerWaitingSeen?x__ -> Memory_boilerWaitingSeen(x__)
+			[]
+			terminate -> SKIP
+		Memory_programReadySent(programReadySent) =
+			get_programReadySent!programReadySent -> Memory_programReadySent(programReadySent)
+			[]
+			set_programReadySent?x__ -> Memory_programReadySent(x__)
+			[]
+			set_EXT_programReadySent?x__ -> Memory_programReadySent(x__)
+			[]
+			terminate -> SKIP
+		Memory_valveOpen(valveOpen) =
+			get_valveOpen!valveOpen -> Memory_valveOpen(valveOpen)
+			[]
+			set_valveOpen?x__ -> Memory_valveOpen(x__)
+			[]
+			set_EXT_valveOpen?x__ -> Memory_valveOpen(x__)
+			[]
+			terminate -> SKIP
+		Memory_initializationOver(initializationOver) =
+			get_initializationOver!initializationOver -> Memory_initializationOver(initializationOver)
+			[]
+			set_initializationOver?x__ -> Memory_initializationOver(x__)
+			[]
+			set_EXT_initializationOver?x__ -> Memory_initializationOver(x__)
+			[]
+			terminate -> SKIP
+		Memory_transmissionFailed(transmissionFailed) =
+			get_transmissionFailed!transmissionFailed -> Memory_transmissionFailed(transmissionFailed)
+			[]
+			set_transmissionFailed?x__ -> Memory_transmissionFailed(x__)
+			[]
+			set_EXT_transmissionFailed?x__ -> Memory_transmissionFailed(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamNonZero(steamNonZero) =
+			get_steamNonZero!steamNonZero -> Memory_steamNonZero(steamNonZero)
+			[]
+			set_steamNonZero?x__ -> Memory_steamNonZero(x__)
+			[]
+			set_EXT_steamNonZero?x__ -> Memory_steamNonZero(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelValue(levelValue) =
+			get_levelValue!levelValue -> Memory_levelValue(levelValue)
+			[]
+			set_levelValue?x__ -> Memory_levelValue(x__)
+			[]
+			set_EXT_levelValue?x__ -> Memory_levelValue(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamValue(steamValue) =
+			get_steamValue!steamValue -> Memory_steamValue(steamValue)
+			[]
+			set_steamValue?x__ -> Memory_steamValue(x__)
+			[]
+			set_EXT_steamValue?x__ -> Memory_steamValue(x__)
+			[]
+			terminate -> SKIP
+		Memory_pumpThroughput(pumpThroughput) =
+			get_pumpThroughput!pumpThroughput -> Memory_pumpThroughput(pumpThroughput)
+			[]
+			set_pumpThroughput?x__ -> Memory_pumpThroughput(x__)
+			[]
+			set_EXT_pumpThroughput?x__ -> Memory_pumpThroughput(x__)
+			[]
+			terminate -> SKIP
+		Memory_knownLow(knownLow) =
+			get_knownLow!knownLow -> Memory_knownLow(knownLow)
+			[]
+			set_knownLow?x__ -> Memory_knownLow(x__)
+			[]
+			set_EXT_knownLow?x__ -> Memory_knownLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_knownHigh(knownHigh) =
+			get_knownHigh!knownHigh -> Memory_knownHigh(knownHigh)
+			[]
+			set_knownHigh?x__ -> Memory_knownHigh(x__)
+			[]
+			set_EXT_knownHigh?x__ -> Memory_knownHigh(x__)
+			[]
+			terminate -> SKIP
+		Memory_worstLow(worstLow) =
+			get_worstLow!worstLow -> Memory_worstLow(worstLow)
+			[]
+			set_worstLow?x__ -> Memory_worstLow(x__)
+			[]
+			set_EXT_worstLow?x__ -> Memory_worstLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_worstHigh(worstHigh) =
+			get_worstHigh!worstHigh -> Memory_worstHigh(worstHigh)
+			[]
+			set_worstHigh?x__ -> Memory_worstHigh(x__)
+			[]
+			set_EXT_worstHigh?x__ -> Memory_worstHigh(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamOutMin(steamOutMin) =
+			get_steamOutMin!steamOutMin -> Memory_steamOutMin(steamOutMin)
+			[]
+			set_steamOutMin?x__ -> Memory_steamOutMin(x__)
+			[]
+			set_EXT_steamOutMin?x__ -> Memory_steamOutMin(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamOutMax(steamOutMax) =
+			get_steamOutMax!steamOutMax -> Memory_steamOutMax(steamOutMax)
+			[]
+			set_steamOutMax?x__ -> Memory_steamOutMax(x__)
+			[]
+			set_EXT_steamOutMax?x__ -> Memory_steamOutMax(x__)
+			[]
+			terminate -> SKIP
+		Memory_estimateLow(estimateLow) =
+			get_estimateLow!estimateLow -> Memory_estimateLow(estimateLow)
+			[]
+			set_estimateLow?x__ -> Memory_estimateLow(x__)
+			[]
+			set_EXT_estimateLow?x__ -> Memory_estimateLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_estimateHigh(estimateHigh) =
+			get_estimateHigh!estimateHigh -> Memory_estimateHigh(estimateHigh)
+			[]
+			set_estimateHigh?x__ -> Memory_estimateHigh(x__)
+			[]
+			set_EXT_estimateHigh?x__ -> Memory_estimateHigh(x__)
+			[]
+			terminate -> SKIP
+		Memory_estimateKnown(estimateKnown) =
+			get_estimateKnown!estimateKnown -> Memory_estimateKnown(estimateKnown)
+			[]
+			set_estimateKnown?x__ -> Memory_estimateKnown(x__)
+			[]
+			set_EXT_estimateKnown?x__ -> Memory_estimateKnown(x__)
+			[]
+			terminate -> SKIP
+		Memory_plausibleLow(plausibleLow) =
+			get_plausibleLow!plausibleLow -> Memory_plausibleLow(plausibleLow)
+			[]
+			set_plausibleLow?x__ -> Memory_plausibleLow(x__)
+			[]
+			set_EXT_plausibleLow?x__ -> Memory_plausibleLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_plausibleHigh(plausibleHigh) =
+			get_plausibleHigh!plausibleHigh -> Memory_plausibleHigh(plausibleHigh)
+			[]
+			set_plausibleHigh?x__ -> Memory_plausibleHigh(x__)
+			[]
+			set_EXT_plausibleHigh?x__ -> Memory_plausibleHigh(x__)
+			[]
+			terminate -> SKIP
+		Memory_plausibleKnown(plausibleKnown) =
+			get_plausibleKnown!plausibleKnown -> Memory_plausibleKnown(plausibleKnown)
+			[]
+			set_plausibleKnown?x__ -> Memory_plausibleKnown(x__)
+			[]
+			set_EXT_plausibleKnown?x__ -> Memory_plausibleKnown(x__)
+			[]
+			terminate -> SKIP
+		Memory_plausibleLowKnown(plausibleLowKnown) =
+			get_plausibleLowKnown!plausibleLowKnown -> Memory_plausibleLowKnown(plausibleLowKnown)
+			[]
+			set_plausibleLowKnown?x__ -> Memory_plausibleLowKnown(x__)
+			[]
+			set_EXT_plausibleLowKnown?x__ -> Memory_plausibleLowKnown(x__)
+			[]
+			terminate -> SKIP
+		Memory_previousSteam(previousSteam) =
+			get_previousSteam!previousSteam -> Memory_previousSteam(previousSteam)
+			[]
+			set_previousSteam?x__ -> Memory_previousSteam(x__)
+			[]
+			set_EXT_previousSteam?x__ -> Memory_previousSteam(x__)
+			[]
+			terminate -> SKIP
+		Memory_previousSteamValid(previousSteamValid) =
+			get_previousSteamValid!previousSteamValid -> Memory_previousSteamValid(previousSteamValid)
+			[]
+			set_previousSteamValid?x__ -> Memory_previousSteamValid(x__)
+			[]
+			set_EXT_previousSteamValid?x__ -> Memory_previousSteamValid(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelReading(levelReading) =
+			get_levelReading!levelReading -> Memory_levelReading(levelReading)
+			[]
+			set_levelReading?x__ -> Memory_levelReading(x__)
+			[]
+			set_EXT_levelReading?x__ -> Memory_levelReading(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamReading(steamReading) =
+			get_steamReading!steamReading -> Memory_steamReading(steamReading)
+			[]
+			set_steamReading?x__ -> Memory_steamReading(x__)
+			[]
+			set_EXT_steamReading?x__ -> Memory_steamReading(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelEstimateLow(levelEstimateLow) =
+			get_levelEstimateLow!levelEstimateLow -> Memory_levelEstimateLow(levelEstimateLow)
+			[]
+			set_levelEstimateLow?x__ -> Memory_levelEstimateLow(x__)
+			[]
+			set_EXT_levelEstimateLow?x__ -> Memory_levelEstimateLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelEstimateHigh(levelEstimateHigh) =
+			get_levelEstimateHigh!levelEstimateHigh -> Memory_levelEstimateHigh(levelEstimateHigh)
+			[]
+			set_levelEstimateHigh?x__ -> Memory_levelEstimateHigh(x__)
+			[]
+			set_EXT_levelEstimateHigh?x__ -> Memory_levelEstimateHigh(x__)
+			[]
+			terminate -> SKIP
+		Memory_plantWaiting(plantWaiting) =
+			get_plantWaiting!plantWaiting -> Memory_plantWaiting(plantWaiting)
+			[]
+			set_plantWaiting?x__ -> Memory_plantWaiting(x__)
+			[]
+			set_EXT_plantWaiting?x__ -> Memory_plantWaiting(x__)
+			[]
+			terminate -> SKIP
+		Memory_transmissionFailure(transmissionFailure) =
+			get_transmissionFailure!transmissionFailure -> Memory_transmissionFailure(transmissionFailure)
+			[]
+			set_transmissionFailure?x__ -> Memory_transmissionFailure(x__)
+			[]
+			set_EXT_transmissionFailure?x__ -> Memory_transmissionFailure(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamNotZero(steamNotZero) =
+			get_steamNotZero!steamNotZero -> Memory_steamNotZero(steamNotZero)
+			[]
+			set_steamNotZero?x__ -> Memory_steamNotZero(x__)
+			[]
+			set_EXT_steamNotZero?x__ -> Memory_steamNotZero(x__)
+			[]
+			terminate -> SKIP
+		Memory_levelFailure(levelFailure) =
+			get_levelFailure!levelFailure -> Memory_levelFailure(levelFailure)
+			[]
+			set_levelFailure?x__ -> Memory_levelFailure(x__)
+			[]
+			set_EXT_levelFailure?x__ -> Memory_levelFailure(x__)
+			[]
+			terminate -> SKIP
+		Memory_readyAnnounced(readyAnnounced) =
+			get_readyAnnounced!readyAnnounced -> Memory_readyAnnounced(readyAnnounced)
+			[]
+			set_readyAnnounced?x__ -> Memory_readyAnnounced(x__)
+			[]
+			set_EXT_readyAnnounced?x__ -> Memory_readyAnnounced(x__)
+			[]
+			terminate -> SKIP
+		Memory_unitsReady(unitsReady) =
+			get_unitsReady!unitsReady -> Memory_unitsReady(unitsReady)
+			[]
+			set_unitsReady?x__ -> Memory_unitsReady(x__)
+			[]
+			set_EXT_unitsReady?x__ -> Memory_unitsReady(x__)
+			[]
+			terminate -> SKIP
+		Memory_steamFailure(steamFailure) =
+			get_steamFailure!steamFailure -> Memory_steamFailure(steamFailure)
+			[]
+			set_steamFailure?x__ -> Memory_steamFailure(x__)
+			[]
+			set_EXT_steamFailure?x__ -> Memory_steamFailure(x__)
+			[]
+			terminate -> SKIP
+		Memory_pumpFailure(pumpFailure) =
+			get_pumpFailure!pumpFailure -> Memory_pumpFailure(pumpFailure)
+			[]
+			set_pumpFailure?x__ -> Memory_pumpFailure(x__)
+			[]
+			set_EXT_pumpFailure?x__ -> Memory_pumpFailure(x__)
+			[]
+			terminate -> SKIP
+		Memory_pumpControlFailure(pumpControlFailure) =
+			get_pumpControlFailure!pumpControlFailure -> Memory_pumpControlFailure(pumpControlFailure)
+			[]
+			set_pumpControlFailure?x__ -> Memory_pumpControlFailure(x__)
+			[]
+			set_EXT_pumpControlFailure?x__ -> Memory_pumpControlFailure(x__)
+			[]
+			terminate -> SKIP
+		Memory_knownLevelHigh(knownLevelHigh) =
+			get_knownLevelHigh!knownLevelHigh -> Memory_knownLevelHigh(knownLevelHigh)
+			[]
+			set_knownLevelHigh?x__ -> Memory_knownLevelHigh(x__)
+			[]
+			set_EXT_knownLevelHigh?x__ -> Memory_knownLevelHigh(x__)
+			[]
+			terminate -> SKIP
+		Memory_knownLevelLow(knownLevelLow) =
+			get_knownLevelLow!knownLevelLow -> Memory_knownLevelLow(knownLevelLow)
+			[]
+			set_knownLevelLow?x__ -> Memory_knownLevelLow(x__)
+			[]
+			set_EXT_knownLevelLow?x__ -> Memory_knownLevelLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_valveIsOpen(valveIsOpen) =
+			get_valveIsOpen!valveIsOpen -> Memory_valveIsOpen(valveIsOpen)
+			[]
+			set_valveIsOpen?x__ -> Memory_valveIsOpen(x__)
+			[]
+			set_EXT_valveIsOpen?x__ -> Memory_valveIsOpen(x__)
+			[]
+			terminate -> SKIP
+		Memory_worstCaseLevelLow(worstCaseLevelLow) =
+			get_worstCaseLevelLow!worstCaseLevelLow -> Memory_worstCaseLevelLow(worstCaseLevelLow)
+			[]
+			set_worstCaseLevelLow?x__ -> Memory_worstCaseLevelLow(x__)
+			[]
+			set_EXT_worstCaseLevelLow?x__ -> Memory_worstCaseLevelLow(x__)
+			[]
+			terminate -> SKIP
+		Memory_worstCaseLevelHigh(worstCaseLevelHigh) =
+			get_worstCaseLevelHigh!worstCaseLevelHigh -> Memory_worstCaseLevelHigh(worstCaseLevelHigh)
+			[]
+			set_worstCaseLevelHigh?x__ -> Memory_worstCaseLevelHigh(x__)
+			[]
+			set_EXT_worstCaseLevelHigh?x__ -> Memory_worstCaseLevelHigh(x__)
+			[]
+			terminate -> SKIP
+		
+		-- sharedVarMemory process
+		sharedVarMemory(id__,
+				    const_SteamBoilerController_stopLimit,
+				    const_SteamBoilerController_normalN2,
+				    const_SteamBoilerController_normalN1,
+				    const_SteamBoilerController_limitM1,
+				    const_SteamBoilerController_limitM2) = Memory_waterLevel(0)
+		[| { terminate } |] (
+		Memory_steamRate(0)
+		[| { terminate } |] (
+		Memory_pumpRate(0)
+		[| { terminate } |] (
+		Memory_levelLowBound(0)
+		[| { terminate } |] (
+		Memory_levelHighBound(0)
+		[| { terminate } |] (
+		Memory_PUMPS(0)
+		[| { terminate } |] (
+		Memory_DT(0)
+		[| { terminate } |] (
+		Memory_consecutiveStops(0)
+		[| { terminate } |] (
+		Memory_boilerWaitingSeen(true)
+		[| { terminate } |] (
+		Memory_programReadySent(true)
+		[| { terminate } |] (
+		Memory_valveOpen(true)
+		[| { terminate } |] (
+		Memory_initializationOver(true)
+		[| { terminate } |] (
+		Memory_transmissionFailed(true)
+		[| { terminate } |] (
+		Memory_steamNonZero(true)
+		[| { terminate } |] (
+		Memory_levelValue(0)
+		[| { terminate } |] (
+		Memory_steamValue(0)
+		[| { terminate } |] (
+		Memory_pumpThroughput(0)
+		[| { terminate } |] (
+		Memory_knownLow(0)
+		[| { terminate } |] (
+		Memory_knownHigh(0)
+		[| { terminate } |] (
+		Memory_worstLow(0)
+		[| { terminate } |] (
+		Memory_worstHigh(0)
+		[| { terminate } |] (
+		Memory_steamOutMin(0)
+		[| { terminate } |] (
+		Memory_steamOutMax(0)
+		[| { terminate } |] (
+		Memory_estimateLow(0)
+		[| { terminate } |] (
+		Memory_estimateHigh(0)
+		[| { terminate } |] (
+		Memory_estimateKnown(true)
+		[| { terminate } |] (
+		Memory_plausibleLow(0)
+		[| { terminate } |] (
+		Memory_plausibleHigh(0)
+		[| { terminate } |] (
+		Memory_plausibleKnown(true)
+		[| { terminate } |] (
+		Memory_plausibleLowKnown(true)
+		[| { terminate } |] (
+		Memory_previousSteam(0)
+		[| { terminate } |] (
+		Memory_previousSteamValid(true)
+		[| { terminate } |] (
+		Memory_levelReading(0)
+		[| { terminate } |] (
+		Memory_steamReading(0)
+		[| { terminate } |] (
+		Memory_levelEstimateLow(0)
+		[| { terminate } |] (
+		Memory_levelEstimateHigh(0)
+		[| { terminate } |] (
+		Memory_plantWaiting(true)
+		[| { terminate } |] (
+		Memory_transmissionFailure(true)
+		[| { terminate } |] (
+		Memory_steamNotZero(true)
+		[| { terminate } |] (
+		Memory_levelFailure(true)
+		[| { terminate } |] (
+		Memory_readyAnnounced(true)
+		[| { terminate } |] (
+		Memory_unitsReady(true)
+		[| { terminate } |] (
+		Memory_steamFailure(true)
+		[| { terminate } |] (
+		Memory_pumpFailure(true)
+		[| { terminate } |] (
+		Memory_pumpControlFailure(true)
+		[| { terminate } |] (
+		Memory_knownLevelHigh(0)
+		[| { terminate } |] (
+		Memory_knownLevelLow(0)
+		[| { terminate } |] (
+		Memory_valveIsOpen(true)
+		[| { terminate } |] (
+		Memory_worstCaseLevelLow(0)
+		[| { terminate } |] (
+		Memory_worstCaseLevelHigh(0)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		)
+		
+		sharedVarSync = {|get_waterLevel,set_waterLevel,set_EXT_waterLevel,get_steamRate,set_steamRate,set_EXT_steamRate,get_pumpRate,set_pumpRate,set_EXT_pumpRate,get_levelLowBound,set_levelLowBound,set_EXT_levelLowBound,get_levelHighBound,set_levelHighBound,set_EXT_levelHighBound,get_PUMPS,set_PUMPS,set_EXT_PUMPS,get_DT,set_DT,set_EXT_DT,get_consecutiveStops,set_consecutiveStops,set_EXT_consecutiveStops,get_boilerWaitingSeen,set_boilerWaitingSeen,set_EXT_boilerWaitingSeen,get_programReadySent,set_programReadySent,set_EXT_programReadySent,get_valveOpen,set_valveOpen,set_EXT_valveOpen,get_initializationOver,set_initializationOver,set_EXT_initializationOver,get_transmissionFailed,set_transmissionFailed,set_EXT_transmissionFailed,get_steamNonZero,set_steamNonZero,set_EXT_steamNonZero,get_levelValue,set_levelValue,set_EXT_levelValue,get_steamValue,set_steamValue,set_EXT_steamValue,get_pumpThroughput,set_pumpThroughput,set_EXT_pumpThroughput,get_knownLow,set_knownLow,set_EXT_knownLow,get_knownHigh,set_knownHigh,set_EXT_knownHigh,get_worstLow,set_worstLow,set_EXT_worstLow,get_worstHigh,set_worstHigh,set_EXT_worstHigh,get_steamOutMin,set_steamOutMin,set_EXT_steamOutMin,get_steamOutMax,set_steamOutMax,set_EXT_steamOutMax,get_estimateLow,set_estimateLow,set_EXT_estimateLow,get_estimateHigh,set_estimateHigh,set_EXT_estimateHigh,get_estimateKnown,set_estimateKnown,set_EXT_estimateKnown,get_plausibleLow,set_plausibleLow,set_EXT_plausibleLow,get_plausibleHigh,set_plausibleHigh,set_EXT_plausibleHigh,get_plausibleKnown,set_plausibleKnown,set_EXT_plausibleKnown,get_plausibleLowKnown,set_plausibleLowKnown,set_EXT_plausibleLowKnown,get_previousSteam,set_previousSteam,set_EXT_previousSteam,get_previousSteamValid,set_previousSteamValid,set_EXT_previousSteamValid,get_levelReading,set_levelReading,set_EXT_levelReading,get_steamReading,set_steamReading,set_EXT_steamReading,get_levelEstimateLow,set_levelEstimateLow,set_EXT_levelEstimateLow,get_levelEstimateHigh,set_levelEstimateHigh,set_EXT_levelEstimateHigh,get_plantWaiting,set_plantWaiting,set_EXT_plantWaiting,get_transmissionFailure,set_transmissionFailure,set_EXT_transmissionFailure,get_steamNotZero,set_steamNotZero,set_EXT_steamNotZero,get_levelFailure,set_levelFailure,set_EXT_levelFailure,get_readyAnnounced,set_readyAnnounced,set_EXT_readyAnnounced,get_unitsReady,set_unitsReady,set_EXT_unitsReady,get_steamFailure,set_steamFailure,set_EXT_steamFailure,get_pumpFailure,set_pumpFailure,set_EXT_pumpFailure,get_pumpControlFailure,set_pumpControlFailure,set_EXT_pumpControlFailure,get_knownLevelHigh,set_knownLevelHigh,set_EXT_knownLevelHigh,get_knownLevelLow,set_knownLevelLow,set_EXT_knownLevelLow,get_valveIsOpen,set_valveIsOpen,set_EXT_valveIsOpen,get_worstCaseLevelLow,set_worstCaseLevelLow,set_EXT_worstCaseLevelLow,get_worstCaseLevelHigh,set_worstCaseLevelHigh,set_EXT_worstCaseLevelHigh|}
+		
+		sharedVarHide = {|get_waterLevel,get_steamRate,get_pumpRate,get_levelLowBound,get_levelHighBound,get_PUMPS,get_DT,get_consecutiveStops,get_boilerWaitingSeen,get_programReadySent,get_valveOpen,get_initializationOver,get_transmissionFailed,get_steamNonZero,get_levelValue,get_steamValue,get_pumpThroughput,get_knownLow,get_knownHigh,get_worstLow,get_worstHigh,get_steamOutMin,get_steamOutMax,get_estimateLow,get_estimateHigh,get_estimateKnown,get_plausibleLow,get_plausibleHigh,get_plausibleKnown,get_plausibleLowKnown,get_previousSteam,get_previousSteamValid,get_levelReading,get_steamReading,get_levelEstimateLow,get_levelEstimateHigh,get_plantWaiting,get_transmissionFailure,get_steamNotZero,get_levelFailure,get_readyAnnounced,get_unitsReady,get_steamFailure,get_pumpFailure,get_pumpControlFailure,get_knownLevelHigh,get_knownLevelLow,get_valveIsOpen,get_worstCaseLevelLow,get_worstCaseLevelHigh|}
+		}
+endmodule

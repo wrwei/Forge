@@ -1,0 +1,280 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 23 SRanger requirements are implemented in 9 Java files (one controller, 3 modes, 7 transitions). Nothing is unimplemented; the issues record design choices, two invented defaults, one ambiguity and the rounding of the fractional obstacleThreshold in the model.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "Moving -> Turning needs both the Obstacle event and the obstacleDetected guard",
+      "raw": "SR-Beh2 triggers the transition on the obstacle event; SR-GP1 says obstacleDetected (distance <= obstacleThreshold) is the guard on the same transition. Both are used: trigger Obstacle, condition obstacleDetected. An Obstacle event while the sensor reads above the threshold is ignored.",
+      "fix_directive": "If the obstacle event alone should suffice, drop '&& obstacleDetected' from the Moving branch and keep the predicate only if another transition needs it.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 55,
+          "line_end": 55,
+          "element": "obstacleDetected",
+          "requirement_ids": [
+            "SR-GP1"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 63,
+          "line_end": 66,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Tick self-loops perform no action, so Moving's entry command is not re-issued on tick",
+      "raw": "SR-Beh4 and SR-Beh7 state that the controller performs no action on the tick self-transitions, whereas the profile asks every branch to perform the target mode's entry actions. The requirements were followed: the tick branches only re-assign the mode. Entry commands (SR-FR1/FR2/FR3) are issued inline on the branches that change mode.",
+      "fix_directive": "None unless the model's entry-action semantics require the self-loop to re-issue Move; in that case add the Move call to the tick branches and record the conflict with SR-Beh4/SR-Beh7.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 67,
+          "line_end": 69,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh4",
+            "SR-FR1"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 78,
+          "line_end": 80,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh7",
+            "SR-FR2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Priority in Turning: EndTask, then turnDurationElapsed, then Tick",
+      "raw": "The requirements give no priority between the Turning transitions. EndTask is a stop and comes first. The timed exit comes before the tick self-loop, because tick arrives every cycle and would otherwise prevent the timed exit from ever firing. The tick branch conjoins !turnDurationElapsed, as the profile requires for a branch below a guard-only branch.",
+      "fix_directive": "None expected.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 71,
+          "line_end": 81,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7",
+            "SR-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Power-up entry command Move(moveVel, 0) issued in the constructor",
+      "raw": "SR-FR1/SR-Beh1: Moving is entered at power-up and its entry issues Move(moveVel, 0). No step() branch represents the initial transition, so the constructor issues the command. The extracted model may not show this initial entry action.",
+      "fix_directive": "If the model must show the initial entry action, report it as a pipeline question: the profile has no branch for the initial transition.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 31,
+          "line_end": 37,
+          "element": "SRangerController",
+          "requirement_ids": [
+            "SR-Beh1",
+            "SR-FR1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move event carries two real components (lv, av)",
+      "raw": "SR-DM4 gives Move two real values. The profile describes events with one component; Move is a record with two @RoboChartType(\"real\") components, lv and av, sent as actuator.apply(new OutputEvent.Move(lv, av)).",
+      "fix_directive": "If the extractor supports only single-component events, wrap the two velocities in a domain record and give Move a single component of that type.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/event/OutputEvent.java",
+          "line_start": 16,
+          "line_end": 16,
+          "element": "Move",
+          "requirement_ids": [
+            "SR-DM4"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/actuator/Actuator.java",
+          "line_start": 19,
+          "line_end": 25,
+          "element": "apply",
+          "requirement_ids": [
+            "SR-DM6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "obstacleThreshold = 0.5 is fractional and is rounded up to 1 in the model",
+      "raw": "The constants interface rounds a fractional constant up to the next integer, so the model's guard reads distance() <= 1 instead of <= 0.5. The Java keeps 0.5. Only obstacleThreshold is affected; moveVel 1.0, turnVel 2.0 and turnDuration 2.0 are whole numbers.",
+      "fix_directive": "Treat verification results about obstacleDetected as an over-approximation (threshold 1 m in the model). No Java change proposed: the requirement fixes the value in metres.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerConstants.java",
+          "line_start": 17,
+          "line_end": 17,
+          "element": "OBSTACLE_THRESHOLD",
+          "requirement_ids": [
+            "SR-DM2",
+            "SR-GP1"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 55,
+          "line_end": 55,
+          "element": "obstacleDetected",
+          "requirement_ids": [
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Obstacle threshold comparison: 'crosses below' vs 'at or below'",
+      "raw": "SR-DM3 and the system description say the obstacle event fires when the distance crosses below obstacleThreshold (strict); SR-GP1 defines obstacleDetected as distance <= obstacleThreshold. The guard uses <= as SR-GP1 states.",
+      "fix_directive": "None unless a strict comparison is intended.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 55,
+          "line_end": 55,
+          "element": "obstacleDetected",
+          "requirement_ids": [
+            "SR-GP1",
+            "SR-DM3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Sensor default distance 1000.0 m when no reading is available",
+      "raw": "SR-DM5 requires a 'large default value' without fixing it. distance() returns 1000.0 m until a reading arrives, and update() treats a negative or NaN reading as no reading (distance must be non-negative).",
+      "fix_directive": "Replace 1000.0 if a specific default is required.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_start": 11,
+          "line_end": 13,
+          "element": "Sensor",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_start": 21,
+          "line_end": 27,
+          "element": "update",
+          "requirement_ids": [
+            "SR-DM5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Actuator initial command (0.0, 0.0) and clockResetTime initial value 0.0",
+      "raw": "The Actuator stores (0.0, 0.0) before the first command (the constructor immediately overwrites it with Move(moveVel, 0)). clockResetTime starts at 0.0; it is read only in Turning, after Moving -> Turning has set it.",
+      "fix_directive": "None expected.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/actuator/Actuator.java",
+          "line_start": 11,
+          "line_end": 12,
+          "element": "Actuator",
+          "requirement_ids": [
+            "SR-DM6"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 18,
+          "line_end": 18,
+          "element": "clockResetTime",
+          "requirement_ids": [
+            "SR-Var1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Time source: Clock class with monotonic now(); controller field named timer",
+      "raw": "SR-Var1/SR-GP2 need the current time. A class named Clock provides now() in seconds since construction (System.nanoTime). The controller field is named timer because 'clock' is a reserved word. The clock reset is written clockResetTime = timer.now() before the Move command, in the order SR-Beh2 lists, and the guard as timer.now() - clockResetTime >= TURN_DURATION.",
+      "fix_directive": "None expected.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Clock.java",
+          "line_start": 8,
+          "line_end": 21,
+          "element": "Clock",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-GP2"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 56,
+          "line_end": 56,
+          "element": "turnDurationElapsed",
+          "requirement_ids": [
+            "SR-GP2"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 63,
+          "line_end": 66,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-Beh2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Final ignores every input event",
+      "raw": "SR-FR3 makes Final terminal and no requirement gives it an outgoing transition or a tick self-loop, so its mode block is empty.",
+      "fix_directive": "None expected; a terminal mode lets time pass in RoboChart's semantics.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 82,
+          "line_end": 84,
+          "element": "step",
+          "requirement_ids": [
+            "SR-FR3",
+            "SR-DM1"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile, coverage, profile check, transformations, verifiers) and act on its reports."
+}

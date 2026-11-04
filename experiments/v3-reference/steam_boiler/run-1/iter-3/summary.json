@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 1,
+  "iteration": 3,
+  "recorded_utc": "2026-11-02 18:03:53",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r16-run1-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run1",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1191,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Steam Boiler, run 1: summary (iteration 3)\n\n## What was written\n- `SteamBoilerController` contains the five modes. Each transition is triggered by the per-cycle `Transmission` event, and each mode's guards are exclusive and exhaustive.\n- `PlantMonitor` (Java) handles reception, failure detection, unit status, the estimate, announcements and acknowledgements, and writes boolean verdicts into `BoilerSensor`.\n- `BoilerActuator` collects output messages; `SteamBoilerProgram` runs the cycle.\n\n## Changes\n- **Iteration 2:** doubles annotated; guards read ten boolean verdicts instead of real-valued readings; aberration checks moved to the monitor; regulation on every operating cycle. Preflight and vacuity then passed.\n- **Iteration 3:**\n  - Isabelle: each mode's last (stay) branch tests only the event, and emergency stop has an empty event-only self-loop. Same Java behaviour.\n  - FDR4 (still over 40 GB): q, v, p, the estimate and the STOP count moved from `BoilerSensor` into `PlantMonitor`, so the sensor exposes only booleans.\n\n## Decisions the requirements left open\n- **Constants (invented):** C=1000, M1=150, M2=850, N1=400, N2=600, W=25, P=10, U1=U2=2.\n- **Regulation:** bang-bang on pumps 1\u20134, against the best known level (the reading, or the estimate's midpoint).\n- **Risk:** worst-case bounds for the next cycle; pumps that this cycle closes are excluded.\n- **Before STEAM_BOILER_WAITING:** only STOP\u00d73 or transmission failure ends initialisation.\n- **Emergency stop:** MODE sent once; then the program stops.\n- **Rescue:** any pump-controller or steam failure makes it impossible; a level failure then means emergency stop.\n- **Aberrant:** duplicates, missing data, bad pump numbers, unexpected repairs/acknowledgements, stray initialisation messages.\n- **Initialisation:** pump 1 fills; no lower level bound while draining.\n\n## Unresolved\n- Detection, the acknowledgement protocol (SB-FR1\u2013FR7, SB-V9) and the risk arithmetic are outside the extracted model, so the verifiers do not cover them.\n- Iteration 1's runner console showed a traceback naming a `forge.dashboard` file; it was not opened."
+}

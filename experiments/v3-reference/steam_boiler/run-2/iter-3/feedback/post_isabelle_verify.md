@@ -1,0 +1,51 @@
+# Isabelle Verification — FAILED
+
+## Summary
+Isabelle: exit 142, 1 theory marker(s) seen before failure.
+
+## Run history
+**WARNING — thrashing detected.** 1 issue(s) have recurred 3+ runs in a row despite fixes: `Tactic interrupt — cascade from timeout in SteamBoilerController_deadlock_free`. Previous fix strategies are not working — change approach (e.g. re-read the originating requirement, or escalate to the user).
+
+- New this run: 0
+- Recurring from previous run: 2
+- Resolved since previous run: 0
+
+## Issues
+### Issue 1: isabelle_tactic_timeout — Tactic timeout, suspected in SteamBoilerController_deadlock_free (deadlock_free — inferred from .thy) [recurring x2]
+
+**Raw**
+```
+*** Timeout
+In theory: SteamBoilerController_Beh
+```
+
+**Java trace**
+  - Java: `SteamBoilerController_Beh.thy`:874 (SteamBoilerController_deadlock_free)
+
+**Fix directive**
+Z-Machine `deadlock_free` proof timed out — most likely on the `by (metis St.exhaust_disc)` step of `SteamBoilerController_deadlock_free`. (Isabelle's build output only provides theory-level granularity, so the lemma name is inferred from the .thy file.) That tactic requires every state in the `St` enum to have at least one bare-precondition operation. If any mode block in the controller has only guarded transitions, the residual disjunction leaves a `st = X ∧ <guard>` case that `St.exhaust_disc` cannot match, so `metis` searches indefinitely.
+
+Fix: inspect every mode block in the controller's step() method. Confirm at least one inner branch is either (a) an event with no extra guard (e.g. `if (event instanceof X)`), or (b) the explicit `else { /* stay */ }` fallback. See docs/fixes/I1_deadlock_free_proof.md for the proof tactic rationale and residual-goal shape.
+
+### Issue 2: isabelle_tactic_timeout — Tactic interrupt — cascade from timeout in SteamBoilerController_deadlock_free [RECURRING x3 — fix strategy failing]
+
+**Raw**
+```
+*** Interrupt
+In theory: SteamBoilerController_Beh
+```
+
+**Java trace**
+  - Java: `SteamBoilerController_Beh.thy`:874 (SteamBoilerController_deadlock_free)
+
+**Fix directive**
+Isabelle reported an interrupt. This is usually the cascade of a preceding `*** Timeout` rather than an independent failure — address the timeout above and this should resolve.
+
+## Files to review
+- ModeValue.java
+- OperatingMode.java
+- SteamBoilerController.java
+- WaterFlow.java
+
+## Next step
+Fix the issues above. If a specific lemma did not close, either change the Java code so the auto tactic can dispatch, or hand-write a proof script in the Z-Machine session theory.

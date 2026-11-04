@@ -1,0 +1,12 @@
+package lre.event;
+
+import lre.annotation.RoboChartType;
+
+/** The only outputs of the LRE to the autopilot controller. */
+public sealed interface OutputEvent {
+    /** Advised velocity, m/s. */
+    record AdvVel(@RoboChartType("real") double value) implements OutputEvent {}
+
+    /** Advised heading, degrees. */
+    record AdvHdng(@RoboChartType("real") double value) implements OutputEvent {}
+}

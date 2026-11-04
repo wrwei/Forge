@@ -1,0 +1,86 @@
+# post_codegen
+
+**status:** uncertain
+
+**summary:** All 51 LRE requirements are implemented in 15 Java files under `java.generated.project/src/main/java/lre` (compiles with javac --release 17 and Gradle). Twelve points the requirements did not settle are recorded below: two requirement conflicts (the -1 "no obstacle" index of a nat variable; zero versus large defaults for CalcCPA), four invented values, four design choices, and two scope questions.
+
+## Issues
+
+### 1. ambiguous_requirement: cstc/cdyn are natural numbers but "none" is specified as -1
+- **raw:** LRE-Var5/Var6 declare cstc and cdyn as natural numbers with -1 meaning "no obstacle"; LRE-DM5, LRE-OP3 and LRE-OP4 make closestStaticIndex()/closestDynamicIndex() return -1. The Java profile maps int to nat and forbids negative values.
+- **fix_directive:** Index 0 means "no obstacle": ObstacleRegister.put rejects identifiers below 1, and the selection functions return ObstacleRegister.NO_OBSTACLE (0) when no obstacle qualifies. Every sensor function treats an unregistered index (including 0) as "no obstacle". Confirm, or name a different sentinel.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/sensor/ObstacleRegister.java` lines 18-28, `NO_OBSTACLE`: LRE-DM3, LRE-DM5, LRE-Var5, LRE-Var6
+  - `java.generated.project/src/main/java/lre/sensor/Sensor.java` lines 126-152, `closestStaticIndex`: LRE-DM5, LRE-OP3, LRE-OP4
+
+### 2. ambiguous_requirement: CalcCPA: zero field-accessor defaults would give cda = 0 with no dynamic obstacle
+- **raw:** LRE-DM5 says nsRelDist/ewRelDist/obsNsVel/obsEwVel return zero when no obstacle exists; LRE-OP5 says the sensor returns "zero-velocity and large-distance defaults". A CPA built only from the field accessors would give cda = 0 and tcpa = 0 with no dynamic obstacle, which would send MOM and HCM to CAM spuriously.
+- **fix_directive:** CalcCPA computes the horizontal CPA from the obstacle's relative position and the AUV's velocity relative to the obstacle (obs velocities are absolute, as LRE-DM2's static test implies), and cda adds the current vertical separation vdist(cdyn)^2. vdist returns the large default when there is no dynamic obstacle, so cda is large and tcpa is 0 in that case. cda is evaluated at max(tcpa, 0), computed as (t + sqrt(t*t))/2, so once the closest point has passed cda is the current separation and CAM_to_OCM_safe can fire. Confirm this reading of "closest distance of approach".
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/operation/CalcCPA.java` lines 29-43, `compute`: LRE-OP5, LRE-Var7, LRE-Var8, LRE-Beh8, LRE-Beh14, LRE-Beh18
+
+### 3. invented_default: safe large distance for a missing obstacle is 100000.0 m
+- **raw:** LRE-DM5: distance functions return "a safe large distance" when no obstacle exists; no value is given.
+- **fix_directive:** Sensor.SAFE_DISTANCE = 100000.0 (private to the sensor). It only needs to exceed every threshold (all 1 m). Replace if a sensor range is specified.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/sensor/Sensor.java` line 15, `SAFE_DISTANCE`: LRE-DM5, LRE-OP2, LRE-OP5
+
+### 4. invented_default: tcpa denominator offset 0.000001
+- **raw:** LRE-OP5 gives no rule for zero relative velocity; tcpa = (p . v) / |v|^2 would divide by zero (NaN in Java, which makes both cda guards false).
+- **fix_directive:** The denominator is |v|^2 + 0.000001 (an operation literal, not a constant, so the constants interface does not round it). At zero relative velocity tcpa is 0 and cda is the current separation; elsewhere the effect is negligible.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/operation/CalcCPA.java` lines 33-35, `compute`: LRE-OP5, LRE-Var8
+
+### 5. invented_default: actuator holds 0 velocity and 0 heading before the first advice
+- **raw:** LRE-DM8 says the actuator stores the latest values; nothing is said about values before the first output event.
+- **fix_directive:** advisedVelocity and advisedHeading start at 0.0.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/actuator/Actuator.java` lines 9-10, `Actuator`: LRE-DM8
+
+### 6. design_choice: CheckOPEZ and CalcCPA re-query the sensor's selection functions
+- **raw:** LRE-OP2/OP5 say CheckOPEZ uses CalcCStc's index and CalcCPA uses cdyn. The profile lets compute() use only sensor calls, Math.sqrt, arithmetic and fields of its own class.
+- **fix_directive:** CheckOPEZ evaluates sensor.odist(sensor.closestStaticIndex()) and CalcCPA stores sensor.closestDynamicIndex() in its own field dynIndex. Within one step this is the same index CalcCStc/CalcCDyn compute, and the controller runs CalcCStc and CalcCDyn before CheckOPEZ and CalcCPA.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/operation/CheckOPEZ.java` lines 21-24, `compute`: LRE-OP2, LRE-Var1
+  - `java.generated.project/src/main/java/lre/operation/CalcCPA.java` line 30, `compute`: LRE-OP5
+
+### 7. design_choice: operations are invoked at the top of step(), before the predicates
+- **raw:** LRE-OP1..OP5: "The controller invokes this operation before evaluating transition guards each step." The profile describes step() as predicates followed by the if-else chain.
+- **fix_directive:** step() first calls calcVelOp, calcCStcOp, calcCDynOp, checkOpezOp and calcCpaOp .compute() in that order, then declares the predicates (which read the operations' getters).
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` lines 49-55, `step`: LRE-ARCH2, LRE-OP1, LRE-OP2, LRE-OP3, LRE-OP4, LRE-OP5
+
+### 8. design_choice: transition priority within MOM and HCM
+- **raw:** The requirements give no priority between the transitions leaving MOM (Beh5-Beh12) or HCM (Beh13-Beh16).
+- **fix_directive:** Event-triggered transitions come first (MOM: reqOCM, endTask, reqHCM; HCM: reqOCM), then the autonomous ones: inOpez -> OCM, collision -> CAM, then the HCM conditions Beh9, Beh11, Beh10. Beh11 is placed above Beh10 because, with equal thresholds, Beh10 (vdist <= staticObsDfltVertDist regardless of velocity) subsumes Beh11; in the other order Beh11 could never be enabled. Each lower autonomous branch conjoins the negation of the autonomous guards above it. One consequence: a reqHCM in MOM is taken even if inOpez or a collision course holds; HCM then leaves to OCM/CAM on the next step.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` lines 87-121, `step`: LRE-Beh5 to LRE-Beh16, LRE-DC1
+
+### 9. design_choice: OCM_to_MOM thresholds are the literal 1, not minSafeDist
+- **raw:** LRE-Beh4 requires vel <= 1 and odist(cdyn) > 1 and odist(cstc) > 1, as numbers; minSafeDist also defaults to 1.
+- **fix_directive:** The predicates use the literal 1.0 as written. If the distance thresholds were meant to be minSafeDist, replace the literal in cdynDistAboveOne and cstcDistAboveOne.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` lines 58-60, `step`: LRE-Beh4
+
+### 10. ambiguous_requirement: vvel is the signed rate of climb; HCM entry advises 0 m/s, not 0.1 m/s
+- **raw:** LRE-OP1 defines vvel as the rate of climb, so Beh11 (vvel >= 1) reacts only to climbing, not to fast descent towards an obstacle below. The system description gives HCM a reduced speed of 0.1 m/s; LRE-FR3 says advVel(0) on entering HCM.
+- **fix_directive:** Implemented as written: vvel = rateOfClimb() (signed) and advVel(0.0) on every transition into HCM. If a magnitude or 0.1 m/s is intended, change CalcVel.compute and the HCM branches.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/operation/CalcVel.java` line 21, `compute`: LRE-OP1, LRE-Var3, LRE-Beh11
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` lines 93-109, `step`: LRE-FR3, LRE-Beh9, LRE-Beh10, LRE-Beh11, LRE-Beh12
+
+### 11. scope_question: CAM issues no evasive output; unlisted events are ignored
+- **raw:** LRE-FR4 says the AUV performs evasive manoeuvres in CAM but names no output; LRE-DM7 allows only advVel and advHdng. No requirement covers endTask in HCM/CAM, reqMOM outside OCM, or reqHCM outside MOM.
+- **fix_directive:** CAM has no entry action. An event with no transition in the current mode (including reqVel/reqHdng outside OCM, per LRE-Beh19) is ignored, and the mode's autonomous transitions are still evaluated in that step; step(null) means no event.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreController.java` lines 123-130, `step`: LRE-FR4, LRE-Beh17, LRE-Beh18, LRE-Beh19
+
+### 12. scope_question: MOM/HCM mutual exclusion relies on staticObsDfltVertDist <= staticObsVertDist
+- **raw:** Beh10 (MOM -> HCM: vdist <= staticObsDfltVertDist) and Beh13 (HCM -> MOM: hdist > staticObsHorizDist and vdist > staticObsVertDist) can both hold if staticObsDfltVertDist > staticObsVertDist, which would make the controller alternate between MOM and HCM every step (a cycle of guard-only transitions).
+- **fix_directive:** With the specified defaults (all 1.0) the guards are mutually exclusive, so nothing is changed. Keep staticObsDfltVertDist <= staticObsVertDist if the constants are tuned.
+- **java_trace:**
+  - `java.generated.project/src/main/java/lre/controller/LreConstants.java` lines 9-18, `LreConstants`: LRE-DM4, LRE-Beh10, LRE-Beh13
+
+## next_step
+
+Run the pipeline (compile, coverage, profile check, transformations, verifiers). The flagged points are interpretation choices; none blocks compilation or coverage.

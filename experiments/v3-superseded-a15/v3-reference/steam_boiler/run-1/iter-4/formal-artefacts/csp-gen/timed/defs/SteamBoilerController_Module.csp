@@ -1,0 +1,2075 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 01-11-2026 12:33:37
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+module SteamBoilerController_Module
+	exports
+	
+	transparent diamond
+	transparent sbisim
+	transparent dbisim
+	transparent chase
+	
+	-- declaring channels
+	-- declaring robotic platform events
+	channel transmissionReceived: InOut
+	channel modeMessage: InOut
+	channel closeValve: InOut
+	channel regulatePumps: InOut
+	channel openValve: InOut
+	channel stopPumps: InOut
+	channel runFillingPump: InOut
+	channel programReady: InOut
+	
+	
+	-- declaring module termination channel
+	channel terminate
+	
+	-- declaring robotic platform variables
+	channel get_pump, set_pump: core_int
+	channel get_switchedOn, set_switchedOn: core_boolean
+	channel get_startupEmergency, set_startupEmergency: core_boolean
+	channel get_unitsConfirmedReady, set_unitsConfirmedReady: core_boolean
+	channel get_nonLevelUnitFailed, set_nonLevelUnitFailed: core_boolean
+	channel get_plantWaiting, set_plantWaiting: core_boolean
+	channel get_excessWater, set_excessWater: core_boolean
+	channel get_lowWater, set_lowWater: core_boolean
+	channel get_operatingEmergency, set_operatingEmergency: core_boolean
+	channel get_levelUnitFailed, set_levelUnitFailed: core_boolean
+	channel get_levelEstimateUnreliable, set_levelEstimateUnreliable: core_boolean
+	
+	-- channel set with all visible events
+	sem__events = {|
+		transmissionReceived,
+		modeMessage,
+		closeValve,
+		regulatePumps,
+		openValve,
+		stopPumps,
+		runFillingPump,
+		programReady
+	|}
+	
+	-- declaring controller
+		module ctrl_ref0
+			shared_variable_events = {|
+				set_EXT_pump,
+				set_EXT_switchedOn,
+				set_EXT_startupEmergency,
+				set_EXT_unitsConfirmedReady,
+				set_EXT_nonLevelUnitFailed,
+				set_EXT_plantWaiting,
+				set_EXT_excessWater,
+				set_EXT_lowWater,
+				set_EXT_operatingEmergency,
+				set_EXT_levelUnitFailed,
+				set_EXT_levelEstimateUnreliable
+			|}
+			
+		exports
+			transparent diamond
+			transparent sbisim
+			transparent dbisim
+			transparent chase
+	
+			-- declaring controller events
+			channel transmissionReceived: InOut
+			channel modeMessage: InOut
+			channel closeValve: InOut
+			channel regulatePumps: InOut
+			channel openValve: InOut
+			channel stopPumps: InOut
+			channel runFillingPump: InOut
+			channel programReady: InOut
+			
+			channel set_pump: core_int
+			channel get_pump: core_int
+			channel set_switchedOn: core_boolean
+			channel get_switchedOn: core_boolean
+			channel set_startupEmergency: core_boolean
+			channel get_startupEmergency: core_boolean
+			channel set_unitsConfirmedReady: core_boolean
+			channel get_unitsConfirmedReady: core_boolean
+			channel set_nonLevelUnitFailed: core_boolean
+			channel get_nonLevelUnitFailed: core_boolean
+			channel set_plantWaiting: core_boolean
+			channel get_plantWaiting: core_boolean
+			channel set_excessWater: core_boolean
+			channel get_excessWater: core_boolean
+			channel set_lowWater: core_boolean
+			channel get_lowWater: core_boolean
+			channel set_operatingEmergency: core_boolean
+			channel get_operatingEmergency: core_boolean
+			channel set_levelUnitFailed: core_boolean
+			channel get_levelUnitFailed: core_boolean
+			channel set_levelEstimateUnreliable: core_boolean
+			channel get_levelEstimateUnreliable: core_boolean
+			
+			channel set_EXT_pump: core_int
+			channel set_EXT_switchedOn: core_boolean
+			channel set_EXT_startupEmergency: core_boolean
+			channel set_EXT_unitsConfirmedReady: core_boolean
+			channel set_EXT_nonLevelUnitFailed: core_boolean
+			channel set_EXT_plantWaiting: core_boolean
+			channel set_EXT_excessWater: core_boolean
+			channel set_EXT_lowWater: core_boolean
+			channel set_EXT_operatingEmergency: core_boolean
+			channel set_EXT_levelUnitFailed: core_boolean
+			channel set_EXT_levelEstimateUnreliable: core_boolean
+			
+			-- declaring call and ret events for undefined operations
+			
+			-- declaring controller termination channel
+			channel terminate
+			
+			-- channel set with all visible events
+			sem__events = {|
+				terminate
+			,	transmissionReceived,
+				modeMessage,
+				closeValve,
+				regulatePumps,
+				openValve,
+				stopPumps,
+				runFillingPump,
+				programReady
+			,	set_EXT_pump, set_pump,
+				set_EXT_switchedOn, set_switchedOn,
+				set_EXT_startupEmergency, set_startupEmergency,
+				set_EXT_unitsConfirmedReady, set_unitsConfirmedReady,
+				set_EXT_nonLevelUnitFailed, set_nonLevelUnitFailed,
+				set_EXT_plantWaiting, set_plantWaiting,
+				set_EXT_excessWater, set_excessWater,
+				set_EXT_lowWater, set_lowWater,
+				set_EXT_operatingEmergency, set_operatingEmergency,
+				set_EXT_levelUnitFailed, set_levelUnitFailed,
+				set_EXT_levelEstimateUnreliable, set_levelEstimateUnreliable
+			|}
+			
+			-- set of visible memory events
+			visibleMemoryEvents = {|get_pump,set_pump,get_switchedOn,set_switchedOn,get_startupEmergency,set_startupEmergency,get_unitsConfirmedReady,set_unitsConfirmedReady,get_nonLevelUnitFailed,set_nonLevelUnitFailed,get_plantWaiting,set_plantWaiting,get_excessWater,set_excessWater,get_lowWater,set_lowWater,get_operatingEmergency,set_operatingEmergency,get_levelUnitFailed,set_levelUnitFailed,get_levelEstimateUnreliable,set_levelEstimateUnreliable|}
+	
+			-- defined operations
+		
+			-- declaring machines
+			module stm_ref0
+			exports
+				transparent diamond
+				transparent sbisim
+				transparent dbisim
+				transparent chase
+			
+				-- Transition identifiers
+				-- declaring identifiers of transitions
+				datatype NIDS = 
+				              NID_EMERGENCY_STOP|
+				              NID_RESCUE|
+				              NID_DEGRADED|
+				              NID_NORMAL|
+				              NID_INITIALIZATION|
+				              NID_i0
+				
+				channel internal__ : NIDS
+				
+				-- Flow channels		
+				channel interrupt
+				channel exited
+				channel exit
+				channel terminate
+				
+				-- Variable channels
+				channel get_pump, set_pump, setL_pump, setR_pump: core_int
+				channel get_switchedOn, set_switchedOn, setL_switchedOn, setR_switchedOn: core_boolean
+				channel get_startupEmergency, set_startupEmergency, setL_startupEmergency, setR_startupEmergency: core_boolean
+				channel get_unitsConfirmedReady, set_unitsConfirmedReady, setL_unitsConfirmedReady, setR_unitsConfirmedReady: core_boolean
+				channel get_nonLevelUnitFailed, set_nonLevelUnitFailed, setL_nonLevelUnitFailed, setR_nonLevelUnitFailed: core_boolean
+				channel get_plantWaiting, set_plantWaiting, setL_plantWaiting, setR_plantWaiting: core_boolean
+				channel get_excessWater, set_excessWater, setL_excessWater, setR_excessWater: core_boolean
+				channel get_lowWater, set_lowWater, setL_lowWater, setR_lowWater: core_boolean
+				channel get_operatingEmergency, set_operatingEmergency, setL_operatingEmergency, setR_operatingEmergency: core_boolean
+				channel get_levelUnitFailed, set_levelUnitFailed, setL_levelUnitFailed, setR_levelUnitFailed: core_boolean
+				channel get_levelEstimateUnreliable, set_levelEstimateUnreliable, setL_levelEstimateUnreliable, setR_levelEstimateUnreliable: core_boolean
+				
+				-- Shared variable channels
+				channel set_EXT_pump: core_int
+				channel set_EXT_switchedOn: core_boolean
+				channel set_EXT_startupEmergency: core_boolean
+				channel set_EXT_unitsConfirmedReady: core_boolean
+				channel set_EXT_nonLevelUnitFailed: core_boolean
+				channel set_EXT_plantWaiting: core_boolean
+				channel set_EXT_excessWater: core_boolean
+				channel set_EXT_lowWater: core_boolean
+				channel set_EXT_operatingEmergency: core_boolean
+				channel set_EXT_levelUnitFailed: core_boolean
+				channel set_EXT_levelEstimateUnreliable: core_boolean
+				
+				-- Local variable channels for defined operations that are required by the state machine
+				
+				-- Declaring state machine events
+				channel transmissionReceived__: NIDS.InOut
+				channel transmissionReceived: InOut
+				channel modeMessage__: NIDS.InOut
+				channel modeMessage: InOut
+				channel closeValve__: NIDS.InOut
+				channel closeValve: InOut
+				channel regulatePumps__: NIDS.InOut
+				channel regulatePumps: InOut
+				channel openValve__: NIDS.InOut
+				channel openValve: InOut
+				channel stopPumps__: NIDS.InOut
+				channel stopPumps: InOut
+				channel runFillingPump__: NIDS.InOut
+				channel runFillingPump: InOut
+				channel programReady__: NIDS.InOut
+				channel programReady: InOut
+				
+				-- Declaring call and ret events for undefined operations
+				
+				enterSS = {|
+				EMERGENCY_STOP::enter,
+				RESCUE::enter,
+				DEGRADED::enter,
+				NORMAL::enter,
+				INITIALIZATION::enter,
+				i0::enter
+				|}
+				
+				enteredSS = 	{|
+				EMERGENCY_STOP::entered,
+				RESCUE::entered,
+				DEGRADED::entered,
+				NORMAL::entered,
+				INITIALIZATION::entered
+				|}
+				
+				internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
+				
+				shared_variable_events = {|
+					set_EXT_pump,
+					set_EXT_switchedOn,
+					set_EXT_startupEmergency,
+					set_EXT_unitsConfirmedReady,
+					set_EXT_nonLevelUnitFailed,
+					set_EXT_plantWaiting,
+					set_EXT_excessWater,
+					set_EXT_lowWater,
+					set_EXT_operatingEmergency,
+					set_EXT_levelUnitFailed,
+					set_EXT_levelEstimateUnreliable
+				|}
+				
+				-- channel set with all visible events
+				sem__events = {|
+					terminate
+				,	set_EXT_pump, set_pump,
+					set_EXT_switchedOn, set_switchedOn,
+					set_EXT_startupEmergency, set_startupEmergency,
+					set_EXT_unitsConfirmedReady, set_unitsConfirmedReady,
+					set_EXT_nonLevelUnitFailed, set_nonLevelUnitFailed,
+					set_EXT_plantWaiting, set_plantWaiting,
+					set_EXT_excessWater, set_excessWater,
+					set_EXT_lowWater, set_lowWater,
+					set_EXT_operatingEmergency, set_operatingEmergency,
+					set_EXT_levelUnitFailed, set_levelUnitFailed,
+					set_EXT_levelEstimateUnreliable, set_levelEstimateUnreliable
+				,	transmissionReceived,
+					modeMessage,
+					closeValve,
+					regulatePumps,
+					openValve,
+					stopPumps,
+					runFillingPump,
+					programReady
+					|}
+				
+				channel clockReset, clockResetL, clockResetR 
+				
+				localClockResets = {||}
+				
+				
+				channel get_CLID_EMERGENCY_STOP : core_clock_type 
+				channel get_CLID_RESCUE : core_clock_type 
+				channel get_CLID_DEGRADED : core_clock_type 
+				channel get_CLID_INITIALIZATION : core_clock_type 
+				channel get_CLID_NORMAL : core_clock_type 
+				--channel increment__
+				
+				CLID_EMERGENCY_STOP_clock_type(id__) = 
+					let
+						max = (clock_type_max(Union({
+				{}
+				}))+1)
+					ctype = {0..max}
+				within
+					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+				
+				CLID_RESCUE_clock_type(id__) = 
+					let
+						max = (clock_type_max(Union({
+				{}
+				}))+1)
+					ctype = {0..max}
+				within
+					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+				
+				CLID_DEGRADED_clock_type(id__) = 
+					let
+						max = (clock_type_max(Union({
+				{}
+				}))+1)
+					ctype = {0..max}
+				within
+					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+				
+				CLID_INITIALIZATION_clock_type(id__) = 
+					let
+						max = (clock_type_max(Union({
+				{}
+				}))+1)
+					ctype = {0..max}
+				within
+					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+				
+				CLID_NORMAL_clock_type(id__) = 
+					let
+						max = (clock_type_max(Union({
+				{}
+				}))+1)
+					ctype = {0..max}
+				within
+					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+				
+				
+			
+					-- Nodes --
+					-- declaring all nodes
+					
+					----------------------------------------------------------------------
+					-- State: EMERGENCY_STOP
+					module EMERGENCY_STOP
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: RESCUE
+					module RESCUE
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: DEGRADED
+					module DEGRADED
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: NORMAL
+					module NORMAL
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: INITIALIZATION
+					module INITIALIZATION
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- Initial: i0
+					module i0
+					exports
+					
+						channel enter, interrupt
+						
+						Timed(OneStep) {
+							D__(id__) = 
+								dbisim(let
+									Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+									
+									Termination = terminate -> SKIP
+									
+									Active 		= share__choice(interrupt -> SKIP) ; Inactive
+								within
+									Inactive [| {terminate} |> SKIP)
+							
+							VS_O__(id__) = D__(id__)
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					-- END of Nodes --
+					
+					Timed(OneStep) {
+					-- Operation calls --
+					-- Only the undefined operations are declared here.
+					-- If the state machine is in isolation, all required operations will be undefined.
+					-- If it is in the context of a controller, the required operations not provided by the
+					-- controller will be declared here, and the defined operations will be defined in the
+					-- context of the Controller module, and therefore within scope of the state machine module.
+					
+					-- END of Operation calls --
+				
+					-- STM processes
+					STM(id__) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+					( 
+						(
+							(
+								(IteratedStateful(id__) \ {terminate} ; share__choice(terminate -> SKIP))
+							 	[[ share__ <- x__ | x__ <- {|set_EXT_pump,set_EXT_switchedOn,set_EXT_startupEmergency,set_EXT_unitsConfirmedReady,set_EXT_nonLevelUnitFailed,set_EXT_plantWaiting,set_EXT_excessWater,set_EXT_lowWater,set_EXT_operatingEmergency,set_EXT_levelUnitFailed,set_EXT_levelEstimateUnreliable|} ]]
+							)
+						[| {share__} |]
+						SKIP
+						)
+						[| union(sharedVarSync,{terminate}) |]
+						dbisim(sharedVarMemory(id__))
+					)\sharedVarHide
+					
+					STM_VS_O(id__) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+					( 
+						(
+							(
+								(IteratedStateful_VS_O(id__) \ {terminate} ; share__choice(terminate -> SKIP))
+							 	[[ share__ <- x__ | x__ <- {|set_EXT_pump,set_EXT_switchedOn,set_EXT_startupEmergency,set_EXT_unitsConfirmedReady,set_EXT_nonLevelUnitFailed,set_EXT_plantWaiting,set_EXT_excessWater,set_EXT_lowWater,set_EXT_operatingEmergency,set_EXT_levelUnitFailed,set_EXT_levelEstimateUnreliable|} ]]
+							)
+						[| {share__} |]
+						SKIP
+						)
+						[| union(sharedVarSync,{terminate}) |]
+						dbisim(sharedVarMemory(id__))
+					)\sharedVarHide
+					
+					-- Transitions
+					Transitions(id__) = ((let
+						Trans = share__choice(get_operatingEmergency?operatingEmergency -> get_nonLevelUnitFailed?nonLevelUnitFailed -> get_levelUnitFailed?levelUnitFailed -> get_levelEstimateUnreliable?levelEstimateUnreliable -> get_startupEmergency?startupEmergency -> get_excessWater?excessWater -> get_unitsConfirmedReady?unitsConfirmedReady -> get_plantWaiting?plantWaiting -> get_lowWater?lowWater -> TimeOut_1(
+							 (share__ -> SKIP
+							 [] dbisim((true)&(internal__!NID_i0 -> SKIP ;  ((SKIP ; INITIALIZATION::enter -> SKIP))))
+							 [] dbisim((startupEmergency)&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+							 [] dbisim(((((not ((startupEmergency))) and unitsConfirmedReady) and (not ((nonLevelUnitFailed)))))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(closeValve.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+							 [] dbisim(((((not ((startupEmergency))) and unitsConfirmedReady) and nonLevelUnitFailed))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(closeValve.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+							 [] dbisim(((((not ((startupEmergency))) and (not ((unitsConfirmedReady)))) and (not ((plantWaiting)))))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+							 [] dbisim((((((not ((startupEmergency))) and (not ((unitsConfirmedReady)))) and plantWaiting) and excessWater))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(openValve.out -> SKIP));true&(share__choice(stopPumps.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+							 [] dbisim(((((((not ((startupEmergency))) and (not ((unitsConfirmedReady)))) and plantWaiting) and (not ((excessWater)))) and lowWater))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(closeValve.out -> SKIP));true&(share__choice(runFillingPump.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+							 [] dbisim(((((((not ((startupEmergency))) and (not ((unitsConfirmedReady)))) and plantWaiting) and (not ((excessWater)))) and (not ((lowWater)))))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(closeValve.out -> SKIP));true&(share__choice(stopPumps.out -> SKIP));true&(share__choice(programReady.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+							 [] dbisim((operatingEmergency)&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+							 [] dbisim((((not ((operatingEmergency))) and levelUnitFailed))&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+							 [] dbisim(((((not ((operatingEmergency))) and (not ((levelUnitFailed)))) and nonLevelUnitFailed))&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+							 [] dbisim(((((not ((operatingEmergency))) and (not ((levelUnitFailed)))) and (not ((nonLevelUnitFailed)))))&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+							 [] dbisim((operatingEmergency)&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+							 [] dbisim((((not ((operatingEmergency))) and levelUnitFailed))&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+							 [] dbisim(((((not ((operatingEmergency))) and (not ((levelUnitFailed)))) and (not ((nonLevelUnitFailed)))))&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+							 [] dbisim(((((not ((operatingEmergency))) and (not ((levelUnitFailed)))) and nonLevelUnitFailed))&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+							 [] dbisim((operatingEmergency)&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+							 [] dbisim((((not ((operatingEmergency))) and levelEstimateUnreliable))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+							 [] dbisim(((((not ((operatingEmergency))) and (not ((levelEstimateUnreliable)))) and levelUnitFailed))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+							 [] dbisim((((((not ((operatingEmergency))) and (not ((levelEstimateUnreliable)))) and (not ((levelUnitFailed)))) and (not ((nonLevelUnitFailed)))))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; NORMAL::enter -> SKIP)))
+							 [] dbisim((((((not ((operatingEmergency))) and (not ((levelEstimateUnreliable)))) and (not ((levelUnitFailed)))) and nonLevelUnitFailed))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(regulatePumps.out -> SKIP)) ; DEGRADED::enter -> SKIP)))
+							 []
+							 (interrupt -> share__choice(exit -> SKIP) ; share__choice(exited -> terminate -> SKIP))
+							 []
+							 terminate -> SKIP
+							 )
+						,SKIP);Trans
+						)
+					within
+						Trans [|{terminate}|> SKIP
+					)
+					)
+					
+					-- Stateful
+					-- RULE: Stateful(stm:StateMachineBody) : CSPProcess
+					
+					-- Named process definitions
+					MachineBody(id__) = 
+						dbisim((
+						let
+							finalNodesEntered = {||}
+						within
+							(dbisim((dbisim((let
+								-- IMPLEMENTATION NOTE:
+								-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+								-- modules for defining the semantics of each node.
+								enterSS = {|
+								EMERGENCY_STOP::enter,
+								RESCUE::enter,
+								DEGRADED::enter,
+								NORMAL::enter,
+								INITIALIZATION::enter,
+								i0::enter
+								|}
+								hideSet = union(enterSS,{|exit,exited,internal__|})
+							within 
+								((let
+									-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+									-- because CSPM modules are used for the semantics of Node.
+									flowevts = union(enterSS,{|exit,exited,interrupt|})
+									transSync = {|internal__.NID_i0,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in|}
+								within
+									((
+									 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+									   EMERGENCY_STOP::D__(id__)
+									   [| { share__, terminate } |] (
+									   RESCUE::D__(id__)
+									   [| { share__, terminate } |] (
+									   DEGRADED::D__(id__)
+									   [| { share__, terminate } |] (
+									   NORMAL::D__(id__)
+									   [| { share__, terminate } |] (
+									   INITIALIZATION::D__(id__)
+									   [| { share__, terminate } |] (
+									   i0::D__(id__)
+									   )
+									   )
+									   )
+									   )
+									   )
+									 )
+									 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+									 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in|}]]
+									 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in|}]]
+									 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in|}]]
+									 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in|}]]
+									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+									 )
+									  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+									  [[set_operatingEmergency <- setL_operatingEmergency,set_nonLevelUnitFailed <- setL_nonLevelUnitFailed,set_levelUnitFailed <- setL_levelUnitFailed,set_levelEstimateUnreliable <- setL_levelEstimateUnreliable,set_startupEmergency <- setL_startupEmergency,set_excessWater <- setL_excessWater,set_unitsConfirmedReady <- setL_unitsConfirmedReady,set_plantWaiting <- setL_plantWaiting,set_lowWater <- setL_lowWater]]
+									 )
+									 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+									 			,setL_operatingEmergency
+									 			,setL_nonLevelUnitFailed
+									 			,setL_levelUnitFailed
+									 			,setL_levelEstimateUnreliable
+									 			,setL_startupEmergency
+									 			,setL_excessWater
+									 			,setL_unitsConfirmedReady
+									 			,setL_plantWaiting
+									 			,setL_lowWater
+									|}) |]
+									 ((i0::enter -> Transitions(id__))
+									  [[ share__ <- x__ | x__ <- {| share__,setL_operatingEmergency,setL_nonLevelUnitFailed,setL_levelUnitFailed,setL_levelEstimateUnreliable,setL_startupEmergency,setL_excessWater,setL_unitsConfirmedReady,setL_plantWaiting,setL_lowWater |} ]]
+									 )
+									)[[setL_operatingEmergency <- set_operatingEmergency,setL_nonLevelUnitFailed <- set_nonLevelUnitFailed,setL_levelUnitFailed <- set_levelUnitFailed,setL_levelEstimateUnreliable <- set_levelEstimateUnreliable,setL_startupEmergency <- set_startupEmergency,setL_excessWater <- set_excessWater,setL_unitsConfirmedReady <- set_unitsConfirmedReady,setL_plantWaiting <- set_plantWaiting,setL_lowWater <- set_lowWater]]
+									)
+								)
+								 \ hideSet)
+								[[
+									transmissionReceived__.x____ <- transmissionReceived,
+									modeMessage__.x____ <- modeMessage,
+									closeValve__.x____ <- closeValve,
+									regulatePumps__.x____ <- regulatePumps,
+									openValve__.x____ <- openValve,
+									stopPumps__.x____ <- stopPumps,
+									runFillingPump__.x____ <- runFillingPump,
+									programReady__.x____ <- programReady
+									| x____ <- NIDS
+								]]
+							)
+							)
+							 [| union(stateClockSync,{terminate}) |]
+							 StateClocks(id__)
+							)\diff(stateClockSync,enteredSS))
+							 [| {| interrupt |} |] SKIP)
+						)
+						)
+					
+					Behaviour(id__) = 
+						dbisim((let
+							stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_NORMAL,NORMAL::entered|}
+						 within
+							(MachineBody(id__) [| union(stateClockSync,{terminate}) |] StateClocks(id__)) \ union(stateClockSync,enteredSS)
+						)
+						)
+					
+					IteratedBehaviour(id__) = 
+						dbisim((let
+							stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_NORMAL,NORMAL::entered|}
+						 within
+							(dbisim(
+								sbisim(
+									dbisim(
+										sbisim(
+											dbisim(
+												sbisim(
+													dbisim(
+														sbisim(
+															dbisim(
+																sbisim(
+																	MachineBody(id__)
+																	[| {|get_CLID_NORMAL,NORMAL::entered,terminate|} |]
+																	dbisim(Clock_CLID_NORMAL(id__,0))
+																)\{|get_CLID_NORMAL|}
+															)
+															[| {|get_CLID_INITIALIZATION,INITIALIZATION::entered,terminate|} |]
+															dbisim(Clock_CLID_INITIALIZATION(id__,0))
+														)\{|get_CLID_INITIALIZATION|}
+													)
+													[| {|get_CLID_DEGRADED,DEGRADED::entered,terminate|} |]
+													dbisim(Clock_CLID_DEGRADED(id__,0))
+												)\{|get_CLID_DEGRADED|}
+											)
+											[| {|get_CLID_RESCUE,RESCUE::entered,terminate|} |]
+											dbisim(Clock_CLID_RESCUE(id__,0))
+										)\{|get_CLID_RESCUE|}
+									)
+									[| {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,terminate|} |]
+									dbisim(Clock_CLID_EMERGENCY_STOP(id__,0))
+								)\{|get_CLID_EMERGENCY_STOP|}
+							)
+							) \ union(stateClockSync,enteredSS)
+						)
+						)
+					
+					Stateful(id__) = 
+						((let
+							getsetLocalChannels = {||}
+							clockSync = {||}
+						within
+							(Behaviour(id__) 
+							 [| union(union(getsetLocalChannels,clockSync),{terminate}) |] 
+							 (varMemory(id__) [| {terminate} |] Clocks(id__))
+						 	)\union(getsetLocalChannels,clockSync)
+						)
+						)
+					
+					IteratedStateful(id__) =
+						(IteratedBehaviour(id__))
+					
+					-- Visible counterparts
+					MachineBody_VS_O(id__) = 
+						dbisim((
+						let
+							finalNodesEntered = {||}
+						within
+							(dbisim((dbisim((let
+								-- IMPLEMENTATION NOTE:
+								-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+								-- modules for defining the semantics of each node.
+								enterSS = {|
+								EMERGENCY_STOP::enter,
+								RESCUE::enter,
+								DEGRADED::enter,
+								NORMAL::enter,
+								INITIALIZATION::enter,
+								i0::enter
+								|}
+								hideSet = union(enterSS,{|exit,exited,internal__|})
+							within 
+								((let
+									-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+									-- because CSPM modules are used for the semantics of Node.
+									flowevts = union(enterSS,{|exit,exited,interrupt|})
+									transSync = {|internal__.NID_i0,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in|}
+								within
+									((
+									 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+									   EMERGENCY_STOP::VS_O__(id__)
+									   [| { share__, terminate } |] (
+									   RESCUE::VS_O__(id__)
+									   [| { share__, terminate } |] (
+									   DEGRADED::VS_O__(id__)
+									   [| { share__, terminate } |] (
+									   NORMAL::VS_O__(id__)
+									   [| { share__, terminate } |] (
+									   INITIALIZATION::VS_O__(id__)
+									   [| { share__, terminate } |] (
+									   i0::VS_O__(id__)
+									   )
+									   )
+									   )
+									   )
+									   )
+									 )
+									 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+									 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in|}]]
+									 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in|}]]
+									 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in|}]]
+									 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in|}]]
+									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+									 )
+									  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+									  [[set_operatingEmergency <- setL_operatingEmergency,set_nonLevelUnitFailed <- setL_nonLevelUnitFailed,set_levelUnitFailed <- setL_levelUnitFailed,set_levelEstimateUnreliable <- setL_levelEstimateUnreliable,set_startupEmergency <- setL_startupEmergency,set_excessWater <- setL_excessWater,set_unitsConfirmedReady <- setL_unitsConfirmedReady,set_plantWaiting <- setL_plantWaiting,set_lowWater <- setL_lowWater]]
+									 )
+									 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+									 			,setL_operatingEmergency
+									 			,setL_nonLevelUnitFailed
+									 			,setL_levelUnitFailed
+									 			,setL_levelEstimateUnreliable
+									 			,setL_startupEmergency
+									 			,setL_excessWater
+									 			,setL_unitsConfirmedReady
+									 			,setL_plantWaiting
+									 			,setL_lowWater
+									|}) |]
+									 ((i0::enter -> Transitions(id__))
+									  [[ share__ <- x__ | x__ <- {| share__,setL_operatingEmergency,setL_nonLevelUnitFailed,setL_levelUnitFailed,setL_levelEstimateUnreliable,setL_startupEmergency,setL_excessWater,setL_unitsConfirmedReady,setL_plantWaiting,setL_lowWater |} ]]
+									 )
+									)[[setL_operatingEmergency <- set_operatingEmergency,setL_nonLevelUnitFailed <- set_nonLevelUnitFailed,setL_levelUnitFailed <- set_levelUnitFailed,setL_levelEstimateUnreliable <- set_levelEstimateUnreliable,setL_startupEmergency <- set_startupEmergency,setL_excessWater <- set_excessWater,setL_unitsConfirmedReady <- set_unitsConfirmedReady,setL_plantWaiting <- set_plantWaiting,setL_lowWater <- set_lowWater]]
+									)
+								)
+								 \ hideSet)
+								[[
+									transmissionReceived__.x____ <- transmissionReceived,
+									modeMessage__.x____ <- modeMessage,
+									closeValve__.x____ <- closeValve,
+									regulatePumps__.x____ <- regulatePumps,
+									openValve__.x____ <- openValve,
+									stopPumps__.x____ <- stopPumps,
+									runFillingPump__.x____ <- runFillingPump,
+									programReady__.x____ <- programReady
+									| x____ <- NIDS
+								]]
+							)
+							)
+							 [| union(stateClockSync,{terminate}) |]
+							 StateClocks(id__)
+							)\diff(stateClockSync,enteredSS))
+							 [| {| interrupt |} |] SKIP)
+						)
+						)
+					
+					Behaviour_VS_O(id__) = 
+						dbisim((let
+							stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_NORMAL,NORMAL::entered|}
+						 within
+							(MachineBody_VS_O(id__) [| union(stateClockSync,{terminate}) |] StateClocks(id__)) \ diff(union(stateClockSync,enteredSS),enteredSS)
+						)
+						)
+					
+					IteratedBehaviour_VS_O(id__) = 
+						dbisim((let
+							stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_NORMAL,NORMAL::entered|}
+						 within
+							(dbisim(
+								sbisim(
+									dbisim(
+										sbisim(
+											dbisim(
+												sbisim(
+													dbisim(
+														sbisim(
+															dbisim(
+																sbisim(
+																	MachineBody_VS_O(id__)
+																	[| {|get_CLID_NORMAL,NORMAL::entered,terminate|} |]
+																	dbisim(Clock_CLID_NORMAL(id__,0))
+																)\{|get_CLID_NORMAL|}
+															)
+															[| {|get_CLID_INITIALIZATION,INITIALIZATION::entered,terminate|} |]
+															dbisim(Clock_CLID_INITIALIZATION(id__,0))
+														)\{|get_CLID_INITIALIZATION|}
+													)
+													[| {|get_CLID_DEGRADED,DEGRADED::entered,terminate|} |]
+													dbisim(Clock_CLID_DEGRADED(id__,0))
+												)\{|get_CLID_DEGRADED|}
+											)
+											[| {|get_CLID_RESCUE,RESCUE::entered,terminate|} |]
+											dbisim(Clock_CLID_RESCUE(id__,0))
+										)\{|get_CLID_RESCUE|}
+									)
+									[| {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,terminate|} |]
+									dbisim(Clock_CLID_EMERGENCY_STOP(id__,0))
+								)\{|get_CLID_EMERGENCY_STOP|}
+							)
+							) \ diff(union(stateClockSync,enteredSS),enteredSS)
+						)
+						)
+					
+					Stateful_VS_O(id__) = 
+						dbisim((let
+							getsetLocalChannels = {||}
+							clockSync = {||}
+						within
+							(Behaviour_VS_O(id__) 
+							 [| union(union(getsetLocalChannels,clockSync),{terminate}) |] 
+							 (varMemory(id__) [| {terminate} |] Clocks(id__))
+						 	)\union(getsetLocalChannels,clockSync)
+						)
+						)
+					
+					IteratedStateful_VS_O(id__) =
+						(IteratedBehaviour_VS_O(id__))
+					
+					-- END
+					
+					-- Memory
+					-- Memory variables
+					
+					-- varMemory process
+					varMemory(id__) = terminate -> SKIP
+					
+					getsetLocalChannels = {||}
+					
+					-- Definition of the behaviour of state machines (default, optimised, visible, visible and optimised)
+					FVS__(id__) = STM_VS_O(id__) \ localClockResets
+					D__(id__) = timed_priority(STM(id__) \ union(internal_events,localClockResets))
+					O__(id__) = dbisim(D__(id__))
+					VS__(id__) = FVS__(id__)
+					VS_O__(id__) = dbisim(FVS__(id__))
+					HEXT__(id__) = O__(id__) [|shared_variable_events|] SKIP
+					FVS_C__(id__) = dbisim(timed_priority(STM(id__) \ internal_events))
+					HUP__(id__) = timed_priority(O__(id__) [|{share__}|] SKIP)
+					
+					-- Clocks
+					
+					Clocks(id__) = terminate -> SKIP
+					
+					clockSync = {||}
+					
+					Clock_CLID_EMERGENCY_STOP(id__,x__) = 
+						TimeOut_1(
+							EMERGENCY_STOP::entered -> Clock_CLID_EMERGENCY_STOP(id__,0)
+							[]
+							get_CLID_EMERGENCY_STOP!x__ -> Clock_CLID_EMERGENCY_STOP(id__,x__)
+							[]
+							terminate -> SKIP,Clock_CLID_EMERGENCY_STOP(id__,clock_type_plus(x__,1,CLID_EMERGENCY_STOP_clock_type(id__))))
+					Clock_CLID_RESCUE(id__,x__) = 
+						TimeOut_1(
+							RESCUE::entered -> Clock_CLID_RESCUE(id__,0)
+							[]
+							get_CLID_RESCUE!x__ -> Clock_CLID_RESCUE(id__,x__)
+							[]
+							terminate -> SKIP,Clock_CLID_RESCUE(id__,clock_type_plus(x__,1,CLID_RESCUE_clock_type(id__))))
+					Clock_CLID_DEGRADED(id__,x__) = 
+						TimeOut_1(
+							DEGRADED::entered -> Clock_CLID_DEGRADED(id__,0)
+							[]
+							get_CLID_DEGRADED!x__ -> Clock_CLID_DEGRADED(id__,x__)
+							[]
+							terminate -> SKIP,Clock_CLID_DEGRADED(id__,clock_type_plus(x__,1,CLID_DEGRADED_clock_type(id__))))
+					Clock_CLID_INITIALIZATION(id__,x__) = 
+						TimeOut_1(
+							INITIALIZATION::entered -> Clock_CLID_INITIALIZATION(id__,0)
+							[]
+							get_CLID_INITIALIZATION!x__ -> Clock_CLID_INITIALIZATION(id__,x__)
+							[]
+							terminate -> SKIP,Clock_CLID_INITIALIZATION(id__,clock_type_plus(x__,1,CLID_INITIALIZATION_clock_type(id__))))
+					Clock_CLID_NORMAL(id__,x__) = 
+						TimeOut_1(
+							NORMAL::entered -> Clock_CLID_NORMAL(id__,0)
+							[]
+							get_CLID_NORMAL!x__ -> Clock_CLID_NORMAL(id__,x__)
+							[]
+							terminate -> SKIP,Clock_CLID_NORMAL(id__,clock_type_plus(x__,1,CLID_NORMAL_clock_type(id__))))
+					
+					StateClocks(id__) = dbisim(Clock_CLID_EMERGENCY_STOP(id__,0))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_RESCUE(id__,0))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_DEGRADED(id__,0))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_INITIALIZATION(id__,0))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_NORMAL(id__,0))
+					)
+					)
+					)
+					)
+					
+					stateClockSync = {|get_CLID_EMERGENCY_STOP,EMERGENCY_STOP::entered,get_CLID_RESCUE,RESCUE::entered,get_CLID_DEGRADED,DEGRADED::entered,get_CLID_INITIALIZATION,INITIALIZATION::entered,get_CLID_NORMAL,NORMAL::entered|}
+					
+					-- Shared memory
+					-- Shared memory variables
+					Memory_pump(pump) =
+						get_pump!pump -> Memory_pump(pump)
+						[]
+						set_pump?x__ -> Memory_pump(x__)
+						[]
+						set_EXT_pump?x__ -> Memory_pump(x__)
+						[]
+						terminate -> SKIP
+					Memory_switchedOn(switchedOn) =
+						get_switchedOn!switchedOn -> Memory_switchedOn(switchedOn)
+						[]
+						set_switchedOn?x__ -> Memory_switchedOn(x__)
+						[]
+						set_EXT_switchedOn?x__ -> Memory_switchedOn(x__)
+						[]
+						terminate -> SKIP
+					Memory_startupEmergency(startupEmergency) =
+						get_startupEmergency!startupEmergency -> Memory_startupEmergency(startupEmergency)
+						[]
+						set_startupEmergency?x__ -> Memory_startupEmergency(x__)
+						[]
+						set_EXT_startupEmergency?x__ -> Memory_startupEmergency(x__)
+						[]
+						terminate -> SKIP
+					Memory_unitsConfirmedReady(unitsConfirmedReady) =
+						get_unitsConfirmedReady!unitsConfirmedReady -> Memory_unitsConfirmedReady(unitsConfirmedReady)
+						[]
+						set_unitsConfirmedReady?x__ -> Memory_unitsConfirmedReady(x__)
+						[]
+						set_EXT_unitsConfirmedReady?x__ -> Memory_unitsConfirmedReady(x__)
+						[]
+						terminate -> SKIP
+					Memory_nonLevelUnitFailed(nonLevelUnitFailed) =
+						get_nonLevelUnitFailed!nonLevelUnitFailed -> Memory_nonLevelUnitFailed(nonLevelUnitFailed)
+						[]
+						set_nonLevelUnitFailed?x__ -> Memory_nonLevelUnitFailed(x__)
+						[]
+						set_EXT_nonLevelUnitFailed?x__ -> Memory_nonLevelUnitFailed(x__)
+						[]
+						terminate -> SKIP
+					Memory_plantWaiting(plantWaiting) =
+						get_plantWaiting!plantWaiting -> Memory_plantWaiting(plantWaiting)
+						[]
+						set_plantWaiting?x__ -> Memory_plantWaiting(x__)
+						[]
+						set_EXT_plantWaiting?x__ -> Memory_plantWaiting(x__)
+						[]
+						terminate -> SKIP
+					Memory_excessWater(excessWater) =
+						get_excessWater!excessWater -> Memory_excessWater(excessWater)
+						[]
+						set_excessWater?x__ -> Memory_excessWater(x__)
+						[]
+						set_EXT_excessWater?x__ -> Memory_excessWater(x__)
+						[]
+						terminate -> SKIP
+					Memory_lowWater(lowWater) =
+						get_lowWater!lowWater -> Memory_lowWater(lowWater)
+						[]
+						set_lowWater?x__ -> Memory_lowWater(x__)
+						[]
+						set_EXT_lowWater?x__ -> Memory_lowWater(x__)
+						[]
+						terminate -> SKIP
+					Memory_operatingEmergency(operatingEmergency) =
+						get_operatingEmergency!operatingEmergency -> Memory_operatingEmergency(operatingEmergency)
+						[]
+						set_operatingEmergency?x__ -> Memory_operatingEmergency(x__)
+						[]
+						set_EXT_operatingEmergency?x__ -> Memory_operatingEmergency(x__)
+						[]
+						terminate -> SKIP
+					Memory_levelUnitFailed(levelUnitFailed) =
+						get_levelUnitFailed!levelUnitFailed -> Memory_levelUnitFailed(levelUnitFailed)
+						[]
+						set_levelUnitFailed?x__ -> Memory_levelUnitFailed(x__)
+						[]
+						set_EXT_levelUnitFailed?x__ -> Memory_levelUnitFailed(x__)
+						[]
+						terminate -> SKIP
+					Memory_levelEstimateUnreliable(levelEstimateUnreliable) =
+						get_levelEstimateUnreliable!levelEstimateUnreliable -> Memory_levelEstimateUnreliable(levelEstimateUnreliable)
+						[]
+						set_levelEstimateUnreliable?x__ -> Memory_levelEstimateUnreliable(x__)
+						[]
+						set_EXT_levelEstimateUnreliable?x__ -> Memory_levelEstimateUnreliable(x__)
+						[]
+						terminate -> SKIP
+					
+					-- sharedVarMemory process
+					sharedVarMemory(id__) = Memory_pump(0)
+					[| { terminate } |] (
+					Memory_switchedOn(true)
+					[| { terminate } |] (
+					Memory_startupEmergency(true)
+					[| { terminate } |] (
+					Memory_unitsConfirmedReady(true)
+					[| { terminate } |] (
+					Memory_nonLevelUnitFailed(true)
+					[| { terminate } |] (
+					Memory_plantWaiting(true)
+					[| { terminate } |] (
+					Memory_excessWater(true)
+					[| { terminate } |] (
+					Memory_lowWater(true)
+					[| { terminate } |] (
+					Memory_operatingEmergency(true)
+					[| { terminate } |] (
+					Memory_levelUnitFailed(true)
+					[| { terminate } |] (
+					Memory_levelEstimateUnreliable(true)
+					)
+					)
+					)
+					)
+					)
+					)
+					)
+					)
+					)
+					)
+					
+					sharedVarSync = {|get_pump,set_pump,set_EXT_pump,get_switchedOn,set_switchedOn,set_EXT_switchedOn,get_startupEmergency,set_startupEmergency,set_EXT_startupEmergency,get_unitsConfirmedReady,set_unitsConfirmedReady,set_EXT_unitsConfirmedReady,get_nonLevelUnitFailed,set_nonLevelUnitFailed,set_EXT_nonLevelUnitFailed,get_plantWaiting,set_plantWaiting,set_EXT_plantWaiting,get_excessWater,set_excessWater,set_EXT_excessWater,get_lowWater,set_lowWater,set_EXT_lowWater,get_operatingEmergency,set_operatingEmergency,set_EXT_operatingEmergency,get_levelUnitFailed,set_levelUnitFailed,set_EXT_levelUnitFailed,get_levelEstimateUnreliable,set_levelEstimateUnreliable,set_EXT_levelEstimateUnreliable|}
+					
+					sharedVarHide = {|get_pump,get_switchedOn,get_startupEmergency,get_unitsConfirmedReady,get_nonLevelUnitFailed,get_plantWaiting,get_excessWater,get_lowWater,get_operatingEmergency,get_levelUnitFailed,get_levelEstimateUnreliable|}
+					}
+			endmodule
+			
+			Timed(OneStep) {
+					-- undefined operations
+					
+					-- declaring controller memory
+					Memory(id__, pump, switchedOn, startupEmergency, unitsConfirmedReady, nonLevelUnitFailed, plantWaiting, excessWater, lowWater, operatingEmergency, levelUnitFailed, levelEstimateUnreliable) = (
+					set_EXT_pump?x__ -> stm_ref0::set_EXT_pump!x__ -> 
+					Memory(id__,x__,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_switchedOn?x__ -> stm_ref0::set_EXT_switchedOn!x__ -> 
+					Memory(id__,pump,x__,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_startupEmergency?x__ -> stm_ref0::set_EXT_startupEmergency!x__ -> 
+					Memory(id__,pump,switchedOn,x__,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_unitsConfirmedReady?x__ -> stm_ref0::set_EXT_unitsConfirmedReady!x__ -> 
+					Memory(id__,pump,switchedOn,startupEmergency,x__,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_nonLevelUnitFailed?x__ -> stm_ref0::set_EXT_nonLevelUnitFailed!x__ -> 
+					Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,x__,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_plantWaiting?x__ -> stm_ref0::set_EXT_plantWaiting!x__ -> 
+					Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,x__,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_excessWater?x__ -> stm_ref0::set_EXT_excessWater!x__ -> 
+					Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,x__,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_lowWater?x__ -> stm_ref0::set_EXT_lowWater!x__ -> 
+					Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,x__,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_operatingEmergency?x__ -> stm_ref0::set_EXT_operatingEmergency!x__ -> 
+					Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,x__,levelUnitFailed,levelEstimateUnreliable)
+					 []
+					set_EXT_levelUnitFailed?x__ -> stm_ref0::set_EXT_levelUnitFailed!x__ -> 
+					Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,x__,levelEstimateUnreliable)
+					 []
+					set_EXT_levelEstimateUnreliable?x__ -> stm_ref0::set_EXT_levelEstimateUnreliable!x__ -> 
+					Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,x__)
+					)
+					
+					D__(id__) = prioritise(	((
+							stm_ref0::D__(id__)[[
+								stm_ref0::terminate <- terminate,
+								stm_ref0::transmissionReceived <- transmissionReceived,
+								stm_ref0::modeMessage <- modeMessage,
+								stm_ref0::closeValve <- closeValve,
+								stm_ref0::regulatePumps <- regulatePumps,
+								stm_ref0::openValve <- openValve,
+								stm_ref0::stopPumps <- stopPumps,
+								stm_ref0::runFillingPump <- runFillingPump,
+								stm_ref0::programReady <- programReady,
+								stm_ref0::set_pump <- set_pump,
+								stm_ref0::get_pump <- get_pump,
+								stm_ref0::set_switchedOn <- set_switchedOn,
+								stm_ref0::get_switchedOn <- get_switchedOn,
+								stm_ref0::set_startupEmergency <- set_startupEmergency,
+								stm_ref0::get_startupEmergency <- get_startupEmergency,
+								stm_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								stm_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								stm_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								stm_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								stm_ref0::set_plantWaiting <- set_plantWaiting,
+								stm_ref0::get_plantWaiting <- get_plantWaiting,
+								stm_ref0::set_excessWater <- set_excessWater,
+								stm_ref0::get_excessWater <- get_excessWater,
+								stm_ref0::set_lowWater <- set_lowWater,
+								stm_ref0::get_lowWater <- get_lowWater,
+								stm_ref0::set_operatingEmergency <- set_operatingEmergency,
+								stm_ref0::get_operatingEmergency <- get_operatingEmergency,
+								stm_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								stm_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								stm_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								stm_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+									|},
+									{|
+										stm_ref0::set_EXT_pump,stm_ref0::set_EXT_switchedOn,stm_ref0::set_EXT_startupEmergency,stm_ref0::set_EXT_unitsConfirmedReady,stm_ref0::set_EXT_nonLevelUnitFailed,stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_excessWater,stm_ref0::set_EXT_lowWater,stm_ref0::set_EXT_operatingEmergency,stm_ref0::set_EXT_levelUnitFailed,stm_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						Memory(id__, 0, true, true, true, true, true, true, true, true, true, true)
+					)
+					\ union(
+						{|
+						|},
+						{|
+							stm_ref0::set_EXT_pump,stm_ref0::set_EXT_switchedOn,stm_ref0::set_EXT_startupEmergency,stm_ref0::set_EXT_unitsConfirmedReady,stm_ref0::set_EXT_nonLevelUnitFailed,stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_excessWater,stm_ref0::set_EXT_lowWater,stm_ref0::set_EXT_operatingEmergency,stm_ref0::set_EXT_levelUnitFailed,stm_ref0::set_EXT_levelEstimateUnreliable
+						|}
+					)
+					[|{|terminate|}|>SKIP
+					,<visibleMemoryEvents,{tock}>)
+					
+					-- VS version
+					VS__(id__) = prioritise(	((
+							stm_ref0::VS__(id__)[[
+								stm_ref0::terminate <- terminate,
+								stm_ref0::transmissionReceived <- transmissionReceived,
+								stm_ref0::modeMessage <- modeMessage,
+								stm_ref0::closeValve <- closeValve,
+								stm_ref0::regulatePumps <- regulatePumps,
+								stm_ref0::openValve <- openValve,
+								stm_ref0::stopPumps <- stopPumps,
+								stm_ref0::runFillingPump <- runFillingPump,
+								stm_ref0::programReady <- programReady,
+								stm_ref0::set_pump <- set_pump,
+								stm_ref0::get_pump <- get_pump,
+								stm_ref0::set_switchedOn <- set_switchedOn,
+								stm_ref0::get_switchedOn <- get_switchedOn,
+								stm_ref0::set_startupEmergency <- set_startupEmergency,
+								stm_ref0::get_startupEmergency <- get_startupEmergency,
+								stm_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								stm_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								stm_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								stm_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								stm_ref0::set_plantWaiting <- set_plantWaiting,
+								stm_ref0::get_plantWaiting <- get_plantWaiting,
+								stm_ref0::set_excessWater <- set_excessWater,
+								stm_ref0::get_excessWater <- get_excessWater,
+								stm_ref0::set_lowWater <- set_lowWater,
+								stm_ref0::get_lowWater <- get_lowWater,
+								stm_ref0::set_operatingEmergency <- set_operatingEmergency,
+								stm_ref0::get_operatingEmergency <- get_operatingEmergency,
+								stm_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								stm_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								stm_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								stm_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+									|},
+									{|
+										stm_ref0::set_EXT_pump,stm_ref0::set_EXT_switchedOn,stm_ref0::set_EXT_startupEmergency,stm_ref0::set_EXT_unitsConfirmedReady,stm_ref0::set_EXT_nonLevelUnitFailed,stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_excessWater,stm_ref0::set_EXT_lowWater,stm_ref0::set_EXT_operatingEmergency,stm_ref0::set_EXT_levelUnitFailed,stm_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						Memory(id__, 0, true, true, true, true, true, true, true, true, true, true)
+					)
+					\ union(
+						{|
+						|},
+						{|
+							stm_ref0::set_EXT_pump,stm_ref0::set_EXT_switchedOn,stm_ref0::set_EXT_startupEmergency,stm_ref0::set_EXT_unitsConfirmedReady,stm_ref0::set_EXT_nonLevelUnitFailed,stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_excessWater,stm_ref0::set_EXT_lowWater,stm_ref0::set_EXT_operatingEmergency,stm_ref0::set_EXT_levelUnitFailed,stm_ref0::set_EXT_levelEstimateUnreliable
+						|}
+					)
+					[|{|terminate|}|>SKIP
+					,<visibleMemoryEvents,{tock}>)
+				
+					-- O version (optimised) THESE TWO PROCESSES SHOULD BE KEPT IN SYNC WITH THE ABOVE TWO
+					O__(id__) = dbisim(prioritise(	((
+							stm_ref0::O__(id__)[[
+								stm_ref0::terminate <- terminate,
+								stm_ref0::transmissionReceived <- transmissionReceived,
+								stm_ref0::modeMessage <- modeMessage,
+								stm_ref0::closeValve <- closeValve,
+								stm_ref0::regulatePumps <- regulatePumps,
+								stm_ref0::openValve <- openValve,
+								stm_ref0::stopPumps <- stopPumps,
+								stm_ref0::runFillingPump <- runFillingPump,
+								stm_ref0::programReady <- programReady,
+								stm_ref0::set_pump <- set_pump,
+								stm_ref0::get_pump <- get_pump,
+								stm_ref0::set_switchedOn <- set_switchedOn,
+								stm_ref0::get_switchedOn <- get_switchedOn,
+								stm_ref0::set_startupEmergency <- set_startupEmergency,
+								stm_ref0::get_startupEmergency <- get_startupEmergency,
+								stm_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								stm_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								stm_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								stm_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								stm_ref0::set_plantWaiting <- set_plantWaiting,
+								stm_ref0::get_plantWaiting <- get_plantWaiting,
+								stm_ref0::set_excessWater <- set_excessWater,
+								stm_ref0::get_excessWater <- get_excessWater,
+								stm_ref0::set_lowWater <- set_lowWater,
+								stm_ref0::get_lowWater <- get_lowWater,
+								stm_ref0::set_operatingEmergency <- set_operatingEmergency,
+								stm_ref0::get_operatingEmergency <- get_operatingEmergency,
+								stm_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								stm_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								stm_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								stm_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+									|},
+									{|
+										stm_ref0::set_EXT_pump,stm_ref0::set_EXT_switchedOn,stm_ref0::set_EXT_startupEmergency,stm_ref0::set_EXT_unitsConfirmedReady,stm_ref0::set_EXT_nonLevelUnitFailed,stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_excessWater,stm_ref0::set_EXT_lowWater,stm_ref0::set_EXT_operatingEmergency,stm_ref0::set_EXT_levelUnitFailed,stm_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						dbisim(Memory(id__, 0, true, true, true, true, true, true, true, true, true, true))
+					)
+					\ union(
+						{|
+						|},
+						{|
+							stm_ref0::set_EXT_pump,stm_ref0::set_EXT_switchedOn,stm_ref0::set_EXT_startupEmergency,stm_ref0::set_EXT_unitsConfirmedReady,stm_ref0::set_EXT_nonLevelUnitFailed,stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_excessWater,stm_ref0::set_EXT_lowWater,stm_ref0::set_EXT_operatingEmergency,stm_ref0::set_EXT_levelUnitFailed,stm_ref0::set_EXT_levelEstimateUnreliable
+						|}
+					)
+					[|{|terminate|}|>SKIP
+					,<visibleMemoryEvents,{tock}>))
+									
+					-- VS_O version
+					VS_O__(id__) = dbisim(prioritise(	((
+							stm_ref0::VS_O__(id__)[[
+								stm_ref0::terminate <- terminate,
+								stm_ref0::transmissionReceived <- transmissionReceived,
+								stm_ref0::modeMessage <- modeMessage,
+								stm_ref0::closeValve <- closeValve,
+								stm_ref0::regulatePumps <- regulatePumps,
+								stm_ref0::openValve <- openValve,
+								stm_ref0::stopPumps <- stopPumps,
+								stm_ref0::runFillingPump <- runFillingPump,
+								stm_ref0::programReady <- programReady,
+								stm_ref0::set_pump <- set_pump,
+								stm_ref0::get_pump <- get_pump,
+								stm_ref0::set_switchedOn <- set_switchedOn,
+								stm_ref0::get_switchedOn <- get_switchedOn,
+								stm_ref0::set_startupEmergency <- set_startupEmergency,
+								stm_ref0::get_startupEmergency <- get_startupEmergency,
+								stm_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								stm_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								stm_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								stm_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								stm_ref0::set_plantWaiting <- set_plantWaiting,
+								stm_ref0::get_plantWaiting <- get_plantWaiting,
+								stm_ref0::set_excessWater <- set_excessWater,
+								stm_ref0::get_excessWater <- get_excessWater,
+								stm_ref0::set_lowWater <- set_lowWater,
+								stm_ref0::get_lowWater <- get_lowWater,
+								stm_ref0::set_operatingEmergency <- set_operatingEmergency,
+								stm_ref0::get_operatingEmergency <- get_operatingEmergency,
+								stm_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								stm_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								stm_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								stm_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+									|},
+									{|
+										stm_ref0::set_EXT_pump,stm_ref0::set_EXT_switchedOn,stm_ref0::set_EXT_startupEmergency,stm_ref0::set_EXT_unitsConfirmedReady,stm_ref0::set_EXT_nonLevelUnitFailed,stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_excessWater,stm_ref0::set_EXT_lowWater,stm_ref0::set_EXT_operatingEmergency,stm_ref0::set_EXT_levelUnitFailed,stm_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						dbisim(Memory(id__, 0, true, true, true, true, true, true, true, true, true, true))
+					)
+					\ union(
+						{|
+						|},
+						{|
+							stm_ref0::set_EXT_pump,stm_ref0::set_EXT_switchedOn,stm_ref0::set_EXT_startupEmergency,stm_ref0::set_EXT_unitsConfirmedReady,stm_ref0::set_EXT_nonLevelUnitFailed,stm_ref0::set_EXT_plantWaiting,stm_ref0::set_EXT_excessWater,stm_ref0::set_EXT_lowWater,stm_ref0::set_EXT_operatingEmergency,stm_ref0::set_EXT_levelUnitFailed,stm_ref0::set_EXT_levelEstimateUnreliable
+						|}
+					)
+					[|{|terminate|}|>SKIP
+					,<visibleMemoryEvents,{tock}>))
+				
+					HEXT(id__) = O__(id__) [|shared_variable_events|] SKIP			
+			}
+	
+		endmodule
+	
+	Timed(OneStep) {
+		visibleMemoryEvents = {|get_pump,set_pump,get_switchedOn,set_switchedOn,get_startupEmergency,set_startupEmergency,get_unitsConfirmedReady,set_unitsConfirmedReady,get_nonLevelUnitFailed,set_nonLevelUnitFailed,get_plantWaiting,set_plantWaiting,get_excessWater,set_excessWater,get_lowWater,set_lowWater,get_operatingEmergency,set_operatingEmergency,get_levelUnitFailed,set_levelUnitFailed,get_levelEstimateUnreliable,set_levelEstimateUnreliable|}
+		
+		-- declaring module memory
+		Memory(id__, pump, switchedOn, startupEmergency, unitsConfirmedReady, nonLevelUnitFailed, plantWaiting, excessWater, lowWater, operatingEmergency, levelUnitFailed, levelEstimateUnreliable) = (
+						set_pump?x__ -> 
+						ctrl_ref0::set_EXT_pump!x__ -> 
+						Memory(id__,x__,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_switchedOn?x__ -> 
+						ctrl_ref0::set_EXT_switchedOn!x__ -> 
+						Memory(id__,pump,x__,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_startupEmergency?x__ -> 
+						ctrl_ref0::set_EXT_startupEmergency!x__ -> 
+						Memory(id__,pump,switchedOn,x__,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_unitsConfirmedReady?x__ -> 
+						ctrl_ref0::set_EXT_unitsConfirmedReady!x__ -> 
+						Memory(id__,pump,switchedOn,startupEmergency,x__,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_nonLevelUnitFailed?x__ -> 
+						ctrl_ref0::set_EXT_nonLevelUnitFailed!x__ -> 
+						Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,x__,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_plantWaiting?x__ -> 
+						ctrl_ref0::set_EXT_plantWaiting!x__ -> 
+						Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,x__,excessWater,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_excessWater?x__ -> 
+						ctrl_ref0::set_EXT_excessWater!x__ -> 
+						Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,x__,lowWater,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_lowWater?x__ -> 
+						ctrl_ref0::set_EXT_lowWater!x__ -> 
+						Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,x__,operatingEmergency,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_operatingEmergency?x__ -> 
+						ctrl_ref0::set_EXT_operatingEmergency!x__ -> 
+						Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,x__,levelUnitFailed,levelEstimateUnreliable)
+						  []
+						set_levelUnitFailed?x__ -> 
+						ctrl_ref0::set_EXT_levelUnitFailed!x__ -> 
+						Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,x__,levelEstimateUnreliable)
+						  []
+						set_levelEstimateUnreliable?x__ -> 
+						ctrl_ref0::set_EXT_levelEstimateUnreliable!x__ -> 
+						Memory(id__,pump,switchedOn,startupEmergency,unitsConfirmedReady,nonLevelUnitFailed,plantWaiting,excessWater,lowWater,operatingEmergency,levelUnitFailed,x__)
+						)
+		
+		D__(id__) = prioritise(	(
+				(
+					(SKIP)
+						[|{||}|]
+					(
+						(
+							ctrl_ref0::D__(id__)[[
+								ctrl_ref0::terminate <- terminate,
+								ctrl_ref0::transmissionReceived <- transmissionReceived,
+								ctrl_ref0::modeMessage <- modeMessage,
+								ctrl_ref0::closeValve <- closeValve,
+								ctrl_ref0::regulatePumps <- regulatePumps,
+								ctrl_ref0::openValve <- openValve,
+								ctrl_ref0::stopPumps <- stopPumps,
+								ctrl_ref0::runFillingPump <- runFillingPump,
+								ctrl_ref0::programReady <- programReady,
+								ctrl_ref0::set_pump <- set_pump,
+								ctrl_ref0::get_pump <- get_pump,
+								ctrl_ref0::set_switchedOn <- set_switchedOn,
+								ctrl_ref0::get_switchedOn <- get_switchedOn,
+								ctrl_ref0::set_startupEmergency <- set_startupEmergency,
+								ctrl_ref0::get_startupEmergency <- get_startupEmergency,
+								ctrl_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								ctrl_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								ctrl_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								ctrl_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								ctrl_ref0::set_plantWaiting <- set_plantWaiting,
+								ctrl_ref0::get_plantWaiting <- get_plantWaiting,
+								ctrl_ref0::set_excessWater <- set_excessWater,
+								ctrl_ref0::get_excessWater <- get_excessWater,
+								ctrl_ref0::set_lowWater <- set_lowWater,
+								ctrl_ref0::get_lowWater <- get_lowWater,
+								ctrl_ref0::set_operatingEmergency <- set_operatingEmergency,
+								ctrl_ref0::get_operatingEmergency <- get_operatingEmergency,
+								ctrl_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								ctrl_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								ctrl_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								ctrl_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+										set_pump,
+										set_switchedOn,
+										set_startupEmergency,
+										set_unitsConfirmedReady,
+										set_nonLevelUnitFailed,
+										set_plantWaiting,
+										set_excessWater,
+										set_lowWater,
+										set_operatingEmergency,
+										set_levelUnitFailed,
+										set_levelEstimateUnreliable
+									|},
+									{|
+										ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						Memory(id__, 0, true, true, true, true, true, true, true, true, true, true)
+					)
+				)
+				\ Union({
+					{|
+					|},
+					{|
+						ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+					|},
+					{|
+					|}
+				})
+				[|{|terminate|}|>SKIP
+			)
+			\{|terminate|}
+		,<visibleMemoryEvents,{tock}>)
+		
+		-- visible state equivalent
+		
+		VS__(id__) = prioritise(	(
+				(
+					(SKIP)
+						[|{||}|]
+					(
+						(
+							ctrl_ref0::VS__(id__)[[
+								ctrl_ref0::terminate <- terminate,
+								ctrl_ref0::transmissionReceived <- transmissionReceived,
+								ctrl_ref0::modeMessage <- modeMessage,
+								ctrl_ref0::closeValve <- closeValve,
+								ctrl_ref0::regulatePumps <- regulatePumps,
+								ctrl_ref0::openValve <- openValve,
+								ctrl_ref0::stopPumps <- stopPumps,
+								ctrl_ref0::runFillingPump <- runFillingPump,
+								ctrl_ref0::programReady <- programReady,
+								ctrl_ref0::set_pump <- set_pump,
+								ctrl_ref0::get_pump <- get_pump,
+								ctrl_ref0::set_switchedOn <- set_switchedOn,
+								ctrl_ref0::get_switchedOn <- get_switchedOn,
+								ctrl_ref0::set_startupEmergency <- set_startupEmergency,
+								ctrl_ref0::get_startupEmergency <- get_startupEmergency,
+								ctrl_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								ctrl_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								ctrl_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								ctrl_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								ctrl_ref0::set_plantWaiting <- set_plantWaiting,
+								ctrl_ref0::get_plantWaiting <- get_plantWaiting,
+								ctrl_ref0::set_excessWater <- set_excessWater,
+								ctrl_ref0::get_excessWater <- get_excessWater,
+								ctrl_ref0::set_lowWater <- set_lowWater,
+								ctrl_ref0::get_lowWater <- get_lowWater,
+								ctrl_ref0::set_operatingEmergency <- set_operatingEmergency,
+								ctrl_ref0::get_operatingEmergency <- get_operatingEmergency,
+								ctrl_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								ctrl_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								ctrl_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								ctrl_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+										set_pump,
+										set_switchedOn,
+										set_startupEmergency,
+										set_unitsConfirmedReady,
+										set_nonLevelUnitFailed,
+										set_plantWaiting,
+										set_excessWater,
+										set_lowWater,
+										set_operatingEmergency,
+										set_levelUnitFailed,
+										set_levelEstimateUnreliable
+									|},
+									{|
+										ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						Memory(id__, 0, true, true, true, true, true, true, true, true, true, true)
+					)
+				)
+				\ Union({
+					{|
+					|},
+					{|
+						ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+					|},
+					{|
+					|}
+				})
+				[|{|terminate|}|>SKIP
+			)
+			\{|terminate|}
+		,<visibleMemoryEvents,{tock}>)
+		
+		-- O version (optimised)
+		
+		O__(id__) = dbisim(prioritise(	(
+				(
+					(SKIP)
+						[|{||}|]
+					(
+						(
+							ctrl_ref0::O__(id__)[[
+								ctrl_ref0::terminate <- terminate,
+								ctrl_ref0::transmissionReceived <- transmissionReceived,
+								ctrl_ref0::modeMessage <- modeMessage,
+								ctrl_ref0::closeValve <- closeValve,
+								ctrl_ref0::regulatePumps <- regulatePumps,
+								ctrl_ref0::openValve <- openValve,
+								ctrl_ref0::stopPumps <- stopPumps,
+								ctrl_ref0::runFillingPump <- runFillingPump,
+								ctrl_ref0::programReady <- programReady,
+								ctrl_ref0::set_pump <- set_pump,
+								ctrl_ref0::get_pump <- get_pump,
+								ctrl_ref0::set_switchedOn <- set_switchedOn,
+								ctrl_ref0::get_switchedOn <- get_switchedOn,
+								ctrl_ref0::set_startupEmergency <- set_startupEmergency,
+								ctrl_ref0::get_startupEmergency <- get_startupEmergency,
+								ctrl_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								ctrl_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								ctrl_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								ctrl_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								ctrl_ref0::set_plantWaiting <- set_plantWaiting,
+								ctrl_ref0::get_plantWaiting <- get_plantWaiting,
+								ctrl_ref0::set_excessWater <- set_excessWater,
+								ctrl_ref0::get_excessWater <- get_excessWater,
+								ctrl_ref0::set_lowWater <- set_lowWater,
+								ctrl_ref0::get_lowWater <- get_lowWater,
+								ctrl_ref0::set_operatingEmergency <- set_operatingEmergency,
+								ctrl_ref0::get_operatingEmergency <- get_operatingEmergency,
+								ctrl_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								ctrl_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								ctrl_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								ctrl_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+										set_pump,
+										set_switchedOn,
+										set_startupEmergency,
+										set_unitsConfirmedReady,
+										set_nonLevelUnitFailed,
+										set_plantWaiting,
+										set_excessWater,
+										set_lowWater,
+										set_operatingEmergency,
+										set_levelUnitFailed,
+										set_levelEstimateUnreliable
+									|},
+									{|
+										ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						dbisim(Memory(id__, 0, true, true, true, true, true, true, true, true, true, true))
+					)
+				)
+				\ Union({
+					{|
+					|},
+					{|
+						ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+					|},
+					{|
+					|}
+				})
+				[|{|terminate|}|>SKIP
+			)
+			\{|terminate|}
+		,<visibleMemoryEvents,{tock}>))
+		
+		-- visible state optimised equivalent
+		
+		VS_O__(id__) = dbisim(prioritise(	(
+				(
+					(SKIP)
+						[|{||}|]
+					(
+						(
+							ctrl_ref0::VS_O__(id__)[[
+								ctrl_ref0::terminate <- terminate,
+								ctrl_ref0::transmissionReceived <- transmissionReceived,
+								ctrl_ref0::modeMessage <- modeMessage,
+								ctrl_ref0::closeValve <- closeValve,
+								ctrl_ref0::regulatePumps <- regulatePumps,
+								ctrl_ref0::openValve <- openValve,
+								ctrl_ref0::stopPumps <- stopPumps,
+								ctrl_ref0::runFillingPump <- runFillingPump,
+								ctrl_ref0::programReady <- programReady,
+								ctrl_ref0::set_pump <- set_pump,
+								ctrl_ref0::get_pump <- get_pump,
+								ctrl_ref0::set_switchedOn <- set_switchedOn,
+								ctrl_ref0::get_switchedOn <- get_switchedOn,
+								ctrl_ref0::set_startupEmergency <- set_startupEmergency,
+								ctrl_ref0::get_startupEmergency <- get_startupEmergency,
+								ctrl_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								ctrl_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								ctrl_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								ctrl_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								ctrl_ref0::set_plantWaiting <- set_plantWaiting,
+								ctrl_ref0::get_plantWaiting <- get_plantWaiting,
+								ctrl_ref0::set_excessWater <- set_excessWater,
+								ctrl_ref0::get_excessWater <- get_excessWater,
+								ctrl_ref0::set_lowWater <- set_lowWater,
+								ctrl_ref0::get_lowWater <- get_lowWater,
+								ctrl_ref0::set_operatingEmergency <- set_operatingEmergency,
+								ctrl_ref0::get_operatingEmergency <- get_operatingEmergency,
+								ctrl_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								ctrl_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								ctrl_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								ctrl_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+										set_pump,
+										set_switchedOn,
+										set_startupEmergency,
+										set_unitsConfirmedReady,
+										set_nonLevelUnitFailed,
+										set_plantWaiting,
+										set_excessWater,
+										set_lowWater,
+										set_operatingEmergency,
+										set_levelUnitFailed,
+										set_levelEstimateUnreliable
+									|},
+									{|
+										ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						dbisim(Memory(id__, 0, true, true, true, true, true, true, true, true, true, true))
+					)
+				)
+				\ Union({
+					{|
+					|},
+					{|
+						ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+					|},
+					{|
+					|}
+				})
+				[|{|terminate|}|>SKIP
+			)
+			\{|terminate|}
+		,<visibleMemoryEvents,{tock}>))
+		
+		-- O version (optimised) with visible assignments
+		
+		AS_O__(id__) = dbisim(	(
+				(
+					(SKIP)
+						[|{||}|]
+					(
+						(
+							ctrl_ref0::O__(id__)[[
+								ctrl_ref0::terminate <- terminate,
+								ctrl_ref0::transmissionReceived <- transmissionReceived,
+								ctrl_ref0::modeMessage <- modeMessage,
+								ctrl_ref0::closeValve <- closeValve,
+								ctrl_ref0::regulatePumps <- regulatePumps,
+								ctrl_ref0::openValve <- openValve,
+								ctrl_ref0::stopPumps <- stopPumps,
+								ctrl_ref0::runFillingPump <- runFillingPump,
+								ctrl_ref0::programReady <- programReady,
+								ctrl_ref0::set_pump <- set_pump,
+								ctrl_ref0::get_pump <- get_pump,
+								ctrl_ref0::set_switchedOn <- set_switchedOn,
+								ctrl_ref0::get_switchedOn <- get_switchedOn,
+								ctrl_ref0::set_startupEmergency <- set_startupEmergency,
+								ctrl_ref0::get_startupEmergency <- get_startupEmergency,
+								ctrl_ref0::set_unitsConfirmedReady <- set_unitsConfirmedReady,
+								ctrl_ref0::get_unitsConfirmedReady <- get_unitsConfirmedReady,
+								ctrl_ref0::set_nonLevelUnitFailed <- set_nonLevelUnitFailed,
+								ctrl_ref0::get_nonLevelUnitFailed <- get_nonLevelUnitFailed,
+								ctrl_ref0::set_plantWaiting <- set_plantWaiting,
+								ctrl_ref0::get_plantWaiting <- get_plantWaiting,
+								ctrl_ref0::set_excessWater <- set_excessWater,
+								ctrl_ref0::get_excessWater <- get_excessWater,
+								ctrl_ref0::set_lowWater <- set_lowWater,
+								ctrl_ref0::get_lowWater <- get_lowWater,
+								ctrl_ref0::set_operatingEmergency <- set_operatingEmergency,
+								ctrl_ref0::get_operatingEmergency <- get_operatingEmergency,
+								ctrl_ref0::set_levelUnitFailed <- set_levelUnitFailed,
+								ctrl_ref0::get_levelUnitFailed <- get_levelUnitFailed,
+								ctrl_ref0::set_levelEstimateUnreliable <- set_levelEstimateUnreliable,
+								ctrl_ref0::get_levelEstimateUnreliable <- get_levelEstimateUnreliable
+							]]
+						)
+							[|
+								union(
+									{|
+										set_pump,
+										set_switchedOn,
+										set_startupEmergency,
+										set_unitsConfirmedReady,
+										set_nonLevelUnitFailed,
+										set_plantWaiting,
+										set_excessWater,
+										set_lowWater,
+										set_operatingEmergency,
+										set_levelUnitFailed,
+										set_levelEstimateUnreliable
+									|},
+									{|
+										ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+									|}
+								)
+							|]
+						dbisim(Memory(id__, 0, true, true, true, true, true, true, true, true, true, true))
+					)
+				)
+				\ Union({
+					{|
+					|},
+					{|
+						ctrl_ref0::set_EXT_pump,ctrl_ref0::set_EXT_switchedOn,ctrl_ref0::set_EXT_startupEmergency,ctrl_ref0::set_EXT_unitsConfirmedReady,ctrl_ref0::set_EXT_nonLevelUnitFailed,ctrl_ref0::set_EXT_plantWaiting,ctrl_ref0::set_EXT_excessWater,ctrl_ref0::set_EXT_lowWater,ctrl_ref0::set_EXT_operatingEmergency,ctrl_ref0::set_EXT_levelUnitFailed,ctrl_ref0::set_EXT_levelEstimateUnreliable
+					|},
+					{|
+					|}
+				})
+				[|{|terminate|}|>SKIP
+			)
+			\{|terminate|}
+		)
+	}
+	
+endmodule

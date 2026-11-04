@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 7,
+  "iteration": 1,
+  "recorded_utc": "2026-10-30 19:31:18",
+  "infrastructure_sha": "d526ea5e3c0563f4019238d6ff1ee32cdc10f5f8",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c-run7-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run7",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 647,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 lre, pass 7, iteration 1\n\nNo Java was present beforehand. I wrote 15 files under `lre/`:\n\n- `annotation`: RoboChartType.\n- `event`: sealed InputEvent (6 records) and OutputEvent (AdvVel, AdvHdng).\n- `sensor`: Obstacle, ObstacleRegister, Sensor.\n- `actuator`: Actuator, which takes events through `apply(OutputEvent)`.\n- `operation`: CalcVel, CalcCStc, CheckOPEZ, CalcCDyn, CalcCPA.\n- `controller`: LreMode, LreConstants, LreController.\n\n`step()` calls the five operations, evaluates named predicates, then runs a two-level if-else over the four modes. Each of Beh2\u2013Beh18 is one branch. The variables live in the operations and are read through getters of the same name. I also wrote `result_codegen.json` (130 entries, all 51 requirements) and `post_codegen.{md,json}`.\n\nDecisions the requirements left open:\n\n- **\"None\" index:** cstc/cdyn are natural numbers, so instead of -1 they use a reserved index (2147483647) that the register refuses to store.\n- **Safe large distance:** 1,000,000 m (invented).\n- **HCM velocity:** 0 m/s per FR3, not the description's 0.1 m/s.\n- **CAM manoeuvre:** no output, because none is specified.\n- **Priority:** reqOCM, then collision course, then inOpez, then other events, then autonomous HCM entries. Lower branches negate earlier guard-only ones. Beh11 precedes Beh10 so it can still fire.\n- **CPA:** horizontal relative motion, constant vertical separation, and a 1e-9 term keeping the divisor non-zero. cda is taken at max(tcpa, 0), so a receding obstacle cannot hold the LRE in CAM.\n- **vvel:** the signed rate of climb.\n- **Beh4 thresholds:** the literal 1.\n- **No input:** `step(null)` is a cycle without operator input.\n- **Ties:** the lowest index wins. Static means velocities exactly 0.\n\nUnresolved:\n\n- If staticObsDfltVertDist exceeded staticObsVertDist, MOM and HCM could alternate without bound.\n- DC1's \"no duplicates\" conflicts with Beh9\u201311, three event-less MOM\u2192HCM transitions. I kept all three.\n- I could not confirm how the extractor treats the `compute()` calls before the predicates."
+}

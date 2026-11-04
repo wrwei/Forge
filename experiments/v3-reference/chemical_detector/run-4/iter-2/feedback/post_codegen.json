@@ -1,0 +1,287 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Two controllers (GasAnalysisController with 5 modes, MovementController with 7) implement all 81 requirements. Thirteen points are flagged (iteration 2: Vehicle operations moved to output events): invented values, design choices, one ambiguous requirement and one scope question. None blocks the pipeline.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Values of the six configuration constants",
+      "raw": "CD-Const1..6 say the constants are configured at startup but give no values.",
+      "fix_directive": "Chosen: THR=3.0, LV=1.0, EVADE_TIME=2, STUCK_PERIOD=4, STUCK_DIST=1.0, OUT_PERIOD=2. All are whole numbers, so rounding a fractional constant up in the model's constants interface changes nothing. Replace them with the deployment's values.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/ChemicalDetectorConstants.java",
+          "lines": "12-27",
+          "element": "ChemicalDetectorConstants",
+          "requirement_ids": [
+            "CD-Const1",
+            "CD-Const2",
+            "CD-Const3",
+            "CD-Const4",
+            "CD-Const5",
+            "CD-Const6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Initial values of the state variables",
+      "raw": "Only gs has a stated initial value (empty). sts, ins, anl, a, l, d0, d1 and the evasion clock have none.",
+      "fix_directive": "Chosen: gs=[], sts=noGas, ins=0.0, anl=Front, a=Front, l=front, d0=d1=0.0, evasionTimer=0. Every one is overwritten before it is read on any path (sts on entry to Analysis, ins on entry to GasDetected, d0 and the clock on entry to Avoiding, d1 and l before AvoidingAgain).",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "lines": "22-25",
+          "element": "GasAnalysisController",
+          "requirement_ids": [
+            "CD-GA-Var1",
+            "CD-GA-Var2",
+            "CD-GA-Var3",
+            "CD-GA-Var4"
+          ]
+        },
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "lines": "20-24",
+          "element": "MovementController",
+          "requirement_ids": [
+            "CD-MV-Var1",
+            "CD-MV-Var2",
+            "CD-MV-Var3",
+            "CD-MV-Var4",
+            "CD-MV-Clock1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "What 'indicates the target chemical' means in analysis",
+      "raw": "CD-Fn1 returns gasD if some reading 'indicates the target chemical'. Neither the target nor 'indicates' is defined.",
+      "fix_directive": "The target Chem is a constructor argument of GasSensorArray. A sample indicates it when c equals the target and its intensity is positive (not goreq(0, i)).",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/sensor/GasSensorArray.java",
+          "lines": "18-34",
+          "element": "analysis",
+          "requirement_ids": [
+            "CD-Fn1",
+            "CD-DM4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "angle(x) mapping and results for an empty reading",
+      "raw": "CD-Fn3 uses angle(x) without defining it. CD-Fn2 and CD-Fn3 require a non-empty input but say nothing about an empty one.",
+      "fix_directive": "Sensor position p (1-based) maps to Angle in declaration order, cycling: 1 Left, 2 Right, 3 Back, 4 Front. An empty reading gives intensity 0.0 and location Left; analysis never returns gasD for one, so the controller cannot reach either case.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/sensor/GasSensorArray.java",
+          "lines": "36-88",
+          "element": "location",
+          "requirement_ids": [
+            "CD-Fn2",
+            "CD-Fn3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "intensity is the maximum over all samples, whatever their chemical",
+      "raw": "CD-Fn2 says 'the maximum intensity across the sequence' and does not restrict it to the target chemical.",
+      "fix_directive": "Implemented literally, as the maximum over every sample. If only target-chemical samples should count, filter on c in intensity and location.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/sensor/GasSensorArray.java",
+          "lines": "36-68",
+          "element": "intensity",
+          "requirement_ids": [
+            "CD-Fn2",
+            "CD-Fn3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "The odometer is a sampled sensor quantity, not an event record",
+      "raw": "CD-Evt3 is typed 'event', but its text says the movement subsystem samples the distance into d0 or d1.",
+      "fix_directive": "The odometer is VehicleSensor.odometer(), read on entry to Avoiding (d0) and on TryingAgain->AvoidingAgain (d1). It has no InputEvent record, because self-loops on odometer reports in every state would re-run entry actions.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/sensor/VehicleSensor.java",
+          "lines": "1-23",
+          "element": "odometer",
+          "requirement_ids": [
+            "CD-Evt3",
+            "CD-MV-Var2",
+            "CD-MV-Var3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Waiting's during action randomWalk() runs on every transition into Waiting",
+      "raw": "CD-MV-FR1 gives Waiting a during action. The profile has no during actions and no initial action.",
+      "fix_directive": "randomWalk is requested on every transition into Waiting (the resume transitions, including the Waiting self-loop). It is unbounded, so one call keeps the walk going. The initial entry into Waiting does not request it: the platform must start in random-walk mode, or the first resume starts it.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "lines": "47-60",
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-FR1",
+            "CD-OP2",
+            "CD-MV-Beh1",
+            "CD-MV-Beh3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Found and the gas-analysis final state are terminal modes",
+      "raw": "CD-MV-Beh9 (Found_to_Final) and CD-GA-Beh6 refer to final states. CD-DC1 asks for one transition per behavioural requirement.",
+      "fix_directive": "The gas-analysis final state is the terminal mode Concluded. Found has no outgoing transition, so CD-MV-Beh9 ('stays halted') is met by Found being terminal rather than by an extra transition to a Final mode. Every other behavioural requirement is exactly one branch.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "lines": "83-84",
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-FR3",
+            "CD-MV-Beh9",
+            "CD-DC1"
+          ]
+        },
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "lines": "63-74",
+          "element": "step",
+          "requirement_ids": [
+            "CD-GA-Beh6",
+            "CD-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Representation of the domain types",
+      "raw": "CD-DM4 (Chem) and CD-DM5 (Intensity) are opaque types. CD-DM6 names the record GasSensor.",
+      "fix_directive": "Chem is a record holding a nat id (equality only). Intensity is real, compared only through goreq. The GasSensor record is named GasSample so that its name does not contain 'sensor', which would make it look like a sensor service. A reading (CD-DM7) is List<GasSample>.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/domain/GasSample.java",
+          "lines": "1-14",
+          "element": "GasSample",
+          "requirement_ids": [
+            "CD-DM4",
+            "CD-DM5",
+            "CD-DM6",
+            "CD-DM7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Vehicle operations are requested through output events (pipeline workaround)",
+      "raw": "Iteration 1 called the four operation classes from step. FDR4 failed to parse: all of them became one CSP event 'compute', typed InOut=>Loc=>Event, while some call sites had no argument. Isabelle failed: the compute bodies were merged at every call site, and parameters became untyped consts ('side ()' clashing with Loc). Operations are named by method rather than class, and parameters are not carried; this looks like a pipeline limitation.",
+      "fix_directive": "The controller now sends the Vehicle commands as output events: move!a, halt (move(0, Front) in Found), randomWalk, shortRandomWalk, changeDirection!l. MovementActuator.apply carries each one out through the operation classes. Move.compute(speed, heading) records velocity and direction. ChangeDirection.compute(side) records lv and the turnRight/turnLeft/turnBack flags (compute() cannot hold a conditional). lv is supplied by the actuator, so it no longer appears in the model's actions.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/actuator/MovementActuator.java",
+          "lines": "35-51",
+          "element": "apply",
+          "requirement_ids": [
+            "CD-OP1",
+            "CD-OP2",
+            "CD-OP3",
+            "CD-OP4",
+            "CD-Const2"
+          ]
+        },
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/operation/ChangeDirection.java",
+          "lines": "23-28",
+          "element": "compute",
+          "requirement_ids": [
+            "CD-OP4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "The waits use MovementActuator.pause",
+      "raw": "Avoiding waits evadeTime and GettingOut waits outPeriod on entry (CD-MV-FR4, CD-MV-FR7).",
+      "fix_directive": "pause(n) becomes a RoboChart wait. In Java it records the duration and does not block; the platform must not deliver events for n ticks.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/actuator/MovementActuator.java",
+          "lines": "53-56",
+          "element": "pause",
+          "requirement_ids": [
+            "CD-Const3",
+            "CD-Const6",
+            "CD-MV-FR4",
+            "CD-MV-FR7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Guard shapes: unguarded NoGas->Reading and redundant negations",
+      "raw": "CD-GA-Beh3 has neither a trigger nor a guard. The profile requires each guard-only branch to conjoin the negation of the guard-only branches above it.",
+      "fix_directive": "The NoGas block holds the assignment directly, with no inner if. It is not a self-loop, so it cannot diverge: Reading needs a gas event. Analysis's second branch is statusGasDetected && !statusNoGas (redundant, because Status has two values). The AvoidingAgain stuck branch is !evasionProgressing, which is exactly CD-MV-Beh18's condition.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "lines": "53-62",
+          "element": "step",
+          "requirement_ids": [
+            "CD-GA-Beh3",
+            "CD-GA-Beh4",
+            "CD-GA-Beh5"
+          ]
+        },
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/controller/MovementController.java",
+          "lines": "118-136",
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-Beh17",
+            "CD-MV-Beh18"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "No Java class connects the two controllers",
+      "raw": "CD-ARCH2: the two subsystems communicate only through turn, stop and resume.",
+      "fix_directive": "Each controller is standalone. GasAnalysisActuator records the turn, stop or resume it sends; the pipeline's module connects them as shared events. An integrator must forward each OutputEvent to MovementController.step as the InputEvent of the same name.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/chemical_detector/actuator/GasAnalysisActuator.java",
+          "lines": "1-23",
+          "element": "GasAnalysisActuator",
+          "requirement_ids": [
+            "CD-ARCH2",
+            "CD-Evt4",
+            "CD-Evt5",
+            "CD-Evt6"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline (compile, coverage, profile, transformations, verifiers) and act on the failing phases' reports."
+}

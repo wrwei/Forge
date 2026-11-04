@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 7,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 16:20:12",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run7-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run7",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 574,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# LRE cold pass 7: iteration 1 summary\n\nNo Java was present beforehand, so nothing was deleted.\n\n## What was written\n\nFifteen files in `lre`:\n- `annotation`: `RoboChartType`\n- `event`: sealed `InputEvent` (6 records), `OutputEvent` (2 records)\n- `sensor`: `Sensor`, `Obstacle`, `ObstacleRegister`\n- `actuator`: `Actuator.apply(OutputEvent)`\n- `operation`: CalcVel, CalcCStc, CalcCDyn, CheckOPEZ, CalcCPA\n- `controller`: `LreMode`, `LreConstants`, `LreController`\n\n`step()` runs the operations, declares named predicates (including `inOpez`), then a four-mode if-else. Also written: `result_codegen.json` (51/51 requirements) and `post_codegen.{md,json}`. The code compiles with javac and Gradle, and a scratch smoke test passed.\n\n## Decisions the requirements did not settle\n\n- **\"No obstacle\" index:** the spec says -1, but `nat` can't be negative. Index 0 is used instead; obstacle IDs start at 1.\n- **CalcCPA:**\n  - It uses the AUV's velocity relative to the obstacle.\n  - `cda` includes `vdist`, so with no dynamic obstacle it takes the sensor's large-distance default. Zero field accessors would otherwise trigger CAM falsely.\n  - `cda` is taken at max(tcpa, 0), so CAM can exit once the obstacle has passed.\n  - A 0.000001 offset prevents division by zero.\n- **Index source:** CheckOPEZ and CalcCPA query the sensor's selection functions, because `compute()` may not read another operation.\n- **Invented values:** safe distance 100000.0 m; actuator starts at 0.\n- **MOM priority:** events first, then inOpez, collision, Beh9, Beh11, Beh10. Beh11 sits above Beh10, which would otherwise make it unreachable. Lower autonomous guards negate the ones above.\n- **Kept as written:**\n  - Beh4 uses the literal 1, not minSafeDist.\n  - `vvel` is the signed rate of climb.\n  - HCM entry is advVel(0) (FR3), not 0.1 m/s.\n  - Unlisted events are ignored.\n\n## Unresolved\n\n- No evasive output is specified for CAM.\n- If staticObsDfltVertDist exceeded staticObsVertDist, MOM and HCM could alternate every step."
+}

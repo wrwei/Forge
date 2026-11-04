@@ -1,0 +1,1475 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 03-11-2026 18:11:30
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+module SteamBoilerController
+exports
+	transparent diamond
+	transparent sbisim
+	transparent dbisim
+	transparent chase
+
+	-- Transition identifiers
+	-- declaring identifiers of transitions
+	datatype NIDS = 
+	              NID_NORMAL|
+	              NID_INITIALIZATION|
+	              NID_EMERGENCY_STOP|
+	              NID_DEGRADED|
+	              NID_RESCUE|
+	              NID_i0
+	
+	channel internal__ : NIDS
+	
+	-- Flow channels		
+	channel interrupt
+	channel exited
+	channel exit
+	channel terminate
+	
+	-- Variable channels
+	channel get_valveOpen, set_valveOpen, setL_valveOpen, setR_valveOpen: core_boolean
+	channel get_PUMPS, set_PUMPS, setL_PUMPS, setR_PUMPS: core_int
+	channel get_DT, set_DT, setL_DT, setR_DT: core_real
+	channel get_TOLERANCE, set_TOLERANCE, setL_TOLERANCE, setR_TOLERANCE: core_real
+	channel get_stopPresent, set_stopPresent, setL_stopPresent, setR_stopPresent: core_boolean
+	channel get_waitingPresent, set_waitingPresent, setL_waitingPresent, setR_waitingPresent: core_boolean
+	channel get_readyPresent, set_readyPresent, setL_readyPresent, setR_readyPresent: core_boolean
+	channel get_levelSeen, set_levelSeen, setL_levelSeen, setR_levelSeen: core_boolean
+	channel get_steamSeen, set_steamSeen, setL_steamSeen, setR_steamSeen: core_boolean
+	channel get_levelValue, set_levelValue, setL_levelValue, setR_levelValue: core_real
+	channel get_steamValue, set_steamValue, setL_steamValue, setR_steamValue: core_real
+	channel get_levelRepairedSeen, set_levelRepairedSeen, setL_levelRepairedSeen, setR_levelRepairedSeen: core_boolean
+	channel get_steamRepairedSeen, set_steamRepairedSeen, setL_steamRepairedSeen, setR_steamRepairedSeen: core_boolean
+	channel get_levelAckSeen, set_levelAckSeen, setL_levelAckSeen, setR_levelAckSeen: core_boolean
+	channel get_steamAckSeen, set_steamAckSeen, setL_steamAckSeen, setR_steamAckSeen: core_boolean
+	channel get_malformed, set_malformed, setL_malformed, setR_malformed: core_boolean
+	channel get_levelJustRepaired, set_levelJustRepaired, setL_levelJustRepaired, setR_levelJustRepaired: core_boolean
+	channel get_programReadySent, set_programReadySent, setL_programReadySent, setR_programReadySent: core_boolean
+	channel get_plantWaiting, set_plantWaiting, setL_plantWaiting, setR_plantWaiting: core_boolean
+	channel get_stopCount, set_stopCount, setL_stopCount, setR_stopCount: core_int
+	channel get_transmissionFailed, set_transmissionFailed, setL_transmissionFailed, setR_transmissionFailed: core_boolean
+	channel get_lastLevel, set_lastLevel, setL_lastLevel, setR_lastLevel: core_real
+	channel get_lastSteam, set_lastSteam, setL_lastSteam, setR_lastSteam: core_real
+	channel get_trustedSteam, set_trustedSteam, setL_trustedSteam, setR_trustedSteam: core_real
+	channel get_steamTrusted, set_steamTrusted, setL_steamTrusted, setR_steamTrusted: core_boolean
+	channel get_levelGrounded, set_levelGrounded, setL_levelGrounded, setR_levelGrounded: core_boolean
+	channel get_throughput, set_throughput, setL_throughput, setR_throughput: core_real
+	channel get_levelOutOfOrder, set_levelOutOfOrder, setL_levelOutOfOrder, setR_levelOutOfOrder: core_boolean
+	channel get_steamOutOfOrder, set_steamOutOfOrder, setL_steamOutOfOrder, setR_steamOutOfOrder: core_boolean
+	channel get_failedPumps, set_failedPumps, setL_failedPumps, setR_failedPumps: core_int
+	channel get_failedControls, set_failedControls, setL_failedControls, setR_failedControls: core_int
+	channel get_currentLevel, set_currentLevel, setL_currentLevel, setR_currentLevel: core_real
+	channel get_minimumNext, set_minimumNext, setL_minimumNext, setR_minimumNext: core_real
+	channel get_maximumNext, set_maximumNext, setL_maximumNext, setR_maximumNext: core_real
+	channel get_initialisationAbort, set_initialisationAbort, setL_initialisationAbort, setR_initialisationAbort: core_boolean
+	channel get_operationAbort, set_operationAbort, setL_operationAbort, setR_operationAbort: core_boolean
+	channel get_rescueAbort, set_rescueAbort, setL_rescueAbort, setR_rescueAbort: core_boolean
+	channel get_otherUnitOutOfOrder, set_otherUnitOutOfOrder, setL_otherUnitOutOfOrder, setR_otherUnitOutOfOrder: core_boolean
+	channel get_underNormalBand, set_underNormalBand, setL_underNormalBand, setR_underNormalBand: core_boolean
+	channel get_overNormalBand, set_overNormalBand, setL_overNormalBand, setR_overNormalBand: core_boolean
+	channel get_initAbort, set_initAbort, setL_initAbort, setR_initAbort: core_boolean
+	channel get_unitsReady, set_unitsReady, setL_unitsReady, setR_unitsReady: core_boolean
+	channel get_otherUnitFailed, set_otherUnitFailed, setL_otherUnitFailed, setR_otherUnitFailed: core_boolean
+	channel get_levelAboveNormal, set_levelAboveNormal, setL_levelAboveNormal, setR_levelAboveNormal: core_boolean
+	channel get_levelBelowNormal, set_levelBelowNormal, setL_levelBelowNormal, setR_levelBelowNormal: core_boolean
+	channel get_operatingAbort, set_operatingAbort, setL_operatingAbort, setR_operatingAbort: core_boolean
+	channel get_levelFailed, set_levelFailed, setL_levelFailed, setR_levelFailed: core_boolean
+	
+	-- Shared variable channels
+	channel set_EXT_valveOpen: core_boolean
+	channel set_EXT_PUMPS: core_int
+	channel set_EXT_DT: core_real
+	channel set_EXT_TOLERANCE: core_real
+	channel set_EXT_stopPresent: core_boolean
+	channel set_EXT_waitingPresent: core_boolean
+	channel set_EXT_readyPresent: core_boolean
+	channel set_EXT_levelSeen: core_boolean
+	channel set_EXT_steamSeen: core_boolean
+	channel set_EXT_levelValue: core_real
+	channel set_EXT_steamValue: core_real
+	channel set_EXT_levelRepairedSeen: core_boolean
+	channel set_EXT_steamRepairedSeen: core_boolean
+	channel set_EXT_levelAckSeen: core_boolean
+	channel set_EXT_steamAckSeen: core_boolean
+	channel set_EXT_malformed: core_boolean
+	channel set_EXT_levelJustRepaired: core_boolean
+	channel set_EXT_programReadySent: core_boolean
+	channel set_EXT_plantWaiting: core_boolean
+	channel set_EXT_stopCount: core_int
+	channel set_EXT_transmissionFailed: core_boolean
+	channel set_EXT_lastLevel: core_real
+	channel set_EXT_lastSteam: core_real
+	channel set_EXT_trustedSteam: core_real
+	channel set_EXT_steamTrusted: core_boolean
+	channel set_EXT_levelGrounded: core_boolean
+	channel set_EXT_throughput: core_real
+	channel set_EXT_levelOutOfOrder: core_boolean
+	channel set_EXT_steamOutOfOrder: core_boolean
+	channel set_EXT_failedPumps: core_int
+	channel set_EXT_failedControls: core_int
+	channel set_EXT_currentLevel: core_real
+	channel set_EXT_minimumNext: core_real
+	channel set_EXT_maximumNext: core_real
+	channel set_EXT_initialisationAbort: core_boolean
+	channel set_EXT_operationAbort: core_boolean
+	channel set_EXT_rescueAbort: core_boolean
+	channel set_EXT_otherUnitOutOfOrder: core_boolean
+	channel set_EXT_underNormalBand: core_boolean
+	channel set_EXT_overNormalBand: core_boolean
+	channel set_EXT_initAbort: core_boolean
+	channel set_EXT_unitsReady: core_boolean
+	channel set_EXT_otherUnitFailed: core_boolean
+	channel set_EXT_levelAboveNormal: core_boolean
+	channel set_EXT_levelBelowNormal: core_boolean
+	channel set_EXT_operatingAbort: core_boolean
+	channel set_EXT_levelFailed: core_boolean
+	
+	-- Local variable channels for defined operations that are required by the state machine
+	
+	-- Declaring state machine events
+	channel transmissionReceived__: NIDS.InOut
+	channel transmissionReceived: InOut
+	channel modeMessage__: NIDS.InOut
+	channel modeMessage: InOut
+	channel valve__: NIDS.InOut
+	channel valve: InOut
+	channel openPump__: NIDS.InOut.{0..4}
+	channel openPump: InOut.{0..4}
+	channel closePump__: NIDS.InOut.{0..4}
+	channel closePump: InOut.{0..4}
+	channel programReady__: NIDS.InOut
+	channel programReady: InOut
+	
+	-- Declaring call and ret events for undefined operations
+	
+	enterSS = {|
+	NORMAL::enter,
+	INITIALIZATION::enter,
+	EMERGENCY_STOP::enter,
+	DEGRADED::enter,
+	RESCUE::enter,
+	i0::enter
+	|}
+	
+	enteredSS = 	{|
+	NORMAL::entered,
+	INITIALIZATION::entered,
+	EMERGENCY_STOP::entered,
+	DEGRADED::entered,
+	RESCUE::entered
+	|}
+	
+	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
+	
+	shared_variable_events = {|
+		set_EXT_valveOpen,
+		set_EXT_PUMPS,
+		set_EXT_DT,
+		set_EXT_TOLERANCE,
+		set_EXT_stopPresent,
+		set_EXT_waitingPresent,
+		set_EXT_readyPresent,
+		set_EXT_levelSeen,
+		set_EXT_steamSeen,
+		set_EXT_levelValue,
+		set_EXT_steamValue,
+		set_EXT_levelRepairedSeen,
+		set_EXT_steamRepairedSeen,
+		set_EXT_levelAckSeen,
+		set_EXT_steamAckSeen,
+		set_EXT_malformed,
+		set_EXT_levelJustRepaired,
+		set_EXT_programReadySent,
+		set_EXT_plantWaiting,
+		set_EXT_stopCount,
+		set_EXT_transmissionFailed,
+		set_EXT_lastLevel,
+		set_EXT_lastSteam,
+		set_EXT_trustedSteam,
+		set_EXT_steamTrusted,
+		set_EXT_levelGrounded,
+		set_EXT_throughput,
+		set_EXT_levelOutOfOrder,
+		set_EXT_steamOutOfOrder,
+		set_EXT_failedPumps,
+		set_EXT_failedControls,
+		set_EXT_currentLevel,
+		set_EXT_minimumNext,
+		set_EXT_maximumNext,
+		set_EXT_initialisationAbort,
+		set_EXT_operationAbort,
+		set_EXT_rescueAbort,
+		set_EXT_otherUnitOutOfOrder,
+		set_EXT_underNormalBand,
+		set_EXT_overNormalBand,
+		set_EXT_initAbort,
+		set_EXT_unitsReady,
+		set_EXT_otherUnitFailed,
+		set_EXT_levelAboveNormal,
+		set_EXT_levelBelowNormal,
+		set_EXT_operatingAbort,
+		set_EXT_levelFailed
+	|}
+	
+	-- channel set with all visible events
+	sem__events = {|
+		terminate
+	,	set_EXT_valveOpen, set_valveOpen,
+		set_EXT_PUMPS, set_PUMPS,
+		set_EXT_DT, set_DT,
+		set_EXT_TOLERANCE, set_TOLERANCE,
+		set_EXT_stopPresent, set_stopPresent,
+		set_EXT_waitingPresent, set_waitingPresent,
+		set_EXT_readyPresent, set_readyPresent,
+		set_EXT_levelSeen, set_levelSeen,
+		set_EXT_steamSeen, set_steamSeen,
+		set_EXT_levelValue, set_levelValue,
+		set_EXT_steamValue, set_steamValue,
+		set_EXT_levelRepairedSeen, set_levelRepairedSeen,
+		set_EXT_steamRepairedSeen, set_steamRepairedSeen,
+		set_EXT_levelAckSeen, set_levelAckSeen,
+		set_EXT_steamAckSeen, set_steamAckSeen,
+		set_EXT_malformed, set_malformed,
+		set_EXT_levelJustRepaired, set_levelJustRepaired,
+		set_EXT_programReadySent, set_programReadySent,
+		set_EXT_plantWaiting, set_plantWaiting,
+		set_EXT_stopCount, set_stopCount,
+		set_EXT_transmissionFailed, set_transmissionFailed,
+		set_EXT_lastLevel, set_lastLevel,
+		set_EXT_lastSteam, set_lastSteam,
+		set_EXT_trustedSteam, set_trustedSteam,
+		set_EXT_steamTrusted, set_steamTrusted,
+		set_EXT_levelGrounded, set_levelGrounded,
+		set_EXT_throughput, set_throughput,
+		set_EXT_levelOutOfOrder, set_levelOutOfOrder,
+		set_EXT_steamOutOfOrder, set_steamOutOfOrder,
+		set_EXT_failedPumps, set_failedPumps,
+		set_EXT_failedControls, set_failedControls,
+		set_EXT_currentLevel, set_currentLevel,
+		set_EXT_minimumNext, set_minimumNext,
+		set_EXT_maximumNext, set_maximumNext,
+		set_EXT_initialisationAbort, set_initialisationAbort,
+		set_EXT_operationAbort, set_operationAbort,
+		set_EXT_rescueAbort, set_rescueAbort,
+		set_EXT_otherUnitOutOfOrder, set_otherUnitOutOfOrder,
+		set_EXT_underNormalBand, set_underNormalBand,
+		set_EXT_overNormalBand, set_overNormalBand,
+		set_EXT_initAbort, set_initAbort,
+		set_EXT_unitsReady, set_unitsReady,
+		set_EXT_otherUnitFailed, set_otherUnitFailed,
+		set_EXT_levelAboveNormal, set_levelAboveNormal,
+		set_EXT_levelBelowNormal, set_levelBelowNormal,
+		set_EXT_operatingAbort, set_operatingAbort,
+		set_EXT_levelFailed, set_levelFailed
+	,	transmissionReceived,
+		modeMessage,
+		valve,
+		openPump,
+		closePump,
+		programReady
+		|}
+
+	-- Nodes --
+	-- declaring all nodes
+	
+	----------------------------------------------------------------------
+	-- State: NORMAL
+	module NORMAL
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: INITIALIZATION
+	module INITIALIZATION
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: EMERGENCY_STOP
+	module EMERGENCY_STOP
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: DEGRADED
+	module DEGRADED
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: RESCUE
+	module RESCUE
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(modeMessage.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- Initial: i0
+	module i0
+	exports
+	
+		channel enter, interrupt
+		
+		D__(id__) = 
+			dbisim(let
+				Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+				
+				Termination = terminate -> SKIP
+				
+				Active 		= share__choice(interrupt -> SKIP) ; Inactive
+			within
+				Inactive [| {terminate} |> SKIP)
+		
+		VS_O__(id__) = D__(id__)
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	-- END of Nodes --
+	
+	-- Operation calls --
+	-- Only the undefined operations are declared here.
+	-- If the state machine is in isolation, all required operations will be undefined.
+	-- If it is in the context of a controller, the required operations not provided by the
+	-- controller will be declared here, and the defined operations will be defined in the
+	-- context of the Controller module, and therefore within scope of the state machine module.
+	
+	-- END of Operation calls --
+	
+	-- STM processes
+	STM(id__) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+	( 
+		(
+			(
+				(IteratedStateful(id__) \ {terminate} ; share__choice(terminate -> SKIP))
+			 	[[ share__ <- x__ | x__ <- {|set_EXT_valveOpen,set_EXT_PUMPS,set_EXT_DT,set_EXT_TOLERANCE,set_EXT_stopPresent,set_EXT_waitingPresent,set_EXT_readyPresent,set_EXT_levelSeen,set_EXT_steamSeen,set_EXT_levelValue,set_EXT_steamValue,set_EXT_levelRepairedSeen,set_EXT_steamRepairedSeen,set_EXT_levelAckSeen,set_EXT_steamAckSeen,set_EXT_malformed,set_EXT_levelJustRepaired,set_EXT_programReadySent,set_EXT_plantWaiting,set_EXT_stopCount,set_EXT_transmissionFailed,set_EXT_lastLevel,set_EXT_lastSteam,set_EXT_trustedSteam,set_EXT_steamTrusted,set_EXT_levelGrounded,set_EXT_throughput,set_EXT_levelOutOfOrder,set_EXT_steamOutOfOrder,set_EXT_failedPumps,set_EXT_failedControls,set_EXT_currentLevel,set_EXT_minimumNext,set_EXT_maximumNext,set_EXT_initialisationAbort,set_EXT_operationAbort,set_EXT_rescueAbort,set_EXT_otherUnitOutOfOrder,set_EXT_underNormalBand,set_EXT_overNormalBand,set_EXT_initAbort,set_EXT_unitsReady,set_EXT_otherUnitFailed,set_EXT_levelAboveNormal,set_EXT_levelBelowNormal,set_EXT_operatingAbort,set_EXT_levelFailed|} ]]
+			)
+		[| {share__} |]
+		SKIP
+		)
+		[| union(sharedVarSync,{terminate}) |]
+		dbisim(sharedVarMemory(id__))
+	)\sharedVarHide
+	
+	STM_VS_O(id__) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+	( 
+		(
+			(
+				(IteratedStateful_VS_O(id__) \ {terminate} ; share__choice(terminate -> SKIP))
+			 	[[ share__ <- x__ | x__ <- {|set_EXT_valveOpen,set_EXT_PUMPS,set_EXT_DT,set_EXT_TOLERANCE,set_EXT_stopPresent,set_EXT_waitingPresent,set_EXT_readyPresent,set_EXT_levelSeen,set_EXT_steamSeen,set_EXT_levelValue,set_EXT_steamValue,set_EXT_levelRepairedSeen,set_EXT_steamRepairedSeen,set_EXT_levelAckSeen,set_EXT_steamAckSeen,set_EXT_malformed,set_EXT_levelJustRepaired,set_EXT_programReadySent,set_EXT_plantWaiting,set_EXT_stopCount,set_EXT_transmissionFailed,set_EXT_lastLevel,set_EXT_lastSteam,set_EXT_trustedSteam,set_EXT_steamTrusted,set_EXT_levelGrounded,set_EXT_throughput,set_EXT_levelOutOfOrder,set_EXT_steamOutOfOrder,set_EXT_failedPumps,set_EXT_failedControls,set_EXT_currentLevel,set_EXT_minimumNext,set_EXT_maximumNext,set_EXT_initialisationAbort,set_EXT_operationAbort,set_EXT_rescueAbort,set_EXT_otherUnitOutOfOrder,set_EXT_underNormalBand,set_EXT_overNormalBand,set_EXT_initAbort,set_EXT_unitsReady,set_EXT_otherUnitFailed,set_EXT_levelAboveNormal,set_EXT_levelBelowNormal,set_EXT_operatingAbort,set_EXT_levelFailed|} ]]
+			)
+		[| {share__} |]
+		SKIP
+		)
+		[| union(sharedVarSync,{terminate}) |]
+		dbisim(sharedVarMemory(id__))
+	)\sharedVarHide
+	
+	-- Transitions
+	Transitions(id__) = ((let
+		Trans = share__choice(get_levelBelowNormal?levelBelowNormal -> get_otherUnitFailed?otherUnitFailed -> get_valveOpen?valveOpen -> get_rescueAbort?rescueAbort -> get_plantWaiting?plantWaiting -> get_levelAboveNormal?levelAboveNormal -> get_initAbort?initAbort -> get_unitsReady?unitsReady -> get_operatingAbort?operatingAbort -> get_levelFailed?levelFailed -> (
+			((share__ -> SKIP
+			 [] dbisim((true)&(internal__!NID_i0 -> SKIP ;  ((SKIP ; INITIALIZATION::enter -> SKIP))))
+			 	 [] dbisim((initAbort)&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+			 	 [] dbisim((((not ((initAbort))) and (not ((plantWaiting)))))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+			 	 [] dbisim((((((not ((initAbort))) and plantWaiting) and unitsReady) and (not ((otherUnitFailed)))))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+			 	 [] dbisim((((((not ((initAbort))) and plantWaiting) and unitsReady) and otherUnitFailed))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+			 	 [] dbisim(((((((not ((initAbort))) and plantWaiting) and (not ((unitsReady)))) and levelAboveNormal) and (not ((valveOpen)))))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_valveOpen!true -> SKIP)));true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(valve.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+			 	 [] dbisim(((((((not ((initAbort))) and plantWaiting) and (not ((unitsReady)))) and levelAboveNormal) and valveOpen))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+			 	 [] dbisim(((((((not ((initAbort))) and plantWaiting) and (not ((unitsReady)))) and (not ((levelAboveNormal)))) and valveOpen))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_valveOpen!false -> SKIP)));true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(valve.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+			 	 [] dbisim((((((((not ((initAbort))) and plantWaiting) and (not ((unitsReady)))) and levelBelowNormal) and (not ((levelAboveNormal)))) and (not ((valveOpen)))))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+			 	 [] dbisim((((((((not ((initAbort))) and plantWaiting) and (not ((unitsReady)))) and (not ((levelBelowNormal)))) and (not ((levelAboveNormal)))) and (not ((valveOpen)))))&(transmissionReceived__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP));true&(share__choice(programReady.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+			 	 [] dbisim((operatingAbort)&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+			 	 [] dbisim((((not ((operatingAbort))) and levelFailed))&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+			 	 [] dbisim(((((not ((operatingAbort))) and (not ((levelFailed)))) and otherUnitFailed))&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+			 	 [] dbisim(((((((not ((operatingAbort))) and (not ((levelFailed)))) and (not ((otherUnitFailed)))) and levelBelowNormal) and (not ((levelAboveNormal)))))&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP)) ; NORMAL::enter -> SKIP)))
+			 	 [] dbisim((((((not ((operatingAbort))) and (not ((levelFailed)))) and (not ((otherUnitFailed)))) and levelAboveNormal))&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP)) ; NORMAL::enter -> SKIP)))
+			 	 [] dbisim(((((((not ((operatingAbort))) and (not ((levelFailed)))) and (not ((otherUnitFailed)))) and (not ((levelBelowNormal)))) and (not ((levelAboveNormal)))))&(transmissionReceived__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+			 	 [] dbisim((operatingAbort)&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+			 	 [] dbisim((((not ((operatingAbort))) and levelFailed))&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+			 	 [] dbisim(((((not ((operatingAbort))) and (not ((levelFailed)))) and (not ((otherUnitFailed)))))&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+			 	 [] dbisim(((((((not ((operatingAbort))) and (not ((levelFailed)))) and otherUnitFailed) and levelBelowNormal) and (not ((levelAboveNormal)))))&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP)) ; DEGRADED::enter -> SKIP)))
+			 	 [] dbisim((((((not ((operatingAbort))) and (not ((levelFailed)))) and otherUnitFailed) and levelAboveNormal))&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP)) ; DEGRADED::enter -> SKIP)))
+			 	 [] dbisim(((((((not ((operatingAbort))) and (not ((levelFailed)))) and otherUnitFailed) and (not ((levelBelowNormal)))) and (not ((levelAboveNormal)))))&(transmissionReceived__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+			 	 [] dbisim((rescueAbort)&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+			 	 [] dbisim(((((not ((rescueAbort))) and (not ((levelFailed)))) and (not ((otherUnitFailed)))))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+			 	 [] dbisim(((((not ((rescueAbort))) and (not ((levelFailed)))) and otherUnitFailed))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+			 	 [] dbisim((((((not ((rescueAbort))) and levelFailed) and levelBelowNormal) and (not ((levelAboveNormal)))))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(openPump.out!1 -> SKIP));true&(share__choice(openPump.out!2 -> SKIP));true&(share__choice(openPump.out!3 -> SKIP));true&(share__choice(openPump.out!4 -> SKIP)) ; RESCUE::enter -> SKIP)))
+			 	 [] dbisim(((((not ((rescueAbort))) and levelFailed) and levelAboveNormal))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(modeMessage.out -> SKIP));true&(share__choice(closePump.out!1 -> SKIP));true&(share__choice(closePump.out!2 -> SKIP));true&(share__choice(closePump.out!3 -> SKIP));true&(share__choice(closePump.out!4 -> SKIP)) ; RESCUE::enter -> SKIP)))
+			 	 [] dbisim((((((not ((rescueAbort))) and levelFailed) and (not ((levelBelowNormal)))) and (not ((levelAboveNormal)))))&(transmissionReceived__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+			 ) ; Trans)
+			 []
+			 (interrupt -> share__choice(exit -> SKIP) ; share__choice(exited -> terminate -> SKIP))
+			 []
+			 terminate -> SKIP
+		)
+		)
+	within
+		Trans
+	)
+	)
+	
+	-- Stateful
+	-- RULE: Stateful(stm:StateMachineBody) : CSPProcess
+	
+	-- Named process definitions
+	MachineBody(id__) = 
+		dbisim((
+		let
+			finalNodesEntered = {||}
+		within
+			((let
+				-- IMPLEMENTATION NOTE:
+				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+				-- modules for defining the semantics of each node.
+				enterSS = {|
+				NORMAL::enter,
+				INITIALIZATION::enter,
+				EMERGENCY_STOP::enter,
+				DEGRADED::enter,
+				RESCUE::enter,
+				i0::enter
+				|}
+				hideSet = union(enterSS,{|exit,exited,internal__|})
+			within 
+				((let
+					-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+					-- because CSPM modules are used for the semantics of Node.
+					flowevts = union(enterSS,{|exit,exited,interrupt|})
+					transSync = {|internal__.NID_i0,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in|}
+				within
+					((
+					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+					   NORMAL::D__(id__)
+					   [| { share__, terminate } |] (
+					   INITIALIZATION::D__(id__)
+					   [| { share__, terminate } |] (
+					   EMERGENCY_STOP::D__(id__)
+					   [| { share__, terminate } |] (
+					   DEGRADED::D__(id__)
+					   [| { share__, terminate } |] (
+					   RESCUE::D__(id__)
+					   [| { share__, terminate } |] (
+					   i0::D__(id__)
+					   )
+					   )
+					   )
+					   )
+					   )
+					 )
+					 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in|}]]
+					 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in|}]]
+					 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+					 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in|}]]
+					 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in|}]]
+					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+					 )
+					  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+					  [[set_levelBelowNormal <- setL_levelBelowNormal,set_otherUnitFailed <- setL_otherUnitFailed,set_valveOpen <- setL_valveOpen,set_rescueAbort <- setL_rescueAbort,set_plantWaiting <- setL_plantWaiting,set_levelAboveNormal <- setL_levelAboveNormal,set_initAbort <- setL_initAbort,set_unitsReady <- setL_unitsReady,set_operatingAbort <- setL_operatingAbort,set_levelFailed <- setL_levelFailed]]
+					 )
+					 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+					 			,setL_levelBelowNormal
+					 			,setL_otherUnitFailed
+					 			,setL_valveOpen
+					 			,setL_rescueAbort
+					 			,setL_plantWaiting
+					 			,setL_levelAboveNormal
+					 			,setL_initAbort
+					 			,setL_unitsReady
+					 			,setL_operatingAbort
+					 			,setL_levelFailed
+					|}) |]
+					 ((i0::enter -> Transitions(id__))
+					  [[ share__ <- x__ | x__ <- {| share__,setL_levelBelowNormal,setL_otherUnitFailed,setL_valveOpen,setL_rescueAbort,setL_plantWaiting,setL_levelAboveNormal,setL_initAbort,setL_unitsReady,setL_operatingAbort,setL_levelFailed |} ]]
+					 )
+					)[[setL_levelBelowNormal <- set_levelBelowNormal,setL_otherUnitFailed <- set_otherUnitFailed,setL_valveOpen <- set_valveOpen,setL_rescueAbort <- set_rescueAbort,setL_plantWaiting <- set_plantWaiting,setL_levelAboveNormal <- set_levelAboveNormal,setL_initAbort <- set_initAbort,setL_unitsReady <- set_unitsReady,setL_operatingAbort <- set_operatingAbort,setL_levelFailed <- set_levelFailed]]
+					)
+				)
+				 \ hideSet)
+				[[
+					transmissionReceived__.x____ <- transmissionReceived,
+					modeMessage__.x____ <- modeMessage,
+					valve__.x____ <- valve,
+					openPump__.x____ <- openPump,
+					closePump__.x____ <- closePump,
+					programReady__.x____ <- programReady
+					| x____ <- NIDS
+				]]
+			)
+			 [| {| interrupt |} |] SKIP)
+		)
+		)
+	
+	Behaviour(id__) = 
+		dbisim((MachineBody(id__)\ enteredSS)
+		)
+	
+	IteratedBehaviour(id__) = 
+		dbisim((MachineBody(id__)\ enteredSS)
+		)
+	
+	Stateful(id__) = 
+		((
+			(Behaviour(id__) [| union(getsetLocalChannels,{terminate}) |] varMemory(id__))
+		 	\getsetLocalChannels
+		)
+		)
+	
+	IteratedStateful(id__) =
+		(Behaviour(id__))
+	
+	-- Visible counterparts
+	MachineBody_VS_O(id__) = 
+		dbisim((
+		let
+			finalNodesEntered = {||}
+		within
+			((let
+				-- IMPLEMENTATION NOTE:
+				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+				-- modules for defining the semantics of each node.
+				enterSS = {|
+				NORMAL::enter,
+				INITIALIZATION::enter,
+				EMERGENCY_STOP::enter,
+				DEGRADED::enter,
+				RESCUE::enter,
+				i0::enter
+				|}
+				hideSet = union(enterSS,{|exit,exited,internal__|})
+			within 
+				((let
+					-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+					-- because CSPM modules are used for the semantics of Node.
+					flowevts = union(enterSS,{|exit,exited,interrupt|})
+					transSync = {|internal__.NID_i0,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in|}
+				within
+					((
+					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+					   NORMAL::VS_O__(id__)
+					   [| { share__, terminate } |] (
+					   INITIALIZATION::VS_O__(id__)
+					   [| { share__, terminate } |] (
+					   EMERGENCY_STOP::VS_O__(id__)
+					   [| { share__, terminate } |] (
+					   DEGRADED::VS_O__(id__)
+					   [| { share__, terminate } |] (
+					   RESCUE::VS_O__(id__)
+					   [| { share__, terminate } |] (
+					   i0::VS_O__(id__)
+					   )
+					   )
+					   )
+					   )
+					   )
+					 )
+					 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in,transmissionReceived__.NID_NORMAL.in|}]]
+					 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in,transmissionReceived__.NID_INITIALIZATION.in|}]]
+					 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt|}]]
+					 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in,transmissionReceived__.NID_DEGRADED.in|}]]
+					 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in,transmissionReceived__.NID_RESCUE.in|}]]
+					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+					 )
+					  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+					  [[set_levelBelowNormal <- setL_levelBelowNormal,set_otherUnitFailed <- setL_otherUnitFailed,set_valveOpen <- setL_valveOpen,set_rescueAbort <- setL_rescueAbort,set_plantWaiting <- setL_plantWaiting,set_levelAboveNormal <- setL_levelAboveNormal,set_initAbort <- setL_initAbort,set_unitsReady <- setL_unitsReady,set_operatingAbort <- setL_operatingAbort,set_levelFailed <- setL_levelFailed]]
+					 )
+					 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+					 			,setL_levelBelowNormal
+					 			,setL_otherUnitFailed
+					 			,setL_valveOpen
+					 			,setL_rescueAbort
+					 			,setL_plantWaiting
+					 			,setL_levelAboveNormal
+					 			,setL_initAbort
+					 			,setL_unitsReady
+					 			,setL_operatingAbort
+					 			,setL_levelFailed
+					|}) |]
+					 ((i0::enter -> Transitions(id__))
+					  [[ share__ <- x__ | x__ <- {| share__,setL_levelBelowNormal,setL_otherUnitFailed,setL_valveOpen,setL_rescueAbort,setL_plantWaiting,setL_levelAboveNormal,setL_initAbort,setL_unitsReady,setL_operatingAbort,setL_levelFailed |} ]]
+					 )
+					)[[setL_levelBelowNormal <- set_levelBelowNormal,setL_otherUnitFailed <- set_otherUnitFailed,setL_valveOpen <- set_valveOpen,setL_rescueAbort <- set_rescueAbort,setL_plantWaiting <- set_plantWaiting,setL_levelAboveNormal <- set_levelAboveNormal,setL_initAbort <- set_initAbort,setL_unitsReady <- set_unitsReady,setL_operatingAbort <- set_operatingAbort,setL_levelFailed <- set_levelFailed]]
+					)
+				)
+				 \ hideSet)
+				[[
+					transmissionReceived__.x____ <- transmissionReceived,
+					modeMessage__.x____ <- modeMessage,
+					valve__.x____ <- valve,
+					openPump__.x____ <- openPump,
+					closePump__.x____ <- closePump,
+					programReady__.x____ <- programReady
+					| x____ <- NIDS
+				]]
+			)
+			 [| {| interrupt |} |] SKIP)
+		)
+		)
+	
+	Behaviour_VS_O(id__) = 
+		dbisim((MachineBody_VS_O(id__))
+		)
+	
+	IteratedBehaviour_VS_O(id__) = 
+		dbisim((MachineBody_VS_O(id__))
+		)
+	
+	Stateful_VS_O(id__) = 
+		dbisim((
+			(Behaviour_VS_O(id__) [| union(getsetLocalChannels,{terminate}) |] varMemory(id__))
+		 	\getsetLocalChannels
+		)
+		)
+	
+	IteratedStateful_VS_O(id__) =
+		(Behaviour_VS_O(id__))
+	
+	-- END
+	
+	-- Memory
+	-- Memory variables
+	
+	-- varMemory process
+	varMemory(id__) = terminate -> SKIP
+	
+	getsetLocalChannels = {||}
+	
+	-- Definition of the behaviour of state machines (default, optimised, visible, visible and optimised)
+	FVS__(id__) = STM_VS_O(id__)
+	
+	D__(id__) = STM(id__) \ internal_events
+	O__(id__) = sbisim(diamond(D__(id__)))
+	VS__(id__) = FVS__(id__)
+	VS_O__(id__) = sbisim(diamond(FVS__(id__)))
+	HEXT__(id__) = O__(id__) [|shared_variable_events|] SKIP
+	HUP__(id__) = O__(id__) [|{share__}|] SKIP
+	
+	-- Shared memory
+	-- Shared memory variables
+	Memory_valveOpen(valveOpen) =
+		get_valveOpen!valveOpen -> Memory_valveOpen(valveOpen)
+		[]
+		set_valveOpen?x__ -> Memory_valveOpen(x__)
+		[]
+		set_EXT_valveOpen?x__ -> Memory_valveOpen(x__)
+		[]
+		terminate -> SKIP
+	Memory_PUMPS(PUMPS) =
+		get_PUMPS!PUMPS -> Memory_PUMPS(PUMPS)
+		[]
+		set_PUMPS?x__ -> Memory_PUMPS(x__)
+		[]
+		set_EXT_PUMPS?x__ -> Memory_PUMPS(x__)
+		[]
+		terminate -> SKIP
+	Memory_DT(DT) =
+		get_DT!DT -> Memory_DT(DT)
+		[]
+		set_DT?x__ -> Memory_DT(x__)
+		[]
+		set_EXT_DT?x__ -> Memory_DT(x__)
+		[]
+		terminate -> SKIP
+	Memory_TOLERANCE(TOLERANCE) =
+		get_TOLERANCE!TOLERANCE -> Memory_TOLERANCE(TOLERANCE)
+		[]
+		set_TOLERANCE?x__ -> Memory_TOLERANCE(x__)
+		[]
+		set_EXT_TOLERANCE?x__ -> Memory_TOLERANCE(x__)
+		[]
+		terminate -> SKIP
+	Memory_stopPresent(stopPresent) =
+		get_stopPresent!stopPresent -> Memory_stopPresent(stopPresent)
+		[]
+		set_stopPresent?x__ -> Memory_stopPresent(x__)
+		[]
+		set_EXT_stopPresent?x__ -> Memory_stopPresent(x__)
+		[]
+		terminate -> SKIP
+	Memory_waitingPresent(waitingPresent) =
+		get_waitingPresent!waitingPresent -> Memory_waitingPresent(waitingPresent)
+		[]
+		set_waitingPresent?x__ -> Memory_waitingPresent(x__)
+		[]
+		set_EXT_waitingPresent?x__ -> Memory_waitingPresent(x__)
+		[]
+		terminate -> SKIP
+	Memory_readyPresent(readyPresent) =
+		get_readyPresent!readyPresent -> Memory_readyPresent(readyPresent)
+		[]
+		set_readyPresent?x__ -> Memory_readyPresent(x__)
+		[]
+		set_EXT_readyPresent?x__ -> Memory_readyPresent(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelSeen(levelSeen) =
+		get_levelSeen!levelSeen -> Memory_levelSeen(levelSeen)
+		[]
+		set_levelSeen?x__ -> Memory_levelSeen(x__)
+		[]
+		set_EXT_levelSeen?x__ -> Memory_levelSeen(x__)
+		[]
+		terminate -> SKIP
+	Memory_steamSeen(steamSeen) =
+		get_steamSeen!steamSeen -> Memory_steamSeen(steamSeen)
+		[]
+		set_steamSeen?x__ -> Memory_steamSeen(x__)
+		[]
+		set_EXT_steamSeen?x__ -> Memory_steamSeen(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelValue(levelValue) =
+		get_levelValue!levelValue -> Memory_levelValue(levelValue)
+		[]
+		set_levelValue?x__ -> Memory_levelValue(x__)
+		[]
+		set_EXT_levelValue?x__ -> Memory_levelValue(x__)
+		[]
+		terminate -> SKIP
+	Memory_steamValue(steamValue) =
+		get_steamValue!steamValue -> Memory_steamValue(steamValue)
+		[]
+		set_steamValue?x__ -> Memory_steamValue(x__)
+		[]
+		set_EXT_steamValue?x__ -> Memory_steamValue(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelRepairedSeen(levelRepairedSeen) =
+		get_levelRepairedSeen!levelRepairedSeen -> Memory_levelRepairedSeen(levelRepairedSeen)
+		[]
+		set_levelRepairedSeen?x__ -> Memory_levelRepairedSeen(x__)
+		[]
+		set_EXT_levelRepairedSeen?x__ -> Memory_levelRepairedSeen(x__)
+		[]
+		terminate -> SKIP
+	Memory_steamRepairedSeen(steamRepairedSeen) =
+		get_steamRepairedSeen!steamRepairedSeen -> Memory_steamRepairedSeen(steamRepairedSeen)
+		[]
+		set_steamRepairedSeen?x__ -> Memory_steamRepairedSeen(x__)
+		[]
+		set_EXT_steamRepairedSeen?x__ -> Memory_steamRepairedSeen(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelAckSeen(levelAckSeen) =
+		get_levelAckSeen!levelAckSeen -> Memory_levelAckSeen(levelAckSeen)
+		[]
+		set_levelAckSeen?x__ -> Memory_levelAckSeen(x__)
+		[]
+		set_EXT_levelAckSeen?x__ -> Memory_levelAckSeen(x__)
+		[]
+		terminate -> SKIP
+	Memory_steamAckSeen(steamAckSeen) =
+		get_steamAckSeen!steamAckSeen -> Memory_steamAckSeen(steamAckSeen)
+		[]
+		set_steamAckSeen?x__ -> Memory_steamAckSeen(x__)
+		[]
+		set_EXT_steamAckSeen?x__ -> Memory_steamAckSeen(x__)
+		[]
+		terminate -> SKIP
+	Memory_malformed(malformed) =
+		get_malformed!malformed -> Memory_malformed(malformed)
+		[]
+		set_malformed?x__ -> Memory_malformed(x__)
+		[]
+		set_EXT_malformed?x__ -> Memory_malformed(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelJustRepaired(levelJustRepaired) =
+		get_levelJustRepaired!levelJustRepaired -> Memory_levelJustRepaired(levelJustRepaired)
+		[]
+		set_levelJustRepaired?x__ -> Memory_levelJustRepaired(x__)
+		[]
+		set_EXT_levelJustRepaired?x__ -> Memory_levelJustRepaired(x__)
+		[]
+		terminate -> SKIP
+	Memory_programReadySent(programReadySent) =
+		get_programReadySent!programReadySent -> Memory_programReadySent(programReadySent)
+		[]
+		set_programReadySent?x__ -> Memory_programReadySent(x__)
+		[]
+		set_EXT_programReadySent?x__ -> Memory_programReadySent(x__)
+		[]
+		terminate -> SKIP
+	Memory_plantWaiting(plantWaiting) =
+		get_plantWaiting!plantWaiting -> Memory_plantWaiting(plantWaiting)
+		[]
+		set_plantWaiting?x__ -> Memory_plantWaiting(x__)
+		[]
+		set_EXT_plantWaiting?x__ -> Memory_plantWaiting(x__)
+		[]
+		terminate -> SKIP
+	Memory_stopCount(stopCount) =
+		get_stopCount!stopCount -> Memory_stopCount(stopCount)
+		[]
+		set_stopCount?x__ -> Memory_stopCount(x__)
+		[]
+		set_EXT_stopCount?x__ -> Memory_stopCount(x__)
+		[]
+		terminate -> SKIP
+	Memory_transmissionFailed(transmissionFailed) =
+		get_transmissionFailed!transmissionFailed -> Memory_transmissionFailed(transmissionFailed)
+		[]
+		set_transmissionFailed?x__ -> Memory_transmissionFailed(x__)
+		[]
+		set_EXT_transmissionFailed?x__ -> Memory_transmissionFailed(x__)
+		[]
+		terminate -> SKIP
+	Memory_lastLevel(lastLevel) =
+		get_lastLevel!lastLevel -> Memory_lastLevel(lastLevel)
+		[]
+		set_lastLevel?x__ -> Memory_lastLevel(x__)
+		[]
+		set_EXT_lastLevel?x__ -> Memory_lastLevel(x__)
+		[]
+		terminate -> SKIP
+	Memory_lastSteam(lastSteam) =
+		get_lastSteam!lastSteam -> Memory_lastSteam(lastSteam)
+		[]
+		set_lastSteam?x__ -> Memory_lastSteam(x__)
+		[]
+		set_EXT_lastSteam?x__ -> Memory_lastSteam(x__)
+		[]
+		terminate -> SKIP
+	Memory_trustedSteam(trustedSteam) =
+		get_trustedSteam!trustedSteam -> Memory_trustedSteam(trustedSteam)
+		[]
+		set_trustedSteam?x__ -> Memory_trustedSteam(x__)
+		[]
+		set_EXT_trustedSteam?x__ -> Memory_trustedSteam(x__)
+		[]
+		terminate -> SKIP
+	Memory_steamTrusted(steamTrusted) =
+		get_steamTrusted!steamTrusted -> Memory_steamTrusted(steamTrusted)
+		[]
+		set_steamTrusted?x__ -> Memory_steamTrusted(x__)
+		[]
+		set_EXT_steamTrusted?x__ -> Memory_steamTrusted(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelGrounded(levelGrounded) =
+		get_levelGrounded!levelGrounded -> Memory_levelGrounded(levelGrounded)
+		[]
+		set_levelGrounded?x__ -> Memory_levelGrounded(x__)
+		[]
+		set_EXT_levelGrounded?x__ -> Memory_levelGrounded(x__)
+		[]
+		terminate -> SKIP
+	Memory_throughput(throughput) =
+		get_throughput!throughput -> Memory_throughput(throughput)
+		[]
+		set_throughput?x__ -> Memory_throughput(x__)
+		[]
+		set_EXT_throughput?x__ -> Memory_throughput(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelOutOfOrder(levelOutOfOrder) =
+		get_levelOutOfOrder!levelOutOfOrder -> Memory_levelOutOfOrder(levelOutOfOrder)
+		[]
+		set_levelOutOfOrder?x__ -> Memory_levelOutOfOrder(x__)
+		[]
+		set_EXT_levelOutOfOrder?x__ -> Memory_levelOutOfOrder(x__)
+		[]
+		terminate -> SKIP
+	Memory_steamOutOfOrder(steamOutOfOrder) =
+		get_steamOutOfOrder!steamOutOfOrder -> Memory_steamOutOfOrder(steamOutOfOrder)
+		[]
+		set_steamOutOfOrder?x__ -> Memory_steamOutOfOrder(x__)
+		[]
+		set_EXT_steamOutOfOrder?x__ -> Memory_steamOutOfOrder(x__)
+		[]
+		terminate -> SKIP
+	Memory_failedPumps(failedPumps) =
+		get_failedPumps!failedPumps -> Memory_failedPumps(failedPumps)
+		[]
+		set_failedPumps?x__ -> Memory_failedPumps(x__)
+		[]
+		set_EXT_failedPumps?x__ -> Memory_failedPumps(x__)
+		[]
+		terminate -> SKIP
+	Memory_failedControls(failedControls) =
+		get_failedControls!failedControls -> Memory_failedControls(failedControls)
+		[]
+		set_failedControls?x__ -> Memory_failedControls(x__)
+		[]
+		set_EXT_failedControls?x__ -> Memory_failedControls(x__)
+		[]
+		terminate -> SKIP
+	Memory_currentLevel(currentLevel) =
+		get_currentLevel!currentLevel -> Memory_currentLevel(currentLevel)
+		[]
+		set_currentLevel?x__ -> Memory_currentLevel(x__)
+		[]
+		set_EXT_currentLevel?x__ -> Memory_currentLevel(x__)
+		[]
+		terminate -> SKIP
+	Memory_minimumNext(minimumNext) =
+		get_minimumNext!minimumNext -> Memory_minimumNext(minimumNext)
+		[]
+		set_minimumNext?x__ -> Memory_minimumNext(x__)
+		[]
+		set_EXT_minimumNext?x__ -> Memory_minimumNext(x__)
+		[]
+		terminate -> SKIP
+	Memory_maximumNext(maximumNext) =
+		get_maximumNext!maximumNext -> Memory_maximumNext(maximumNext)
+		[]
+		set_maximumNext?x__ -> Memory_maximumNext(x__)
+		[]
+		set_EXT_maximumNext?x__ -> Memory_maximumNext(x__)
+		[]
+		terminate -> SKIP
+	Memory_initialisationAbort(initialisationAbort) =
+		get_initialisationAbort!initialisationAbort -> Memory_initialisationAbort(initialisationAbort)
+		[]
+		set_initialisationAbort?x__ -> Memory_initialisationAbort(x__)
+		[]
+		set_EXT_initialisationAbort?x__ -> Memory_initialisationAbort(x__)
+		[]
+		terminate -> SKIP
+	Memory_operationAbort(operationAbort) =
+		get_operationAbort!operationAbort -> Memory_operationAbort(operationAbort)
+		[]
+		set_operationAbort?x__ -> Memory_operationAbort(x__)
+		[]
+		set_EXT_operationAbort?x__ -> Memory_operationAbort(x__)
+		[]
+		terminate -> SKIP
+	Memory_rescueAbort(rescueAbort) =
+		get_rescueAbort!rescueAbort -> Memory_rescueAbort(rescueAbort)
+		[]
+		set_rescueAbort?x__ -> Memory_rescueAbort(x__)
+		[]
+		set_EXT_rescueAbort?x__ -> Memory_rescueAbort(x__)
+		[]
+		terminate -> SKIP
+	Memory_otherUnitOutOfOrder(otherUnitOutOfOrder) =
+		get_otherUnitOutOfOrder!otherUnitOutOfOrder -> Memory_otherUnitOutOfOrder(otherUnitOutOfOrder)
+		[]
+		set_otherUnitOutOfOrder?x__ -> Memory_otherUnitOutOfOrder(x__)
+		[]
+		set_EXT_otherUnitOutOfOrder?x__ -> Memory_otherUnitOutOfOrder(x__)
+		[]
+		terminate -> SKIP
+	Memory_underNormalBand(underNormalBand) =
+		get_underNormalBand!underNormalBand -> Memory_underNormalBand(underNormalBand)
+		[]
+		set_underNormalBand?x__ -> Memory_underNormalBand(x__)
+		[]
+		set_EXT_underNormalBand?x__ -> Memory_underNormalBand(x__)
+		[]
+		terminate -> SKIP
+	Memory_overNormalBand(overNormalBand) =
+		get_overNormalBand!overNormalBand -> Memory_overNormalBand(overNormalBand)
+		[]
+		set_overNormalBand?x__ -> Memory_overNormalBand(x__)
+		[]
+		set_EXT_overNormalBand?x__ -> Memory_overNormalBand(x__)
+		[]
+		terminate -> SKIP
+	Memory_initAbort(initAbort) =
+		get_initAbort!initAbort -> Memory_initAbort(initAbort)
+		[]
+		set_initAbort?x__ -> Memory_initAbort(x__)
+		[]
+		set_EXT_initAbort?x__ -> Memory_initAbort(x__)
+		[]
+		terminate -> SKIP
+	Memory_unitsReady(unitsReady) =
+		get_unitsReady!unitsReady -> Memory_unitsReady(unitsReady)
+		[]
+		set_unitsReady?x__ -> Memory_unitsReady(x__)
+		[]
+		set_EXT_unitsReady?x__ -> Memory_unitsReady(x__)
+		[]
+		terminate -> SKIP
+	Memory_otherUnitFailed(otherUnitFailed) =
+		get_otherUnitFailed!otherUnitFailed -> Memory_otherUnitFailed(otherUnitFailed)
+		[]
+		set_otherUnitFailed?x__ -> Memory_otherUnitFailed(x__)
+		[]
+		set_EXT_otherUnitFailed?x__ -> Memory_otherUnitFailed(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelAboveNormal(levelAboveNormal) =
+		get_levelAboveNormal!levelAboveNormal -> Memory_levelAboveNormal(levelAboveNormal)
+		[]
+		set_levelAboveNormal?x__ -> Memory_levelAboveNormal(x__)
+		[]
+		set_EXT_levelAboveNormal?x__ -> Memory_levelAboveNormal(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelBelowNormal(levelBelowNormal) =
+		get_levelBelowNormal!levelBelowNormal -> Memory_levelBelowNormal(levelBelowNormal)
+		[]
+		set_levelBelowNormal?x__ -> Memory_levelBelowNormal(x__)
+		[]
+		set_EXT_levelBelowNormal?x__ -> Memory_levelBelowNormal(x__)
+		[]
+		terminate -> SKIP
+	Memory_operatingAbort(operatingAbort) =
+		get_operatingAbort!operatingAbort -> Memory_operatingAbort(operatingAbort)
+		[]
+		set_operatingAbort?x__ -> Memory_operatingAbort(x__)
+		[]
+		set_EXT_operatingAbort?x__ -> Memory_operatingAbort(x__)
+		[]
+		terminate -> SKIP
+	Memory_levelFailed(levelFailed) =
+		get_levelFailed!levelFailed -> Memory_levelFailed(levelFailed)
+		[]
+		set_levelFailed?x__ -> Memory_levelFailed(x__)
+		[]
+		set_EXT_levelFailed?x__ -> Memory_levelFailed(x__)
+		[]
+		terminate -> SKIP
+	
+	-- sharedVarMemory process
+	sharedVarMemory(id__) = Memory_valveOpen(false)
+	[| { terminate } |] (
+	Memory_PUMPS(0)
+	[| { terminate } |] (
+	Memory_DT(0)
+	[| { terminate } |] (
+	Memory_TOLERANCE(0)
+	[| { terminate } |] (
+	Memory_stopPresent(true)
+	[| { terminate } |] (
+	Memory_waitingPresent(true)
+	[| { terminate } |] (
+	Memory_readyPresent(true)
+	[| { terminate } |] (
+	Memory_levelSeen(true)
+	[| { terminate } |] (
+	Memory_steamSeen(true)
+	[| { terminate } |] (
+	Memory_levelValue(0)
+	[| { terminate } |] (
+	Memory_steamValue(0)
+	[| { terminate } |] (
+	Memory_levelRepairedSeen(true)
+	[| { terminate } |] (
+	Memory_steamRepairedSeen(true)
+	[| { terminate } |] (
+	Memory_levelAckSeen(true)
+	[| { terminate } |] (
+	Memory_steamAckSeen(true)
+	[| { terminate } |] (
+	Memory_malformed(true)
+	[| { terminate } |] (
+	Memory_levelJustRepaired(true)
+	[| { terminate } |] (
+	Memory_programReadySent(true)
+	[| { terminate } |] (
+	Memory_plantWaiting(true)
+	[| { terminate } |] (
+	Memory_stopCount(0)
+	[| { terminate } |] (
+	Memory_transmissionFailed(true)
+	[| { terminate } |] (
+	Memory_lastLevel(0)
+	[| { terminate } |] (
+	Memory_lastSteam(0)
+	[| { terminate } |] (
+	Memory_trustedSteam(0)
+	[| { terminate } |] (
+	Memory_steamTrusted(true)
+	[| { terminate } |] (
+	Memory_levelGrounded(true)
+	[| { terminate } |] (
+	Memory_throughput(0)
+	[| { terminate } |] (
+	Memory_levelOutOfOrder(true)
+	[| { terminate } |] (
+	Memory_steamOutOfOrder(true)
+	[| { terminate } |] (
+	Memory_failedPumps(0)
+	[| { terminate } |] (
+	Memory_failedControls(0)
+	[| { terminate } |] (
+	Memory_currentLevel(0)
+	[| { terminate } |] (
+	Memory_minimumNext(0)
+	[| { terminate } |] (
+	Memory_maximumNext(0)
+	[| { terminate } |] (
+	Memory_initialisationAbort(true)
+	[| { terminate } |] (
+	Memory_operationAbort(true)
+	[| { terminate } |] (
+	Memory_rescueAbort(true)
+	[| { terminate } |] (
+	Memory_otherUnitOutOfOrder(true)
+	[| { terminate } |] (
+	Memory_underNormalBand(true)
+	[| { terminate } |] (
+	Memory_overNormalBand(true)
+	[| { terminate } |] (
+	Memory_initAbort(true)
+	[| { terminate } |] (
+	Memory_unitsReady(true)
+	[| { terminate } |] (
+	Memory_otherUnitFailed(true)
+	[| { terminate } |] (
+	Memory_levelAboveNormal(true)
+	[| { terminate } |] (
+	Memory_levelBelowNormal(true)
+	[| { terminate } |] (
+	Memory_operatingAbort(true)
+	[| { terminate } |] (
+	Memory_levelFailed(true)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	)
+	
+	sharedVarSync = {|get_valveOpen,set_valveOpen,set_EXT_valveOpen,get_PUMPS,set_PUMPS,set_EXT_PUMPS,get_DT,set_DT,set_EXT_DT,get_TOLERANCE,set_TOLERANCE,set_EXT_TOLERANCE,get_stopPresent,set_stopPresent,set_EXT_stopPresent,get_waitingPresent,set_waitingPresent,set_EXT_waitingPresent,get_readyPresent,set_readyPresent,set_EXT_readyPresent,get_levelSeen,set_levelSeen,set_EXT_levelSeen,get_steamSeen,set_steamSeen,set_EXT_steamSeen,get_levelValue,set_levelValue,set_EXT_levelValue,get_steamValue,set_steamValue,set_EXT_steamValue,get_levelRepairedSeen,set_levelRepairedSeen,set_EXT_levelRepairedSeen,get_steamRepairedSeen,set_steamRepairedSeen,set_EXT_steamRepairedSeen,get_levelAckSeen,set_levelAckSeen,set_EXT_levelAckSeen,get_steamAckSeen,set_steamAckSeen,set_EXT_steamAckSeen,get_malformed,set_malformed,set_EXT_malformed,get_levelJustRepaired,set_levelJustRepaired,set_EXT_levelJustRepaired,get_programReadySent,set_programReadySent,set_EXT_programReadySent,get_plantWaiting,set_plantWaiting,set_EXT_plantWaiting,get_stopCount,set_stopCount,set_EXT_stopCount,get_transmissionFailed,set_transmissionFailed,set_EXT_transmissionFailed,get_lastLevel,set_lastLevel,set_EXT_lastLevel,get_lastSteam,set_lastSteam,set_EXT_lastSteam,get_trustedSteam,set_trustedSteam,set_EXT_trustedSteam,get_steamTrusted,set_steamTrusted,set_EXT_steamTrusted,get_levelGrounded,set_levelGrounded,set_EXT_levelGrounded,get_throughput,set_throughput,set_EXT_throughput,get_levelOutOfOrder,set_levelOutOfOrder,set_EXT_levelOutOfOrder,get_steamOutOfOrder,set_steamOutOfOrder,set_EXT_steamOutOfOrder,get_failedPumps,set_failedPumps,set_EXT_failedPumps,get_failedControls,set_failedControls,set_EXT_failedControls,get_currentLevel,set_currentLevel,set_EXT_currentLevel,get_minimumNext,set_minimumNext,set_EXT_minimumNext,get_maximumNext,set_maximumNext,set_EXT_maximumNext,get_initialisationAbort,set_initialisationAbort,set_EXT_initialisationAbort,get_operationAbort,set_operationAbort,set_EXT_operationAbort,get_rescueAbort,set_rescueAbort,set_EXT_rescueAbort,get_otherUnitOutOfOrder,set_otherUnitOutOfOrder,set_EXT_otherUnitOutOfOrder,get_underNormalBand,set_underNormalBand,set_EXT_underNormalBand,get_overNormalBand,set_overNormalBand,set_EXT_overNormalBand,get_initAbort,set_initAbort,set_EXT_initAbort,get_unitsReady,set_unitsReady,set_EXT_unitsReady,get_otherUnitFailed,set_otherUnitFailed,set_EXT_otherUnitFailed,get_levelAboveNormal,set_levelAboveNormal,set_EXT_levelAboveNormal,get_levelBelowNormal,set_levelBelowNormal,set_EXT_levelBelowNormal,get_operatingAbort,set_operatingAbort,set_EXT_operatingAbort,get_levelFailed,set_levelFailed,set_EXT_levelFailed|}
+	
+	sharedVarHide = {|get_valveOpen,get_PUMPS,get_DT,get_TOLERANCE,get_stopPresent,get_waitingPresent,get_readyPresent,get_levelSeen,get_steamSeen,get_levelValue,get_steamValue,get_levelRepairedSeen,get_steamRepairedSeen,get_levelAckSeen,get_steamAckSeen,get_malformed,get_levelJustRepaired,get_programReadySent,get_plantWaiting,get_stopCount,get_transmissionFailed,get_lastLevel,get_lastSteam,get_trustedSteam,get_steamTrusted,get_levelGrounded,get_throughput,get_levelOutOfOrder,get_steamOutOfOrder,get_failedPumps,get_failedControls,get_currentLevel,get_minimumNext,get_maximumNext,get_initialisationAbort,get_operationAbort,get_rescueAbort,get_otherUnitOutOfOrder,get_underNormalBand,get_overNormalBand,get_initAbort,get_unitsReady,get_otherUnitFailed,get_levelAboveNormal,get_levelBelowNormal,get_operatingAbort,get_levelFailed|}
+endmodule

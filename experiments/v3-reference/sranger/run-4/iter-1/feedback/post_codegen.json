@@ -1,0 +1,207 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 23 requirements implemented (9 Java files). No requirement unimplemented; 1 invented default, 1 ambiguity and 6 design choices recorded.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "No-reading distance is 1000.0 m",
+      "raw": "SR-DM5 asks for 'a large default value' when no reading is available but gives no number.",
+      "fix_directive": "If the requirements fix a value, replace NO_READING_DISTANCE in Sensor; any value well above OBSTACLE_THRESHOLD keeps obstacleDetected false on missing data.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_range": [
+            10,
+            14
+          ],
+          "element": "NO_READING_DISTANCE",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Negative or NaN IR readings are treated as 'no reading'",
+      "raw": "SR-DM5/SR-SF1 require distance() to be non-negative but do not say how an invalid measurement is handled. Sensor.update maps it to the no-reading default (the robot keeps moving) rather than clamping to 0 (which would trigger a turn).",
+      "fix_directive": "Change Sensor.update if invalid readings must instead be clamped or rejected.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_range": [
+            16,
+            26
+          ],
+          "element": "update",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "obstacleThreshold = 0.5 m is fractional and is rounded up in the model",
+      "raw": "The model's constants interface rounds fractional constants up, so the guard obstacleDetected (distance() <= obstacleThreshold) is checked in the model against 1, not 0.5. The Java keeps metres and 0.5 as SR-DM2 states; units were not rescaled.",
+      "fix_directive": "None in Java; read verification results for SR-GP1 with the rounded threshold in mind.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerConstants.java",
+          "line_range": [
+            17,
+            17
+          ],
+          "element": "OBSTACLE_THRESHOLD",
+          "requirement_ids": [
+            "SR-DM2",
+            "SR-GP1"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": [
+            44,
+            44
+          ],
+          "element": "obstacleDetected",
+          "requirement_ids": [
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Moving -> Turning: trigger event and guard both stated",
+      "raw": "SR-Beh2 fires the transition on the obstacle event; SR-GP1 says obstacleDetected is the guard of the same transition. Implemented as trigger Obstacle with condition obstacleDetected (both).",
+      "fix_directive": "Drop '&& obstacleDetected' if the event alone must trigger the transition.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": [
+            51,
+            54
+          ],
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-GP1",
+            "SR-FR2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Power-up entry command issued in the constructor",
+      "raw": "SR-FR1 says Move(moveVel, 0) is issued on entering Moving; Moving is entered at power-up (SR-Beh1) without a transition, so the constructor issues it.",
+      "fix_directive": "None unless the power-up command should not be issued.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": [
+            30,
+            35
+          ],
+          "element": "SRangerController",
+          "requirement_ids": [
+            "SR-FR1",
+            "SR-Beh1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Clock source and clock reset order",
+      "raw": "The current time comes from a Clock (monotonic System.nanoTime, seconds since creation); the controller field is named 'timer' because 'clock' is reserved. On Moving -> Turning, clockResetTime is set before Move(0, turnVel) is issued.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/time/Clock.java",
+          "line_range": [
+            8,
+            17
+          ],
+          "element": "Clock",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-GP2"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": [
+            52,
+            54
+          ],
+          "element": "step",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-FR2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Priority in Turning and ignored events",
+      "raw": "Turning: endTask first, then the autonomous turnDurationElapsed transition, then tick (conjoined with !turnDurationElapsed). Obstacle in Turning and every event in Final are ignored (no transition), as no requirement defines them.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": [
+            59,
+            72
+          ],
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7",
+            "SR-DC1",
+            "SR-FR3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Sensor and Actuator are concrete classes",
+      "raw": "SR-ARCH2 calls them interfaces; they are final classes (the profile recognises sensor classes by name), each with one implementation.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_range": [
+            8,
+            36
+          ],
+          "element": "Sensor",
+          "requirement_ids": [
+            "SR-ARCH2",
+            "SR-DM5"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/actuator/Actuator.java",
+          "line_range": [
+            9,
+            34
+          ],
+          "element": "Actuator",
+          "requirement_ids": [
+            "SR-ARCH2",
+            "SR-DM6"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline; no Java change is required by this review."
+}

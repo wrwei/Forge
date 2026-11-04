@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 8,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 17:44:26",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run8-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run8",
+  "files": {
+    "java": 18,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 603,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY: chemical_detector, pass 8\n\n**Written.** 18 Java files in `chemical_detector`:\n- domain types: Status, Angle, Loc, Chem, GasSample;\n- sealed InputEvent and OutputEvent; DetectorConstants;\n- sensors: ChemicalSensor (analysis, intensity, location, goreq), OdometerSensor, Clock;\n- actuators: GasAnalysisActuator (turn, stop, resume) and VehicleActuator (move, randomWalk, shortRandomWalk, changeDirection, pause, flag);\n- two controllers. GasAnalysisController runs Reading, Analysis, NoGas or GasDetected, then Reading or Concluded. MovementController has seven modes, with stop and resume first in each.\n\nturn, stop and resume are outputs of gas analysis and same-named inputs of movement, so they become shared events. All 81 requirements are traced. javac compiles cleanly, and a scratch scenario reached every mode.\n\n**Decisions the requirements left open.**\n- Constants: THR 10.0, LV 1.0, EVADE_TIME 2, STUCK_PERIOD 5, STUCK_DIST 1.0, OUT_PERIOD 3. All integral.\n- Initial values: sts noGas, ins 0, anl and a Front, l front, d0 and d1 0. None is read before it is written.\n- analysis gives gasD when the target Chem (given to the sensor) has a positive intensity. intensity and location cover all chemicals.\n- Sensor position maps to Left, Right, Back, Front, cycling. An empty reading gives 0.0 and Front.\n- Operations are VehicleActuator methods: move(lv, a) and changeDirection(l) need arguments that the parameterless compute() cannot carry.\n- Waiting's randomWalk is issued on every entry to Waiting and at construction.\n- The odometer is a sensor reading, not an event record.\n- GasSensor is renamed GasSample (the \"sensor\" naming rule), and Intensity is a real.\n- Gas analysis ends in a terminal Concluded, and Found is terminal.\n\n**Unresolved.**\n- CD-MV-Beh9 maps to no transition, the one exception to CD-DC1.\n- No class wires the two controllers; the platform forwards GasAnalysisActuator's events.\n- It is untested whether the pipeline accepts operations written as actuator methods."
+}

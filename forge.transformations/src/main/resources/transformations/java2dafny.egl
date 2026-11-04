@@ -639,6 +639,49 @@ operation wrapOr(g : String) : String {
     return g;
 }
 
+// Amendment 14 (pre-registration v3). Spoon keeps no bracket nodes, so a
+// printer that joins operands flat drops the brackets Java needed:
+// `a && (b || c)` became `a && b || c` (Dafny rejects the mix) and
+// `x * (y + z)` would become `x * y + z`. These helpers restore exactly the
+// brackets precedence requires; where none is needed the output is unchanged.
+operation wrapAnd(g : String) : String {
+    var depth = 0;
+    var i = 0;
+    while (i < g.length() - 1) {
+        var ch = g.substring(i, i + 1);
+        if (ch = "(") { depth = depth + 1; }
+        else if (ch = ")") { depth = depth - 1; }
+        else if (depth = 0 and ch = "&" and g.substring(i + 1, i + 2) = "&") { return "(" + g + ")"; }
+        i = i + 1;
+    }
+    return g;
+}
+
+operation binPrec(op : String) : Integer {
+    if (op = "OR") { return 1; }
+    if (op = "AND") { return 2; }
+    if (op = "BITOR") { return 3; }
+    if (op = "BITXOR") { return 4; }
+    if (op = "BITAND") { return 5; }
+    if (op = "EQ" or op = "NE") { return 6; }
+    if (op = "LT" or op = "GT" or op = "LE" or op = "GE" or op = "INSTANCEOF") { return 7; }
+    if (op = "SL" or op = "SR" or op = "USR") { return 8; }
+    if (op = "PLUS" or op = "MINUS") { return 9; }
+    if (op = "MUL" or op = "DIV" or op = "MOD") { return 10; }
+    return 11;
+}
+
+operation needsBrackets(child : Any, parentOp : String, isRight : Boolean) : Boolean {
+    if (child.isUndefined() or child.eClass().getName() <> "CtBinaryOperator") { return false; }
+    var childOp = getFeature(child, "operatorKind").toString();
+    if ((childOp = "AND" and parentOp = "OR") or (childOp = "OR" and parentOp = "AND")) { return true; }
+    var c = binPrec(childOp);
+    var p = binPrec(parentOp);
+    if (c < p) { return true; }
+    if (c = p and isRight and (parentOp = "MINUS" or parentOp = "DIV" or parentOp = "MOD")) { return true; }
+    return false;
+}
+
 operation findControllerClassFor() : Any {
     // Java2DafnyEglTransformer always injects targetController ("" = unset).
     var want = targetController;
@@ -1050,7 +1093,7 @@ operation formatGuardCondition(cond : Any, skipInstanceof : Boolean, predicateDe
         var rightG = formatGuardCondition(getFeature(cond, "rightOperand"), skipInstanceof,
             predicateDefs, abstractedMethods, abstractedTargets, abstractedArgTypes,
             abstractedReturnTypes, realNames);
-        if (leftG <> "" and rightG <> "") { return leftG + " && " + rightG; }
+        if (leftG <> "" and rightG <> "") { return wrapOr(leftG) + " && " + wrapOr(rightG); }   // Amendment 14
         if (leftG <> "") { return leftG; }
         if (rightG <> "") { return rightG; }
         return "";
@@ -1064,7 +1107,7 @@ operation formatGuardCondition(cond : Any, skipInstanceof : Boolean, predicateDe
         var rightG = formatGuardCondition(getFeature(cond, "rightOperand"), skipInstanceof,
             predicateDefs, abstractedMethods, abstractedTargets, abstractedArgTypes,
             abstractedReturnTypes, realNames);
-        if (leftG <> "" and rightG <> "") { return leftG + " || " + rightG; }
+        if (leftG <> "" and rightG <> "") { return wrapAnd(leftG) + " || " + wrapAnd(rightG); }   // Amendment 14
         if (leftG <> "") { return leftG; }
         if (rightG <> "") { return rightG; }
         return "";
@@ -1276,13 +1319,19 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
                 left = left + ".0";
             }
         }
+        // Amendment 14: restore the brackets Java's precedence required.
+        if (needsBrackets(getFeature(expr, "leftOperand"), op, false)) { left = "(" + left + ")"; }
+        if (needsBrackets(getFeature(expr, "rightOperand"), op, true)) { right = "(" + right + ")"; }
         return left + " " + mapOperator(op) + " " + right;
     }
 
     if (typeName = "CtUnaryOperator") {
         var op = getFeature(expr, "operatorKind").toString();
-        var operand = formatSpoonExpr(getFeature(expr, "expression"), abstractedMethods,
+        var operandNode = getFeature(expr, "expression");
+        var operand = formatSpoonExpr(operandNode, abstractedMethods,
             abstractedTargets, abstractedArgTypes, abstractedReturnTypes, realNames);
+        // Amendment 14: a unary operator over a binary operand keeps its brackets.
+        if (operandNode.isDefined() and operandNode.eClass().getName() = "CtBinaryOperator") { operand = "(" + operand + ")"; }
         return mapUnaryOp(op) + operand;
     }
 

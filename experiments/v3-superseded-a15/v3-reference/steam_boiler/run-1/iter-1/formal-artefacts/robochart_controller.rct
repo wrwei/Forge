@@ -1,0 +1,298 @@
+diagram SteamBoilerController
+
+enumeration ValvePosition { VALVE_CLOSED VALVE_OPEN }
+enumeration FlowObservation { NO_WATER_FLOW WATER_FLOWING }
+enumeration ModeValue { INITIALIZATION_MODE NORMAL_MODE DEGRADED_MODE RESCUE_MODE EMERGENCY_STOP_MODE }
+
+datatype PumpControlStateData {
+	pump : int
+	flow : FlowObservation
+}
+
+datatype PumpStateData {
+	pump : int
+	on : boolean
+}
+
+interface Inputs {
+	event transmissionReceived
+}
+
+interface Outputs {
+	event modeMessage
+	event setValve
+	event regulatePumps : int
+	event programReady
+}
+
+interface Sensors {
+	var pump : int
+	var on : boolean
+	var operatorStopRequested : boolean
+	var plantWaiting : boolean
+	var transmissionLost : boolean
+	var steamRate : real
+	var levelUnitFailed : boolean
+	var unitsReady : boolean
+	var nonLevelUnitFailed : boolean
+	var readyAnnounced : boolean
+	var waterLevel : real
+	var steamBoilerWaitingReceived : boolean
+	var physicalUnitsReadyReceived : boolean
+	var levelNearLimit : boolean
+	var steamUnitFailed : boolean
+	var pumpControlUnitFailed : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+}
+
+interface Constants {
+	const normalN2 : real = 600
+	const normalN1 : real = 400
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state NORMAL {
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send modeMessage
+	}
+	state DEGRADED {
+	}
+	state RESCUE {
+		entry send modeMessage ; regulatePumps ! 0
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatorStopRequested
+	}
+	transition t2 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( plantWaiting )
+		action send modeMessage
+	}
+	transition t3 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ transmissionLost
+	}
+	transition t4 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ not ( transmissionLost ) /\ steamRate != 0
+	}
+	transition t5 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ not ( transmissionLost ) /\ not ( steamRate != 0 ) /\ levelUnitFailed
+	}
+	transition t6 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ not ( transmissionLost \/ steamRate != 0 \/ levelUnitFailed ) /\ unitsReady /\ not ( nonLevelUnitFailed )
+		action send modeMessage ; send setValve ; send regulatePumps
+	}
+	transition t7 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ not ( transmissionLost \/ steamRate != 0 \/ levelUnitFailed ) /\ unitsReady /\ nonLevelUnitFailed
+		action send modeMessage ; send setValve ; send regulatePumps
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ not ( transmissionLost \/ steamRate != 0 \/ levelUnitFailed ) /\ not ( unitsReady ) /\ readyAnnounced
+		action send modeMessage ; send programReady
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ not ( transmissionLost \/ steamRate != 0 \/ levelUnitFailed ) /\ not ( unitsReady ) /\ not ( readyAnnounced ) /\ waterLevel > normalN2
+		action send modeMessage ; send setValve ; regulatePumps ! 0
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ not ( transmissionLost \/ steamRate != 0 \/ levelUnitFailed ) /\ not ( unitsReady ) /\ not ( readyAnnounced ) /\ not ( waterLevel > normalN2 ) /\ waterLevel < normalN1
+		action send modeMessage ; send setValve ; regulatePumps ! 1
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ plantWaiting /\ not ( transmissionLost \/ steamRate != 0 \/ levelUnitFailed ) /\ not ( unitsReady ) /\ not ( readyAnnounced ) /\ not ( waterLevel > normalN2 ) /\ not ( waterLevel < normalN1 )
+		action send modeMessage ; send setValve ; regulatePumps ! 0 ; send programReady
+	}
+	transition t12 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatorStopRequested
+	}
+	transition t13 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ (transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived)
+	}
+	transition t14 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ levelNearLimit
+	}
+	transition t15 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ levelUnitFailed
+	}
+	transition t16 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ not ( levelUnitFailed ) /\ nonLevelUnitFailed
+		action send modeMessage ; regulatePumps ! 0
+	}
+	transition t17 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ not ( levelUnitFailed ) /\ not ( nonLevelUnitFailed )
+		action send modeMessage ; regulatePumps ! 0
+	}
+	transition t18 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatorStopRequested
+	}
+	transition t19 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ (transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived)
+	}
+	transition t20 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ levelNearLimit
+	}
+	transition t21 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ levelUnitFailed
+	}
+	transition t22 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ not ( levelUnitFailed ) /\ not ( nonLevelUnitFailed )
+		action send modeMessage ; regulatePumps ! 0
+	}
+	transition t23 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ not ( levelUnitFailed ) /\ nonLevelUnitFailed
+		action send modeMessage ; regulatePumps ! 0
+	}
+	transition t24 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition operatorStopRequested
+	}
+	transition t25 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ (transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived)
+	}
+	transition t26 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ levelNearLimit
+	}
+	transition t27 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ (steamUnitFailed \/ pumpControlUnitFailed)
+	}
+	transition t28 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ not ( steamUnitFailed \/ pumpControlUnitFailed ) /\ levelUnitFailed
+	}
+	transition t29 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ not ( steamUnitFailed \/ pumpControlUnitFailed ) /\ not ( levelUnitFailed ) /\ not ( nonLevelUnitFailed )
+		action send modeMessage ; regulatePumps ! 0
+	}
+	transition t30 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( operatorStopRequested ) /\ not ( transmissionLost \/ steamBoilerWaitingReceived \/ physicalUnitsReadyReceived ) /\ not ( levelNearLimit ) /\ not ( steamUnitFailed \/ pumpControlUnitFailed ) /\ not ( levelUnitFailed ) /\ nonLevelUnitFailed
+		action send modeMessage ; regulatePumps ! 0
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionReceived to stm_ref0 on transmissionReceived
+	connection stm_ref0 on modeMessage to SteamBoilerController_Ctrl on modeMessage
+	connection stm_ref0 on setValve to SteamBoilerController_Ctrl on setValve
+	connection stm_ref0 on regulatePumps to SteamBoilerController_Ctrl on regulatePumps
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionReceived
+		event modeMessage
+		event setValve
+		event regulatePumps : int
+		event programReady
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionReceived to ctrl_ref0 on transmissionReceived
+	connection ctrl_ref0 on modeMessage to SteamBoilerController_Platform on modeMessage
+	connection ctrl_ref0 on setValve to SteamBoilerController_Platform on setValve
+	connection ctrl_ref0 on regulatePumps to SteamBoilerController_Platform on regulatePumps
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+}
+

@@ -1,0 +1,51 @@
+{
+  "study": "sranger",
+  "run": 1,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 08:41:24",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r7-run1-sranger",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-sranger-run1",
+  "files": {
+    "java": 9,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 190,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 sranger, run 1, iteration 1\n\n## What was written\nNine files under `sranger/` (Java 17): `annotation/RoboChartType`; `event/InputEvent` (Obstacle, Tick, EndTask) and `event/OutputEvent` (Move(lv, av)); `sensor/Sensor` (`distance()`); `actuator/Actuator` (`apply`, last-command getters); `controller/SRangerMode` (MOVING first, TURNING, FINAL), `SRangerConstants`, `Clock`, and `SRangerController`. `step()` is a two-level if-else with two named predicates, `obstacleDetected` and `turnDurationElapsed`. `clockResetTime` is assigned from `timer.now()`, so the timed guard becomes `since`. The trace covers all 23 requirements and all 9 files. Compilation and a smoke test of every transition pass.\n\n## Decisions the requirements did not settle\n- **Moving \u2192 Turning** is triggered by the Obstacle event and guarded by obstacleDetected (SR-Beh2 and SR-GP1 together). An obstacle event while the reading is above the threshold is ignored.\n- **Turning priority**: endTask first, then the autonomous timed exit, then tick guarded by `!turnDurationElapsed`, so that the timed exit can fire on a tick cycle.\n- **endTask** is the first branch in both Moving and Turning.\n- **Initial entry**: the constructor issues Move(moveVel, 0) at power-up (SR-FR1, SR-Beh1).\n- **Invented defaults**:\n  - The sensor returns 1000.0 m when it has no reading; a negative or NaN reading counts as no reading.\n  - The actuator holds Move(0, 0) before the first command.\n  - clockResetTime starts at 0.0.\n  - The clock is monotonic `System.nanoTime` seconds.\n- **Final** is terminal: its mode block is empty and has no transitions.\n\n## Open points\n- In the model, obstacleThreshold (0.5) is rounded up to 1, so the model's obstacle guard is coarser than the Java's.\n- The constructor's initial Move may not appear in the extracted model.\n- No pipeline result yet (iteration 1 not run)."
+}

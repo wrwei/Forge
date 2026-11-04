@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 4,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 11:56:59",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run4-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run4",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 658,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# LRE \u2014 pass 4, iteration 1\n\n## What was written\n\n15 Java files under `lre/`:\n- `LreController`, with a mode-nested `step()` and 16 named predicates;\n- `LreMode`, with OCM first;\n- the five operations named in the requirements;\n- `Sensor`, `Obstacle` and `ObstacleRegister`;\n- `Actuator`, which receives the `OutputEvent` records;\n- the sealed `InputEvent`/`OutputEvent` hierarchies;\n- `LreConstants` (13 whole-number constants);\n- the `@RoboChartType` annotation.\n\nAlso written: `result_codegen.json` (141 entries; all 51 requirements, every file) and `post_codegen.{md,json}`. `step()` runs the operations in dependency order before the guards. The state variables are operation fields exposed by getters.\n\n## Unsettled decisions\n\n- **No obstacle:** \"\u22121\" conflicts with natural-number indices. Index 0 stands for \"no obstacle\" and register identifiers start at 1.\n- **Safe large distance:** 1000 m.\n- **HCM velocity:** 0 m/s, following FR3, not the description's 0.1 m/s.\n- **CPA:** uses the closing velocity (AUV minus obstacle) for horizontal motion and a constant vertical separation. cda is a sum of squares. Zero closing velocity gives NaN in Java, which reads as \"no collision course\".\n- **Priority:**\n  - In MOM and HCM: reqOCM, then OPEZ, then collision, then other events, then the HCM triggers in the order Beh9, Beh11, Beh10.\n  - Lower branches conjoin the negations of earlier guard-only branches.\n- **Operation inputs:** CheckOPEZ and CalcCPA read the closest indices from the sensor, as the profile restricts `compute()`.\n- **Thresholds:** the literal thresholds in Beh4, Beh9, Beh11 and OP2 have their own constants.\n- **DC1:** read as one transition per requirement.\n\n## Unresolved\n\n- CAM's \"evasive manoeuvre\" has no specified output, so CAM issues no advice.\n- If `staticObsDfltVertDist` > `staticObsVertDist`, MOM and HCM could cycle without an event. The required defaults (both 1) exclude this.\n- CalcCPA divides by a value that can be zero if a verifier interprets the division."
+}

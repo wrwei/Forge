@@ -15,8 +15,8 @@ Required structure:
    each branch.
 3. **Named boolean predicates declared BEFORE the if-else chain.**
    Every guard condition gets a named variable. Each predicate RHS
-   is a simple comparison or boolean expression — no ternary, no
-   sentinel checks (the sensor layer already returns safe defaults).
+   is a simple comparison or boolean expression (no ternary); see
+   `java_codegen_rules.txt`, section 4.
 4. Pure two-level if-else:
    - **Outer**: exactly one block per mode (`currentMode == X`).
      Never `currentMode != X`.

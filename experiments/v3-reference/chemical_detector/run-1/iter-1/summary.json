@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 1,
+  "iteration": 1,
+  "recorded_utc": "2026-10-29 20:49:49",
+  "infrastructure_sha": "5280e26e828cec41338485a44f71433436c7b55e",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r-run1-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run1",
+  "files": {
+    "java": 18,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 559,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 chemical_detector, run 1\n\n## Iteration 1\n\n**What I wrote.** Two controllers, following CD-ARCH2:\n\n- `GasAnalysisController`: Reading, Analysis, NoGas, GasDetected, Concluded.\n- `MovementController`: Waiting, Going, Found, Avoiding, TryingAgain, AvoidingAgain, GettingOut, Halted.\n\nThey share only turn, stop and resume. Gas analysis emits them as `OutputEvent` records; movement receives `InputEvent` records with the same names. Supporting code:\n\n- `GasSensorService`: analysis, intensity, location, goreq.\n- `OdometerSensor.odometer()`: the odometer, a sensor variable.\n- `Vehicle`: move, randomWalk, shortRandomWalk, changeDirection, flag.\n- `Clock`: clock T (field `evasionStart`) and the waits (`pause`).\n- One constants class.\n- The trace covers all 81 requirements and 18 files.\n\n**Decisions the requirements did not settle:**\n- **Constants:** thr=10, lv=1, evadeTime=2, stuckPeriod=5, stuckDist=2, outPeriod=3. Integral and small; stuckPeriod > evadeTime so both AvoidingAgain outcomes are reachable.\n- **Initial values:** a=Front, l=front, d0=d1=0, sts=noGas, ins=0, anl=Front.\n- **\"Indicates the target\":** a sample of the configured target chemical with intensity > 0.\n- **Empty reading:** intensity 0, location Front (unreachable from the controller).\n- **Sensor position to direction:** cycles Left, Right, Back, Front; on a tie the first sensor wins.\n- **Operations:** CD-OP1..4 are Vehicle methods, not compute() classes. They are commands with no result, and changeDirection takes an argument.\n- **Waiting's randomWalk():** issued on every entry to Waiting, including the initial entry in the constructor.\n- **Final states:** terminal modes Concluded and Halted; Found\u2192Halted is unguarded.\n- **Naming:** the GasSensor record is named `GasSample` so it cannot be mistaken for a sensor service. Intensity is real.\n- **Ignored events:** obstacle events in Waiting, Avoiding, AvoidingAgain and GettingOut, which have no transition for them.\n\n**Unresolved:** none yet; pending the pipeline's verdict."
+}

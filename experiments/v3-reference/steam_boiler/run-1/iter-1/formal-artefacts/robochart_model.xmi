@@ -1,0 +1,4033 @@
+<?xml version="1.0" encoding="ASCII"?>
+<robochart:RCPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:robochart="http://www.robocalc.circus/RoboChart" name="extracted">
+  <interfaces name="Ctrl_State">
+    <variableList>
+      <vars name="plantWaiting">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+        <initial xsi:type="robochart:BooleanExp" value="false"/>
+      </vars>
+      <vars name="valveOpen">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+        <initial xsi:type="robochart:BooleanExp" value="false"/>
+      </vars>
+      <vars name="programReadySent">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+        <initial xsi:type="robochart:BooleanExp" value="false"/>
+      </vars>
+    </variableList>
+  </interfaces>
+  <interfaces name="Sensors">
+    <variableList>
+      <vars name="stopCount">
+        <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+      </vars>
+      <vars name="transmissionFailed">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="waitingReceived">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="unitsReadyReceived">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="levelReading">
+        <type xsi:type="robochart:TypeRef" ref="//@types.7"/>
+      </vars>
+      <vars name="steamReading">
+        <type xsi:type="robochart:TypeRef" ref="//@types.7"/>
+      </vars>
+      <vars name="pumpThroughput">
+        <type xsi:type="robochart:TypeRef" ref="//@types.7"/>
+      </vars>
+      <vars name="levelFailure">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="steamFailure">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="pumpFailure">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="pumpControlFailure">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="estimatedLevel">
+        <type xsi:type="robochart:TypeRef" ref="//@types.7"/>
+      </vars>
+      <vars name="predictedMinimum">
+        <type xsi:type="robochart:TypeRef" ref="//@types.7"/>
+      </vars>
+      <vars name="predictedMaximum">
+        <type xsi:type="robochart:TypeRef" ref="//@types.7"/>
+      </vars>
+      <vars name="predictedMaximumWithoutPumps">
+        <type xsi:type="robochart:TypeRef" ref="//@types.7"/>
+      </vars>
+      <vars name="transmissionFailure">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="unitsReadyMessage">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+      <vars name="waitingMessage">
+        <type xsi:type="robochart:TypeRef" ref="//@types.3"/>
+      </vars>
+    </variableList>
+  </interfaces>
+  <interfaces name="Actuators"/>
+  <interfaces name="Constants"/>
+  <types xsi:type="robochart:Enumeration" name="PumpPosition">
+    <literals name="PUMP_OFF"/>
+    <literals name="PUMP_ON"/>
+  </types>
+  <types xsi:type="robochart:Enumeration" name="WaterFlow">
+    <literals name="NO_FLOW"/>
+    <literals name="FLOW"/>
+  </types>
+  <types xsi:type="robochart:Enumeration" name="OperatingMode">
+    <literals name="INITIALISATION_MODE"/>
+    <literals name="NORMAL_MODE"/>
+    <literals name="DEGRADED_MODE"/>
+    <literals name="RESCUE_MODE"/>
+    <literals name="EMERGENCY_STOP_MODE"/>
+  </types>
+  <types xsi:type="robochart:PrimitiveType" name="boolean"/>
+  <types xsi:type="robochart:PrimitiveType" name="int"/>
+  <types xsi:type="robochart:RecordType" name="PumpControlReading">
+    <fields name="controllerIndex">
+      <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+    </fields>
+    <fields name="observation">
+      <type xsi:type="robochart:TypeRef" ref="//@types.1"/>
+    </fields>
+  </types>
+  <types xsi:type="robochart:RecordType" name="PumpReading">
+    <fields name="pumpIndex">
+      <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+    </fields>
+    <fields name="position">
+      <type xsi:type="robochart:TypeRef" ref="//@types.0"/>
+    </fields>
+  </types>
+  <types xsi:type="robochart:PrimitiveType" name="real"/>
+  <machines name="SteamBoilerController">
+    <events name="transmission"/>
+    <events name="mode"/>
+    <events name="valve"/>
+    <events name="openPump">
+      <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+    </events>
+    <events name="closePump">
+      <type xsi:type="robochart:TypeRef" ref="//@types.4"/>
+    </events>
+    <events name="programReady"/>
+    <nodes xsi:type="robochart:State" name="INITIALISATION"/>
+    <nodes xsi:type="robochart:State" name="NORMAL"/>
+    <nodes xsi:type="robochart:State" name="DEGRADED"/>
+    <nodes xsi:type="robochart:State" name="RESCUE"/>
+    <nodes xsi:type="robochart:State" name="EMERGENCY_STOP"/>
+    <nodes xsi:type="robochart:Initial" name="i0"/>
+    <transitions name="t_init" source="//@machines.0/@nodes.5" target="//@machines.0/@nodes.0"/>
+    <transitions name="t1" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.4">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:Or">
+        <left xsi:type="robochart:Or">
+          <left xsi:type="robochart:Or">
+            <left xsi:type="robochart:GreaterOrEqual">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="stopCount"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="stopLimit"/>
+              </right>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="programReadySent"/>
+              </exp>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:And">
+          <left xsi:type="robochart:Or">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:Or">
+            <left xsi:type="robochart:Different">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="steamReading"/>
+              </left>
+              <right xsi:type="robochart:FloatExp"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelFailure"/>
+            </right>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t2" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:Not">
+          <exp xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="stopCount"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                </left>
+                <right xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                  </exp>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:And">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:Different">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="steamReading"/>
+                  </left>
+                  <right xsi:type="robochart:FloatExp"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                </right>
+              </right>
+            </right>
+          </exp>
+        </left>
+        <right xsi:type="robochart:Not">
+          <exp xsi:type="robochart:Or">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+            </right>
+          </exp>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t3" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:And">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                        </exp>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Different">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamReading"/>
+                        </left>
+                        <right xsi:type="robochart:FloatExp"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="programReadySent"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:GreaterThan">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelReading"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="normalN2"/>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:Not">
+          <exp xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="valveOpen"/>
+          </exp>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.1"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t4" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:And">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                        </exp>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Different">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamReading"/>
+                        </left>
+                        <right xsi:type="robochart:FloatExp"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="programReadySent"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:GreaterThan">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelReading"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="normalN2"/>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="valveOpen"/>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t5" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:And">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                        </exp>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Different">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamReading"/>
+                        </left>
+                        <right xsi:type="robochart:FloatExp"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="programReadySent"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:LessThan">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelReading"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="normalN1"/>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="valveOpen"/>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.1"/>
+          <right xsi:type="robochart:BooleanExp" value="false"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t6" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:And">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                        </exp>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Different">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamReading"/>
+                        </left>
+                        <right xsi:type="robochart:FloatExp"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="programReadySent"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:LessThan">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelReading"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="normalN1"/>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:Not">
+          <exp xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="valveOpen"/>
+          </exp>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t7" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:And">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                        </exp>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Different">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamReading"/>
+                        </left>
+                        <right xsi:type="robochart:FloatExp"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="programReadySent"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:LessThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelReading"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN1"/>
+                </right>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:GreaterThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelReading"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN2"/>
+                </right>
+              </exp>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="valveOpen"/>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.1"/>
+          <right xsi:type="robochart:BooleanExp" value="false"/>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.2"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.2"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.5"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t8" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:And">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                        </exp>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Different">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamReading"/>
+                        </left>
+                        <right xsi:type="robochart:FloatExp"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="programReadySent"/>
+              </exp>
+            </right>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:LessThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelReading"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN1"/>
+                </right>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:GreaterThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelReading"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN2"/>
+                </right>
+              </exp>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:Not">
+          <exp xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="valveOpen"/>
+          </exp>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.0"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:Assignment">
+          <left xsi:type="robochart:VarRef" name="//@interfaces.0/@variableList.0/@vars.2"/>
+          <right xsi:type="robochart:BooleanExp" value="true"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.5"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t9" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.0">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:GreaterOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="stopCount"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                    </left>
+                    <right xsi:type="robochart:Not">
+                      <exp xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                      </exp>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Different">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamReading"/>
+                      </left>
+                      <right xsi:type="robochart:FloatExp"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </right>
+                  </right>
+                </right>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Or">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+              </right>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="programReadySent"/>
+          </right>
+        </left>
+        <right xsi:type="robochart:Not">
+          <exp xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+          </exp>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.5"/>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t10" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:And">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                        </exp>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Different">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamReading"/>
+                        </left>
+                        <right xsi:type="robochart:FloatExp"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="programReadySent"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+          </right>
+        </left>
+        <right xsi:type="robochart:Not">
+          <exp xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="steamFailure"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+              </right>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+            </right>
+          </exp>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t11" source="//@machines.0/@nodes.0" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:And">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="programReadySent"/>
+                        </exp>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Different">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamReading"/>
+                        </left>
+                        <right xsi:type="robochart:FloatExp"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="plantWaiting"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="programReadySent"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+          </right>
+        </left>
+        <right xsi:type="robochart:Or">
+          <left xsi:type="robochart:Or">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t12" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.4">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:Or">
+        <left xsi:type="robochart:Or">
+          <left xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="stopCount"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:Or">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="limitM1"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:And">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                </right>
+              </right>
+            </right>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </exp>
+                </right>
+              </left>
+              <right xsi:type="robochart:GreaterThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelReading"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN2"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:GreaterOrEqual">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="limitM2"/>
+              </right>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </exp>
+                </right>
+              </left>
+              <right xsi:type="robochart:GreaterThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelReading"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN2"/>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:GreaterOrEqual">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="limitM2"/>
+            </right>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t13" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.3">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:Not">
+          <exp xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:LessOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM1"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                  </left>
+                  <right xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:Not">
+                      <exp xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </exp>
+                    </left>
+                    <right xsi:type="robochart:Not">
+                      <exp xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </exp>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterThan">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelReading"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="normalN2"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:Not">
+                      <exp xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </exp>
+                    </left>
+                    <right xsi:type="robochart:Not">
+                      <exp xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </exp>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterThan">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelReading"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="normalN2"/>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="limitM2"/>
+                </right>
+              </right>
+            </right>
+          </exp>
+        </left>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t14" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:Or">
+                          <left xsi:type="robochart:Or">
+                            <left xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                            </left>
+                            <right xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                            </right>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                          </right>
+                        </exp>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:Or">
+                          <left xsi:type="robochart:Or">
+                            <left xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                            </left>
+                            <right xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                            </right>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                          </right>
+                        </exp>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelFailure"/>
+            </exp>
+          </right>
+        </left>
+        <right xsi:type="robochart:Or">
+          <left xsi:type="robochart:Or">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t15" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:Or">
+                          <left xsi:type="robochart:Or">
+                            <left xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                            </left>
+                            <right xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                            </right>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                          </right>
+                        </exp>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:Or">
+                          <left xsi:type="robochart:Or">
+                            <left xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                            </left>
+                            <right xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                            </right>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                          </right>
+                        </exp>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                </right>
+              </exp>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:LessThan">
+          <left xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelReading"/>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="normalN1"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="2"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="3"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="4"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t16" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:Or">
+                          <left xsi:type="robochart:Or">
+                            <left xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                            </left>
+                            <right xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                            </right>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                          </right>
+                        </exp>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:Or">
+                          <left xsi:type="robochart:Or">
+                            <left xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                            </left>
+                            <right xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                            </right>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                          </right>
+                        </exp>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                </right>
+              </exp>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:GreaterThan">
+          <left xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelReading"/>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="normalN2"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="2"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="3"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="4"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t17" source="//@machines.0/@nodes.1" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:Or">
+                          <left xsi:type="robochart:Or">
+                            <left xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                            </left>
+                            <right xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                            </right>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                          </right>
+                        </exp>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:Or">
+                          <left xsi:type="robochart:Or">
+                            <left xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                            </left>
+                            <right xsi:type="robochart:CallExp">
+                              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                            </right>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                          </right>
+                        </exp>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Not">
+              <exp xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                </right>
+              </exp>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:LessThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelReading"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="normalN1"/>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:GreaterThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelReading"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="normalN2"/>
+              </right>
+            </exp>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t18" source="//@machines.0/@nodes.2" target="//@machines.0/@nodes.4">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:Or">
+        <left xsi:type="robochart:Or">
+          <left xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="stopCount"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:Or">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="limitM1"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:And">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </left>
+              <right xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                </right>
+              </right>
+            </right>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:GreaterThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelReading"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN2"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:GreaterOrEqual">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="limitM2"/>
+              </right>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:GreaterThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="levelReading"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN2"/>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:GreaterOrEqual">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="limitM2"/>
+            </right>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t19" source="//@machines.0/@nodes.2" target="//@machines.0/@nodes.3">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:Not">
+          <exp xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:GreaterOrEqual">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopCount"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:LessOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM1"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                  </left>
+                  <right xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:Not">
+                      <exp xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </exp>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterThan">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelReading"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="normalN2"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:And">
+              <left xsi:type="robochart:Not">
+                <exp xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:Not">
+                      <exp xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                      </exp>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterThan">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelReading"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="normalN2"/>
+                    </right>
+                  </right>
+                </exp>
+              </left>
+              <right xsi:type="robochart:GreaterOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="limitM2"/>
+                </right>
+              </right>
+            </right>
+          </exp>
+        </left>
+        <right xsi:type="robochart:CallExp">
+          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t20" source="//@machines.0/@nodes.2" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelFailure"/>
+            </exp>
+          </right>
+        </left>
+        <right xsi:type="robochart:Not">
+          <exp xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="steamFailure"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+              </right>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+            </right>
+          </exp>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t21" source="//@machines.0/@nodes.2" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+              </right>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:LessThan">
+          <left xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelReading"/>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="normalN1"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="2"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="3"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="4"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t22" source="//@machines.0/@nodes.2" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+              </right>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:GreaterThan">
+          <left xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelReading"/>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="normalN2"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="2"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="3"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="4"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t23" source="//@machines.0/@nodes.2" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:Or">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                      </right>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:And">
+                      <left xsi:type="robochart:Not">
+                        <exp xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                        </exp>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:Or">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="levelReading"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:Not">
+              <exp xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </exp>
+            </left>
+            <right xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+                </right>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+              </right>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:LessThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelReading"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="normalN1"/>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:GreaterThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelReading"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="normalN2"/>
+              </right>
+            </exp>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t24" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.4">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:Or">
+        <left xsi:type="robochart:Or">
+          <left xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="stopCount"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                  </right>
+                </left>
+                <right xsi:type="robochart:Or">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:LessOrEqual">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="limitM1"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:Or">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="steamFailure"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+              </right>
+            </right>
+          </left>
+          <right xsi:type="robochart:And">
+            <left xsi:type="robochart:And">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </left>
+              <right xsi:type="robochart:GreaterThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN2"/>
+                </right>
+              </right>
+            </left>
+            <right xsi:type="robochart:GreaterOrEqual">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="limitM2"/>
+              </right>
+            </right>
+          </right>
+        </left>
+        <right xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:And">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="levelFailure"/>
+              </left>
+              <right xsi:type="robochart:GreaterThan">
+                <left xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                </left>
+                <right xsi:type="robochart:CallExp">
+                  <function xsi:type="robochart:StringExp" value="normalN2"/>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:GreaterOrEqual">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="limitM2"/>
+            </right>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t25" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.1">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelFailure"/>
+            </exp>
+          </right>
+        </left>
+        <right xsi:type="robochart:Not">
+          <exp xsi:type="robochart:Or">
+            <left xsi:type="robochart:Or">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="steamFailure"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+              </right>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+            </right>
+          </exp>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t26" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.2">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="levelFailure"/>
+            </exp>
+          </right>
+        </left>
+        <right xsi:type="robochart:Or">
+          <left xsi:type="robochart:Or">
+            <left xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="steamFailure"/>
+            </left>
+            <right xsi:type="robochart:CallExp">
+              <function xsi:type="robochart:StringExp" value="pumpFailure"/>
+            </right>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+    <transitions name="t27" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.3">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelFailure"/>
+          </right>
+        </left>
+        <right xsi:type="robochart:LessThan">
+          <left xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="normalN1"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="2"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="3"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.3" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="4"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t28" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.3">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelFailure"/>
+          </right>
+        </left>
+        <right xsi:type="robochart:GreaterThan">
+          <left xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="normalN2"/>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:SeqStatement">
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="1"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="2"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="3"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.4" _type="OUTPUT">
+            <value xsi:type="robochart:IntegerExp" value="4"/>
+          </communication>
+        </statements>
+        <statements xsi:type="robochart:CommunicationStmt">
+          <communication event="//@machines.0/@events.1"/>
+        </statements>
+      </action>
+    </transitions>
+    <transitions name="t29" source="//@machines.0/@nodes.3" target="//@machines.0/@nodes.3">
+      <trigger event="//@machines.0/@events.0"/>
+      <condition xsi:type="robochart:And">
+        <left xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:Or">
+              <left xsi:type="robochart:Or">
+                <left xsi:type="robochart:Or">
+                  <left xsi:type="robochart:Or">
+                    <left xsi:type="robochart:Or">
+                      <left xsi:type="robochart:Or">
+                        <left xsi:type="robochart:GreaterOrEqual">
+                          <left xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopCount"/>
+                          </left>
+                          <right xsi:type="robochart:CallExp">
+                            <function xsi:type="robochart:StringExp" value="stopLimit"/>
+                          </right>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="transmissionFailure"/>
+                        </right>
+                      </left>
+                      <right xsi:type="robochart:Or">
+                        <left xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="waitingMessage"/>
+                        </left>
+                        <right xsi:type="robochart:CallExp">
+                          <function xsi:type="robochart:StringExp" value="unitsReadyMessage"/>
+                        </right>
+                      </right>
+                    </left>
+                    <right xsi:type="robochart:LessOrEqual">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="predictedMinimum"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="limitM1"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:Or">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="steamFailure"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="pumpControlFailure"/>
+                    </right>
+                  </right>
+                </left>
+                <right xsi:type="robochart:And">
+                  <left xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </left>
+                  <right xsi:type="robochart:GreaterOrEqual">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="predictedMaximumWithoutPumps"/>
+                    </left>
+                    <right xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="limitM2"/>
+                    </right>
+                  </right>
+                </right>
+              </left>
+              <right xsi:type="robochart:And">
+                <left xsi:type="robochart:Not">
+                  <exp xsi:type="robochart:And">
+                    <left xsi:type="robochart:CallExp">
+                      <function xsi:type="robochart:StringExp" value="levelFailure"/>
+                    </left>
+                    <right xsi:type="robochart:GreaterThan">
+                      <left xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+                      </left>
+                      <right xsi:type="robochart:CallExp">
+                        <function xsi:type="robochart:StringExp" value="normalN2"/>
+                      </right>
+                    </right>
+                  </exp>
+                </left>
+                <right xsi:type="robochart:GreaterOrEqual">
+                  <left xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="predictedMaximum"/>
+                  </left>
+                  <right xsi:type="robochart:CallExp">
+                    <function xsi:type="robochart:StringExp" value="limitM2"/>
+                  </right>
+                </right>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:CallExp">
+            <function xsi:type="robochart:StringExp" value="levelFailure"/>
+          </right>
+        </left>
+        <right xsi:type="robochart:And">
+          <left xsi:type="robochart:Not">
+            <exp xsi:type="robochart:LessThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="normalN1"/>
+              </right>
+            </exp>
+          </left>
+          <right xsi:type="robochart:Not">
+            <exp xsi:type="robochart:GreaterThan">
+              <left xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="estimatedLevel"/>
+              </left>
+              <right xsi:type="robochart:CallExp">
+                <function xsi:type="robochart:StringExp" value="normalN2"/>
+              </right>
+            </exp>
+          </right>
+        </right>
+      </condition>
+      <action xsi:type="robochart:CommunicationStmt">
+        <communication event="//@machines.0/@events.1"/>
+      </action>
+    </transitions>
+  </machines>
+</robochart:RCPackage>

@@ -1,0 +1,91 @@
+# post_codegen
+
+**status:** uncertain
+
+**summary:** Two controllers (GasAnalysisController, MovementController) cover all 81 requirements. The issues below record invented defaults and design choices; none blocks the pipeline.
+
+## Issues
+
+### 1. [invented_default] Constant values are not given by the requirements
+
+- **raw:** CD-Const1..6 say the constants are configured at startup but give no values.
+- **fix_directive:** Chosen: THR=10.0, LV=1.0, EVADE_TIME=2, STUCK_PERIOD=5, STUCK_DIST=2.0, OUT_PERIOD=3. Values are integral so the model's round-up leaves them unchanged and kept small to bound the state space. STUCK_PERIOD > EVADE_TIME so both AvoidingAgain outcomes can be reached. Replace with the deployed configuration.
+- **java_trace:**
+  - `src/main/java/chemical_detector/ChemicalDetectorConstants.java` L10-20 `ChemicalDetectorConstants` — CD-Const1, CD-Const2, CD-Const3, CD-Const4, CD-Const5, CD-Const6
+
+### 2. [invented_default] Initial values of state variables
+
+- **raw:** Only gs has a stated initial value (empty). sts, ins, anl, a, d0, d1, l and the clock start are unspecified.
+- **fix_directive:** Chosen: sts=noGas, ins=0.0, anl=Front, a=Front, d0=d1=0.0, l=front, evasionStart=0. Each value is overwritten before it is read on every path, except a, which only Going and TryingAgain read and only after a turn has set it.
+- **java_trace:**
+  - `src/main/java/chemical_detector/controller/GasAnalysisController.java` L25-28 `gs, sts, ins, anl` — CD-GA-Var1, CD-GA-Var2, CD-GA-Var3, CD-GA-Var4
+  - `src/main/java/chemical_detector/controller/MovementController.java` L24-28 `a, d0, d1, l, evasionStart` — CD-MV-Var1, CD-MV-Var2, CD-MV-Var3, CD-MV-Var4, CD-MV-Clock1
+
+### 3. [ambiguous_requirement] What it means for a reading to indicate the target chemical
+
+- **raw:** CD-Fn1: analysis returns gasD if a reading indicates the target chemical. The requirements do not say how the target is identified or what intensity counts as present.
+- **fix_directive:** The target Chem is a constructor parameter of GasSensorService (configured at startup). A sample indicates the target when its c equals the target and its i > 0.0.
+- **java_trace:**
+  - `src/main/java/chemical_detector/sensor/GasSensorService.java` L17-33 `analysis` — CD-Fn1, CD-DM4
+
+### 4. [invented_default] Results of intensity/location on an empty reading, and the position-to-direction map
+
+- **raw:** CD-Fn2/CD-Fn3 have the precondition that the reading is non-empty. CD-Fn3's angle(x) is not defined.
+- **fix_directive:** Empty reading: intensity returns 0.0 and location returns Front. The controller never reaches either case, because gasD implies at least one sample. Position p (1-based) maps to Angle.values()[(p-1) mod 4], i.e. Left, Right, Back, Front, repeating. If two sensors tie for the peak, the first one wins.
+- **java_trace:**
+  - `src/main/java/chemical_detector/sensor/GasSensorService.java` L38-81 `intensity, location` — CD-Fn2, CD-Fn3
+
+### 5. [design_choice] Operations are Vehicle actuator methods, not operation classes
+
+- **raw:** CD-OP1..4 are of type operation. The profile's operation classes have a no-argument compute() made only of assignments with result getters. move, randomWalk and shortRandomWalk are platform commands with nothing to compute, and changeDirection(l) takes an argument and issues a move.
+- **fix_directive:** Implemented as Vehicle methods move(velocity, direction), randomWalk(), shortRandomWalk() and changeDirection(side), called in the controller's actions. changeDirection is on the Vehicle, although CD-ARCH2 lists only the first three as Vehicle operations. Its Java body applies the steering rule of CD-OP4 (left->Right, right->Left, front->Back, at LV).
+- **java_trace:**
+  - `src/main/java/chemical_detector/actuator/Vehicle.java` L20-49 `move, randomWalk, shortRandomWalk, changeDirection` — CD-OP1, CD-OP2, CD-OP3, CD-OP4, CD-ARCH2
+
+### 6. [design_choice] Waiting's during action randomWalk() realised as an action on entry
+
+- **raw:** CD-MV-FR1: the during action of Waiting is randomWalk(). The profile has no during actions, and a branch with no event and no guard would diverge.
+- **fix_directive:** randomWalk() is issued on every transition into Waiting (all resume transitions, including the Waiting self-loop) and once in the constructor for the initial entry. Because the walk is unbounded and runs until a later move supersedes it, this behaves the same as the during action.
+- **java_trace:**
+  - `src/main/java/chemical_detector/controller/MovementController.java` L30-35 `MovementController` — CD-MV-FR1, CD-MV-Beh1, CD-MV-Beh3
+  - `src/main/java/chemical_detector/controller/MovementController.java` L53-56 `step` — CD-MV-Beh3, CD-MV-Beh8, CD-MV-Beh12, CD-MV-Beh15, CD-MV-Beh20, CD-MV-Beh23
+
+### 7. [design_choice] Final states as terminal modes Concluded and Halted
+
+- **raw:** CD-GA-Beh6 ends the gas-analysis subsystem. CD-MV-Beh9 (Found_to_Final) and CD-DC1 require a transition out of Found.
+- **fix_directive:** GasDetected -> Concluded on stop. Found -> Halted is an unguarded, untriggered transition. Concluded and Halted have no outgoing transitions. NoGas -> Reading (CD-GA-Beh3) is also unguarded and untriggered, written as a bare assignment in the mode block. No cycle of such transitions exists: every cycle passes through a gas, turn or obstacle event.
+- **java_trace:**
+  - `src/main/java/chemical_detector/controller/GasAnalysisController.java` L62-77 `step` — CD-GA-Beh3, CD-GA-Beh6
+  - `src/main/java/chemical_detector/controller/MovementController.java` L86-88 `step` — CD-MV-Beh9
+
+### 8. [design_choice] Data-type representation
+
+- **raw:** CD-DM4..7 name opaque Chem, ordered Intensity, record GasSensor and GasSensorReading.
+- **fix_directive:** Intensity is real (double), so that thr can be a numeric constant and goreq compares reals. Chem is a record with a nat id. The GasSensor record is named GasSample in Java, because the profile treats any class whose name contains 'sensor' as a sensor service. A reading is List<GasSample>, a sequence.
+- **java_trace:**
+  - `src/main/java/chemical_detector/domain/GasSample.java` L9-10 `GasSample` — CD-DM5, CD-DM6, CD-DM7
+
+### 9. [design_choice] Odometer, clock T and waits
+
+- **raw:** CD-Evt3 calls the odometer an event that is sampled into d0/d1. CD-MV-Clock1 is clock T. FR4/FR7 have wait(evadeTime)/wait(outPeriod).
+- **fix_directive:** The odometer is a zero-argument sensor method, OdometerSensor.odometer(), sampled in actions; it is not an input event. Clock T is the field evasionStart, assigned from timer.now() on every entry to Avoiding. The stuck test is timer.now() - evasionStart < STUCK_PERIOD. The waits are Clock.pause(n).
+- **java_trace:**
+  - `src/main/java/chemical_detector/controller/MovementController.java` L43-47 `step` — CD-Evt3, CD-MV-Clock1, CD-MV-Beh17, CD-MV-Beh18
+
+### 10. [design_choice] Inter-subsystem events duplicated as output and input records
+
+- **raw:** CD-ARCH2: the subsystems communicate only through turn, stop and resume.
+- **fix_directive:** The gas-analysis controller emits OutputEvent.Turn/Stop/Resume through GasAnalysisOutput.apply. The movement controller consumes InputEvent.Turn/Stop/Resume. The records have the same names so that the module connects them as shared events. No Java class forwards between the two controllers; that wiring is left to the integrator.
+- **java_trace:**
+  - `src/main/java/chemical_detector/event/OutputEvent.java` L1-16 `OutputEvent` — CD-ARCH2, CD-Evt4, CD-Evt5, CD-Evt6
+
+### 11. [ambiguous_requirement] AvoidingAgain entry action and obstacle events outside Going/TryingAgain
+
+- **raw:** CD-MV-FR6 gives AvoidingAgain no entry action. The requirements give no transition for obstacle in Waiting, Avoiding, AvoidingAgain or GettingOut.
+- **fix_directive:** AvoidingAgain has no entry action. It decides immediately between Avoiding and GettingOut using d1 sampled on the transition in. Obstacle events in the other states are ignored. CD-DC1 holds by construction: each transition requirement is exactly one branch.
+- **java_trace:**
+  - `src/main/java/chemical_detector/controller/MovementController.java` L135-157 `step` — CD-MV-FR6, CD-MV-Beh16, CD-MV-Beh17, CD-MV-Beh18, CD-DC1
+
+## next_step
+
+Run the pipeline (compile, coverage, profile check, transformations, verifiers) and act on its reports.

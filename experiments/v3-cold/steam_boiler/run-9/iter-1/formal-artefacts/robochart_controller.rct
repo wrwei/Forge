@@ -1,0 +1,318 @@
+diagram SteamBoilerController
+
+enumeration ValvePosition { CLOSED OPEN }
+
+datatype PumpControlReading {
+	controlledPump : int
+	waterFlowing : boolean
+}
+
+datatype PumpReading {
+	pumpNumber : int
+	switchedOn : boolean
+}
+
+interface Inputs {
+	event transmissionComplete
+}
+
+interface Outputs {
+	event broadcastMode
+	event commandValveClosed
+	event reportUnitStatus
+	event announceProgramReady
+	event commandPumpOff : int
+	event commandValveOpen
+	event commandPumpOn : int
+}
+
+interface Sensors {
+	var PUMPS : int
+	var SETTLED : int
+	var stopReceived : boolean
+	var waitingReceived : boolean
+	var unitsReadyReceived : boolean
+	var aberrantMessage : boolean
+	var levelMessages : int
+	var steamMessages : int
+	var levelValue : real
+	var steamValue : real
+	var programReadySentPrevious : boolean
+	var programReadySentCurrent : boolean
+	var valveOpen : boolean
+	var valveOpenDuringCycle : boolean
+	var q : real
+	var v : real
+	var p : real
+	var levelLow : real
+	var levelHigh : real
+	var steamRateLow : real
+	var steamRateHigh : real
+	var predictedLow : real
+	var predictedHigh : real
+	var stopCount : int
+	var transmissionFailed : boolean
+	var boundsKnown : boolean
+	var successiveStops : int
+	var waitingNow : boolean
+	var transmissionFault : boolean
+	var steamReading : real
+	var levelFault : boolean
+	var unitsReady : boolean
+	var steamFault : boolean
+	var pumpFault : boolean
+	var pumpControlFault : boolean
+	var levelReading : real
+	var predictedLevelLow : real
+	var predictedLevelHigh : real
+	var levelEstimate : real
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var plantWaiting : boolean = false
+	var readyAnnounced : boolean = false
+}
+
+interface Constants {
+	const stopRepetitions : real = 3
+	const maxNormalN2 : real = 600
+	const minNormalN1 : real = 400
+	const minLimitM1 : real = 100
+	const maxLimitM2 : real = 900
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state RESCUE {
+		entry send broadcastMode ; send reportUnitStatus
+	}
+	state DEGRADED {
+	}
+	state NORMAL {
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send broadcastMode
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionComplete
+		condition successiveStops >= stopRepetitions \/ (plantWaiting \/ waitingNow) /\ (transmissionFault \/ steamReading != 0 \/ levelFault)
+	}
+	transition t2 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ (plantWaiting \/ waitingNow) /\ (transmissionFault \/ steamReading != 0 \/ levelFault) ) /\ not ( plantWaiting \/ waitingNow )
+		action send broadcastMode
+	}
+	transition t3 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ (plantWaiting \/ waitingNow) /\ (transmissionFault \/ steamReading != 0 \/ levelFault) ) /\ (plantWaiting \/ waitingNow) /\ readyAnnounced /\ unitsReady /\ not ( steamFault \/ pumpFault \/ pumpControlFault )
+		action send broadcastMode ; send commandValveClosed ; send reportUnitStatus
+	}
+	transition t4 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ (plantWaiting \/ waitingNow) /\ (transmissionFault \/ steamReading != 0 \/ levelFault) ) /\ (plantWaiting \/ waitingNow) /\ readyAnnounced /\ unitsReady /\ (steamFault \/ pumpFault \/ pumpControlFault)
+		action send broadcastMode ; send commandValveClosed ; send reportUnitStatus
+	}
+	transition t5 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ (plantWaiting \/ waitingNow) /\ (transmissionFault \/ steamReading != 0 \/ levelFault) ) /\ (plantWaiting \/ waitingNow) /\ readyAnnounced /\ not ( unitsReady )
+		action send broadcastMode ; plantWaiting = true ; send announceProgramReady ; send reportUnitStatus
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ (plantWaiting \/ waitingNow) /\ (transmissionFault \/ steamReading != 0 \/ levelFault) ) /\ (plantWaiting \/ waitingNow) /\ not ( readyAnnounced ) /\ levelReading > maxNormalN2
+		action send broadcastMode ; plantWaiting = true ; commandPumpOff ! 1 ; send commandValveOpen ; send reportUnitStatus
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ (plantWaiting \/ waitingNow) /\ (transmissionFault \/ steamReading != 0 \/ levelFault) ) /\ (plantWaiting \/ waitingNow) /\ not ( readyAnnounced ) /\ levelReading < minNormalN1
+		action send broadcastMode ; plantWaiting = true ; send commandValveClosed ; commandPumpOn ! 1 ; send reportUnitStatus
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ (plantWaiting \/ waitingNow) /\ (transmissionFault \/ steamReading != 0 \/ levelFault) ) /\ (plantWaiting \/ waitingNow) /\ not ( readyAnnounced ) /\ not ( levelReading > maxNormalN2 ) /\ not ( levelReading < minNormalN1 )
+		action send broadcastMode ; plantWaiting = true ; readyAnnounced = true ; send commandValveClosed ; commandPumpOff ! 1 ; send announceProgramReady ; send reportUnitStatus
+	}
+	transition t9 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionComplete
+		condition successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2
+	}
+	transition t10 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ levelFault
+	}
+	transition t11 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ not ( levelFault ) /\ (steamFault \/ pumpFault \/ pumpControlFault)
+		action send broadcastMode ; send reportUnitStatus
+	}
+	transition t12 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ not ( levelFault ) /\ not ( steamFault \/ pumpFault \/ pumpControlFault ) /\ levelEstimate < minNormalN1 /\ not ( predictedLevelHigh > maxNormalN2 )
+		action send broadcastMode ; commandPumpOn ! 1 ; commandPumpOn ! 2 ; commandPumpOn ! 3 ; commandPumpOn ! 4 ; send reportUnitStatus
+	}
+	transition t13 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ not ( levelFault ) /\ not ( steamFault \/ pumpFault \/ pumpControlFault ) /\ predictedLevelHigh > maxNormalN2
+		action send broadcastMode ; commandPumpOff ! 1 ; commandPumpOff ! 2 ; commandPumpOff ! 3 ; commandPumpOff ! 4 ; send reportUnitStatus
+	}
+	transition t14 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ not ( levelFault ) /\ not ( steamFault \/ pumpFault \/ pumpControlFault ) /\ not ( levelEstimate < minNormalN1 ) /\ not ( predictedLevelHigh > maxNormalN2 )
+		action send broadcastMode ; send reportUnitStatus
+	}
+	transition t15 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionComplete
+		condition successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2
+	}
+	transition t16 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ levelFault
+	}
+	transition t17 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ not ( levelFault ) /\ not ( steamFault \/ pumpFault \/ pumpControlFault )
+		action send broadcastMode ; send reportUnitStatus
+	}
+	transition t18 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ not ( levelFault ) /\ (steamFault \/ pumpFault \/ pumpControlFault) /\ levelEstimate < minNormalN1 /\ not ( predictedLevelHigh > maxNormalN2 )
+		action send broadcastMode ; commandPumpOn ! 1 ; commandPumpOn ! 2 ; commandPumpOn ! 3 ; commandPumpOn ! 4 ; send reportUnitStatus
+	}
+	transition t19 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ not ( levelFault ) /\ (steamFault \/ pumpFault \/ pumpControlFault) /\ predictedLevelHigh > maxNormalN2
+		action send broadcastMode ; commandPumpOff ! 1 ; commandPumpOff ! 2 ; commandPumpOff ! 3 ; commandPumpOff ! 4 ; send reportUnitStatus
+	}
+	transition t20 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 ) /\ not ( levelFault ) /\ (steamFault \/ pumpFault \/ pumpControlFault) /\ not ( levelEstimate < minNormalN1 ) /\ not ( predictedLevelHigh > maxNormalN2 )
+		action send broadcastMode ; send reportUnitStatus
+	}
+	transition t21 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionComplete
+		condition successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 \/ steamFault \/ pumpControlFault
+	}
+	transition t22 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 \/ steamFault \/ pumpControlFault ) /\ not ( levelFault ) /\ not ( steamFault \/ pumpFault \/ pumpControlFault )
+		action send broadcastMode ; send reportUnitStatus
+	}
+	transition t23 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 \/ steamFault \/ pumpControlFault ) /\ not ( levelFault ) /\ (steamFault \/ pumpFault \/ pumpControlFault)
+		action send broadcastMode ; send reportUnitStatus
+	}
+	transition t24 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 \/ steamFault \/ pumpControlFault ) /\ levelFault /\ levelEstimate < minNormalN1 /\ not ( predictedLevelHigh > maxNormalN2 )
+		action send broadcastMode ; commandPumpOn ! 1 ; commandPumpOn ! 2 ; commandPumpOn ! 3 ; commandPumpOn ! 4 ; send reportUnitStatus
+	}
+	transition t25 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 \/ steamFault \/ pumpControlFault ) /\ levelFault /\ predictedLevelHigh > maxNormalN2
+		action send broadcastMode ; commandPumpOff ! 1 ; commandPumpOff ! 2 ; commandPumpOff ! 3 ; commandPumpOff ! 4 ; send reportUnitStatus
+	}
+	transition t26 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionComplete
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ predictedLevelLow < minLimitM1 \/ predictedLevelHigh > maxLimitM2 \/ steamFault \/ pumpControlFault ) /\ levelFault /\ not ( levelEstimate < minNormalN1 ) /\ not ( predictedLevelHigh > maxNormalN2 )
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionComplete to stm_ref0 on transmissionComplete
+	connection stm_ref0 on broadcastMode to SteamBoilerController_Ctrl on broadcastMode
+	connection stm_ref0 on commandValveClosed to SteamBoilerController_Ctrl on commandValveClosed
+	connection stm_ref0 on reportUnitStatus to SteamBoilerController_Ctrl on reportUnitStatus
+	connection stm_ref0 on announceProgramReady to SteamBoilerController_Ctrl on announceProgramReady
+	connection stm_ref0 on commandPumpOff to SteamBoilerController_Ctrl on commandPumpOff
+	connection stm_ref0 on commandValveOpen to SteamBoilerController_Ctrl on commandValveOpen
+	connection stm_ref0 on commandPumpOn to SteamBoilerController_Ctrl on commandPumpOn
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionComplete
+		event broadcastMode
+		event commandValveClosed
+		event reportUnitStatus
+		event announceProgramReady
+		event commandPumpOff : int
+		event commandValveOpen
+		event commandPumpOn : int
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionComplete to ctrl_ref0 on transmissionComplete
+	connection ctrl_ref0 on broadcastMode to SteamBoilerController_Platform on broadcastMode
+	connection ctrl_ref0 on commandValveClosed to SteamBoilerController_Platform on commandValveClosed
+	connection ctrl_ref0 on reportUnitStatus to SteamBoilerController_Platform on reportUnitStatus
+	connection ctrl_ref0 on announceProgramReady to SteamBoilerController_Platform on announceProgramReady
+	connection ctrl_ref0 on commandPumpOff to SteamBoilerController_Platform on commandPumpOff
+	connection ctrl_ref0 on commandValveOpen to SteamBoilerController_Platform on commandValveOpen
+	connection ctrl_ref0 on commandPumpOn to SteamBoilerController_Platform on commandPumpOn
+}
+

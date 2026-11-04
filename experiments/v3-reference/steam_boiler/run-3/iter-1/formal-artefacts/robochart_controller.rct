@@ -1,0 +1,330 @@
+diagram SteamBoilerController
+
+enumeration PumpPosition { OFF ON }
+enumeration ValvePosition { CLOSED OPEN }
+enumeration WaterFlow { NO_FLOW FLOWING }
+enumeration PumpOrder { NO_ORDER OPEN_ORDER CLOSE_ORDER }
+
+datatype PumpControlReport {
+	controlPump : int
+	flow : WaterFlow
+}
+
+datatype PumpStateReport {
+	statePump : int
+	position : PumpPosition
+}
+
+interface Inputs {
+	event transmissionReceived
+}
+
+interface Outputs {
+	event modeMessage
+	event programReady
+	event valve
+	event closePump : int
+	event openPump : int
+}
+
+interface Sensors {
+	var successiveStops : int
+	var transmissionFault : boolean
+	var unitsReadyMessage : boolean
+	var waitingMessage : boolean
+	var steamZero : boolean
+	var levelDefective : boolean
+	var steamDefective : boolean
+	var pumpDefective : boolean
+	var pumpControlDefective : boolean
+	var levelHigh : boolean
+	var levelLow : boolean
+	var limitRisk : boolean
+	var predictedHigh : boolean
+	var predictedLow : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var boilerWaiting : boolean = false
+	var readyAnnounced : boolean = false
+	var evacuationValve : ValvePosition
+}
+
+interface Constants {
+	const stopRepetitions : real = 3
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state RESCUE {
+		entry send modeMessage
+	}
+	state DEGRADED {
+		entry send modeMessage
+	}
+	state NORMAL {
+		entry send modeMessage
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send modeMessage
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced )
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ not ( steamZero )
+	}
+	transition t3 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ levelDefective
+	}
+	transition t4 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ not ( boilerWaiting \/ waitingMessage )
+		action send modeMessage
+	}
+	transition t5 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ unitsReadyMessage /\ not ( steamDefective \/ pumpDefective \/ pumpControlDefective )
+	}
+	transition t6 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ unitsReadyMessage /\ (steamDefective \/ pumpDefective \/ pumpControlDefective)
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ not ( unitsReadyMessage ) /\ readyAnnounced
+		action send modeMessage ; send programReady ; boilerWaiting = true
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ not ( unitsReadyMessage ) /\ not ( readyAnnounced ) /\ levelHigh /\ not ( evacuationValve == OPEN )
+		action send modeMessage ; send valve ; closePump ! 1 ; evacuationValve = OPEN ; boilerWaiting = true
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ not ( unitsReadyMessage ) /\ not ( readyAnnounced ) /\ levelHigh /\ evacuationValve == OPEN
+		action send modeMessage ; boilerWaiting = true
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ not ( unitsReadyMessage ) /\ not ( readyAnnounced ) /\ levelLow /\ not ( levelHigh ) /\ evacuationValve == OPEN
+		action send modeMessage ; send valve ; openPump ! 1 ; evacuationValve = CLOSED ; boilerWaiting = true
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ not ( unitsReadyMessage ) /\ not ( readyAnnounced ) /\ levelLow /\ not ( levelHigh ) /\ not ( evacuationValve == OPEN )
+		action send modeMessage ; openPump ! 1 ; boilerWaiting = true
+	}
+	transition t12 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ not ( unitsReadyMessage ) /\ not ( readyAnnounced ) /\ not ( levelLow ) /\ not ( levelHigh ) /\ evacuationValve == OPEN
+		action send modeMessage ; send valve ; closePump ! 1 ; send programReady ; evacuationValve = CLOSED ; readyAnnounced = true ; boilerWaiting = true
+	}
+	transition t13 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ unitsReadyMessage /\ not ( readyAnnounced ) ) /\ (boilerWaiting \/ waitingMessage) /\ steamZero /\ not ( levelDefective ) /\ not ( unitsReadyMessage ) /\ not ( readyAnnounced ) /\ not ( levelLow ) /\ not ( levelHigh ) /\ not ( evacuationValve == OPEN )
+		action send modeMessage ; closePump ! 1 ; send programReady ; readyAnnounced = true ; boilerWaiting = true
+	}
+	transition t14 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk
+	}
+	transition t15 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ levelDefective /\ (steamDefective \/ pumpControlDefective)
+	}
+	transition t16 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ levelDefective /\ not ( steamDefective \/ pumpControlDefective )
+	}
+	transition t17 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ (steamDefective \/ pumpDefective \/ pumpControlDefective)
+	}
+	transition t18 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ not ( steamDefective \/ pumpDefective \/ pumpControlDefective ) /\ predictedHigh
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t19 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ not ( steamDefective \/ pumpDefective \/ pumpControlDefective ) /\ predictedLow /\ not ( predictedHigh )
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t20 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ not ( steamDefective \/ pumpDefective \/ pumpControlDefective ) /\ not ( predictedLow ) /\ not ( predictedHigh )
+	}
+	transition t21 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk
+	}
+	transition t22 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ levelDefective /\ (steamDefective \/ pumpControlDefective)
+	}
+	transition t23 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ levelDefective /\ not ( steamDefective \/ pumpControlDefective )
+	}
+	transition t24 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ not ( steamDefective \/ pumpDefective \/ pumpControlDefective )
+	}
+	transition t25 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ (steamDefective \/ pumpDefective \/ pumpControlDefective) /\ predictedHigh
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t26 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ (steamDefective \/ pumpDefective \/ pumpControlDefective) /\ predictedLow /\ not ( predictedHigh )
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t27 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ (steamDefective \/ pumpDefective \/ pumpControlDefective) /\ not ( predictedLow ) /\ not ( predictedHigh )
+	}
+	transition t28 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk
+	}
+	transition t29 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ (steamDefective \/ pumpControlDefective)
+	}
+	transition t30 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ not ( steamDefective \/ pumpDefective \/ pumpControlDefective )
+	}
+	transition t31 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( levelDefective ) /\ (steamDefective \/ pumpDefective \/ pumpControlDefective) /\ not ( steamDefective \/ pumpControlDefective )
+	}
+	transition t32 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( steamDefective \/ pumpControlDefective ) /\ levelDefective /\ predictedHigh
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t33 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( steamDefective \/ pumpControlDefective ) /\ levelDefective /\ predictedLow /\ not ( predictedHigh )
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t34 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStops >= stopRepetitions \/ transmissionFault \/ waitingMessage \/ unitsReadyMessage \/ limitRisk ) /\ not ( steamDefective \/ pumpControlDefective ) /\ levelDefective /\ not ( predictedLow ) /\ not ( predictedHigh )
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionReceived to stm_ref0 on transmissionReceived
+	connection stm_ref0 on modeMessage to SteamBoilerController_Ctrl on modeMessage
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionReceived
+		event modeMessage
+		event programReady
+		event valve
+		event closePump : int
+		event openPump : int
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionReceived to ctrl_ref0 on transmissionReceived
+	connection ctrl_ref0 on modeMessage to SteamBoilerController_Platform on modeMessage
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+}
+

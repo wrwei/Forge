@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 1,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 07:42:38",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run1-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run1",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 615,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY: lre, pass 1\n\nNo Java was present at the start.\n\n## What I wrote\n\n15 files under `java.generated.project/src/main/java/lre/`:\n\n- `RoboChartType`\n- `LreConstants`: the DM4 thresholds, plus a named constant for every other number the requirements fix\n- sealed `InputEvent` (six records) and `OutputEvent` (`AdvVel`, `AdvHdng`)\n- `Obstacle`, `ObstacleRegister`, `Sensor`\n- `Actuator.apply(OutputEvent)`\n- the operations `CalcVel`, `CalcCStc`, `CalcCDyn`, `CheckOPEZ` and `CalcCPA`, which hold Var1\u20138\n- `LreMode`, and `LreController`, whose `step` runs the operations, declares named predicates and has a two-level if-else covering Beh1\u201319\n\nAlso `result_codegen.json` (all 51 requirements, all 15 files) and `post_codegen.{md,json}` (12 issues).\n\n## Decisions the requirements did not settle\n\n1. cstc and cdyn are naturals, but the requirements use \u22121 for \"none\". The sensor returns an index that is never registered (`Integer.MAX_VALUE`). The controller never tests it.\n2. The distance reported for an absent obstacle is 100000.0 m.\n3. CPA: the relative velocity is the obstacle's minus the AUV's, and tcpa = \u2212p\u00b7v/(|v|\u00b2+\u03b5). cda includes the vertical separation `vdist(cdyn)`, so DM5's zero accessors do not give cda = 0, and a spurious CAM, when there is no dynamic obstacle.\n4. \u03b5 = 0.000001, which rounds up to 1 in the model's constants. The sign of tcpa is unaffected.\n5. CheckOPEZ and CalcCPA call the sensor's closest-index functions directly (same value as cstc/cdyn; inside the profile).\n6. HCM advises 0 m/s (FR3), not 0.1 m/s (system description).\n7. Priority within a mode: reqOCM, then inOpez, then collision, then the other events, then Beh9, Beh11, Beh10. Beh10 comes last because otherwise Beh11 could never fire.\n8. Beh4's \"1\" values are their own constants. Initial readings and advice are 0.0. vvel is signed. `step(null)` means no input this cycle.\n\n## Unresolved\n\nCAM's evasive manoeuvre (FR4) is not specified, so nothing is output on entering CAM."
+}

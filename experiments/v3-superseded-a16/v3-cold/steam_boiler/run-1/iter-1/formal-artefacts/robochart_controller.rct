@@ -1,0 +1,443 @@
+diagram SteamBoilerController
+
+enumeration OperatingMode { INITIALIZATION_MODE NORMAL_MODE DEGRADED_MODE RESCUE_MODE EMERGENCY_STOP_MODE }
+
+datatype PumpControllerReading {
+	pump : int
+	flowing : boolean
+}
+
+datatype PumpReading {
+	pump : int
+	open : boolean
+}
+
+interface Inputs {
+	event transmission
+}
+
+interface Outputs {
+	event mode
+	event valve
+	event openPump : int
+	event programReady
+	event closePump : int
+}
+
+interface Sensors {
+	var ROUNDING_ALLOWANCE : real
+	var stopReceived : boolean
+	var steamBoilerWaitingPresent : boolean
+	var physicalUnitsReadyPresent : boolean
+	var levelRepairReceived : boolean
+	var steamRepairReceived : boolean
+	var levelAcknowledgementReceived : boolean
+	var steamAcknowledgementReceived : boolean
+	var aberrantMessage : boolean
+	var levelMessages : int
+	var steamMessages : int
+	var levelReading : real
+	var steamReading : real
+	var started : boolean
+	var historyAvailable : boolean
+	var valveOpen : boolean
+	var previousSteamKnown : boolean
+	var previousSteam : real
+	var stopCount : int
+	var transmissionFailure : boolean
+	var levelFailure : boolean
+	var steamFailure : boolean
+	var pumpFailure : boolean
+	var pumpControllerFailure : boolean
+	var throughput : real
+	var lowerBound : real
+	var upperBound : real
+	var lowestNext : real
+	var highestNext : real
+	var successiveStops : int
+	var transmissionFault : boolean
+	var unitsReady : boolean
+	var plantWaiting : boolean
+	var steamRate : real
+	var levelDeviceFaulty : boolean
+	var waterLevel : real
+	var steamDeviceFaulty : boolean
+	var pumpFaulty : boolean
+	var pumpControllerFaulty : boolean
+	var lowestLevelNextCycle : real
+	var highestLevelNextCycle : real
+	var levelLowerBound : real
+	var levelUpperBound : real
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+}
+
+interface Constants {
+	const stopRepetitions : real = 3
+	const normalN2 : real = 600
+	const normalN1 : real = 400
+	const limitM1 : real = 100
+	const limitM2 : real = 900
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state INITIALIZATION_FILLING {
+	}
+	state INITIALIZATION {
+	}
+	state DEGRADED {
+		entry send mode
+	}
+	state NORMAL {
+		entry send mode
+	}
+	state INITIALIZATION_DRAINING {
+	}
+	state INITIALIZATION_READY {
+	}
+	state EMERGENCY_STOP {
+		entry send mode
+	}
+	state RESCUE {
+		entry send mode
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStops >= stopRepetitions
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ (transmissionFault \/ unitsReady)
+	}
+	transition t3 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( plantWaiting )
+		action send mode
+	}
+	transition t4 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmission
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ (steamRate != 0 \/ levelDeviceFaulty)
+	}
+	transition t5 {
+		from INITIALIZATION
+		to INITIALIZATION_DRAINING
+		trigger transmission
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ waterLevel > normalN2
+		action send mode ; send valve
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION_FILLING
+		trigger transmission
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ not ( waterLevel > normalN2 ) /\ waterLevel < normalN1
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION_READY
+		trigger transmission
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ not ( waterLevel > normalN2 ) /\ not ( waterLevel < normalN1 )
+		action send mode ; send programReady
+	}
+	transition t8 {
+		from INITIALIZATION_FILLING
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStops >= stopRepetitions
+	}
+	transition t9 {
+		from INITIALIZATION_FILLING
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ (transmissionFault \/ unitsReady)
+	}
+	transition t10 {
+		from INITIALIZATION_FILLING
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ (steamRate != 0 \/ levelDeviceFaulty)
+	}
+	transition t11 {
+		from INITIALIZATION_FILLING
+		to INITIALIZATION_DRAINING
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ waterLevel > normalN2
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send valve
+	}
+	transition t12 {
+		from INITIALIZATION_FILLING
+		to INITIALIZATION_FILLING
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ not ( waterLevel > normalN2 ) /\ waterLevel < normalN1
+		action send mode
+	}
+	transition t13 {
+		from INITIALIZATION_FILLING
+		to INITIALIZATION_READY
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ not ( waterLevel > normalN2 ) /\ not ( waterLevel < normalN1 )
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady
+	}
+	transition t14 {
+		from INITIALIZATION_DRAINING
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStops >= stopRepetitions
+	}
+	transition t15 {
+		from INITIALIZATION_DRAINING
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ (transmissionFault \/ unitsReady)
+	}
+	transition t16 {
+		from INITIALIZATION_DRAINING
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ (steamRate != 0 \/ levelDeviceFaulty)
+	}
+	transition t17 {
+		from INITIALIZATION_DRAINING
+		to INITIALIZATION_DRAINING
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ waterLevel > normalN2
+		action send mode
+	}
+	transition t18 {
+		from INITIALIZATION_DRAINING
+		to INITIALIZATION_FILLING
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ not ( waterLevel > normalN2 ) /\ waterLevel < normalN1
+		action send mode ; send valve ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t19 {
+		from INITIALIZATION_DRAINING
+		to INITIALIZATION_READY
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ unitsReady ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ not ( waterLevel > normalN2 ) /\ not ( waterLevel < normalN1 )
+		action send mode ; send valve ; send programReady
+	}
+	transition t20 {
+		from INITIALIZATION_READY
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStops >= stopRepetitions
+	}
+	transition t21 {
+		from INITIALIZATION_READY
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ transmissionFault
+	}
+	transition t22 {
+		from INITIALIZATION_READY
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault ) /\ (steamRate != 0 \/ levelDeviceFaulty)
+	}
+	transition t23 {
+		from INITIALIZATION_READY
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ unitsReady /\ not ( steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty )
+	}
+	transition t24 {
+		from INITIALIZATION_READY
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ unitsReady /\ (steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty)
+	}
+	transition t25 {
+		from INITIALIZATION_READY
+		to INITIALIZATION_READY
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault ) /\ not ( steamRate != 0 \/ levelDeviceFaulty ) /\ not ( unitsReady )
+		action send mode ; send programReady
+	}
+	transition t26 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStops >= stopRepetitions
+	}
+	transition t27 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ (transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2)
+	}
+	transition t28 {
+		from NORMAL
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ levelDeviceFaulty
+	}
+	transition t29 {
+		from NORMAL
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ not ( levelDeviceFaulty ) /\ (steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty)
+	}
+	transition t30 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ not ( levelDeviceFaulty ) /\ not ( steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty ) /\ waterLevel < normalN1
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t31 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ not ( levelDeviceFaulty ) /\ not ( steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty ) /\ not ( waterLevel < normalN1 ) /\ waterLevel > normalN2
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t32 {
+		from NORMAL
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ not ( levelDeviceFaulty ) /\ not ( steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty ) /\ not ( waterLevel < normalN1 ) /\ not ( waterLevel > normalN2 )
+	}
+	transition t33 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStops >= stopRepetitions
+	}
+	transition t34 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ (transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2)
+	}
+	transition t35 {
+		from DEGRADED
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ levelDeviceFaulty
+	}
+	transition t36 {
+		from DEGRADED
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ not ( levelDeviceFaulty ) /\ not ( steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty )
+	}
+	transition t37 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ not ( levelDeviceFaulty ) /\ (steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty) /\ waterLevel < normalN1
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t38 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ not ( levelDeviceFaulty ) /\ (steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty) /\ not ( waterLevel < normalN1 ) /\ waterLevel > normalN2
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t39 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 ) /\ not ( levelDeviceFaulty ) /\ (steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty) /\ not ( waterLevel < normalN1 ) /\ not ( waterLevel > normalN2 )
+	}
+	transition t40 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition successiveStops >= stopRepetitions
+	}
+	transition t41 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ (transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 \/ steamDeviceFaulty \/ pumpControllerFaulty)
+	}
+	transition t42 {
+		from RESCUE
+		to NORMAL
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 \/ steamDeviceFaulty \/ pumpControllerFaulty ) /\ not ( levelDeviceFaulty ) /\ not ( steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty )
+	}
+	transition t43 {
+		from RESCUE
+		to DEGRADED
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 \/ steamDeviceFaulty \/ pumpControllerFaulty ) /\ not ( levelDeviceFaulty ) /\ (steamDeviceFaulty \/ pumpFaulty \/ pumpControllerFaulty)
+	}
+	transition t44 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 \/ steamDeviceFaulty \/ pumpControllerFaulty ) /\ levelDeviceFaulty /\ levelLowerBound + levelUpperBound < 2 * normalN1
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t45 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 \/ steamDeviceFaulty \/ pumpControllerFaulty ) /\ levelDeviceFaulty /\ not ( levelLowerBound + levelUpperBound < 2 * normalN1 ) /\ levelLowerBound + levelUpperBound > 2 * normalN2
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t46 {
+		from RESCUE
+		to RESCUE
+		trigger transmission
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionFault \/ plantWaiting \/ unitsReady \/ lowestLevelNextCycle < limitM1 \/ highestLevelNextCycle > limitM2 \/ steamDeviceFaulty \/ pumpControllerFaulty ) /\ levelDeviceFaulty /\ not ( levelLowerBound + levelUpperBound < 2 * normalN1 ) /\ not ( levelLowerBound + levelUpperBound > 2 * normalN2 )
+	}
+	transition t47 {
+		from EMERGENCY_STOP
+		to EMERGENCY_STOP
+		trigger transmission
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmission to stm_ref0 on transmission
+	connection stm_ref0 on mode to SteamBoilerController_Ctrl on mode
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmission
+		event mode
+		event valve
+		event openPump : int
+		event programReady
+		event closePump : int
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmission to ctrl_ref0 on transmission
+	connection ctrl_ref0 on mode to SteamBoilerController_Platform on mode
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+}
+

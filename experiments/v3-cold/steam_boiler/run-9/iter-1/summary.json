@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 9,
+  "iteration": 1,
+  "recorded_utc": "2026-11-03 20:51:05",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c16-run9-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run9",
+  "files": {
+    "java": 11,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 984,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "failed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Steam boiler, pass 9, iteration 1\n\n## What I wrote\n\nThere are 11 files under `steam_boiler/`. No Java was present beforehand.\n\n- **`SteamBoilerController`** holds the mode (initialization first) and two handshake flags. Its `step` reacts to `InputEvent.TransmissionComplete`, which ends each cycle's reception. The guards within each mode exclude one another and together cover every case. Priority runs emergency stop, then rescue, then degraded, then regulation (SB-FR8). Emergency stop is terminal.\n- **`BoilerSensor`** collects each cycle's messages. It judges unit and transmission failures (SB-FR1\u20135) and maintains q, v, p, the level bounds, the unit status and the STOP count (SB-V5\u201310).\n- **`BoilerActuator`** builds the outgoing transmission. Pump and valve orders are sent only on change. Failure announcements and repair acknowledgements are emitted on every cycle (SB-FR6/7).\n\nWhy: per-unit history cannot be written as simple predicates in a two-level if-else. Keeping it in the leaves keeps the controller's model small. Every transition is triggered by an event, which avoids divergence.\n\n## Decisions the requirements did not settle\n\n- **Constants:** C=1000, M1=100, M2=900, N1=400, N2=600, W=25, U1=U2=2, P=10, cycle 5 s, STOP threshold 3.\n- **Regulation:** all pumps on below N1; all off when the worst-case next-cycle level exceeds N2.\n- **Level risk:** low limit assumes maximal steam and no pumping; high limit assumes every pump that is on, flowing or uncertain pours.\n- **Initialization:** checks begin after STEAM_BOILER_WAITING. Pump 1 fills. Level dynamics are not checked while the valve is open (no evacuation rate given).\n- **Rescue:** any pump-controller failure means emergency stop.\n- **After emergency stop:** no MODE message.\n- **Aberrant messages:** my own list, in `post_codegen.md`.\n\n## Not resolved\n\n- The constants are placeholders.\n- In rescue mode the widening estimate makes the pumps alternate on and off."
+}

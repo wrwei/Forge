@@ -1,0 +1,264 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 51 LRE requirements are implemented and traced in java.generated.project/result_codegen.json. Eleven decisions the requirements do not settle are listed below: 2 invented defaults, 5 design choices, 3 ambiguous requirements and 1 scope question. None is unimplemented.",
+  "issues": [
+    {
+      "kind": "design_choice",
+      "title": "'No obstacle' index is a non-negative sentinel, not -1",
+      "raw": "LRE-Var5/Var6/DM5/OP3/OP4 say cstc/cdyn = -1 means no obstacle, but the same requirements type them as natural numbers and the Java profile maps int to nat (never negative).",
+      "fix_directive": "Kept: closestStaticIndex()/closestDynamicIndex() return ObstacleRegister.NO_INDEX (2147483647, written as a plain literal), an index put() refuses to register. The controller never tests it: every sensor function returns its no-obstacle default (large distance, zero field) for an empty index.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/sensor/ObstacleRegister.java",
+          "line_start": 15,
+          "line_end": 37,
+          "element": "NO_INDEX",
+          "requirement_ids": [
+            "LRE-Var5",
+            "LRE-Var6",
+            "LRE-DM3"
+          ]
+        },
+        {
+          "java_file": "src/main/java/lre/sensor/Sensor.java",
+          "line_start": 126,
+          "line_end": 163,
+          "element": "closestStaticIndex",
+          "requirement_ids": [
+            "LRE-DM5",
+            "LRE-OP3",
+            "LRE-OP4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "'Safe large distance' is 1000000.0 m",
+      "raw": "LRE-DM5: when no obstacle exists, odist, hdist and vdist return a safe large distance (value not given).",
+      "fix_directive": "Kept as a private sensor constant SAFE_LARGE_DIST = 1000000.0, far above every threshold (all 1 m).",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/sensor/Sensor.java",
+          "line_start": 13,
+          "line_end": 14,
+          "element": "SAFE_LARGE_DIST",
+          "requirement_ids": [
+            "LRE-DM5",
+            "LRE-OP2",
+            "LRE-OP5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Actuator holds 0.0 velocity and heading before any advice",
+      "raw": "LRE-DM8: the actuator stores the latest advVel/advHdng values; no initial value is given.",
+      "fix_directive": "Kept: advisedVelocity and advisedHeading start at 0.0.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/actuator/Actuator.java",
+          "line_start": 12,
+          "line_end": 13,
+          "element": "Actuator",
+          "requirement_ids": [
+            "LRE-DM8"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "CheckOPEZ and CalcCPA take the closest index from the sensor themselves",
+      "raw": "LRE-OP2: CheckOPEZ uses the index computed by CalcCStc. LRE-OP5: CalcCPA uses cdyn. The profile allows an operation's compute() to use only sensor calls and its own fields.",
+      "fix_directive": "Kept: CheckOPEZ.opezIndex and CalcCPA.cpaIndex are assigned from sensor.closestStaticIndex()/closestDynamicIndex(), the same call CalcCStc/CalcCDyn make on the same sensor snapshot in the same step, so the values are equal to cstc/cdyn.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/operation/CheckOPEZ.java",
+          "line_start": 27,
+          "line_end": 31,
+          "element": "compute",
+          "requirement_ids": [
+            "LRE-OP2",
+            "LRE-Var5"
+          ]
+        },
+        {
+          "java_file": "src/main/java/lre/operation/CalcCPA.java",
+          "line_start": 33,
+          "line_end": 45,
+          "element": "compute",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-Var6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "CPA formula: horizontal CPA plus constant vertical separation",
+      "raw": "LRE-OP5 gives no formula for cda/tcpa. LRE-DM5 says nsRelDist/ewRelDist return 0 with no obstacle, which would make a position-only CPA report cda = 0 (a false collision) whenever the AUV moves and no dynamic obstacle exists.",
+      "fix_directive": "Kept: closing velocity c = AUV velocity - obstacle velocity; tcpa = (p.c)/|c|^2; cda = sqrt(|p - c*tcpa|^2 + vdist^2). vdist's large default makes cda large when no dynamic obstacle exists. obs_roc is not used (the sensor has no accessor for it). When |c| = 0, tcpa and cda are NaN: no collision is predicted, and CAM's exit guard !(cda < minSafeDist) holds.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/operation/CalcCPA.java",
+          "line_start": 25,
+          "line_end": 45,
+          "element": "compute",
+          "requirement_ids": [
+            "LRE-OP5",
+            "LRE-Var7",
+            "LRE-Var8"
+          ]
+        },
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "line_start": 60,
+          "line_end": 62,
+          "element": "step",
+          "requirement_ids": [
+            "LRE-Beh8",
+            "LRE-Beh14",
+            "LRE-Beh18"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "HCM velocity: 0.1 m/s (system description) vs 0 m/s (LRE-FR3)",
+      "raw": "system_description.txt: 'HCM: Reduced speed (0.1 m/s)'. LRE-FR3: 'On entering HCM, the LRE advises a velocity of 0 m/s'.",
+      "fix_directive": "Implemented LRE-FR3 (HCM_ADVISED_VEL = 0.0); the requirements are the source of truth.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreConstants.java",
+          "line_start": 31,
+          "line_end": 32,
+          "element": "HCM_ADVISED_VEL",
+          "requirement_ids": [
+            "LRE-FR3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Literal '1' thresholds in LRE-Beh4/Beh9/Beh11",
+      "raw": "LRE-Beh4: vel <= 1, odist(cdyn) > 1, odist(cstc) > 1. LRE-Beh9/Beh11: hvel/vvel at or above 1 m/s. None names minSafeDist.",
+      "fix_directive": "Kept as the requirements state them, as named constants VEL_LIMIT = 1.0 and MOM_ENTRY_CLEARANCE = 1.0 independent of MIN_SAFE_DIST.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreConstants.java",
+          "line_start": 22,
+          "line_end": 26,
+          "element": "VEL_LIMIT",
+          "requirement_ids": [
+            "LRE-Beh4",
+            "LRE-Beh9",
+            "LRE-Beh11"
+          ]
+        },
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "line_start": 63,
+          "line_end": 68,
+          "element": "step",
+          "requirement_ids": [
+            "LRE-Beh4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Transition priority within each mode",
+      "raw": "All LRE-Beh requirements have priority 8; their relative order within a mode is not given.",
+      "fix_directive": "Kept: in MOM and HCM the autonomous (triggerless) transitions come first: inOpez (so LRE-Beh5/Beh16's guard is inOpez alone), then collision -> CAM, then the static-obstacle rules (MOM: Beh9, Beh11, Beh10; HCM: Beh13). The operator's requests (reqOCM, endTask, reqHCM) follow, each conjoining the negation of every autonomous guard, because RoboChart has no event-absence guard. In CAM, Beh18 precedes Beh17. Beh11 precedes Beh10 because with equal thresholds Beh10's guard contains Beh11's, so the other order would make Beh11 unreachable. Consequence: an operator request arriving in the same cycle as an autonomous transition is not acted on in that cycle.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "line_start": 95,
+          "line_end": 167,
+          "element": "step",
+          "requirement_ids": [
+            "LRE-Beh5",
+            "LRE-Beh6",
+            "LRE-Beh7",
+            "LRE-Beh8",
+            "LRE-Beh9",
+            "LRE-Beh10",
+            "LRE-Beh11",
+            "LRE-Beh12",
+            "LRE-Beh13",
+            "LRE-Beh14",
+            "LRE-Beh15",
+            "LRE-Beh16",
+            "LRE-Beh17",
+            "LRE-Beh18",
+            "LRE-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "vvel is the signed rate of climb",
+      "raw": "LRE-OP1: 'vvel is the rate of climb'. LRE-Beh11: vvel at or above 1 m/s.",
+      "fix_directive": "Kept literally: vvel = rateOfClimb (signed), so Beh11 fires on climbing at >= 1 m/s, not on descending. Beh10 covers vertical proximity regardless of velocity.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/operation/CalcVel.java",
+          "line_start": 23,
+          "line_end": 27,
+          "element": "compute",
+          "requirement_ids": [
+            "LRE-OP1",
+            "LRE-Var3",
+            "LRE-Beh11"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "Inputs with no transition are ignored; CAM issues no evasive command",
+      "raw": "LRE-Beh19: in modes other than OCM, operator velocity/heading inputs are overridden. LRE-FR4: CAM performs evasive manoeuvres (no output given). LRE-DM7: advVel/advHdng are the only outputs.",
+      "fix_directive": "Kept: reqVel/reqHdng are ignored outside OCM; reqOCM, reqHCM and endTask are ignored in OCM; reqMOM, reqHCM and endTask are ignored in HCM and CAM. CAM has no entry action because no evasive command is specified. A cycle with no operator input is step(null).",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/controller/LreController.java",
+          "line_start": 52,
+          "line_end": 168,
+          "element": "step",
+          "requirement_ids": [
+            "LRE-Beh19",
+            "LRE-FR4",
+            "LRE-DM7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Ties between equally close obstacles go to the lowest index",
+      "raw": "LRE-OP3/OP4: return the index of the obstacle with the minimum odist.",
+      "fix_directive": "Kept: strict '<' over ascending indices.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/lre/sensor/Sensor.java",
+          "line_start": 126,
+          "line_end": 163,
+          "element": "closestStaticIndex",
+          "requirement_ids": [
+            "LRE-OP3",
+            "LRE-OP4"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline. None of these items blocks it; revisit them only if a verifier or the requirement owner objects."
+}

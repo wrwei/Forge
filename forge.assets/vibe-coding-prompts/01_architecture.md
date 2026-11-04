@@ -5,7 +5,8 @@ documented in `forge.assets/vibe-coding-prompts/README.md`.
 
 Read `CLAUDE.md` and
 `forge.assets/case-studies/<study>/requirements/requirement_all.json`
-(replace `<study>` with the actual case-study slug — e.g. `lre`).
+(replace `<study>` with the case-study name in `pipeline.yaml`, key
+`agent.active_case_study`).
 
 Without writing any Java code, design the package and class structure
 for this system. Produce a markdown response listing:

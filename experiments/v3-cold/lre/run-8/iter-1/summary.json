@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 8,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 17:13:40",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run8-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run8",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 613,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# LRE, pass 8, iteration 1\n\n## What was written\n- 15 Java files in package `lre`: the annotation, events, sensor (Obstacle, ObstacleRegister, Sensor), actuator, five operations, constants, and the mode enum and controller. One `step()`; the operations run before the guards.\n- `result_codegen.json`, covering all 51 requirements.\n- `post_codegen.{md,json}`.\n- No Java existed beforehand. Compiled with javac (release 17); a scratch smoke test passed.\n\n## Decisions the requirements left open\n- **\"No obstacle\" index.** The requirements give \u22121, which the nat-only profile forbids. Index 0 means \"none\", and obstacles are numbered from 1.\n- **Safe large distance.** Set to 1000000.0 m.\n- **CPA.** tcpa = (r\u00b7u)/|u|\u00b2 and cda = \u221a(|r\u2212u\u00b7tcpa|\u00b2 + vdist\u00b2), with vertical separation held constant. Through vdist, OP5's large default reaches cda despite DM5's zero accessors.\n- **Index source.** CheckOPEZ and CalcCPA call the same sensor selection function that CalcCStc and CalcCDyn store, because compute() may only use sensor calls and its own fields.\n- **Variables.** They live in the operations that compute them.\n- **Constants.** VEL_LIMIT, MOM_VELOCITY, HCM_VELOCITY and STOP_VELOCITY were added. Beh4's distance \"1\" uses MIN_SAFE_DIST.\n- **Priority within a mode.** reqOCM, other events, inOpez, collision, then Beh9, Beh11, Beh10, each negating earlier guards. Beh11 precedes Beh10, which would otherwise make it unsatisfiable.\n- **HCM velocity.** Advised as 0 per FR3, not the 0.1 in the description.\n- **vvel.** The signed rate of climb, as OP1 states.\n- **CAM.** Issues nothing on entry.\n- **step(null).** Means no operator input this cycle.\n\n## Unresolved\n- With zero relative velocity, tcpa is 0/0 (NaN in Java). This blocks CAM entry and allows CAM exit. A verifier may flag the division.\n- DC1's uniqueness rule cannot strictly apply to transitions that have no trigger."
+}

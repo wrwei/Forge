@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 2,
+  "iteration": 2,
+  "recorded_utc": "2026-10-30 13:21:23",
+  "infrastructure_sha": "2db4c03116e00b82c1c4186c171a50ad26574e33",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r-run2-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run2",
+  "files": {
+    "java": 19,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 705,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY: chemical_detector, run 2\n\n## What was written\n\nThe package is `chemical_detector`. It has two profile controllers:\n\n- `GasAnalysisController`: Reading, Analysis, NoGas, GasDetected, Concluded.\n- `MovementController`: Waiting, Going, Found, Avoiding, TryingAgain, AvoidingAgain, GettingOut.\n\nTurn, stop and resume are shared `OutputEvent`/`InputEvent` records.\n\n- `ChemicalSensor`: analysis, intensity, location, goreq.\n- `VehicleSensor.odometer()`.\n- `Clock`, which provides `evasionStart`/since.\n- `VehicleActuator`: move, randomWalk, shortRandomWalk, changeDirection, pause (the wait) and flag.\n- `ChemicalDetectorSystem`: the wiring.\n\n## Decisions the requirements left open\n\n- **Constants:** THR=3, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=3, STUCK_DIST=1.0, OUT_PERIOD=2. STUCK_PERIOD > EVADE_TIME keeps both AvoidingAgain outcomes reachable.\n- **Initial values:** sts=noGas, ins=0, anl=a=Front, l=front, d0=d1=0.\n- **Target chemical:** a constructor argument. A reading indicates it when some entry has that chemical with i > 0.\n- **Empty readings:** intensity returns 0 and location returns Front.\n- **Sensor positions:** position k maps to Front/Right/Back/Left, repeating. On a tie, the first sensor wins.\n- **Types:** Chem is a record of a nat. Intensity is nat.\n- **Operations:** the operations are actuations taking controller variables, so they are actuator calls, not `compute()` classes.\n- **Odometer:** a sampled sensor value.\n- **Waiting's during randomWalk():** issued on every entry and once at start-up.\n- **Final states:** gas analysis ends in Concluded. Found is terminal (CD-MV-Beh9 has no transition of its own).\n- **Avoiding entry:** restarts the clock and re-samples d0.\n\n## Iteration 2\n\n- **Preflight error:** `GasSensor.i` was reported as a double without `@RoboChartType(\"real\")`, although the record component carries it. I think this is a pipeline defect: the lint misses annotations on record components. Workaround: Intensity (GasSensor.i, ins, intensity, goreq, THR) is now nat.\n- **Rule8 warnings (non-blocking):** these concern stop/resume before the autonomous branches of AvoidingAgain. Kept. CD-MV-FR6 requires all four transitions, and moving the autonomous ones first would make stop and resume unreachable.\n\n## Unresolved\n\nNone."
+}

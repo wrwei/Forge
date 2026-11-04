@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 1,
+  "iteration": 2,
+  "recorded_utc": "2026-11-01 11:57:40",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r10-run1-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run1",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1328,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "failed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 2 \u2014 steam_boiler\n\n## Iteration 1 result\n\nFailed: preflight, m2t, isabelle_verify; fdr4 had no verdict (blocked by m2t).\n\n## Changes for iteration 2 (Java only; the trace's elements are unchanged)\n\n- Preflight: added `@RoboChartType(\"real\")` (and `\"nat\"`) to the parameters and returns of the private numeric helpers in `BoilerSensor`.\n- M2T: the `PumpStateData` component `on` is a keyword of RoboChart's textual notation, although the rules' reserved-word list doesn't include it. It is renamed `switchedOn`. The `regulatePumps` parameter is renamed `targetCount` so it no longer shares the sensor method name `pumpsRequired`.\n- Isabelle: in the generated theory, a compound predicate is inlined, and a bare boolean sensor call inside it was typed `\u211d`. `startMessageOutOfPlace` now combines two predicates (`waitingSignalNow`, `unitsReady`), each holding a single sensor call. Behaviour is unchanged.\n\n## Design (from iteration 1)\n\n- One state machine. Every transition is triggered by `TransmissionReceived`. In each mode the guards are exclusive and cover every case, ordered by SB-FR8. Emergency stop is terminal.\n- Analysis and FR1\u2013FR5 are in `BoilerSensor`, the outbox and FR6/FR7 messages in `BoilerActuator`, and the cycle driver is `SteamBoilerProgram`.\n\n## Decisions the requirements left open\n\n- The constant values are invented (C=1000, M1=150, N1=400, N2=600, M2=800, W=25, U1=U2=2, P=10).\n- Before STEAM_BOILER_WAITING only STOP counts.\n- Aberrant messages are defined in `post_codegen.md`.\n- \"Pump-controller units fail\" means any controller.\n- A level failure in normal or degraded goes to rescue first (FR8, literal reading).\n- Risk and regulation are worst-case and predictive over two cycles.\n- MODE(emergency stop) is sent once.\n\n## Unresolved\n\nNone known. `on` missing from the rules' reserved-word list may be a gap in the instrument's documentation; I worked around it in the Java."
+}

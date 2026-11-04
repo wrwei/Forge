@@ -295,14 +295,14 @@ def check_isabelle_inv_vacuous(thy_path: Path, repo_root: Path) -> Finding | Non
             "proves `True is preserved`. Isabelle's `zpog_full` tactic "
             "discharges these mechanically; the lemmas verify no "
             "behavioural content.\n\n"
-            "To make Isabelle's invariant proofs load-bearing, the "
-            "M2T-Isabelle template (forge.transformations/src/main/"
-            "resources/transformations/thy_generation_rule.egl) should "
-            "derive a non-trivial invariant from the requirements (e.g. "
-            "the disjoint mode partition, `cstc >= -1`, post-CalcCPA "
-            "invariants on `tcpa`/`cda`). The deadlock-freedom proof "
-            "remains substantive even with `inv: True`, but the per-"
-            "operation invariant lemmas do not."
+            "For the invariant lemmas to check anything, the theory "
+            "generator (forge.transformations/src/main/resources/"
+            "transformations/thy_generation_rule.egl) has to emit a "
+            "non-trivial invariant derived from the requirements (for "
+            "example, that exactly one mode holds, or a range a state "
+            "variable must stay in). The deadlock-freedom proof still "
+            "checks behaviour with `inv: True`; the per-operation "
+            "invariant lemmas do not."
         ),
     )
 

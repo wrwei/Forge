@@ -1,0 +1,305 @@
+diagram SteamBoilerController
+
+enumeration PumpPosition { PUMP_OFF PUMP_ON }
+enumeration UnitCondition { SOUND FAILED_UNACKNOWLEDGED FAILED_ACKNOWLEDGED }
+enumeration ValvePosition { VALVE_CLOSED VALVE_OPEN }
+enumeration WaterFlow { NOT_FLOWING FLOWING }
+enumeration OperatingMode { INITIALIZATION_MODE NORMAL_MODE DEGRADED_MODE RESCUE_MODE EMERGENCY_STOP_MODE }
+
+datatype PumpControlReading {
+	controlledPump : int
+	flow : WaterFlow
+}
+
+datatype PumpStateReading {
+	pumpNumber : int
+	position : PumpPosition
+}
+
+interface Inputs {
+	event transmissionReceived
+}
+
+interface Outputs {
+	event mode
+	event programReady
+	event valve
+	event closePump : int
+	event openPump : int
+}
+
+interface Sensors {
+	var pumpNumber : int
+	var position : PumpPosition
+	var successiveStopCount : int
+	var transmissionFailure : boolean
+	var unitsReadyNow : boolean
+	var boilerWaitingNow : boolean
+	var steamRate : real
+	var levelOutOfOrder : boolean
+	var steamOutOfOrder : boolean
+	var pumpOutOfOrder : boolean
+	var pumpControllerOutOfOrder : boolean
+	var levelEstimate : real
+	var minimumLevelForecast : real
+	var maximumLevelForecast : real
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var startupBegun : boolean = false
+	var readyAnnounced : boolean = false
+	var valvePosition : ValvePosition
+}
+
+interface Constants {
+	const stopRepeatLimit : real = 3
+	const maxNormal : real = 600
+	const minNormal : real = 400
+	const minLimit : real = 150
+	const maxLimit : real = 850
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state NORMAL {
+		entry send mode
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send mode
+	}
+	state DEGRADED {
+		entry send mode
+	}
+	state RESCUE {
+		entry send mode
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder)
+	}
+	transition t2 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ not ( startupBegun \/ boilerWaitingNow )
+		action send mode
+	}
+	transition t3 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ unitsReadyNow /\ not ( levelOutOfOrder ) /\ not ( steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder )
+	}
+	transition t4 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ unitsReadyNow /\ not ( not ( levelOutOfOrder ) /\ not ( steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder ) )
+	}
+	transition t5 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ not ( unitsReadyNow ) /\ readyAnnounced
+		action send mode ; send programReady
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ not ( unitsReadyNow ) /\ not ( readyAnnounced ) /\ levelEstimate > maxNormal /\ not ( valvePosition == VALVE_OPEN )
+		action startupBegun = true ; valvePosition = VALVE_OPEN ; send mode ; send valve ; closePump ! 1
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ not ( unitsReadyNow ) /\ not ( readyAnnounced ) /\ levelEstimate > maxNormal /\ valvePosition == VALVE_OPEN
+		action startupBegun = true ; send mode
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ not ( unitsReadyNow ) /\ not ( readyAnnounced ) /\ levelEstimate < minNormal /\ valvePosition == VALVE_OPEN
+		action startupBegun = true ; valvePosition = VALVE_CLOSED ; send mode ; send valve ; openPump ! 1
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ not ( unitsReadyNow ) /\ not ( readyAnnounced ) /\ levelEstimate < minNormal /\ not ( valvePosition == VALVE_OPEN )
+		action startupBegun = true ; send mode ; openPump ! 1
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ not ( unitsReadyNow ) /\ not ( readyAnnounced ) /\ not ( levelEstimate < minNormal ) /\ not ( levelEstimate > maxNormal ) /\ valvePosition == VALVE_OPEN
+		action startupBegun = true ; readyAnnounced = true ; valvePosition = VALVE_CLOSED ; send mode ; send valve ; closePump ! 1 ; send programReady
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ unitsReadyNow /\ not ( readyAnnounced ) \/ (startupBegun \/ boilerWaitingNow) /\ (steamRate != 0 \/ levelOutOfOrder) ) /\ (startupBegun \/ boilerWaitingNow) /\ not ( unitsReadyNow ) /\ not ( readyAnnounced ) /\ not ( levelEstimate < minNormal ) /\ not ( levelEstimate > maxNormal ) /\ not ( valvePosition == VALVE_OPEN )
+		action startupBegun = true ; readyAnnounced = true ; send mode ; closePump ! 1 ; send programReady
+	}
+	transition t12 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder)
+	}
+	transition t13 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ levelOutOfOrder
+	}
+	transition t14 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ not ( levelOutOfOrder ) /\ (steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder)
+	}
+	transition t15 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ not ( levelOutOfOrder ) /\ not ( steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder ) /\ levelEstimate < minNormal
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t16 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ not ( levelOutOfOrder ) /\ not ( steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder ) /\ levelEstimate > maxNormal
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t17 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ not ( levelOutOfOrder ) /\ not ( steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder ) /\ not ( levelEstimate < minNormal ) /\ not ( levelEstimate > maxNormal )
+	}
+	transition t18 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder)
+	}
+	transition t19 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ levelOutOfOrder
+	}
+	transition t20 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ not ( levelOutOfOrder ) /\ not ( steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder )
+	}
+	transition t21 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ not ( levelOutOfOrder ) /\ (steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder) /\ levelEstimate < minNormal
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t22 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ not ( levelOutOfOrder ) /\ (steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder) /\ levelEstimate > maxNormal
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t23 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ levelOutOfOrder /\ (steamOutOfOrder \/ pumpControllerOutOfOrder) ) /\ not ( levelOutOfOrder ) /\ (steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder) /\ not ( levelEstimate < minNormal ) /\ not ( levelEstimate > maxNormal )
+	}
+	transition t24 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ steamOutOfOrder \/ pumpControllerOutOfOrder
+	}
+	transition t25 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ steamOutOfOrder \/ pumpControllerOutOfOrder ) /\ not ( levelOutOfOrder ) /\ not ( steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder )
+	}
+	transition t26 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ steamOutOfOrder \/ pumpControllerOutOfOrder ) /\ not ( levelOutOfOrder ) /\ (steamOutOfOrder \/ pumpOutOfOrder \/ pumpControllerOutOfOrder)
+	}
+	transition t27 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ steamOutOfOrder \/ pumpControllerOutOfOrder ) /\ levelOutOfOrder /\ levelEstimate < minNormal
+		action send mode ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t28 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ steamOutOfOrder \/ pumpControllerOutOfOrder ) /\ levelOutOfOrder /\ levelEstimate > maxNormal
+		action send mode ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t29 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( successiveStopCount >= stopRepeatLimit \/ transmissionFailure \/ boilerWaitingNow \/ unitsReadyNow \/ minimumLevelForecast <= minLimit \/ maximumLevelForecast >= maxLimit \/ steamOutOfOrder \/ pumpControllerOutOfOrder ) /\ levelOutOfOrder /\ not ( levelEstimate < minNormal ) /\ not ( levelEstimate > maxNormal )
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionReceived to stm_ref0 on transmissionReceived
+	connection stm_ref0 on mode to SteamBoilerController_Ctrl on mode
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionReceived
+		event mode
+		event programReady
+		event valve
+		event closePump : int
+		event openPump : int
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionReceived to ctrl_ref0 on transmissionReceived
+	connection ctrl_ref0 on mode to SteamBoilerController_Platform on mode
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+}
+

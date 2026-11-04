@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 5,
+  "iteration": 1,
+  "recorded_utc": "2026-10-31 13:30:42",
+  "infrastructure_sha": "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c7-run5-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run5",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 655,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 lre, pass 5, iteration 1\n\n**Written.** 15 Java files in package `lre`:\n- the annotation and constants (four thresholds, all 1.0);\n- the `LreMode` enum and the sealed input/output events;\n- `Obstacle`, `ObstacleRegister` and `Sensor`;\n- `Actuator.apply(OutputEvent)`;\n- the five operation classes;\n- `LreController`.\n\n`step()` calls the five `compute()` methods, declares named predicates, then runs a four-mode if-else with 18 transitions. MOM entries advise velocity 1, HCM entries 0. EndTask (Beh7) and the CAM safe exit (Beh18) advise 0. The trace covers 51/51 requirements and all 15 files. Layer 5's `post_codegen.{md,json}` were written. No Java existed beforehand.\n\n**Decisions the requirements left open:**\n- **No-obstacle index:** the requirements use `-1`, but `cstc`/`cdyn` are natural numbers. Index 0 now means \"none\"; register identifiers start at 1.\n- **Defaults:** safe large distance 1,000,000 m; ties go to the lowest index; the actuator starts at 0.\n- **Variables:** fields of their operations, read through getters. CheckOPEZ and CalcCPA call the sensor's selection function themselves, because `compute()` may use only sensor calls and the class's own fields.\n- **CPA:** horizontal, using the AUV's velocity relative to the obstacle; `cda` includes `vdist`, so no dynamic obstacle gives a large `cda`.\n- **Transition order:** reqOCM, OPEZ, CAM, then HCM (Beh9, Beh11, Beh10), then endTask/reqHCM. Beh10 before Beh11 would make Beh11's guard unsatisfiable.\n- **Literals:** HCM advises 0 m/s (FR3), not the description's 0.1 m/s. Beh4's thresholds stay the literal `1`.\n\n**Unresolved:**\n- At exactly zero relative horizontal velocity, `tcpa` and `cda` are NaN: CAM is never entered and is always left.\n- No epsilon was added (it would put fractional literals in the model), so the model's division can have a zero divisor.\n- CAM issues no evasive output; FR4 specifies none.\n- MOM\u2194HCM cannot cycle without an event only while `staticObsDfltVertDist <= staticObsVertDist`."
+}

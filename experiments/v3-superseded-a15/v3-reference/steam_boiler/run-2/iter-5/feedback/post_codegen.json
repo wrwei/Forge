@@ -1,0 +1,302 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "Java for steam_boiler written in five layers (13 files; five-mode controller with a terminal emergency stop, 29 transitions); compiles; trace covers all 53 requirements. Issues below record the values and readings the requirements left open.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Values of the plant constants C, M1, M2, N1, N2, W, U1, U2, P",
+      "raw": "SB-DM1/DM2/DM3 name the constants but give no values. Chosen: C=1000, M1=150, M2=800, N1=400, N2=600 (litre); W=25 (l/s); U1=U2=4 (l/s/s); P=10 (l/s); 4 pumps; cycle 5 s; STOP x3. M1 >= 5 s of maximal steam (125 l) and C-M2 >= 5 s of four pumps (200 l), as SB-DM1 requires. All values are integral, so the model's rounding-up of constants changes nothing.",
+      "fix_directive": "None unless real plant values are supplied; then change BoilerConstants only.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/BoilerConstants.java",
+          "line_range": "11-37",
+          "element": "BoilerConstants",
+          "requirement_ids": [
+            "SB-DM1",
+            "SB-DM2",
+            "SB-DM3",
+            "SB-Beh23"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "One input event per cycle; incoming messages go to the sensor",
+      "raw": "All messages of a cycle arrive simultaneously (SB-V3) and step is called once per cycle, so the controller is triggered by one event, MessagesReceived. The SB-DM9 messages are handed to BoilerSensor.receive... methods and reach the guards as sensor queries, not as InputEvent records.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/event/InputEvent.java",
+          "line_range": "1-11",
+          "element": "MessagesReceived",
+          "requirement_ids": [
+            "SB-V3",
+            "SB-DM9"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/sensor/BoilerSensor.java",
+          "line_range": "86-160",
+          "element": "receive methods",
+          "requirement_ids": [
+            "SB-DM9"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Failure detection, unit status, STOP count and level estimate live in BoilerSensor",
+      "raw": "Per-unit bookkeeping (10 units, failed/acknowledged), pump order tracking, steam/level dynamics and the lower/upper level estimate are computed in BoilerSensor.analyse() (with UnitStatus and PumpMonitor). The state machine sees only their results (successiveStops, transmissionFailure, levelDeviceSound, otherUnitsSound, ..., lowest/highestReachableLevel, waterLevel). This keeps the model's state small; the detection logic itself is not part of the verified model.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/sensor/BoilerSensor.java",
+          "line_range": "165-371",
+          "element": "analyse",
+          "requirement_ids": [
+            "SB-V8",
+            "SB-V9",
+            "SB-V10",
+            "SB-FR1",
+            "SB-FR2",
+            "SB-FR3",
+            "SB-FR4",
+            "SB-FR5",
+            "SB-Beh25"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Failure announcements and repair acknowledgements are sent outside the state machine",
+      "raw": "PUMP_FAILURE_DETECTION(n) ... STEAM_REPAIRED_ACKNOWLEDGEMENT depend on per-unit status, which a transition action cannot branch on. BoilerSensor.protocolMessages() produces them each cycle and ControlCycle appends them to the transmission. The controller sends MODE, PROGRAM_READY, VALVE, OPEN_PUMP and CLOSE_PUMP.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/sensor/BoilerSensor.java",
+          "line_range": "211-229",
+          "element": "protocolMessages",
+          "requirement_ids": [
+            "SB-FR6",
+            "SB-FR7",
+            "SB-DM8"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/ControlCycle.java",
+          "line_range": "27-39",
+          "element": "runCycle",
+          "requirement_ids": [
+            "SB-V3",
+            "SB-FR6",
+            "SB-FR7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Separate enums for controller modes and the MODE(m) payload",
+      "raw": "BoilerMode gives the states; OperatingMode is the datatype MODE(m) carries. Its literals are MODE_INITIALIZATION ... MODE_EMERGENCY_STOP so that no enum literal shares a name with a state (iteration 1: Dafny and Isabelle could not resolve the shared names).",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/BoilerMode.java",
+          "line_range": "1-10",
+          "element": "BoilerMode",
+          "requirement_ids": [
+            "SB-V2"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/domain/OperatingMode.java",
+          "line_range": "1-15",
+          "element": "OperatingMode",
+          "requirement_ids": [
+            "SB-DM10"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Regulation policy",
+      "raw": "Normal/degraded/rescue: below N1 open all four pumps, above N2 close all four, otherwise leave pumps as they are (rescue uses the midpoint of the level estimate). Initialization: below N1 opens all four pumps (SB-Beh5 says 'a pump'; four tolerate a pump failure), and the pumps are closed when PROGRAM_READY is first sent. A cycle that changes mode sends MODE only; regulation resumes the next cycle.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/SteamBoilerController.java",
+          "line_range": "73-239",
+          "element": "step",
+          "requirement_ids": [
+            "SB-Beh5",
+            "SB-Beh10",
+            "SB-Beh15",
+            "SB-Beh19"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Meaning of 'the level risks reaching M1 or M2'",
+      "raw": "Interpreted as: the lowest level reachable within the coming cycle (worst-case steam from U1/W, only pumps already past their start-up latency counted) is below M1, or the highest reachable level (least steam, defective pumps assumed to keep pouring, sound pumps closable at once) is above M2. Also true if the current bounds are already outside [M1, M2].",
+      "fix_directive": "None unless a different risk criterion is intended.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/SteamBoilerController.java",
+          "line_range": "56-57",
+          "element": "operatingEmergency",
+          "requirement_ids": [
+            "SB-V4",
+            "SB-Beh13",
+            "SB-Beh18",
+            "SB-Beh21"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/sensor/BoilerSensor.java",
+          "line_range": "263-326",
+          "element": "analyseReadings",
+          "requirement_ids": [
+            "SB-Beh13",
+            "SB-Beh25"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "'If the pump-controller units fail' in rescue mode",
+      "raw": "Read as: any pump controller out of order (the estimate needs reliable controller information). Also, on a degraded/normal -> rescue change while the steam device or a controller is already defective, the program enters rescue and leaves for emergency stop on the next cycle (SB-FR8 applies the rescue-only emergency conditions in rescue mode).",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/SteamBoilerController.java",
+          "line_range": "58",
+          "element": "rescueEmergency",
+          "requirement_ids": [
+            "SB-Beh21",
+            "SB-FR8"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "'Nothing else happens' before STEAM_BOILER_WAITING",
+      "raw": "Before STEAM_BOILER_WAITING the program only sends MODE(initialization); no failure detection, no level adjustment. Operator stop (SB-Beh23, 'in every mode') and transmission failure (SB-Beh9) still force emergency stop.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/SteamBoilerController.java",
+          "line_range": "73-146",
+          "element": "step (initialization block)",
+          "requirement_ids": [
+            "SB-Beh2",
+            "SB-Beh9",
+            "SB-Beh23"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "Which messages count as aberrant (transmission failure)",
+      "raw": "Aberrant: STEAM_BOILER_WAITING or PHYSICAL_UNITS_READY outside initialization; PHYSICAL_UNITS_READY before PROGRAM_READY was sent; a data message duplicated; a failure acknowledgement with no pending announcement; a repair notice for a unit not out of order. Missing: any of LEVEL, STEAM, PUMP_STATE(n), PUMP_CONTROL_STATE(n).",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/SteamBoilerController.java",
+          "line_range": "40-57",
+          "element": "readyAberrant, initCalm, operatingEmergency",
+          "requirement_ids": [
+            "SB-FR5",
+            "SB-Beh9",
+            "SB-Beh14"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/sensor/BoilerSensor.java",
+          "line_range": "165-190",
+          "element": "analyse",
+          "requirement_ids": [
+            "SB-FR5"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "Emergency stop is terminal, so MODE is not broadcast after it",
+      "raw": "SB-Beh22 ends the control task in emergency stop; MODE(emergency_stop) is sent on the cycle that enters it and ControlCycle runs no further cycles, so SB-Beh24 ('every cycle') is read as 'every cycle while the program runs'.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/SteamBoilerController.java",
+          "line_range": "241-243",
+          "element": "step (EMERGENCY_STOP block)",
+          "requirement_ids": [
+            "SB-Beh22",
+            "SB-Beh24"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "When the level dynamics check is suspended",
+      "raw": "The level-dynamics check (SB-FR3) is not applied while the evacuation valve is open (its drain rate is not given), on the first cycle after STEAM_BOILER_WAITING, and on the first reading after LEVEL_REPAIRED; the static range check [0, C] always applies.",
+      "fix_directive": "None.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/sensor/BoilerSensor.java",
+          "line_range": "349-371",
+          "element": "judgeLevel",
+          "requirement_ids": [
+            "SB-FR3",
+            "SB-DM7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Shape of the guards: ten boolean sensor queries, one operator per predicate",
+      "raw": "All numeric comparisons (level vs N1/N2, reachable levels vs M1/M2, steam vs zero, STOP count vs STOP_REPETITIONS) are made in BoilerSensor.analyse(). The guards call ten boolean queries, each returning a field set from literals, a single comparison or another boolean: haltDemanded (three STOPs or transmission failure), steamBoilerWaitingReceived, physicalUnitsReadyReceived, startupReadingsPlausible (steam zero and level device sound), levelDeviceSound, otherUnitsSound, estimateTrustworthy (steam device and pump controllers sound), dangerousLevelPredicted, levelBelowNormalBand, levelAboveNormalBand. Each predicate uses one operator; a predicate of the other operator is referenced only negated; no predicate is a bare alias of a sensor call. History: real-valued functions (it 1), an alias predicate (it 2) and queries whose returned value was computed by a compound expression (it 3, it 4) were typed real in Isabelle; positive predicate references were expanded without parentheses (it 3, Dafny); FDR4 never finished compiling.",
+      "fix_directive": "None in the Java. Possible pipeline defects for the operator: positive predicate references are expanded unparenthesised; the type of some boolean sensor functions is inferred as real from how the returned value is computed; an alias predicate is rendered under its own name.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/controller/SteamBoilerController.java",
+          "line_range": "36-71",
+          "element": "step (predicates)",
+          "requirement_ids": [
+            "SB-V4",
+            "SB-Beh10",
+            "SB-Beh13",
+            "SB-Beh23",
+            "SB-FR8"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/steam_boiler/sensor/BoilerSensor.java",
+          "line_range": "429-476",
+          "element": "summariseResults",
+          "requirement_ids": [
+            "SB-V9",
+            "SB-V10",
+            "SB-Beh3",
+            "SB-Beh13",
+            "SB-Beh21"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline; fix the Java from the phase reports."
+}

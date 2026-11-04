@@ -1,0 +1,333 @@
+diagram SteamBoilerController
+
+enumeration FlowObservation { WATER_FLOWS NO_WATER_FLOW }
+
+datatype LevelEstimate {
+	lowerBound : real
+	upperBound : real
+}
+
+datatype PumpControlReading {
+	controlledPump : int
+	observation : FlowObservation
+}
+
+datatype PumpReading {
+	pumpNumber : int
+	pumpRunning : boolean
+}
+
+datatype UnitStatus {
+	outOfOrder : boolean
+	detectionAcknowledged : boolean
+}
+
+interface Inputs {
+	event transmissionReceived
+}
+
+interface Outputs {
+	event modeMessage
+	event valve
+	event openPump : int
+	event closePump : int
+	event programReady
+}
+
+interface Sensors {
+	var PUMPS : int
+	var DT : real
+	var TOLERANCE : real
+	var stopPresent : boolean
+	var waitingPresent : boolean
+	var readyPresent : boolean
+	var levelSeen : boolean
+	var steamSeen : boolean
+	var levelValue : real
+	var steamValue : real
+	var levelRepairedSeen : boolean
+	var steamRepairedSeen : boolean
+	var levelAckSeen : boolean
+	var steamAckSeen : boolean
+	var malformed : boolean
+	var levelJustRepaired : boolean
+	var stopCount : int
+	var transmissionFailed : boolean
+	var lastLevel : real
+	var lastSteam : real
+	var trustedSteam : real
+	var steamTrusted : boolean
+	var levelGrounded : boolean
+	var throughput : real
+	var levelOutOfOrder : boolean
+	var steamOutOfOrder : boolean
+	var failedPumps : int
+	var failedControls : int
+	var currentLevel : real
+	var minimumNext : real
+	var maximumNext : real
+	var consecutiveStops : int
+	var transmissionLost : boolean
+	var readyReceived : boolean
+	var waitingReceived : boolean
+	var steamRate : real
+	var levelFailed : boolean
+	var steamFailed : boolean
+	var failedPumpCount : int
+	var failedPumpControlCount : int
+	var waterLevel : real
+	var minimumLevelNextCycle : real
+	var maximumLevelNextCycle : real
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+	var boilerWaiting : boolean = false
+	var valveOpen : boolean = false
+	var readyAnnounced : boolean = false
+}
+
+interface Constants {
+	const stopLimit : real = 3
+	const maxNormal : real = 600
+	const minNormal : real = 400
+	const minLimit : real = 100
+	const maxLimit : real = 900
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state RESCUE {
+		entry send modeMessage
+	}
+	state DEGRADED {
+		entry send modeMessage
+	}
+	state NORMAL {
+		entry send modeMessage
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send modeMessage
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed
+	}
+	transition t2 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ not ( boilerWaiting \/ waitingReceived )
+		action send modeMessage
+	}
+	transition t3 {
+		from INITIALIZATION
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ (boilerWaiting \/ waitingReceived) /\ readyReceived /\ not ( steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0 )
+	}
+	transition t4 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ (boilerWaiting \/ waitingReceived) /\ readyReceived /\ (steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0)
+	}
+	transition t5 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ (boilerWaiting \/ waitingReceived) /\ not ( readyReceived ) /\ waterLevel > maxNormal /\ not ( valveOpen )
+		action boilerWaiting = true ; valveOpen = true ; send modeMessage ; send valve
+	}
+	transition t6 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ (boilerWaiting \/ waitingReceived) /\ not ( readyReceived ) /\ waterLevel > maxNormal /\ valveOpen
+		action boilerWaiting = true ; send modeMessage
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ (boilerWaiting \/ waitingReceived) /\ not ( readyReceived ) /\ waterLevel < minNormal /\ valveOpen
+		action boilerWaiting = true ; valveOpen = false ; send modeMessage ; send valve ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ (boilerWaiting \/ waitingReceived) /\ not ( readyReceived ) /\ waterLevel < minNormal /\ not ( valveOpen )
+		action boilerWaiting = true ; send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ (boilerWaiting \/ waitingReceived) /\ not ( readyReceived ) /\ not ( waterLevel < minNormal ) /\ not ( waterLevel > maxNormal ) /\ valveOpen
+		action boilerWaiting = true ; valveOpen = false ; readyAnnounced = true ; send modeMessage ; send valve ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ readyReceived /\ not ( readyAnnounced ) \/ (boilerWaiting \/ waitingReceived) /\ steamRate != 0 \/ (boilerWaiting \/ waitingReceived) /\ levelFailed ) /\ (boilerWaiting \/ waitingReceived) /\ not ( readyReceived ) /\ not ( waterLevel < minNormal ) /\ not ( waterLevel > maxNormal ) /\ not ( valveOpen )
+		action boilerWaiting = true ; readyAnnounced = true ; send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4 ; send programReady
+	}
+	transition t11 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0)
+	}
+	transition t12 {
+		from NORMAL
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ levelFailed
+	}
+	transition t13 {
+		from NORMAL
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ not ( levelFailed ) /\ (steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0)
+	}
+	transition t14 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ not ( levelFailed ) /\ not ( steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0 ) /\ waterLevel < minNormal
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t15 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ not ( levelFailed ) /\ not ( steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0 ) /\ waterLevel > maxNormal
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t16 {
+		from NORMAL
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ not ( levelFailed ) /\ not ( steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0 ) /\ not ( waterLevel < minNormal ) /\ not ( waterLevel > maxNormal )
+	}
+	transition t17 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0)
+	}
+	transition t18 {
+		from DEGRADED
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ levelFailed
+	}
+	transition t19 {
+		from DEGRADED
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ not ( levelFailed ) /\ not ( steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0 )
+	}
+	transition t20 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ not ( levelFailed ) /\ (steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0) /\ waterLevel < minNormal
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t21 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ not ( levelFailed ) /\ (steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0) /\ waterLevel > maxNormal
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t22 {
+		from DEGRADED
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) ) /\ not ( levelFailed ) /\ (steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0) /\ not ( waterLevel < minNormal ) /\ not ( waterLevel > maxNormal )
+	}
+	transition t23 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger transmissionReceived
+		condition consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) \/ steamFailed \/ failedPumpControlCount > 0
+	}
+	transition t24 {
+		from RESCUE
+		to NORMAL
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) \/ steamFailed \/ failedPumpControlCount > 0 ) /\ not ( levelFailed ) /\ not ( steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0 )
+	}
+	transition t25 {
+		from RESCUE
+		to DEGRADED
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) \/ steamFailed \/ failedPumpControlCount > 0 ) /\ not ( levelFailed ) /\ (steamFailed \/ failedPumpCount > 0 \/ failedPumpControlCount > 0)
+	}
+	transition t26 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) \/ steamFailed \/ failedPumpControlCount > 0 ) /\ levelFailed /\ waterLevel < minNormal
+		action send modeMessage ; openPump ! 1 ; openPump ! 2 ; openPump ! 3 ; openPump ! 4
+	}
+	transition t27 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) \/ steamFailed \/ failedPumpControlCount > 0 ) /\ levelFailed /\ waterLevel > maxNormal
+		action send modeMessage ; closePump ! 1 ; closePump ! 2 ; closePump ! 3 ; closePump ! 4
+	}
+	transition t28 {
+		from RESCUE
+		to RESCUE
+		trigger transmissionReceived
+		condition not ( consecutiveStops >= stopLimit \/ transmissionLost \/ waitingReceived \/ readyReceived \/ minimumLevelNextCycle < minLimit \/ maximumLevelNextCycle > maxLimit \/ levelFailed /\ (steamFailed \/ failedPumpControlCount > 0) \/ steamFailed \/ failedPumpControlCount > 0 ) /\ levelFailed /\ not ( waterLevel < minNormal ) /\ not ( waterLevel > maxNormal )
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on transmissionReceived to stm_ref0 on transmissionReceived
+	connection stm_ref0 on modeMessage to SteamBoilerController_Ctrl on modeMessage
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event transmissionReceived
+		event modeMessage
+		event valve
+		event openPump : int
+		event closePump : int
+		event programReady
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on transmissionReceived to ctrl_ref0 on transmissionReceived
+	connection ctrl_ref0 on modeMessage to SteamBoilerController_Platform on modeMessage
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+}
+

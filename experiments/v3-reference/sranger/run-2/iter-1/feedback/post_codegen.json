@@ -1,0 +1,194 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 23 requirements implemented in 9 files under sranger/; single controller SRangerController with modes MOVING, TURNING, FINAL and 7 transitions (one per SR-Beh requirement, SR-DC1). Ten decisions the requirements did not settle are listed below.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Large default distance when no IR reading is available: 100.0 m",
+      "raw": "SR-DM5 asks for 'a large default value' when no reading is available, without a number.",
+      "fix_directive": "Sensor.NO_READING_DISTANCE = 100.0 m (200x obstacleThreshold, beyond any IR range). Replace it if the platform specifies a value.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_range": "11-13",
+          "element": "NO_READING_DISTANCE",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Negative or NaN IR measurements are treated as no reading",
+      "raw": "SR-DM5/SR-SF1 say distance() is non-negative but not what to do with an invalid measurement.",
+      "fix_directive": "Sensor.update stores the reading only if reading >= 0.0; otherwise it stores the no-reading default, so invalid data never triggers obstacle detection (consistent with SR-DM5's intent).",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Sensor.java",
+          "line_range": "19-25",
+          "element": "update",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Moving -> Turning: obstacle event and obstacleDetected guard combined",
+      "raw": "SR-Beh2 names the obstacle event as the trigger; SR-GP1 names obstacleDetected (distance <= obstacleThreshold) as the guard of the same transition.",
+      "fix_directive": "Implemented as trigger obstacle with condition obstacleDetected; an obstacle event whose distance reading is above the threshold is ignored.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": "37",
+          "element": "obstacleDetected",
+          "requirement_ids": [
+            "SR-GP1"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": "45-48",
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Order of the clock reset and Move(0, turnVel) on entering Turning",
+      "raw": "SR-Beh2 lists 'set clockResetTime ... and issue Move(0, turnVel)'; SR-FR2 lists the Move first.",
+      "fix_directive": "clockResetTime is set first, then Move(0, turnVel) is issued (SR-Beh2 order, the transition requirement).",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": "46-48",
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-FR2",
+            "SR-Var1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Turning: priority endTask > turnDurationElapsed > tick",
+      "raw": "All requirements have priority 1; the Turning transitions SR-Beh5/6/7 can be enabled together.",
+      "fix_directive": "endTask (operator shutdown) first; the autonomous return to Moving before the tick self-loop, which conjoins !turnDurationElapsed (rules 4b), so a tick every cycle cannot hold the robot in Turning.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": "54-62",
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Initial Move(moveVel, 0) is issued by the constructor",
+      "raw": "SR-FR1/SR-Beh1: the controller starts in Moving and entering Moving issues Move(moveVel, 0).",
+      "fix_directive": "The constructor issues the power-up Move; step() issues it on Turning -> Moving. The extracted initial transition may not carry this action.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": "22-27",
+          "element": "SRangerController",
+          "requirement_ids": [
+            "SR-FR1",
+            "SR-Beh1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "obstacleThreshold = 0.5 is rounded up to 1 in the model's constants",
+      "raw": "Rules 2: the constants interface rounds a fractional constant up to the next integer.",
+      "fix_directive": "The Java guard uses 0.5 exactly; in the model obstacleDetected reads distance() <= 1. The other constants (1.0, 2.0, 2.0) are integral.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerConstants.java",
+          "line_range": "17",
+          "element": "OBSTACLE_THRESHOLD",
+          "requirement_ids": [
+            "SR-DM2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move carries two real record components",
+      "raw": "SR-DM4: one output event Move carrying a linear and an angular velocity.",
+      "fix_directive": "OutputEvent.Move(double lv, double av), issued via actuator.apply(new OutputEvent.Move(...)); no wrapper datatype.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/event/OutputEvent.java",
+          "line_range": "11",
+          "element": "Move",
+          "requirement_ids": [
+            "SR-DM4",
+            "SR-DM6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Time source is a Clock class held in a field named timer",
+      "raw": "SR-Var1/SR-GP2 need the current time; 'clock' is a RoboChart reserved word.",
+      "fix_directive": "sranger.sensor.Clock (now(), advance(seconds)); turnDurationElapsed = timer.now() - clockResetTime >= TURN_DURATION, i.e. since(clockResetTime) >= TURN_DURATION.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/sensor/Clock.java",
+          "line_range": "8-24",
+          "element": "Clock",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-GP2"
+          ]
+        },
+        {
+          "java_file": "src/main/java/sranger/controller/SRangerController.java",
+          "line_range": "38",
+          "element": "turnDurationElapsed",
+          "requirement_ids": [
+            "SR-GP2"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Actuator's last command before power-up is Move(0, 0)",
+      "raw": "SR-DM6 does not say what the actuator holds before the first command.",
+      "fix_directive": "Initialised to a stop, Move(0, 0); the controller's constructor overwrites it immediately.",
+      "java_trace": [
+        {
+          "java_file": "src/main/java/sranger/actuator/Actuator.java",
+          "line_range": "11-13",
+          "element": "lastCommand",
+          "requirement_ids": [
+            "SR-DM6"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline; revisit the flagged choices if a verifier or the vacuity audit points at them."
+}

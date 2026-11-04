@@ -1,0 +1,38 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 01-11-2026 23:22:30
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "SteamBoilerController.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate SteamBoilerController
+P_SteamBoilerController = let
+	id__ = 0
+	
+	
+	
+within
+	SteamBoilerController::O__(
+		id__
+	)
+assert P_SteamBoilerController :[deadlock-free]	
+assert P_SteamBoilerController;RUN({r__}) :[deadlock-free]
+assert P_SteamBoilerController :[deterministic]
+assert P_SteamBoilerController :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_SteamBoilerController[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_SteamBoilerController

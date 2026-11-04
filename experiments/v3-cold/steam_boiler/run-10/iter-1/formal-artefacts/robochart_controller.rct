@@ -1,0 +1,372 @@
+diagram SteamBoilerController
+
+enumeration WaterFlow { WATER_NOT_FLOWING WATER_FLOWING }
+
+datatype FlowReport {
+	controllerIndex : int
+	flow : WaterFlow
+}
+
+datatype PumpReport {
+	pumpIndex : int
+	pumpOn : boolean
+}
+
+interface Inputs {
+	event cycleStart
+}
+
+interface Outputs {
+	event modeReport
+	event closePump : int
+	event valve
+	event openPump : int
+	event programReady
+}
+
+interface Sensors {
+	var successiveStops : int
+	var transmissionFailure : boolean
+	var waitingSignalled : boolean
+	var unitsReadyReceived : boolean
+	var valveOpen : boolean
+	var levelDeviceFailed : boolean
+	var steamDeviceFailed : boolean
+	var pumpControlFailed : boolean
+	var allUnitsSound : boolean
+	var waterLevel : real
+	var steamRate : real
+	var estimatedLevel : real
+	var predictedMinimumLevel : real
+	var predictedMaximumLevel : real
+	var plantWaiting : boolean
+	var transmissionLost : boolean
+	var levelUnitDown : boolean
+	var unitsReadyArrived : boolean
+	var everyUnitSound : boolean
+	var valveIsOpen : boolean
+	var steamUnitDown : boolean
+	var controlUnitDown : boolean
+}
+
+interface Actuators {
+}
+
+interface SteamBoilerController_State {
+}
+
+interface Constants {
+	const stopRepetitions : real = 3
+	const steamAtRest : real = 0
+	const levelN2 : real = 600
+	const levelN1 : real = 400
+	const levelM1 : real = 100
+	const levelM2 : real = 900
+}
+
+stm SteamBoilerController {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	state NORMAL {
+		entry send modeReport
+	}
+	state INITIALIZATION {
+	}
+	state EMERGENCY_STOP {
+		entry send modeReport
+	}
+	state DEGRADED {
+		entry send modeReport
+	}
+	state RESCUE {
+		entry send modeReport
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to INITIALIZATION
+	}
+	transition t1 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition successiveStops >= stopRepetitions
+	}
+	transition t2 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition plantWaiting /\ transmissionLost /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t3 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition plantWaiting /\ steamRate != steamAtRest /\ not ( transmissionLost ) /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t4 {
+		from INITIALIZATION
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition plantWaiting /\ levelUnitDown /\ not ( steamRate != steamAtRest ) /\ not ( transmissionLost ) /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t5 {
+		from INITIALIZATION
+		to NORMAL
+		trigger cycleStart
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( steamRate != steamAtRest ) /\ not ( levelUnitDown ) /\ unitsReadyArrived /\ everyUnitSound
+	}
+	transition t6 {
+		from INITIALIZATION
+		to DEGRADED
+		trigger cycleStart
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( steamRate != steamAtRest ) /\ not ( levelUnitDown ) /\ unitsReadyArrived /\ not ( everyUnitSound )
+	}
+	transition t7 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger cycleStart
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( steamRate != steamAtRest ) /\ not ( levelUnitDown ) /\ not ( unitsReadyArrived ) /\ waterLevel > levelN2 /\ not ( valveIsOpen )
+		action send modeReport ; closePump ! 0 ; send valve
+	}
+	transition t8 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger cycleStart
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( steamRate != steamAtRest ) /\ not ( levelUnitDown ) /\ not ( unitsReadyArrived ) /\ waterLevel > levelN2 /\ valveIsOpen
+		action send modeReport
+	}
+	transition t9 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger cycleStart
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( steamRate != steamAtRest ) /\ not ( levelUnitDown ) /\ not ( unitsReadyArrived ) /\ waterLevel < levelN1 /\ not ( waterLevel > levelN2 ) /\ valveIsOpen
+		action send modeReport ; send valve ; openPump ! 0
+	}
+	transition t10 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger cycleStart
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( steamRate != steamAtRest ) /\ not ( levelUnitDown ) /\ not ( unitsReadyArrived ) /\ waterLevel < levelN1 /\ not ( waterLevel > levelN2 ) /\ not ( valveIsOpen )
+		action send modeReport ; openPump ! 0
+	}
+	transition t11 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger cycleStart
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( steamRate != steamAtRest ) /\ not ( levelUnitDown ) /\ not ( unitsReadyArrived ) /\ not ( waterLevel > levelN2 ) /\ not ( waterLevel < levelN1 ) /\ valveIsOpen
+		action send modeReport ; send valve ; closePump ! 0 ; send programReady
+	}
+	transition t12 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger cycleStart
+		condition plantWaiting /\ not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( steamRate != steamAtRest ) /\ not ( levelUnitDown ) /\ not ( unitsReadyArrived ) /\ not ( waterLevel > levelN2 ) /\ not ( waterLevel < levelN1 ) /\ not ( valveIsOpen )
+		action send modeReport ; closePump ! 0 ; send programReady
+	}
+	transition t13 {
+		from INITIALIZATION
+		to INITIALIZATION
+		trigger cycleStart
+		condition not ( plantWaiting ) /\ not ( successiveStops >= stopRepetitions )
+		action send modeReport
+	}
+	transition t14 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition successiveStops >= stopRepetitions
+	}
+	transition t15 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition transmissionLost /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t16 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition (predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2) /\ not ( transmissionLost ) /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t17 {
+		from NORMAL
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ levelUnitDown /\ (steamUnitDown \/ controlUnitDown)
+	}
+	transition t18 {
+		from NORMAL
+		to RESCUE
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ levelUnitDown /\ not ( steamUnitDown \/ controlUnitDown )
+	}
+	transition t19 {
+		from NORMAL
+		to DEGRADED
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( levelUnitDown ) /\ not ( everyUnitSound )
+	}
+	transition t20 {
+		from NORMAL
+		to NORMAL
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( levelUnitDown ) /\ everyUnitSound /\ waterLevel < levelN1 /\ not ( waterLevel > levelN2 )
+		action send modeReport ; openPump ! 0 ; openPump ! 1 ; openPump ! 2 ; openPump ! 3
+	}
+	transition t21 {
+		from NORMAL
+		to NORMAL
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( levelUnitDown ) /\ everyUnitSound /\ waterLevel > levelN2
+		action send modeReport ; closePump ! 0 ; closePump ! 1 ; closePump ! 2 ; closePump ! 3
+	}
+	transition t22 {
+		from NORMAL
+		to NORMAL
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( levelUnitDown ) /\ everyUnitSound /\ not ( waterLevel > levelN2 ) /\ not ( waterLevel < levelN1 )
+	}
+	transition t23 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition successiveStops >= stopRepetitions
+	}
+	transition t24 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition transmissionLost /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t25 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition (predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2) /\ not ( transmissionLost ) /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t26 {
+		from DEGRADED
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ levelUnitDown /\ (steamUnitDown \/ controlUnitDown)
+	}
+	transition t27 {
+		from DEGRADED
+		to RESCUE
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ levelUnitDown /\ not ( steamUnitDown \/ controlUnitDown )
+	}
+	transition t28 {
+		from DEGRADED
+		to NORMAL
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( levelUnitDown ) /\ everyUnitSound
+	}
+	transition t29 {
+		from DEGRADED
+		to DEGRADED
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( levelUnitDown ) /\ not ( everyUnitSound ) /\ waterLevel < levelN1 /\ not ( waterLevel > levelN2 )
+		action send modeReport ; openPump ! 0 ; openPump ! 1 ; openPump ! 2 ; openPump ! 3
+	}
+	transition t30 {
+		from DEGRADED
+		to DEGRADED
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( levelUnitDown ) /\ not ( everyUnitSound ) /\ waterLevel > levelN2
+		action send modeReport ; closePump ! 0 ; closePump ! 1 ; closePump ! 2 ; closePump ! 3
+	}
+	transition t31 {
+		from DEGRADED
+		to DEGRADED
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( levelUnitDown ) /\ not ( everyUnitSound ) /\ not ( waterLevel > levelN2 ) /\ not ( waterLevel < levelN1 )
+	}
+	transition t32 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition successiveStops >= stopRepetitions
+	}
+	transition t33 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition transmissionLost /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t34 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition (predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2) /\ not ( transmissionLost ) /\ not ( successiveStops >= stopRepetitions )
+	}
+	transition t35 {
+		from RESCUE
+		to EMERGENCY_STOP
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ (steamUnitDown \/ controlUnitDown)
+	}
+	transition t36 {
+		from RESCUE
+		to NORMAL
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( steamUnitDown \/ controlUnitDown ) /\ not ( levelUnitDown ) /\ everyUnitSound
+	}
+	transition t37 {
+		from RESCUE
+		to DEGRADED
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( steamUnitDown \/ controlUnitDown ) /\ not ( levelUnitDown ) /\ not ( everyUnitSound )
+	}
+	transition t38 {
+		from RESCUE
+		to RESCUE
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( steamUnitDown \/ controlUnitDown ) /\ levelUnitDown /\ estimatedLevel < levelN1 /\ not ( estimatedLevel > levelN2 )
+		action send modeReport ; openPump ! 0 ; openPump ! 1 ; openPump ! 2 ; openPump ! 3
+	}
+	transition t39 {
+		from RESCUE
+		to RESCUE
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( steamUnitDown \/ controlUnitDown ) /\ levelUnitDown /\ estimatedLevel > levelN2
+		action send modeReport ; closePump ! 0 ; closePump ! 1 ; closePump ! 2 ; closePump ! 3
+	}
+	transition t40 {
+		from RESCUE
+		to RESCUE
+		trigger cycleStart
+		condition not ( successiveStops >= stopRepetitions ) /\ not ( transmissionLost ) /\ not ( predictedMinimumLevel <= levelM1 \/ predictedMaximumLevel >= levelM2 ) /\ not ( steamUnitDown \/ controlUnitDown ) /\ levelUnitDown /\ not ( estimatedLevel > levelN2 ) /\ not ( estimatedLevel < levelN1 )
+	}
+}
+
+controller SteamBoilerController_Ctrl {
+	uses Inputs uses Outputs requires SteamBoilerController_State requires Constants requires Sensors
+	sref stm_ref0 = SteamBoilerController
+	connection SteamBoilerController_Ctrl on cycleStart to stm_ref0 on cycleStart
+	connection stm_ref0 on modeReport to SteamBoilerController_Ctrl on modeReport
+	connection stm_ref0 on closePump to SteamBoilerController_Ctrl on closePump
+	connection stm_ref0 on valve to SteamBoilerController_Ctrl on valve
+	connection stm_ref0 on openPump to SteamBoilerController_Ctrl on openPump
+	connection stm_ref0 on programReady to SteamBoilerController_Ctrl on programReady
+}
+
+module SteamBoilerController_Module {
+	robotic platform SteamBoilerController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event cycleStart
+		event modeReport
+		event closePump : int
+		event valve
+		event openPump : int
+		event programReady
+	}
+	cref ctrl_ref0 = SteamBoilerController_Ctrl
+	connection SteamBoilerController_Platform on cycleStart to ctrl_ref0 on cycleStart
+	connection ctrl_ref0 on modeReport to SteamBoilerController_Platform on modeReport
+	connection ctrl_ref0 on closePump to SteamBoilerController_Platform on closePump
+	connection ctrl_ref0 on valve to SteamBoilerController_Platform on valve
+	connection ctrl_ref0 on openPump to SteamBoilerController_Platform on openPump
+	connection ctrl_ref0 on programReady to SteamBoilerController_Platform on programReady
+}
+

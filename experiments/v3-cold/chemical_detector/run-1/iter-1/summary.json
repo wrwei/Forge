@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 1,
+  "iteration": 1,
+  "recorded_utc": "2026-10-29 12:55:13",
+  "infrastructure_sha": "5280e26e828cec41338485a44f71433436c7b55e",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c-run1-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run1",
+  "files": {
+    "java": 19,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 670,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 1 \u2014 chemical_detector\n\n## What was written\n\n19 Java files under `chemical_detector/`. There are two controllers, each with\nits own `step`. `GasAnalysisController` has modes Reading, Analysis, NoGas,\nGasDetected and Concluded. `MovementController` has modes Waiting, Going, Found,\nAvoiding, TryingAgain, AvoidingAgain, GettingOut and Halted.\n\nThe other files: domain enums and records; sealed `InputEvent`/`OutputEvent`;\n`GasSensorArray` (analysis, intensity, location, goreq); `OdometerSensor`;\n`Clock`; `VehicleActuator`; `CommandLink` (signals between the controllers);\n`ChemicalDetector` (wiring); `DetectorConstants`. All 81 requirements are traced.\n\n## Decisions the requirements left open\n\n- **Constants:** THR=5.0, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=2,\n  STUCK_DIST=2.0, OUT_PERIOD=1. All are whole numbers, so model rounding\n  changes nothing. HALT_VELOCITY=0.0 is used for halting.\n- **Types:** Intensity is a real, so thr is numeric. The GasSensor record is\n  named `GasSample`, because \"sensor\" in a name marks a sensor service. Chem is\n  a record with a nat id.\n- **analysis:** a sample counts if it is of the target chemical (a constructor\n  parameter) and has positive intensity. The peak is taken over all samples.\n  Positions 1\u20134 map to Left/Right/Back/Front, repeating; ties go to the first.\n  An empty reading gives 0.0 or Front.\n- **Operations:** the four operations are actuator methods, not `compute()`\n  classes. The odometer is a sensor method, not an event.\n- **Shared events:** turn, stop and resume are identically named OutputEvent\n  (sent) and InputEvent (received) records.\n- **randomWalk** runs on every entry to Waiting except the initial one.\n- **Final states:** Concluded is terminal; Found \u2192 Halted is unconditional.\n- **Initial values:** sts=noGas, ins=0, anl=a=Front, l=front, d0=d1=0.\n\n## Unresolved\n\nWhether the extractor pairs the duplicated records into shared events, and\nwhether it accepts mode blocks with no inner `if` (NoGas, Found). Details are\nin `post_codegen.md`."
+}

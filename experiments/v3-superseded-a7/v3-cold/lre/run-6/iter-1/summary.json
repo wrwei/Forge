@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 6,
+  "iteration": 1,
+  "recorded_utc": "2026-10-30 15:53:46",
+  "infrastructure_sha": "2db4c03116e00b82c1c4186c171a50ad26574e33",
+  "worktree": "/Users/ranwei/Gitee/forge-v3c-run6-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run6",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 621,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# LRE pass 6 \u2014 iteration 1 summary\n\n**Written.** 15 Java files under `lre`:\n- the `RoboChartType` annotation, `LreConstants` (four thresholds, each 1.0), and sealed `InputEvent` (6 records) and `OutputEvent` (2);\n- `Obstacle`, `ObstacleRegister` and `Sensor` (distance functions, field accessors, closest-index selection);\n- `Actuator.apply`;\n- five operations (CalcVel, CalcCStc, CheckOPEZ, CalcCDyn, CalcCPA), whose fields hold Var1\u2013Var8;\n- `LreMode` and `LreController.step`. `step` runs the five `compute()` calls, then 15 named predicates, then one block per mode with 18 transitions.\n\nAlso written: `result_codegen.json` (all 51 requirements) and `post_codegen.{md,json}`. Compiles cleanly; a scratch harness outside the project checked transitions and CPA arithmetic. No Java existed beforehand.\n\n**Decisions the requirements did not settle**\n- \"No obstacle\" is index 0, not \u22121, because nat cannot be negative. Obstacles are stored from index 1.\n- The safe large distance is 1000000.0 m. Sensor readings and actuator outputs start at 0.0.\n- DM5 (accessors return zero) contradicts OP5 (\"large-distance defaults\"). Taken literally, a zero position would give a phantom CAM. Resolved by including vdist (large by default) in cda.\n- CPA: horizontal relative motion with constant vertical separation. Obstacle velocities are read as world-frame. A 0.000001 term in the denominator avoids division by zero.\n- CheckOPEZ and CalcCPA call the sensor's closest-index functions directly, because the profile does not let `compute()` read another operation.\n- Priority: operator inputs first, then inOpez, collision, hvel, vvel, default-vertical. Beh11 precedes Beh10, whose guard contains Beh11's.\n- The HCM entry speed is 0 m/s (FR3), not the description's 0.1 m/s.\n- Beh4's \"> 1\" and the 1 m/s thresholds are literals.\n- vvel is the signed rate of climb.\n\n**Unresolved.** CAM issues no evasive output: FR4 names none. DC1 is read as \"one transition per Beh requirement\", although MOM has five transitions with no trigger."
+}

@@ -1,0 +1,1302 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 03-11-2026 09:12:58
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+	module SteamBoilerController_Ctrl
+		shared_variable_events = {|
+			set_EXT_steamBoilerWaitingSeen,
+			set_EXT_readyAnnounced,
+			set_EXT_valveOpen,
+			set_EXT_pumpsOpen,
+			set_EXT_levelDeviceOutOfOrder,
+			set_EXT_otherUnitOutOfOrder,
+			set_EXT_levelTooLow,
+			set_EXT_levelTooHigh,
+			set_EXT_otherUnitFailed,
+			set_EXT_levelDeviceFailed
+		|}
+		
+	exports
+		transparent diamond
+		transparent sbisim
+		transparent dbisim
+		transparent chase
+
+		-- declaring controller events
+		channel stopConfirmed: InOut
+		channel transmissionFault: InOut
+		channel startUpFailure: InOut
+		channel steamBoilerWaiting: InOut
+		channel physicalUnitsReady: InOut
+		channel transmission: InOut
+		channel levelRisk: InOut
+		channel estimateUnreliable: InOut
+		channel programReady: InOut
+		channel valve: InOut
+		
+		channel set_steamBoilerWaitingSeen: core_boolean
+		channel get_steamBoilerWaitingSeen: core_boolean
+		channel set_readyAnnounced: core_boolean
+		channel get_readyAnnounced: core_boolean
+		channel set_valveOpen: core_boolean
+		channel get_valveOpen: core_boolean
+		channel set_pumpsOpen: core_boolean
+		channel get_pumpsOpen: core_boolean
+		channel set_levelDeviceOutOfOrder: core_boolean
+		channel get_levelDeviceOutOfOrder: core_boolean
+		channel set_otherUnitOutOfOrder: core_boolean
+		channel get_otherUnitOutOfOrder: core_boolean
+		channel set_levelTooLow: core_boolean
+		channel get_levelTooLow: core_boolean
+		channel set_levelTooHigh: core_boolean
+		channel get_levelTooHigh: core_boolean
+		channel set_otherUnitFailed: core_boolean
+		channel get_otherUnitFailed: core_boolean
+		channel set_levelDeviceFailed: core_boolean
+		channel get_levelDeviceFailed: core_boolean
+		
+		channel set_EXT_steamBoilerWaitingSeen: core_boolean
+		channel set_EXT_readyAnnounced: core_boolean
+		channel set_EXT_valveOpen: core_boolean
+		channel set_EXT_pumpsOpen: core_boolean
+		channel set_EXT_levelDeviceOutOfOrder: core_boolean
+		channel set_EXT_otherUnitOutOfOrder: core_boolean
+		channel set_EXT_levelTooLow: core_boolean
+		channel set_EXT_levelTooHigh: core_boolean
+		channel set_EXT_otherUnitFailed: core_boolean
+		channel set_EXT_levelDeviceFailed: core_boolean
+		
+		-- declaring call and ret events for undefined operations
+		
+		-- declaring controller termination channel
+		channel terminate
+		
+		-- channel set with all visible events
+		sem__events = {|
+			terminate
+		,	stopConfirmed,
+			transmissionFault,
+			startUpFailure,
+			steamBoilerWaiting,
+			physicalUnitsReady,
+			transmission,
+			levelRisk,
+			estimateUnreliable,
+			programReady,
+			valve
+		,	set_EXT_steamBoilerWaitingSeen, set_steamBoilerWaitingSeen,
+			set_EXT_readyAnnounced, set_readyAnnounced,
+			set_EXT_valveOpen, set_valveOpen,
+			set_EXT_pumpsOpen, set_pumpsOpen,
+			set_EXT_levelDeviceOutOfOrder, set_levelDeviceOutOfOrder,
+			set_EXT_otherUnitOutOfOrder, set_otherUnitOutOfOrder,
+			set_EXT_levelTooLow, set_levelTooLow,
+			set_EXT_levelTooHigh, set_levelTooHigh,
+			set_EXT_otherUnitFailed, set_otherUnitFailed,
+			set_EXT_levelDeviceFailed, set_levelDeviceFailed
+		|}
+
+		-- defined operations
+	
+		-- declaring machines
+		module stm_ref0
+		exports
+			transparent diamond
+			transparent sbisim
+			transparent dbisim
+			transparent chase
+		
+			-- Transition identifiers
+			-- declaring identifiers of transitions
+			datatype NIDS = 
+			              NID_EMERGENCY_STOP|
+			              NID_RESCUE|
+			              NID_DEGRADED|
+			              NID_NORMAL|
+			              NID_INITIALIZATION|
+			              NID_i0
+			
+			channel internal__ : NIDS
+			
+			-- Flow channels		
+			channel interrupt
+			channel exited
+			channel exit
+			channel terminate
+			
+			-- Variable channels
+			channel get_steamBoilerWaitingSeen, set_steamBoilerWaitingSeen, setL_steamBoilerWaitingSeen, setR_steamBoilerWaitingSeen: core_boolean
+			channel get_readyAnnounced, set_readyAnnounced, setL_readyAnnounced, setR_readyAnnounced: core_boolean
+			channel get_valveOpen, set_valveOpen, setL_valveOpen, setR_valveOpen: core_boolean
+			channel get_pumpsOpen, set_pumpsOpen, setL_pumpsOpen, setR_pumpsOpen: core_boolean
+			channel get_levelDeviceOutOfOrder, set_levelDeviceOutOfOrder, setL_levelDeviceOutOfOrder, setR_levelDeviceOutOfOrder: core_boolean
+			channel get_otherUnitOutOfOrder, set_otherUnitOutOfOrder, setL_otherUnitOutOfOrder, setR_otherUnitOutOfOrder: core_boolean
+			channel get_levelTooLow, set_levelTooLow, setL_levelTooLow, setR_levelTooLow: core_boolean
+			channel get_levelTooHigh, set_levelTooHigh, setL_levelTooHigh, setR_levelTooHigh: core_boolean
+			channel get_otherUnitFailed, set_otherUnitFailed, setL_otherUnitFailed, setR_otherUnitFailed: core_boolean
+			channel get_levelDeviceFailed, set_levelDeviceFailed, setL_levelDeviceFailed, setR_levelDeviceFailed: core_boolean
+			
+			-- Shared variable channels
+			channel set_EXT_steamBoilerWaitingSeen: core_boolean
+			channel set_EXT_readyAnnounced: core_boolean
+			channel set_EXT_valveOpen: core_boolean
+			channel set_EXT_pumpsOpen: core_boolean
+			channel set_EXT_levelDeviceOutOfOrder: core_boolean
+			channel set_EXT_otherUnitOutOfOrder: core_boolean
+			channel set_EXT_levelTooLow: core_boolean
+			channel set_EXT_levelTooHigh: core_boolean
+			channel set_EXT_otherUnitFailed: core_boolean
+			channel set_EXT_levelDeviceFailed: core_boolean
+			
+			-- Local variable channels for defined operations that are required by the state machine
+			
+			-- Declaring state machine events
+			channel stopConfirmed__: NIDS.InOut
+			channel stopConfirmed: InOut
+			channel transmissionFault__: NIDS.InOut
+			channel transmissionFault: InOut
+			channel startUpFailure__: NIDS.InOut
+			channel startUpFailure: InOut
+			channel steamBoilerWaiting__: NIDS.InOut
+			channel steamBoilerWaiting: InOut
+			channel physicalUnitsReady__: NIDS.InOut
+			channel physicalUnitsReady: InOut
+			channel transmission__: NIDS.InOut
+			channel transmission: InOut
+			channel levelRisk__: NIDS.InOut
+			channel levelRisk: InOut
+			channel estimateUnreliable__: NIDS.InOut
+			channel estimateUnreliable: InOut
+			channel programReady__: NIDS.InOut
+			channel programReady: InOut
+			channel valve__: NIDS.InOut
+			channel valve: InOut
+			
+			-- Declaring call and ret events for undefined operations
+			
+			enterSS = {|
+			EMERGENCY_STOP::enter,
+			RESCUE::enter,
+			DEGRADED::enter,
+			NORMAL::enter,
+			INITIALIZATION::enter,
+			i0::enter
+			|}
+			
+			enteredSS = 	{|
+			EMERGENCY_STOP::entered,
+			RESCUE::entered,
+			DEGRADED::entered,
+			NORMAL::entered,
+			INITIALIZATION::entered
+			|}
+			
+			internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
+			
+			shared_variable_events = {|
+				set_EXT_steamBoilerWaitingSeen,
+				set_EXT_readyAnnounced,
+				set_EXT_valveOpen,
+				set_EXT_pumpsOpen,
+				set_EXT_levelDeviceOutOfOrder,
+				set_EXT_otherUnitOutOfOrder,
+				set_EXT_levelTooLow,
+				set_EXT_levelTooHigh,
+				set_EXT_otherUnitFailed,
+				set_EXT_levelDeviceFailed
+			|}
+			
+			-- channel set with all visible events
+			sem__events = {|
+				terminate
+			,	set_EXT_steamBoilerWaitingSeen, set_steamBoilerWaitingSeen,
+				set_EXT_readyAnnounced, set_readyAnnounced,
+				set_EXT_valveOpen, set_valveOpen,
+				set_EXT_pumpsOpen, set_pumpsOpen,
+				set_EXT_levelDeviceOutOfOrder, set_levelDeviceOutOfOrder,
+				set_EXT_otherUnitOutOfOrder, set_otherUnitOutOfOrder,
+				set_EXT_levelTooLow, set_levelTooLow,
+				set_EXT_levelTooHigh, set_levelTooHigh,
+				set_EXT_otherUnitFailed, set_otherUnitFailed,
+				set_EXT_levelDeviceFailed, set_levelDeviceFailed
+			,	stopConfirmed,
+				transmissionFault,
+				startUpFailure,
+				steamBoilerWaiting,
+				physicalUnitsReady,
+				transmission,
+				levelRisk,
+				estimateUnreliable,
+				programReady,
+				valve
+				|}
+		
+			-- Nodes --
+			-- declaring all nodes
+			
+			----------------------------------------------------------------------
+			-- State: EMERGENCY_STOP
+			module EMERGENCY_STOP
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
+			-- State: RESCUE
+			module RESCUE
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
+			-- State: DEGRADED
+			module DEGRADED
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
+			-- State: NORMAL
+			module NORMAL
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
+			-- State: INITIALIZATION
+			module INITIALIZATION
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
+			-- Initial: i0
+			module i0
+			exports
+			
+				channel enter, interrupt
+				
+				D__(id__) = 
+					dbisim(let
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= share__choice(interrupt -> SKIP) ; Inactive
+					within
+						Inactive [| {terminate} |> SKIP)
+				
+				VS_O__(id__) = D__(id__)
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			-- END of Nodes --
+			
+			-- Operation calls --
+			-- Only the undefined operations are declared here.
+			-- If the state machine is in isolation, all required operations will be undefined.
+			-- If it is in the context of a controller, the required operations not provided by the
+			-- controller will be declared here, and the defined operations will be defined in the
+			-- context of the Controller module, and therefore within scope of the state machine module.
+			
+			-- END of Operation calls --
+			
+			-- STM processes
+			STM(id__) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+			( 
+				(
+					(
+						(IteratedStateful(id__) \ {terminate} ; share__choice(terminate -> SKIP))
+					 	[[ share__ <- x__ | x__ <- {|set_EXT_steamBoilerWaitingSeen,set_EXT_readyAnnounced,set_EXT_valveOpen,set_EXT_pumpsOpen,set_EXT_levelDeviceOutOfOrder,set_EXT_otherUnitOutOfOrder,set_EXT_levelTooLow,set_EXT_levelTooHigh,set_EXT_otherUnitFailed,set_EXT_levelDeviceFailed|} ]]
+					)
+				[| {share__} |]
+				SKIP
+				)
+				[| union(sharedVarSync,{terminate}) |]
+				dbisim(sharedVarMemory(id__))
+			)\sharedVarHide
+			
+			STM_VS_O(id__) = -- RULE: [[stm:StateMachineDef]]_STM^nops : CSPProcess
+			( 
+				(
+					(
+						(IteratedStateful_VS_O(id__) \ {terminate} ; share__choice(terminate -> SKIP))
+					 	[[ share__ <- x__ | x__ <- {|set_EXT_steamBoilerWaitingSeen,set_EXT_readyAnnounced,set_EXT_valveOpen,set_EXT_pumpsOpen,set_EXT_levelDeviceOutOfOrder,set_EXT_otherUnitOutOfOrder,set_EXT_levelTooLow,set_EXT_levelTooHigh,set_EXT_otherUnitFailed,set_EXT_levelDeviceFailed|} ]]
+					)
+				[| {share__} |]
+				SKIP
+				)
+				[| union(sharedVarSync,{terminate}) |]
+				dbisim(sharedVarMemory(id__))
+			)\sharedVarHide
+			
+			-- Transitions
+			Transitions(id__) = ((let
+				Trans = share__choice(get_levelTooHigh?levelTooHigh -> get_otherUnitFailed?otherUnitFailed -> get_valveOpen?valveOpen -> get_levelDeviceFailed?levelDeviceFailed -> get_readyAnnounced?readyAnnounced -> get_levelTooLow?levelTooLow -> get_steamBoilerWaitingSeen?steamBoilerWaitingSeen -> (
+					((share__ -> SKIP
+					 [] dbisim((true)&(internal__!NID_i0 -> SKIP ;  ((SKIP ; INITIALIZATION::enter -> SKIP))))
+					 	 [] dbisim((true)&(stopConfirmed__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(transmissionFault__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(startUpFailure__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(steamBoilerWaiting__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_steamBoilerWaitingSeen!true -> SKIP))) ; INITIALIZATION::enter -> SKIP)))
+					 	 [] dbisim(((readyAnnounced and (not ((otherUnitFailed)))))&(physicalUnitsReady__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+					 	 [] dbisim(((readyAnnounced and otherUnitFailed))&(physicalUnitsReady__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+					 	 [] dbisim(((steamBoilerWaitingSeen and readyAnnounced))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(programReady.out -> SKIP)) ; INITIALIZATION::enter -> SKIP)))
+					 	 [] dbisim(((((steamBoilerWaitingSeen and (not ((readyAnnounced)))) and levelTooHigh) and (not ((valveOpen)))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(valve.out -> SKIP));share__choice(true & (share__choice(set_valveOpen!true -> SKIP)));share__choice(true & (share__choice(set_pumpsOpen!false -> SKIP))) ; INITIALIZATION::enter -> SKIP)))
+					 	 [] dbisim(((((steamBoilerWaitingSeen and (not ((readyAnnounced)))) and (not ((levelTooHigh)))) and valveOpen))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; true&(share__choice(valve.out -> SKIP));share__choice(true & (share__choice(set_valveOpen!false -> SKIP))) ; INITIALIZATION::enter -> SKIP)))
+					 	 [] dbisim((((((steamBoilerWaitingSeen and (not ((readyAnnounced)))) and (not ((levelTooHigh)))) and levelTooLow) and (not ((valveOpen)))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_pumpsOpen!true -> SKIP))) ; INITIALIZATION::enter -> SKIP)))
+					 	 [] dbisim((((((steamBoilerWaitingSeen and (not ((readyAnnounced)))) and (not ((levelTooHigh)))) and (not ((levelTooLow)))) and (not ((valveOpen)))))&(transmission__!NID_INITIALIZATION.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_pumpsOpen!false -> SKIP)));true&(share__choice(programReady.out -> SKIP));share__choice(true & (share__choice(set_readyAnnounced!true -> SKIP))) ; INITIALIZATION::enter -> SKIP)))
+					 	 [] dbisim((true)&(stopConfirmed__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(transmissionFault__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(levelRisk__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((levelDeviceFailed)&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+					 	 [] dbisim((((not ((levelDeviceFailed))) and otherUnitFailed))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+					 	 [] dbisim(((((not ((levelDeviceFailed))) and (not ((otherUnitFailed)))) and levelTooLow))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_pumpsOpen!true -> SKIP))) ; NORMAL::enter -> SKIP)))
+					 	 [] dbisim((((((not ((levelDeviceFailed))) and (not ((otherUnitFailed)))) and (not ((levelTooLow)))) and levelTooHigh))&(transmission__!NID_NORMAL.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_pumpsOpen!false -> SKIP))) ; NORMAL::enter -> SKIP)))
+					 	 [] dbisim((true)&(stopConfirmed__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(transmissionFault__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(levelRisk__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((levelDeviceFailed)&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; RESCUE::enter -> SKIP)))
+					 	 [] dbisim((((not ((levelDeviceFailed))) and (not ((otherUnitFailed)))))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+					 	 [] dbisim(((((not ((levelDeviceFailed))) and otherUnitFailed) and levelTooLow))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_pumpsOpen!true -> SKIP))) ; DEGRADED::enter -> SKIP)))
+					 	 [] dbisim((((((not ((levelDeviceFailed))) and otherUnitFailed) and (not ((levelTooLow)))) and levelTooHigh))&(transmission__!NID_DEGRADED.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_pumpsOpen!false -> SKIP))) ; DEGRADED::enter -> SKIP)))
+					 	 [] dbisim((true)&(stopConfirmed__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(transmissionFault__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(levelRisk__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((true)&(estimateUnreliable__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 	 [] dbisim((((not ((levelDeviceFailed))) and (not ((otherUnitFailed)))))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; NORMAL::enter -> SKIP)))
+					 	 [] dbisim((((not ((levelDeviceFailed))) and otherUnitFailed))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; DEGRADED::enter -> SKIP)))
+					 	 [] dbisim(((levelDeviceFailed and levelTooLow))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_pumpsOpen!true -> SKIP))) ; RESCUE::enter -> SKIP)))
+					 	 [] dbisim((((levelDeviceFailed and (not ((levelTooLow)))) and levelTooHigh))&(transmission__!NID_RESCUE.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; share__choice(true & (share__choice(set_pumpsOpen!false -> SKIP))) ; RESCUE::enter -> SKIP)))
+					 	 [] dbisim((true)&(transmission__!NID_EMERGENCY_STOP.in -> SKIP ;  share__choice(exit -> SKIP) ; (share__choice(exited -> SKIP) ; SKIP ; EMERGENCY_STOP::enter -> SKIP)))
+					 ) ; Trans)
+					 []
+					 (interrupt -> share__choice(exit -> SKIP) ; share__choice(exited -> terminate -> SKIP))
+					 []
+					 terminate -> SKIP
+				)
+				)
+			within
+				Trans
+			)
+			)
+			
+			-- Stateful
+			-- RULE: Stateful(stm:StateMachineBody) : CSPProcess
+			
+			-- Named process definitions
+			MachineBody(id__) = 
+				dbisim((
+				let
+					finalNodesEntered = {||}
+				within
+					((let
+						-- IMPLEMENTATION NOTE:
+						-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+						-- modules for defining the semantics of each node.
+						enterSS = {|
+						EMERGENCY_STOP::enter,
+						RESCUE::enter,
+						DEGRADED::enter,
+						NORMAL::enter,
+						INITIALIZATION::enter,
+						i0::enter
+						|}
+						hideSet = union(enterSS,{|exit,exited,internal__|})
+					within 
+						((let
+							-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+							-- because CSPM modules are used for the semantics of Node.
+							flowevts = union(enterSS,{|exit,exited,interrupt|})
+							transSync = {|internal__.NID_i0,stopConfirmed__.NID_INITIALIZATION.in,transmissionFault__.NID_INITIALIZATION.in,startUpFailure__.NID_INITIALIZATION.in,steamBoilerWaiting__.NID_INITIALIZATION.in,physicalUnitsReady__.NID_INITIALIZATION.in,physicalUnitsReady__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,stopConfirmed__.NID_NORMAL.in,transmissionFault__.NID_NORMAL.in,levelRisk__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,stopConfirmed__.NID_DEGRADED.in,transmissionFault__.NID_DEGRADED.in,levelRisk__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,stopConfirmed__.NID_RESCUE.in,transmissionFault__.NID_RESCUE.in,levelRisk__.NID_RESCUE.in,estimateUnreliable__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_EMERGENCY_STOP.in|}
+						within
+							((
+							 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+							   EMERGENCY_STOP::D__(id__)
+							   [| { share__, terminate } |] (
+							   RESCUE::D__(id__)
+							   [| { share__, terminate } |] (
+							   DEGRADED::D__(id__)
+							   [| { share__, terminate } |] (
+							   NORMAL::D__(id__)
+							   [| { share__, terminate } |] (
+							   INITIALIZATION::D__(id__)
+							   [| { share__, terminate } |] (
+							   i0::D__(id__)
+							   )
+							   )
+							   )
+							   )
+							   )
+							 )
+							 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_EMERGENCY_STOP.in|}]]
+							 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,stopConfirmed__.NID_RESCUE.in,transmissionFault__.NID_RESCUE.in,levelRisk__.NID_RESCUE.in,estimateUnreliable__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in|}]]
+							 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,stopConfirmed__.NID_DEGRADED.in,transmissionFault__.NID_DEGRADED.in,levelRisk__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in|}]]
+							 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,stopConfirmed__.NID_NORMAL.in,transmissionFault__.NID_NORMAL.in,levelRisk__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in|}]]
+							 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,stopConfirmed__.NID_INITIALIZATION.in,transmissionFault__.NID_INITIALIZATION.in,startUpFailure__.NID_INITIALIZATION.in,steamBoilerWaiting__.NID_INITIALIZATION.in,physicalUnitsReady__.NID_INITIALIZATION.in,physicalUnitsReady__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in|}]]
+							 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+							 )
+							  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+							  [[set_levelTooHigh <- setL_levelTooHigh,set_otherUnitFailed <- setL_otherUnitFailed,set_valveOpen <- setL_valveOpen,set_levelDeviceFailed <- setL_levelDeviceFailed,set_readyAnnounced <- setL_readyAnnounced,set_levelTooLow <- setL_levelTooLow,set_steamBoilerWaitingSeen <- setL_steamBoilerWaitingSeen]]
+							 )
+							 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+							 			,setL_levelTooHigh
+							 			,setL_otherUnitFailed
+							 			,setL_valveOpen
+							 			,setL_levelDeviceFailed
+							 			,setL_readyAnnounced
+							 			,setL_levelTooLow
+							 			,setL_steamBoilerWaitingSeen
+							|}) |]
+							 ((i0::enter -> Transitions(id__))
+							  [[ share__ <- x__ | x__ <- {| share__,setL_levelTooHigh,setL_otherUnitFailed,setL_valveOpen,setL_levelDeviceFailed,setL_readyAnnounced,setL_levelTooLow,setL_steamBoilerWaitingSeen |} ]]
+							 )
+							)[[setL_levelTooHigh <- set_levelTooHigh,setL_otherUnitFailed <- set_otherUnitFailed,setL_valveOpen <- set_valveOpen,setL_levelDeviceFailed <- set_levelDeviceFailed,setL_readyAnnounced <- set_readyAnnounced,setL_levelTooLow <- set_levelTooLow,setL_steamBoilerWaitingSeen <- set_steamBoilerWaitingSeen]]
+							)
+						)
+						 \ hideSet)
+						[[
+							stopConfirmed__.x____ <- stopConfirmed,
+							transmissionFault__.x____ <- transmissionFault,
+							startUpFailure__.x____ <- startUpFailure,
+							steamBoilerWaiting__.x____ <- steamBoilerWaiting,
+							physicalUnitsReady__.x____ <- physicalUnitsReady,
+							transmission__.x____ <- transmission,
+							levelRisk__.x____ <- levelRisk,
+							estimateUnreliable__.x____ <- estimateUnreliable,
+							programReady__.x____ <- programReady,
+							valve__.x____ <- valve
+							| x____ <- NIDS
+						]]
+					)
+					 [| {| interrupt |} |] SKIP)
+				)
+				)
+			
+			Behaviour(id__) = 
+				dbisim((MachineBody(id__)\ enteredSS)
+				)
+			
+			IteratedBehaviour(id__) = 
+				dbisim((MachineBody(id__)\ enteredSS)
+				)
+			
+			Stateful(id__) = 
+				((
+					(Behaviour(id__) [| union(getsetLocalChannels,{terminate}) |] varMemory(id__))
+				 	\getsetLocalChannels
+				)
+				)
+			
+			IteratedStateful(id__) =
+				(Behaviour(id__))
+			
+			-- Visible counterparts
+			MachineBody_VS_O(id__) = 
+				dbisim((
+				let
+					finalNodesEntered = {||}
+				within
+					((let
+						-- IMPLEMENTATION NOTE:
+						-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
+						-- modules for defining the semantics of each node.
+						enterSS = {|
+						EMERGENCY_STOP::enter,
+						RESCUE::enter,
+						DEGRADED::enter,
+						NORMAL::enter,
+						INITIALIZATION::enter,
+						i0::enter
+						|}
+						hideSet = union(enterSS,{|exit,exited,internal__|})
+					within 
+						((let
+							-- IMPLEMENTATION NOTE: the channel set 'enter' is calculated explicitly
+							-- because CSPM modules are used for the semantics of Node.
+							flowevts = union(enterSS,{|exit,exited,interrupt|})
+							transSync = {|internal__.NID_i0,stopConfirmed__.NID_INITIALIZATION.in,transmissionFault__.NID_INITIALIZATION.in,startUpFailure__.NID_INITIALIZATION.in,steamBoilerWaiting__.NID_INITIALIZATION.in,physicalUnitsReady__.NID_INITIALIZATION.in,physicalUnitsReady__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,stopConfirmed__.NID_NORMAL.in,transmissionFault__.NID_NORMAL.in,levelRisk__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,stopConfirmed__.NID_DEGRADED.in,transmissionFault__.NID_DEGRADED.in,levelRisk__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,stopConfirmed__.NID_RESCUE.in,transmissionFault__.NID_RESCUE.in,levelRisk__.NID_RESCUE.in,estimateUnreliable__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_EMERGENCY_STOP.in|}
+						within
+							((
+							 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+							   EMERGENCY_STOP::VS_O__(id__)
+							   [| { share__, terminate } |] (
+							   RESCUE::VS_O__(id__)
+							   [| { share__, terminate } |] (
+							   DEGRADED::VS_O__(id__)
+							   [| { share__, terminate } |] (
+							   NORMAL::VS_O__(id__)
+							   [| { share__, terminate } |] (
+							   INITIALIZATION::VS_O__(id__)
+							   [| { share__, terminate } |] (
+							   i0::VS_O__(id__)
+							   )
+							   )
+							   )
+							   )
+							   )
+							 )
+							 [[EMERGENCY_STOP::interrupt <- x__ | x__ <- {|interrupt,transmission__.NID_EMERGENCY_STOP.in|}]]
+							 [[RESCUE::interrupt <- x__ | x__ <- {|interrupt,stopConfirmed__.NID_RESCUE.in,transmissionFault__.NID_RESCUE.in,levelRisk__.NID_RESCUE.in,estimateUnreliable__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in,transmission__.NID_RESCUE.in|}]]
+							 [[DEGRADED::interrupt <- x__ | x__ <- {|interrupt,stopConfirmed__.NID_DEGRADED.in,transmissionFault__.NID_DEGRADED.in,levelRisk__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in,transmission__.NID_DEGRADED.in|}]]
+							 [[NORMAL::interrupt <- x__ | x__ <- {|interrupt,stopConfirmed__.NID_NORMAL.in,transmissionFault__.NID_NORMAL.in,levelRisk__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in,transmission__.NID_NORMAL.in|}]]
+							 [[INITIALIZATION::interrupt <- x__ | x__ <- {|interrupt,stopConfirmed__.NID_INITIALIZATION.in,transmissionFault__.NID_INITIALIZATION.in,startUpFailure__.NID_INITIALIZATION.in,steamBoilerWaiting__.NID_INITIALIZATION.in,physicalUnitsReady__.NID_INITIALIZATION.in,physicalUnitsReady__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in,transmission__.NID_INITIALIZATION.in|}]]
+							 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
+							 )
+							  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
+							  [[set_levelTooHigh <- setL_levelTooHigh,set_otherUnitFailed <- setL_otherUnitFailed,set_valveOpen <- setL_valveOpen,set_levelDeviceFailed <- setL_levelDeviceFailed,set_readyAnnounced <- setL_readyAnnounced,set_levelTooLow <- setL_levelTooLow,set_steamBoilerWaitingSeen <- setL_steamBoilerWaitingSeen]]
+							 )
+							 [| union(union(union(flowevts,transSync),{terminate}),{|share__
+							 			,setL_levelTooHigh
+							 			,setL_otherUnitFailed
+							 			,setL_valveOpen
+							 			,setL_levelDeviceFailed
+							 			,setL_readyAnnounced
+							 			,setL_levelTooLow
+							 			,setL_steamBoilerWaitingSeen
+							|}) |]
+							 ((i0::enter -> Transitions(id__))
+							  [[ share__ <- x__ | x__ <- {| share__,setL_levelTooHigh,setL_otherUnitFailed,setL_valveOpen,setL_levelDeviceFailed,setL_readyAnnounced,setL_levelTooLow,setL_steamBoilerWaitingSeen |} ]]
+							 )
+							)[[setL_levelTooHigh <- set_levelTooHigh,setL_otherUnitFailed <- set_otherUnitFailed,setL_valveOpen <- set_valveOpen,setL_levelDeviceFailed <- set_levelDeviceFailed,setL_readyAnnounced <- set_readyAnnounced,setL_levelTooLow <- set_levelTooLow,setL_steamBoilerWaitingSeen <- set_steamBoilerWaitingSeen]]
+							)
+						)
+						 \ hideSet)
+						[[
+							stopConfirmed__.x____ <- stopConfirmed,
+							transmissionFault__.x____ <- transmissionFault,
+							startUpFailure__.x____ <- startUpFailure,
+							steamBoilerWaiting__.x____ <- steamBoilerWaiting,
+							physicalUnitsReady__.x____ <- physicalUnitsReady,
+							transmission__.x____ <- transmission,
+							levelRisk__.x____ <- levelRisk,
+							estimateUnreliable__.x____ <- estimateUnreliable,
+							programReady__.x____ <- programReady,
+							valve__.x____ <- valve
+							| x____ <- NIDS
+						]]
+					)
+					 [| {| interrupt |} |] SKIP)
+				)
+				)
+			
+			Behaviour_VS_O(id__) = 
+				dbisim((MachineBody_VS_O(id__))
+				)
+			
+			IteratedBehaviour_VS_O(id__) = 
+				dbisim((MachineBody_VS_O(id__))
+				)
+			
+			Stateful_VS_O(id__) = 
+				dbisim((
+					(Behaviour_VS_O(id__) [| union(getsetLocalChannels,{terminate}) |] varMemory(id__))
+				 	\getsetLocalChannels
+				)
+				)
+			
+			IteratedStateful_VS_O(id__) =
+				(Behaviour_VS_O(id__))
+			
+			-- END
+			
+			-- Memory
+			-- Memory variables
+			
+			-- varMemory process
+			varMemory(id__) = terminate -> SKIP
+			
+			getsetLocalChannels = {||}
+			
+			-- Definition of the behaviour of state machines (default, optimised, visible, visible and optimised)
+			FVS__(id__) = STM_VS_O(id__)
+			
+			D__(id__) = STM(id__) \ internal_events
+			O__(id__) = sbisim(diamond(D__(id__)))
+			VS__(id__) = FVS__(id__)
+			VS_O__(id__) = sbisim(diamond(FVS__(id__)))
+			HEXT__(id__) = O__(id__) [|shared_variable_events|] SKIP
+			HUP__(id__) = O__(id__) [|{share__}|] SKIP
+			
+			-- Shared memory
+			-- Shared memory variables
+			Memory_steamBoilerWaitingSeen(steamBoilerWaitingSeen) =
+				get_steamBoilerWaitingSeen!steamBoilerWaitingSeen -> Memory_steamBoilerWaitingSeen(steamBoilerWaitingSeen)
+				[]
+				set_steamBoilerWaitingSeen?x__ -> Memory_steamBoilerWaitingSeen(x__)
+				[]
+				set_EXT_steamBoilerWaitingSeen?x__ -> Memory_steamBoilerWaitingSeen(x__)
+				[]
+				terminate -> SKIP
+			Memory_readyAnnounced(readyAnnounced) =
+				get_readyAnnounced!readyAnnounced -> Memory_readyAnnounced(readyAnnounced)
+				[]
+				set_readyAnnounced?x__ -> Memory_readyAnnounced(x__)
+				[]
+				set_EXT_readyAnnounced?x__ -> Memory_readyAnnounced(x__)
+				[]
+				terminate -> SKIP
+			Memory_valveOpen(valveOpen) =
+				get_valveOpen!valveOpen -> Memory_valveOpen(valveOpen)
+				[]
+				set_valveOpen?x__ -> Memory_valveOpen(x__)
+				[]
+				set_EXT_valveOpen?x__ -> Memory_valveOpen(x__)
+				[]
+				terminate -> SKIP
+			Memory_pumpsOpen(pumpsOpen) =
+				get_pumpsOpen!pumpsOpen -> Memory_pumpsOpen(pumpsOpen)
+				[]
+				set_pumpsOpen?x__ -> Memory_pumpsOpen(x__)
+				[]
+				set_EXT_pumpsOpen?x__ -> Memory_pumpsOpen(x__)
+				[]
+				terminate -> SKIP
+			Memory_levelDeviceOutOfOrder(levelDeviceOutOfOrder) =
+				get_levelDeviceOutOfOrder!levelDeviceOutOfOrder -> Memory_levelDeviceOutOfOrder(levelDeviceOutOfOrder)
+				[]
+				set_levelDeviceOutOfOrder?x__ -> Memory_levelDeviceOutOfOrder(x__)
+				[]
+				set_EXT_levelDeviceOutOfOrder?x__ -> Memory_levelDeviceOutOfOrder(x__)
+				[]
+				terminate -> SKIP
+			Memory_otherUnitOutOfOrder(otherUnitOutOfOrder) =
+				get_otherUnitOutOfOrder!otherUnitOutOfOrder -> Memory_otherUnitOutOfOrder(otherUnitOutOfOrder)
+				[]
+				set_otherUnitOutOfOrder?x__ -> Memory_otherUnitOutOfOrder(x__)
+				[]
+				set_EXT_otherUnitOutOfOrder?x__ -> Memory_otherUnitOutOfOrder(x__)
+				[]
+				terminate -> SKIP
+			Memory_levelTooLow(levelTooLow) =
+				get_levelTooLow!levelTooLow -> Memory_levelTooLow(levelTooLow)
+				[]
+				set_levelTooLow?x__ -> Memory_levelTooLow(x__)
+				[]
+				set_EXT_levelTooLow?x__ -> Memory_levelTooLow(x__)
+				[]
+				terminate -> SKIP
+			Memory_levelTooHigh(levelTooHigh) =
+				get_levelTooHigh!levelTooHigh -> Memory_levelTooHigh(levelTooHigh)
+				[]
+				set_levelTooHigh?x__ -> Memory_levelTooHigh(x__)
+				[]
+				set_EXT_levelTooHigh?x__ -> Memory_levelTooHigh(x__)
+				[]
+				terminate -> SKIP
+			Memory_otherUnitFailed(otherUnitFailed) =
+				get_otherUnitFailed!otherUnitFailed -> Memory_otherUnitFailed(otherUnitFailed)
+				[]
+				set_otherUnitFailed?x__ -> Memory_otherUnitFailed(x__)
+				[]
+				set_EXT_otherUnitFailed?x__ -> Memory_otherUnitFailed(x__)
+				[]
+				terminate -> SKIP
+			Memory_levelDeviceFailed(levelDeviceFailed) =
+				get_levelDeviceFailed!levelDeviceFailed -> Memory_levelDeviceFailed(levelDeviceFailed)
+				[]
+				set_levelDeviceFailed?x__ -> Memory_levelDeviceFailed(x__)
+				[]
+				set_EXT_levelDeviceFailed?x__ -> Memory_levelDeviceFailed(x__)
+				[]
+				terminate -> SKIP
+			
+			-- sharedVarMemory process
+			sharedVarMemory(id__) = Memory_steamBoilerWaitingSeen(false)
+			[| { terminate } |] (
+			Memory_readyAnnounced(false)
+			[| { terminate } |] (
+			Memory_valveOpen(false)
+			[| { terminate } |] (
+			Memory_pumpsOpen(false)
+			[| { terminate } |] (
+			Memory_levelDeviceOutOfOrder(true)
+			[| { terminate } |] (
+			Memory_otherUnitOutOfOrder(true)
+			[| { terminate } |] (
+			Memory_levelTooLow(true)
+			[| { terminate } |] (
+			Memory_levelTooHigh(true)
+			[| { terminate } |] (
+			Memory_otherUnitFailed(true)
+			[| { terminate } |] (
+			Memory_levelDeviceFailed(true)
+			)
+			)
+			)
+			)
+			)
+			)
+			)
+			)
+			)
+			
+			sharedVarSync = {|get_steamBoilerWaitingSeen,set_steamBoilerWaitingSeen,set_EXT_steamBoilerWaitingSeen,get_readyAnnounced,set_readyAnnounced,set_EXT_readyAnnounced,get_valveOpen,set_valveOpen,set_EXT_valveOpen,get_pumpsOpen,set_pumpsOpen,set_EXT_pumpsOpen,get_levelDeviceOutOfOrder,set_levelDeviceOutOfOrder,set_EXT_levelDeviceOutOfOrder,get_otherUnitOutOfOrder,set_otherUnitOutOfOrder,set_EXT_otherUnitOutOfOrder,get_levelTooLow,set_levelTooLow,set_EXT_levelTooLow,get_levelTooHigh,set_levelTooHigh,set_EXT_levelTooHigh,get_otherUnitFailed,set_otherUnitFailed,set_EXT_otherUnitFailed,get_levelDeviceFailed,set_levelDeviceFailed,set_EXT_levelDeviceFailed|}
+			
+			sharedVarHide = {|get_steamBoilerWaitingSeen,get_readyAnnounced,get_valveOpen,get_pumpsOpen,get_levelDeviceOutOfOrder,get_otherUnitOutOfOrder,get_levelTooLow,get_levelTooHigh,get_otherUnitFailed,get_levelDeviceFailed|}
+		endmodule
+		
+			-- undefined operations
+			
+			-- declaring controller memory
+			Memory(id__, steamBoilerWaitingSeen, readyAnnounced, valveOpen, pumpsOpen, levelDeviceOutOfOrder, otherUnitOutOfOrder, levelTooLow, levelTooHigh, otherUnitFailed, levelDeviceFailed) = (
+			set_EXT_steamBoilerWaitingSeen?x__ -> stm_ref0::set_EXT_steamBoilerWaitingSeen!x__ -> 
+			Memory(id__,x__,readyAnnounced,valveOpen,pumpsOpen,levelDeviceOutOfOrder,otherUnitOutOfOrder,levelTooLow,levelTooHigh,otherUnitFailed,levelDeviceFailed)
+			 []
+			set_EXT_readyAnnounced?x__ -> stm_ref0::set_EXT_readyAnnounced!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,x__,valveOpen,pumpsOpen,levelDeviceOutOfOrder,otherUnitOutOfOrder,levelTooLow,levelTooHigh,otherUnitFailed,levelDeviceFailed)
+			 []
+			set_EXT_valveOpen?x__ -> stm_ref0::set_EXT_valveOpen!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,readyAnnounced,x__,pumpsOpen,levelDeviceOutOfOrder,otherUnitOutOfOrder,levelTooLow,levelTooHigh,otherUnitFailed,levelDeviceFailed)
+			 []
+			set_EXT_pumpsOpen?x__ -> stm_ref0::set_EXT_pumpsOpen!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,readyAnnounced,valveOpen,x__,levelDeviceOutOfOrder,otherUnitOutOfOrder,levelTooLow,levelTooHigh,otherUnitFailed,levelDeviceFailed)
+			 []
+			set_EXT_levelDeviceOutOfOrder?x__ -> stm_ref0::set_EXT_levelDeviceOutOfOrder!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,readyAnnounced,valveOpen,pumpsOpen,x__,otherUnitOutOfOrder,levelTooLow,levelTooHigh,otherUnitFailed,levelDeviceFailed)
+			 []
+			set_EXT_otherUnitOutOfOrder?x__ -> stm_ref0::set_EXT_otherUnitOutOfOrder!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,readyAnnounced,valveOpen,pumpsOpen,levelDeviceOutOfOrder,x__,levelTooLow,levelTooHigh,otherUnitFailed,levelDeviceFailed)
+			 []
+			set_EXT_levelTooLow?x__ -> stm_ref0::set_EXT_levelTooLow!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,readyAnnounced,valveOpen,pumpsOpen,levelDeviceOutOfOrder,otherUnitOutOfOrder,x__,levelTooHigh,otherUnitFailed,levelDeviceFailed)
+			 []
+			set_EXT_levelTooHigh?x__ -> stm_ref0::set_EXT_levelTooHigh!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,readyAnnounced,valveOpen,pumpsOpen,levelDeviceOutOfOrder,otherUnitOutOfOrder,levelTooLow,x__,otherUnitFailed,levelDeviceFailed)
+			 []
+			set_EXT_otherUnitFailed?x__ -> stm_ref0::set_EXT_otherUnitFailed!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,readyAnnounced,valveOpen,pumpsOpen,levelDeviceOutOfOrder,otherUnitOutOfOrder,levelTooLow,levelTooHigh,x__,levelDeviceFailed)
+			 []
+			set_EXT_levelDeviceFailed?x__ -> stm_ref0::set_EXT_levelDeviceFailed!x__ -> 
+			Memory(id__,steamBoilerWaitingSeen,readyAnnounced,valveOpen,pumpsOpen,levelDeviceOutOfOrder,otherUnitOutOfOrder,levelTooLow,levelTooHigh,otherUnitFailed,x__)
+			)
+			
+			D__(id__) = 	((
+					stm_ref0::D__(id__)[[
+						stm_ref0::terminate <- terminate,
+						stm_ref0::stopConfirmed <- stopConfirmed,
+						stm_ref0::transmissionFault <- transmissionFault,
+						stm_ref0::startUpFailure <- startUpFailure,
+						stm_ref0::steamBoilerWaiting <- steamBoilerWaiting,
+						stm_ref0::physicalUnitsReady <- physicalUnitsReady,
+						stm_ref0::transmission <- transmission,
+						stm_ref0::levelRisk <- levelRisk,
+						stm_ref0::estimateUnreliable <- estimateUnreliable,
+						stm_ref0::programReady <- programReady,
+						stm_ref0::valve <- valve,
+						stm_ref0::set_steamBoilerWaitingSeen <- set_steamBoilerWaitingSeen,
+						stm_ref0::get_steamBoilerWaitingSeen <- get_steamBoilerWaitingSeen,
+						stm_ref0::set_readyAnnounced <- set_readyAnnounced,
+						stm_ref0::get_readyAnnounced <- get_readyAnnounced,
+						stm_ref0::set_valveOpen <- set_valveOpen,
+						stm_ref0::get_valveOpen <- get_valveOpen,
+						stm_ref0::set_pumpsOpen <- set_pumpsOpen,
+						stm_ref0::get_pumpsOpen <- get_pumpsOpen,
+						stm_ref0::set_levelDeviceOutOfOrder <- set_levelDeviceOutOfOrder,
+						stm_ref0::get_levelDeviceOutOfOrder <- get_levelDeviceOutOfOrder,
+						stm_ref0::set_otherUnitOutOfOrder <- set_otherUnitOutOfOrder,
+						stm_ref0::get_otherUnitOutOfOrder <- get_otherUnitOutOfOrder,
+						stm_ref0::set_levelTooLow <- set_levelTooLow,
+						stm_ref0::get_levelTooLow <- get_levelTooLow,
+						stm_ref0::set_levelTooHigh <- set_levelTooHigh,
+						stm_ref0::get_levelTooHigh <- get_levelTooHigh,
+						stm_ref0::set_otherUnitFailed <- set_otherUnitFailed,
+						stm_ref0::get_otherUnitFailed <- get_otherUnitFailed,
+						stm_ref0::set_levelDeviceFailed <- set_levelDeviceFailed,
+						stm_ref0::get_levelDeviceFailed <- get_levelDeviceFailed
+					]]
+				)
+					[|
+						union(
+							{|
+							|},
+							{|
+								stm_ref0::set_EXT_steamBoilerWaitingSeen,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_pumpsOpen,stm_ref0::set_EXT_levelDeviceOutOfOrder,stm_ref0::set_EXT_otherUnitOutOfOrder,stm_ref0::set_EXT_levelTooLow,stm_ref0::set_EXT_levelTooHigh,stm_ref0::set_EXT_otherUnitFailed,stm_ref0::set_EXT_levelDeviceFailed
+							|}
+						)
+					|]
+				Memory(id__, false, false, false, false, true, true, true, true, true, true)
+			)
+			\ union(
+				{|
+				|},
+				{|
+					stm_ref0::set_EXT_steamBoilerWaitingSeen,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_pumpsOpen,stm_ref0::set_EXT_levelDeviceOutOfOrder,stm_ref0::set_EXT_otherUnitOutOfOrder,stm_ref0::set_EXT_levelTooLow,stm_ref0::set_EXT_levelTooHigh,stm_ref0::set_EXT_otherUnitFailed,stm_ref0::set_EXT_levelDeviceFailed
+				|}
+			)
+			[|{|terminate|}|>SKIP
+			
+			-- VS version
+			VS__(id__) = 	((
+					stm_ref0::VS__(id__)[[
+						stm_ref0::terminate <- terminate,
+						stm_ref0::stopConfirmed <- stopConfirmed,
+						stm_ref0::transmissionFault <- transmissionFault,
+						stm_ref0::startUpFailure <- startUpFailure,
+						stm_ref0::steamBoilerWaiting <- steamBoilerWaiting,
+						stm_ref0::physicalUnitsReady <- physicalUnitsReady,
+						stm_ref0::transmission <- transmission,
+						stm_ref0::levelRisk <- levelRisk,
+						stm_ref0::estimateUnreliable <- estimateUnreliable,
+						stm_ref0::programReady <- programReady,
+						stm_ref0::valve <- valve,
+						stm_ref0::set_steamBoilerWaitingSeen <- set_steamBoilerWaitingSeen,
+						stm_ref0::get_steamBoilerWaitingSeen <- get_steamBoilerWaitingSeen,
+						stm_ref0::set_readyAnnounced <- set_readyAnnounced,
+						stm_ref0::get_readyAnnounced <- get_readyAnnounced,
+						stm_ref0::set_valveOpen <- set_valveOpen,
+						stm_ref0::get_valveOpen <- get_valveOpen,
+						stm_ref0::set_pumpsOpen <- set_pumpsOpen,
+						stm_ref0::get_pumpsOpen <- get_pumpsOpen,
+						stm_ref0::set_levelDeviceOutOfOrder <- set_levelDeviceOutOfOrder,
+						stm_ref0::get_levelDeviceOutOfOrder <- get_levelDeviceOutOfOrder,
+						stm_ref0::set_otherUnitOutOfOrder <- set_otherUnitOutOfOrder,
+						stm_ref0::get_otherUnitOutOfOrder <- get_otherUnitOutOfOrder,
+						stm_ref0::set_levelTooLow <- set_levelTooLow,
+						stm_ref0::get_levelTooLow <- get_levelTooLow,
+						stm_ref0::set_levelTooHigh <- set_levelTooHigh,
+						stm_ref0::get_levelTooHigh <- get_levelTooHigh,
+						stm_ref0::set_otherUnitFailed <- set_otherUnitFailed,
+						stm_ref0::get_otherUnitFailed <- get_otherUnitFailed,
+						stm_ref0::set_levelDeviceFailed <- set_levelDeviceFailed,
+						stm_ref0::get_levelDeviceFailed <- get_levelDeviceFailed
+					]]
+				)
+					[|
+						union(
+							{|
+							|},
+							{|
+								stm_ref0::set_EXT_steamBoilerWaitingSeen,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_pumpsOpen,stm_ref0::set_EXT_levelDeviceOutOfOrder,stm_ref0::set_EXT_otherUnitOutOfOrder,stm_ref0::set_EXT_levelTooLow,stm_ref0::set_EXT_levelTooHigh,stm_ref0::set_EXT_otherUnitFailed,stm_ref0::set_EXT_levelDeviceFailed
+							|}
+						)
+					|]
+				Memory(id__, false, false, false, false, true, true, true, true, true, true)
+			)
+			\ union(
+				{|
+				|},
+				{|
+					stm_ref0::set_EXT_steamBoilerWaitingSeen,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_pumpsOpen,stm_ref0::set_EXT_levelDeviceOutOfOrder,stm_ref0::set_EXT_otherUnitOutOfOrder,stm_ref0::set_EXT_levelTooLow,stm_ref0::set_EXT_levelTooHigh,stm_ref0::set_EXT_otherUnitFailed,stm_ref0::set_EXT_levelDeviceFailed
+				|}
+			)
+			[|{|terminate|}|>SKIP
+		
+			-- O version (optimised) THESE TWO PROCESSES SHOULD BE KEPT IN SYNC WITH THE ABOVE TWO
+			O__(id__) = sbisim(diamond(	((
+					stm_ref0::O__(id__)[[
+						stm_ref0::terminate <- terminate,
+						stm_ref0::stopConfirmed <- stopConfirmed,
+						stm_ref0::transmissionFault <- transmissionFault,
+						stm_ref0::startUpFailure <- startUpFailure,
+						stm_ref0::steamBoilerWaiting <- steamBoilerWaiting,
+						stm_ref0::physicalUnitsReady <- physicalUnitsReady,
+						stm_ref0::transmission <- transmission,
+						stm_ref0::levelRisk <- levelRisk,
+						stm_ref0::estimateUnreliable <- estimateUnreliable,
+						stm_ref0::programReady <- programReady,
+						stm_ref0::valve <- valve,
+						stm_ref0::set_steamBoilerWaitingSeen <- set_steamBoilerWaitingSeen,
+						stm_ref0::get_steamBoilerWaitingSeen <- get_steamBoilerWaitingSeen,
+						stm_ref0::set_readyAnnounced <- set_readyAnnounced,
+						stm_ref0::get_readyAnnounced <- get_readyAnnounced,
+						stm_ref0::set_valveOpen <- set_valveOpen,
+						stm_ref0::get_valveOpen <- get_valveOpen,
+						stm_ref0::set_pumpsOpen <- set_pumpsOpen,
+						stm_ref0::get_pumpsOpen <- get_pumpsOpen,
+						stm_ref0::set_levelDeviceOutOfOrder <- set_levelDeviceOutOfOrder,
+						stm_ref0::get_levelDeviceOutOfOrder <- get_levelDeviceOutOfOrder,
+						stm_ref0::set_otherUnitOutOfOrder <- set_otherUnitOutOfOrder,
+						stm_ref0::get_otherUnitOutOfOrder <- get_otherUnitOutOfOrder,
+						stm_ref0::set_levelTooLow <- set_levelTooLow,
+						stm_ref0::get_levelTooLow <- get_levelTooLow,
+						stm_ref0::set_levelTooHigh <- set_levelTooHigh,
+						stm_ref0::get_levelTooHigh <- get_levelTooHigh,
+						stm_ref0::set_otherUnitFailed <- set_otherUnitFailed,
+						stm_ref0::get_otherUnitFailed <- get_otherUnitFailed,
+						stm_ref0::set_levelDeviceFailed <- set_levelDeviceFailed,
+						stm_ref0::get_levelDeviceFailed <- get_levelDeviceFailed
+					]]
+				)
+					[|
+						union(
+							{|
+							|},
+							{|
+								stm_ref0::set_EXT_steamBoilerWaitingSeen,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_pumpsOpen,stm_ref0::set_EXT_levelDeviceOutOfOrder,stm_ref0::set_EXT_otherUnitOutOfOrder,stm_ref0::set_EXT_levelTooLow,stm_ref0::set_EXT_levelTooHigh,stm_ref0::set_EXT_otherUnitFailed,stm_ref0::set_EXT_levelDeviceFailed
+							|}
+						)
+					|]
+				dbisim(Memory(id__, false, false, false, false, true, true, true, true, true, true))
+			)
+			\ union(
+				{|
+				|},
+				{|
+					stm_ref0::set_EXT_steamBoilerWaitingSeen,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_pumpsOpen,stm_ref0::set_EXT_levelDeviceOutOfOrder,stm_ref0::set_EXT_otherUnitOutOfOrder,stm_ref0::set_EXT_levelTooLow,stm_ref0::set_EXT_levelTooHigh,stm_ref0::set_EXT_otherUnitFailed,stm_ref0::set_EXT_levelDeviceFailed
+				|}
+			)
+			[|{|terminate|}|>SKIP
+			))
+							
+			-- VS_O version
+			VS_O__(id__) = sbisim(diamond(	((
+					stm_ref0::VS_O__(id__)[[
+						stm_ref0::terminate <- terminate,
+						stm_ref0::stopConfirmed <- stopConfirmed,
+						stm_ref0::transmissionFault <- transmissionFault,
+						stm_ref0::startUpFailure <- startUpFailure,
+						stm_ref0::steamBoilerWaiting <- steamBoilerWaiting,
+						stm_ref0::physicalUnitsReady <- physicalUnitsReady,
+						stm_ref0::transmission <- transmission,
+						stm_ref0::levelRisk <- levelRisk,
+						stm_ref0::estimateUnreliable <- estimateUnreliable,
+						stm_ref0::programReady <- programReady,
+						stm_ref0::valve <- valve,
+						stm_ref0::set_steamBoilerWaitingSeen <- set_steamBoilerWaitingSeen,
+						stm_ref0::get_steamBoilerWaitingSeen <- get_steamBoilerWaitingSeen,
+						stm_ref0::set_readyAnnounced <- set_readyAnnounced,
+						stm_ref0::get_readyAnnounced <- get_readyAnnounced,
+						stm_ref0::set_valveOpen <- set_valveOpen,
+						stm_ref0::get_valveOpen <- get_valveOpen,
+						stm_ref0::set_pumpsOpen <- set_pumpsOpen,
+						stm_ref0::get_pumpsOpen <- get_pumpsOpen,
+						stm_ref0::set_levelDeviceOutOfOrder <- set_levelDeviceOutOfOrder,
+						stm_ref0::get_levelDeviceOutOfOrder <- get_levelDeviceOutOfOrder,
+						stm_ref0::set_otherUnitOutOfOrder <- set_otherUnitOutOfOrder,
+						stm_ref0::get_otherUnitOutOfOrder <- get_otherUnitOutOfOrder,
+						stm_ref0::set_levelTooLow <- set_levelTooLow,
+						stm_ref0::get_levelTooLow <- get_levelTooLow,
+						stm_ref0::set_levelTooHigh <- set_levelTooHigh,
+						stm_ref0::get_levelTooHigh <- get_levelTooHigh,
+						stm_ref0::set_otherUnitFailed <- set_otherUnitFailed,
+						stm_ref0::get_otherUnitFailed <- get_otherUnitFailed,
+						stm_ref0::set_levelDeviceFailed <- set_levelDeviceFailed,
+						stm_ref0::get_levelDeviceFailed <- get_levelDeviceFailed
+					]]
+				)
+					[|
+						union(
+							{|
+							|},
+							{|
+								stm_ref0::set_EXT_steamBoilerWaitingSeen,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_pumpsOpen,stm_ref0::set_EXT_levelDeviceOutOfOrder,stm_ref0::set_EXT_otherUnitOutOfOrder,stm_ref0::set_EXT_levelTooLow,stm_ref0::set_EXT_levelTooHigh,stm_ref0::set_EXT_otherUnitFailed,stm_ref0::set_EXT_levelDeviceFailed
+							|}
+						)
+					|]
+				dbisim(Memory(id__, false, false, false, false, true, true, true, true, true, true))
+			)
+			\ union(
+				{|
+				|},
+				{|
+					stm_ref0::set_EXT_steamBoilerWaitingSeen,stm_ref0::set_EXT_readyAnnounced,stm_ref0::set_EXT_valveOpen,stm_ref0::set_EXT_pumpsOpen,stm_ref0::set_EXT_levelDeviceOutOfOrder,stm_ref0::set_EXT_otherUnitOutOfOrder,stm_ref0::set_EXT_levelTooLow,stm_ref0::set_EXT_levelTooHigh,stm_ref0::set_EXT_otherUnitFailed,stm_ref0::set_EXT_levelDeviceFailed
+				|}
+			)
+			[|{|terminate|}|>SKIP
+			))
+		
+			HEXT(id__) = O__(id__) [|shared_variable_events|] SKIP			
+
+	endmodule

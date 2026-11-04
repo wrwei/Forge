@@ -1,0 +1,40 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 02-11-2026 22:03:12
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_defs.csp"
+include "state_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "SteamBoilerController.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+channel r__
+-- generate SteamBoilerController
+P_SteamBoilerController = let
+	id__ = 0
+	
+	const_SteamBoilerController_stopTransmissionsForEmergency = 3
+	const_SteamBoilerController_normalMaxN2 = 600
+	const_SteamBoilerController_normalMinN1 = 400
+	const_SteamBoilerController_limitMaxM2 = 840
+	const_SteamBoilerController_limitMinM1 = 125
+	
+	
+within
+	SteamBoilerController::O__(
+		id__,
+		const_SteamBoilerController_stopTransmissionsForEmergency,
+		const_SteamBoilerController_normalMaxN2,
+		const_SteamBoilerController_normalMinN1,
+		const_SteamBoilerController_limitMaxM2,
+		const_SteamBoilerController_limitMinM1
+	)
+assert P_SteamBoilerController :[deadlock-free]	
+assert P_SteamBoilerController;RUN({r__}) :[deadlock-free]
+-- determinism not verified (see runners.run_fdr4): assert P_SteamBoilerController :[deterministic]
+assert P_SteamBoilerController :[divergence-free]

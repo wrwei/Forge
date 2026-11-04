@@ -1,0 +1,51 @@
+{
+  "study": "steam_boiler",
+  "run": 3,
+  "iteration": 2,
+  "recorded_utc": "2026-11-03 13:36:40",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3r16-run3-steam_boiler",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-steam_boiler-run3",
+  "files": {
+    "java": 17,
+    "java_test": 0,
+    "formal_artefacts": 54,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 1433,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "failed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "failed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# Iteration 2 \u2014 steam_boiler, run 3\n\nNo Java was present at the start of the run.\n\n## What the Java is\n\n- `SteamBoilerController`: five modes, one `step` per cycle on `TransmissionReceived`, named predicates, MODE on every transition, emergency stop terminal. State: mode, `readyAnnounced`, `evacuationValve`.\n- `BoilerSensor`: 12 boolean queries.\n- `PlantMonitor`/`PumpUnit`/`UnitHealth`: reception, transmission check, STOP count, q, v, p, estimate, failure judgements, unit status, announcements and repair acknowledgements.\n- `UnitMessage`: the units' messages; `SteamBoilerProgram`: the cycle.\n\n## Changes for iteration 1's failures\n\n- Preflight: annotated a `double` parameter and the `double` return types.\n- FDR4 (memory exhausted, 81 GB): the units' messages are no longer `InputEvent` records, leaving one input event; fewer, merged sensor queries; shorter guards; `boilerWaiting` replaced by the monitor's latch. Behaviour is unchanged, as a replay of the same plant simulations confirmed.\n- Isabelle (`deadlock_free` timeout): each mode's branches now rely on else-if priority, and the last branch tests only the event. The model therefore over-approximates the Java.\n\n## Decisions the requirements left open\n\n- Constants (C=1000, M1=150, M2=850, N1=400, N2=600, W=25, U1=U2=4, P=10); pumps 1\u20134.\n- Regulation switches all four pumps on the level predicted for the end of the coming cycle, but not in the cycle of a mode change.\n- Initialization fills with pump 1 only.\n- A level failure with steam or a pump controller out of order goes straight to emergency stop.\n- The aberrant-message set, judgement timing and worst-case bounds are in `post_codegen.md`.\n\n## Unresolved\n\n- SB-Beh24 versus SB-Beh22: MODE(EMERGENCY_STOP) is sent once, then the program stops.\n- FR6/FR7 and the failure judgements are outside the extracted model and are not verified."
+}
