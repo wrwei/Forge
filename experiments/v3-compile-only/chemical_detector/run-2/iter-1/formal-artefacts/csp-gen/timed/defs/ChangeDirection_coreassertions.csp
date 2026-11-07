@@ -1,0 +1,47 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 05-11-2026 11:20:16
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "ChangeDirection.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate OP_ChangeDirection
+P_OP_ChangeDirection = let
+	id__ = 0
+	
+	
+	const_ChangeDirection_lv = 1
+	const_ChangeDirection_evadeTime = 1
+	const_ChangeDirection_stuckPeriod = 2
+	const_ChangeDirection_stuckDist = 1
+	const_ChangeDirection_outPeriod = 1
+	
+	
+within
+	OP_ChangeDirection::O__(id__,
+			    const_ChangeDirection_lv,
+			    const_ChangeDirection_evadeTime,
+			    const_ChangeDirection_stuckPeriod,
+			    const_ChangeDirection_stuckDist,
+			    const_ChangeDirection_outPeriod)
+assert P_OP_ChangeDirection :[deadlock-free]	
+assert P_OP_ChangeDirection;RUN({r__}) :[deadlock-free]
+assert P_OP_ChangeDirection :[deterministic]
+assert P_OP_ChangeDirection :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_OP_ChangeDirection[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_OP_ChangeDirection

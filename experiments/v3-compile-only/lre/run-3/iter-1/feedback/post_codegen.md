@@ -1,0 +1,95 @@
+# post_codegen
+
+**status:** uncertain
+
+**summary:** All 51 requirements implemented in 14 Java files; 9 points the requirements did not settle are recorded below.
+
+## Issues
+
+### 1. [ambiguous_requirement] '-1 means none' for cstc/cdyn conflicts with their natural-number type
+
+**raw:** LRE-Var5/Var6 declare cstc and cdyn natural numbers yet say -1 means no obstacle; LRE-DM5/OP3/OP4 say closestStaticIndex()/closestDynamicIndex() return -1. A nat cannot hold -1 and the profile forbids negative sentinels.
+
+**fix_directive:** Resolved: obstacle indices start at 1 and index 0 (ObstacleRegister.NO_INDEX) means none; put() rejects index 0. The distance functions and field accessors treat 0 like any absent index (large distance, zero fields).
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/data/ObstacleRegister.java` lines 16-35, `NO_INDEX`; requirements: LRE-DM3, LRE-Var5, LRE-Var6
+- `java.generated.project/src/main/java/lre/sensor/Sensor.java` lines 170-206, `closestStaticIndex/closestDynamicIndex`; requirements: LRE-DM5, LRE-OP3, LRE-OP4
+
+### 2. [invented_default] Value of the 'safe large distance'
+
+**raw:** LRE-DM5/OP2/OP5 require a safe large distance when no obstacle exists but give no value.
+
+**fix_directive:** Chose 100000.0 m (private constant SAFE_LARGE_DIST in Sensor), returned by hdist, vdist and odist for an absent index.
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/sensor/Sensor.java` lines 21, `SAFE_LARGE_DIST`; requirements: LRE-DM5, LRE-OP2, LRE-OP5
+
+### 3. [design_choice] CPA formula: horizontal plane, closing velocity, regularised denominator
+
+**raw:** LRE-OP5 names cda and tcpa but no formula. Only horizontal relative position/velocity accessors exist; DM5 field accessors return 0 for no obstacle while OP5 expects large-distance defaults.
+
+**fix_directive:** tcpa = (p.c)/(|c|^2+0.001), cda = sqrt(hdist(i)^2 - tcpa^2(|c|^2+0.001)), with p = (nsRelDist, ewRelDist), c = AUV velocity - obstacle velocity. Using hdist for |p| makes cda the large distance and tcpa 0 when there is no dynamic obstacle; 0.001 avoids 0/0 for zero relative velocity (it is a literal, not a guard constant).
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/operation/CalcCPA.java` lines 34-42, `compute`; requirements: LRE-OP5, LRE-Var7, LRE-Var8
+
+### 4. [design_choice] CheckOPEZ and CalcCPA read the closest index from the sensor directly
+
+**raw:** LRE-OP2/OP5 say CheckOPEZ uses the index computed by CalcCStc and CalcCPA the one from CalcCDyn; the profile lets an operation's compute() use only sensor calls, constants and its own fields.
+
+**fix_directive:** Both call sensor.closestStaticIndex()/closestDynamicIndex(), the same function CalcCStc/CalcCDyn call in the same step, so the value is identical.
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/operation/CheckOPEZ.java` lines 27-30, `compute`; requirements: LRE-OP2
+- `java.generated.project/src/main/java/lre/operation/CalcCPA.java` lines 34-42, `compute`; requirements: LRE-OP5
+
+### 5. [design_choice] Transition priority within each mode
+
+**raw:** The requirements give no priority between transitions leaving the same mode.
+
+**fix_directive:** Order: reqOCM (override, first in MOM/HCM/CAM), inOpez, collision risk, endTask, HCM hazards, reqHCM; lower branches conjoin the negations of earlier guard-only branches. In MOM, Beh11 (VertVel) precedes Beh10 (DfltVert): with staticObsVertDist = staticObsDfltVertDist the reverse order would make Beh11 unreachable.
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/controller/LreController.java` lines 90-135, `step`; requirements: LRE-Beh5, LRE-Beh6, LRE-Beh7, LRE-Beh8, LRE-Beh9, LRE-Beh10, LRE-Beh11, LRE-Beh12, LRE-Beh13, LRE-Beh14, LRE-Beh15, LRE-Beh16, LRE-Beh17, LRE-Beh18, LRE-DC1
+
+### 6. [ambiguous_requirement] Sign of vvel in the vertical-velocity hazard
+
+**raw:** LRE-Beh11: vvel at or above 1 m/s; vvel is the signed rate of climb (LRE-OP1).
+
+**fix_directive:** Implemented literally (vvel >= 1.0): fast descent does not trigger Beh11. Beh10 still applies regardless of velocity.
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/controller/LreController.java` lines 70, `vvelAtLeastOne`; requirements: LRE-Beh11, LRE-OP1
+
+### 7. [ambiguous_requirement] Literal thresholds in Beh4 and HCM advised velocity
+
+**raw:** LRE-Beh4 states vel <= 1 and odist > 1 as literals, not minSafeDist. The system description gives HCM 0.1 m/s; LRE-FR3 says advise 0 m/s on entering HCM.
+
+**fix_directive:** Used the literal 1.0 in Beh4 (equal to minSafeDist's default) and advVel(0.0) on HCM entry, following the requirements over the description.
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/controller/LreController.java` lines 62-64, `velAtMostOne/dynObsBeyondOne/staticObsBeyondOne`; requirements: LRE-Beh4
+- `java.generated.project/src/main/java/lre/controller/LreController.java` lines 100-113, `step`; requirements: LRE-FR3
+
+### 8. [scope_question] CAM evasive manoeuvre has no specified output
+
+**raw:** LRE-FR4: in CAM the AUV performs evasive manoeuvres; no requirement gives an advised velocity or heading for it.
+
+**fix_directive:** No action on entering CAM; the manoeuvre is outside the LRE's specified outputs.
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/controller/LreController.java` lines 95-97, `step`; requirements: LRE-FR4, LRE-Beh8, LRE-Beh14
+
+### 9. [design_choice] Inputs a mode does not handle are ignored; step(null) means no input
+
+**raw:** LRE-Beh19/DC1: only the listed transitions exist; reqVel/reqHdng are overridden outside OCM.
+
+**fix_directive:** No self-loops were added for unhandled events; step(null) runs a cycle with only autonomous transitions.
+
+**java_trace:**
+- `java.generated.project/src/main/java/lre/controller/LreController.java` lines 52-136, `step`; requirements: LRE-Beh19, LRE-DC1
+
+## next_step
+
+Run the pipeline; revisit these choices only if a verifier or reviewer objects.

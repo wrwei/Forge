@@ -1,0 +1,168 @@
+{
+  "status": "uncertain",
+  "summary": "All 81 requirements are implemented in two controllers (GasAnalysis, Movement). Values and choices the requirements leave open are listed below; none blocks verification.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Values of the configuration constants",
+      "raw": "CD-Const1..6 say the constants are configured at start-up but give no values.",
+      "fix_directive": "Chosen: THR=2.0, LV=1.0, EVADE_TIME=1, STUCK_PERIOD=3, STUCK_DIST=1.0, OUT_PERIOD=2. All are integer-valued, so the model's round-up of fractional constants changes nothing. Replace with deployment values if known.",
+      "java_trace": [
+        {
+          "file": "src/main/java/chemical_detector/ChemicalDetectorConstants.java",
+          "lines": "8-18",
+          "element": "ChemicalDetectorConstants",
+          "requirement_ids": [
+            "CD-Const1",
+            "CD-Const2",
+            "CD-Const3",
+            "CD-Const4",
+            "CD-Const5",
+            "CD-Const6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Initial values of state variables",
+      "raw": "Only gs has a stated initial value (empty). sts, ins, anl, a, l, d0, d1 and the evasion timer have none.",
+      "fix_directive": "Chosen: sts=noGas, ins=0.0, anl=Front, a=Front, l=front, d0=d1=0.0, evasionStart=0. Each is overwritten before it is read on every path.",
+      "java_trace": [
+        {
+          "file": "src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "lines": "22-25",
+          "element": "sts, ins, anl",
+          "requirement_ids": [
+            "CD-GA-Var2",
+            "CD-GA-Var3",
+            "CD-GA-Var4"
+          ]
+        },
+        {
+          "file": "src/main/java/chemical_detector/controller/MovementController.java",
+          "lines": "20-24",
+          "element": "a, d0, d1, l, evasionStart",
+          "requirement_ids": [
+            "CD-MV-Var1",
+            "CD-MV-Var2",
+            "CD-MV-Var3",
+            "CD-MV-Var4",
+            "CD-MV-Clock1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Mapping from sensor position to Angle",
+      "raw": "CD-DM7/CD-Fn3: the 1-based position maps to a sensing direction via angle(x), which is not defined.",
+      "fix_directive": "Chosen: positions 1,2,3,4 map to Left, Right, Back, Front (enum order), cycling for longer readings; ties go to the lowest position.",
+      "java_trace": [
+        {
+          "file": "src/main/java/chemical_detector/sensor/ChemicalSensor.java",
+          "lines": "55-89",
+          "element": "location",
+          "requirement_ids": [
+            "CD-Fn3",
+            "CD-DM7"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "What 'indicates the target chemical' means in analysis",
+      "raw": "CD-Fn1 does not define when a reading indicates the target, nor where the target identity comes from.",
+      "fix_directive": "A sensor value indicates the target when its chemical equals the target Chem passed to the ChemicalSensor constructor and its intensity is positive.",
+      "java_trace": [
+        {
+          "file": "src/main/java/chemical_detector/sensor/ChemicalSensor.java",
+          "lines": "16-31",
+          "element": "analysis",
+          "requirement_ids": [
+            "CD-Fn1",
+            "CD-DM4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "intensity and location ignore the chemical identity",
+      "raw": "CD-Fn2/CD-Fn3 take the maximum over every sensor value in the reading, so another chemical's stronger signal can set ins and the turn direction.",
+      "fix_directive": "Implemented literally (maximum over all values). Restrict to target-chemical values if that was intended.",
+      "java_trace": [
+        {
+          "file": "src/main/java/chemical_detector/sensor/ChemicalSensor.java",
+          "lines": "37-66",
+          "element": "intensity, location",
+          "requirement_ids": [
+            "CD-Fn2",
+            "CD-Fn3",
+            "CD-GA-FR4"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Intensity as real, operations as Vehicle methods, odometer as a sampled sensor",
+      "raw": "Intensity (CD-DM5) has no Java type; the four operations (CD-OP1..4) are parameterised commands with no computed result; the odometer (CD-Evt3) is sampled inside actions.",
+      "fix_directive": "Intensity is double (real) with goreq as its order. move, randomWalk, shortRandomWalk, changeDirection and delay (the wait) are Vehicle methods, not compute()-style operation classes, because they take arguments and return nothing. The odometer is VehicleSensor.odometer(), read into d0/d1.",
+      "java_trace": [
+        {
+          "file": "src/main/java/chemical_detector/actuator/Vehicle.java",
+          "lines": "20-56",
+          "element": "Vehicle",
+          "requirement_ids": [
+            "CD-OP1",
+            "CD-OP2",
+            "CD-OP3",
+            "CD-OP4",
+            "CD-DM5"
+          ]
+        },
+        {
+          "file": "src/main/java/chemical_detector/sensor/VehicleSensor.java",
+          "lines": "16-18",
+          "element": "odometer",
+          "requirement_ids": [
+            "CD-Evt3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Waiting's during action, terminal states and the evasion timer",
+      "raw": "The profile has no during actions or final states; CD-MV-Clock1 restarts the timer 'on entry to Avoiding'.",
+      "fix_directive": "randomWalk() runs on every transition into Waiting and once in the MovementController constructor. GasAnalysis concludes in a terminal mode Final (CD-GA-Beh6); Found is terminal (CD-MV-Beh9 has no transition). The timer is restarted with Avoiding's entry actions on both transitions into Avoiding. In Java, an event a mode does not handle is dropped for that cycle.",
+      "java_trace": [
+        {
+          "file": "src/main/java/chemical_detector/controller/MovementController.java",
+          "lines": "37-170",
+          "element": "step",
+          "requirement_ids": [
+            "CD-MV-FR1",
+            "CD-MV-Beh9",
+            "CD-MV-Clock1",
+            "CD-MV-Beh7",
+            "CD-MV-Beh17",
+            "CD-DC1"
+          ]
+        },
+        {
+          "file": "src/main/java/chemical_detector/controller/GasAnalysisController.java",
+          "lines": "74-86",
+          "element": "step",
+          "requirement_ids": [
+            "CD-GA-Beh6",
+            "CD-DC1"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline; revisit an item only if a verifier or the vacuity audit points at it."
+}

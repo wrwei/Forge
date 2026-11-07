@@ -17,9 +17,11 @@ RESEARCH = "/Users/ranwei/Gitee/formal_method_guided_vibe_coding"
 PIN = "56cb43d7835b43e8a986e6ba4c0e82f35083d6f1"
 PIN_A14 = "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa"   # Amendments 14-16 (Steam Boiler): the Amendment 16 pin
 COLL = {"cold": ("v3-cold", "forge-v3c9", "/Users/ranwei/Gitee/v3c9-staging"),
-        "reference": ("v3-reference", "forge-v3r10", "/Users/ranwei/Gitee/v3r10-staging")}
+        "reference": ("v3-reference", "forge-v3r10", "/Users/ranwei/Gitee/v3r10-staging"),
+        "compileonly": ("v3-compile-only", "forge-v3o18", "/Users/ranwei/Gitee/v3o18-staging")}   # Amendment 18
 RUNS = {"cold": {**{s: range(1, 11) for s in ("sranger", "lre", "chemical_detector")}, "steam_boiler": range(1, 11)},   # Amendments 11 and 12: cold Steam Boiler passes 1-10
-        "reference": {"sranger": range(1, 6), "lre": range(1, 6), "chemical_detector": range(1, 6), "steam_boiler": range(1, 6)}}   # Amendment 11: Steam Boiler runs 2-5
+        "reference": {"sranger": range(1, 6), "lre": range(1, 6), "chemical_detector": range(1, 6), "steam_boiler": range(1, 6)},
+        "compileonly": {"sranger": range(1, 6), "lre": range(1, 6), "chemical_detector": range(1, 6)}}   # Amendment 18   # Amendment 11: Steam Boiler runs 2-5
 # Replacements for void sessions (Validity section): the next number of the same study
 # and collection. Added when a session is voided, before the replacement runs.
 # Withdrawn unused by Amendment 5 (their prompts, v3-cold-lre-run11.md and
@@ -171,6 +173,11 @@ work around it in your Java.
 End each iteration's chat reply with `ITER_<n>_COMPLETE: <N> files edited`.
 """
 
+COMPILEONLY = (REFERENCE.replace("# Reference run — {study}, run {k}", "# Compile-only run — {study}, run {k}")
+               .replace("3. If it prints **ALL PHASES PASSED**, stop: the run has converged. Report the\n   iteration number.",
+                        "3. If it prints **ALL VISIBLE PHASES PASSED**, stop: this is the run's stop point.\n   Report the iteration number."))   # Amendment 18
+assert COMPILEONLY != REFERENCE and COMPILEONLY.count("ALL VISIBLE PHASES PASSED") == 1
+
 CAP_RULE = """5. **The cap is iteration 7.** At the cap, stop and report non-convergence with the
    failing phases.
 """
@@ -194,14 +201,16 @@ def render(cond, study, k):
         pin = PIN_A14
     wt = f"/Users/ranwei/Gitee/{prefix}-run{k}-{study}"
     sd = "" if study == "steam_boiler" else SYSDESC.format(study=study)
-    tpl = COLD if cond == "cold" else REFERENCE
+    tpl = {"cold": COLD, "reference": REFERENCE, "compileonly": COMPILEONLY}[cond]
+    if cond == "compileonly": pin = PIN_A14   # Amendment 18: the current pin
     return tpl.format(study=study, k=k, unit="pass" if cond == "cold" else "run", sysdesc=sd, wt=wt,
                       coll=coll, prefix=prefix, stage=stage, pin=pin, research=RESEARCH,
                       stoprule=NOCAP_RULE if (cond, study, k) in NOCAP_RUNS else CAP_RULE)
 
 
-def normalise(text, study, k):
+def normalise(text, study, k, cond=None):
     t = text.replace(study, "<S>")
+    if cond == "compileonly": t = t.replace(PIN_A14, PIN)   # Amendment 18: the pin, a permitted difference
     t = re.sub(rf"\brun{k}\b", "run<K>", t)
     t = re.sub(rf"\b(pass|run) {k}\b", r"\1 <K>", t)
     t = re.sub(rf"(<S> ){k}( 1| <iteration>)", rf"\1<K>\2", t)
@@ -226,7 +235,7 @@ def main():
                 text = render(cond, study, k); n += 1
                 path = os.path.join(OUT, f"v3-{cond}-{study}-run{k}.md")
                 open(path, "w").write(text)
-                norm = normalise(text, study, k)
+                norm = normalise(text, study, k, cond)
                 if canon is None: canon = norm
                 elif norm != canon:
                     bad += 1; print(f"DIFFERS {path}")

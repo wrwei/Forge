@@ -1,0 +1,51 @@
+{
+  "study": "lre",
+  "run": 2,
+  "iteration": 1,
+  "recorded_utc": "2026-11-05 10:38:45",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3o18-run2-lre",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-lre-run2",
+  "files": {
+    "java": 15,
+    "java_test": 0,
+    "formal_artefacts": 74,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 881,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "passed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# LRE, run 2, iteration 1\n\n## What I wrote\n\n15 files under `lre/`:\n- `LreController.step()`: the five operations run first, then named predicates, then one block per mode (OCM, MOM, HCM, CAM).\n- Operations CalcVel, CalcCStc, CalcCDyn, CheckOPEZ and CalcCPA.\n- `Sensor` (the DM5 functions), with `Obstacle` and `ObstacleRegister`.\n- `Actuator.send(OutputEvent)`, the sealed input/output events, `LreMode`, `LreConstants` and the annotation.\n\nEntry actions: MOM advVel(1), HCM advVel(0). Beh7 and Beh18 also send advVel(0). The trace covers all 51 requirements and every file.\n\n## Decisions the requirements did not settle\n\n- **\"None\" = -1 for natural indices:** used a reserved natural index (2147483647) that the register refuses.\n- **DM5 vs OP5 defaults:** zero fields would give cda = 0, a false collision. cda = sqrt(hdist\u00b2 \u2212 tcpa\u00b7(p\u00b7w)) is exact with an obstacle and large without one.\n- **Invented values:** safe large distance 1e6 m. CPA_EPSILON 1e-6 keeps tcpa defined at zero relative speed; the model rounds it up to 1.\n- **CPA plane:** horizontal only, since only horizontal accessors exist.\n- **Shared constants:** \"1 m/s\" values share MOM_VEL. Beh4's \"> 1\" uses minSafeDist.\n- **Priority:** reqOCM, inOpez and collision come first in MOM and HCM. Beh11 goes before Beh10, because after it, with equal thresholds, Beh11 could never fire.\n- **Operation inputs:** CheckOPEZ and CalcCPA query the sensor's closest index directly.\n- **Unhandled events:** `step(null)` means no operator input; events a mode does not list are ignored.\n- **HCM speed:** FR3 (0 m/s) followed over the description's 0.1 m/s.\n\n## Unresolved\n\n- **CAM evasive advice:** unspecified, so none is issued.\n- **CAM exit:** an obstacle that passed close and is receding keeps the LRE in CAM until reqOCM.\n- **Beh11:** it uses the signed rate of climb, so it does not fire on a fast descent.\n\nDetails: `post_codegen.md`."
+}

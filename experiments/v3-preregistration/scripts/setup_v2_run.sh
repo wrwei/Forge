@@ -257,7 +257,7 @@ else echo "   FAIL ${v} leftover post_* verdict file(s) — a cold run would dif
 # comments carry no internal defect labels. The checks below that identify a
 # repair by its label ("Fnn FIX") therefore fall back to the repair's CODE
 # pattern under this collection; every other collection is checked exactly as
-# before. repair18 is special: the published generator retired the `offered =
+# before. F18 is special: the published generator retired the `offered =
 # listens` environment assumption on 2026-10-20 (per-state offer invariant,
 # Idle operations, split-then-blast closer), so for F the check is for the
 # replacement, and the OLD pin is a FAIL.
@@ -294,21 +294,21 @@ f6=$(grep -c 'getEAllReferences' "$ETL" 2>/dev/null)
 f7=$(grep -c 'zsafeThyName' "$THY" 2>/dev/null)
 f8=$(grep -c 'trueExp.value = "true"' "$ETL" 2>/dev/null)
 f9=$(grep -cE 'isTypeOf\((Seq|Set)Type\)' "$THY" 2>/dev/null)
-f9b=$(grep -c 'repair9b FIX' "$DFY" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f9b=$(grep -c 'ensures old(' "$DFY" 2>/dev/null)
+f9b=$(grep -c 'F9b FIX' "$DFY" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f9b=$(grep -c 'ensures old(' "$DFY" 2>/dev/null)
 f9c=$(grep -c 'ensures old(' "$DFY" 2>/dev/null)
 if [ "${f6:-0}" -ge 1 ] && [ "${f7:-0}" -ge 1 ] && [ "${f8:-0}" -ge 1 ] && \
    [ "${f9:-0}" -ge 2 ] && [ "${f9b:-0}" -ge 1 ] && [ "${f9c:-0}" -ge 1 ]; then
-  echo "   OK   extractor carries repair6-repair9c repairs (${f6}/${f7}/${f8}/${f9}/${f9b}/${f9c} sites)"
+  echo "   OK   extractor carries F6-F9c repairs (${f6}/${f7}/${f8}/${f9}/${f9b}/${f9c} sites)"
 else
-  echo "   FAIL repair6-repair9c repair set incomplete (${f6}/${f7}/${f8}/${f9}/${f9b}/${f9c}) — wrong SHA"; fail=1
+  echo "   FAIL F6-F9c repair set incomplete (${f6}/${f7}/${f8}/${f9}/${f9b}/${f9c}) — wrong SHA"; fail=1
 fi
 
-# repair15-repair18 (fa4241f8 re-cut, 2026-09-16): ranked method lookup; terminal-state
+# F15-F18 (fa4241f8 re-cut, 2026-09-16): ranked method lookup; terminal-state
 # warning gate; `until` emission; the offered=listens environment assumption
 # with computed exhaust_disc tactic. The gate list grows with the fix set or
 # setup verifies yesterday's extractor.
 f15=$(grep -c 'findJavaMethodForFunction' "$ETL" 2>/dev/null)
-f16=$(grep -c 'repair16 WARNING' "$THY" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f16=$(grep -c 'WARNING --' "$THY" 2>/dev/null)
+f16=$(grep -c 'F16 WARNING' "$THY" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f16=$(grep -c 'WARNING --' "$THY" 2>/dev/null)
 f17=$(grep -c 'until "\[%=untilTerm%\]"' "$THY" 2>/dev/null)
 f18a=$(grep -c 'offered = listens' "$THY" 2>/dev/null)
 f18b=$(grep -c 'exhaustFacts' "$THY" 2>/dev/null)
@@ -328,15 +328,15 @@ if [ "$V3" = 1 ]; then
 fi
 if [ "${f15:-0}" -ge 2 ] && [ "${f16:-0}" -ge 1 ] && [ "${f17:-0}" -ge 1 ] && \
    [ "${f18a:-0}" -ge 1 ] && [ "${f18b:-0}" -ge 2 ] && [ "${f16p:-0}" -ge 1 ]; then
-  echo "   OK   extractor carries repair15-repair18 repairs (${f15}/${f16}/${f17}/${f18a}/${f18b}/${f16p} sites)"
+  echo "   OK   extractor carries F15-F18 repairs (${f15}/${f16}/${f17}/${f18a}/${f18b}/${f16p} sites)"
 else
-  echo "   FAIL repair15-repair18 repair set incomplete (${f15}/${f16}/${f17}/${f18a}/${f18b}/${f16p}) — wrong SHA"; fail=1
+  echo "   FAIL F15-F18 repair set incomplete (${f15}/${f16}/${f17}/${f18a}/${f18b}/${f16p}) — wrong SHA"; fail=1
 fi
 
-# repair20 (fa4241f8, tenth cut, 2026-09-17): negated-conjunction parenthesisation
+# F20 (fa4241f8, tenth cut, 2026-09-17): negated-conjunction parenthesisation
 # in both theory printers + the vacuity parser's UNKNOWN classification.
-f20a=$(grep -c 'repair20 FIX' "$THY" 2>/dev/null)
-f20b=$(grep -c 'repair20' forge.dashboard/web/vacuity_sat.py 2>/dev/null)
+f20a=$(grep -c 'F20 FIX' "$THY" 2>/dev/null)
+f20b=$(grep -c 'F20' forge.dashboard/web/vacuity_sat.py 2>/dev/null)
 if [ "$LABEL_SCRUBBED" = 1 ]; then
   # site 2: the Not case in the main printer; site 1: its twin in notString()
   f20a=$(( $(grep -c 'binds TIGHTER' "$THY" 2>/dev/null) + $(grep -c 'binds tighter' "$THY" 2>/dev/null) ))
@@ -344,23 +344,23 @@ if [ "$LABEL_SCRUBBED" = 1 ]; then
   f20b=$(grep -c 'startswith("!") and "&&" in stripped' forge.dashboard/web/vacuity_sat.py 2>/dev/null)
 fi
 if [ "${f20a:-0}" -ge 2 ] && [ "${f20b:-0}" -ge 1 ]; then
-  echo "   OK   extractor carries repair20 repair (${f20a} printer sites, parser guarded)"
+  echo "   OK   extractor carries F20 repair (${f20a} printer sites, parser guarded)"
 else
-  echo "   FAIL repair20 repair absent (${f20a}/${f20b}) — wrong SHA"; fail=1
+  echo "   FAIL F20 repair absent (${f20a}/${f20b}) — wrong SHA"; fail=1
 fi
 
-# repair21 (fa4241f8, eleventh cut, 2026-09-17): enum-typed operation fields must
+# F21 (fa4241f8, eleventh cut, 2026-09-17): enum-typed operation fields must
 # reference the Enumeration, not fall through to `real` (chem run-2 fdr4 load
 # error "expected Angle, actual Int" at CALL__move).
 f21=$(grep -c 'enumTypeMap.containsKey(javaTypeName)' "$ETL" 2>/dev/null)
-f21b=$(grep -c 'repair21b FIX' "$ETL" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f21b=$(grep -c 'enumTypeMap.containsKey(javaTypeName)' "$ETL" 2>/dev/null)
+f21b=$(grep -c 'F21b FIX' "$ETL" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f21b=$(grep -c 'enumTypeMap.containsKey(javaTypeName)' "$ETL" 2>/dev/null)
 if [ "${f21:-0}" -ge 1 ] && [ "${f21b:-0}" -ge 1 ]; then
-  echo "   OK   extractor carries repair21+repair21b (enum typing and placeholders)"
+  echo "   OK   extractor carries F21+F21b (enum typing and placeholders)"
 else
-  echo "   FAIL repair21/repair21b incomplete (${f21:-0}/${f21b:-0}) — wrong SHA"; fail=1
+  echo "   FAIL F21/F21b incomplete (${f21:-0}/${f21b:-0}) — wrong SHA"; fail=1
 fi
 
-# repair22 (194e5f5b, twelfth cut, 2026-09-18): enum-typed METHOD PARAMETERS resolve
+# F22 (194e5f5b, twelfth cut, 2026-09-18): enum-typed METHOD PARAMETERS resolve
 # for the Phase 6b zero-arg lift, so they type as their Enumeration instead of
 # the `nat` default. The scope check is load-bearing, not cosmetic: an unscoped
 # CtParameter lookup silently retyped chem run-2's lv/stuckDist/stuckPeriod by
@@ -370,18 +370,18 @@ f22a=$(grep -c 'enumNamesForParamLookup' "$ETL" 2>/dev/null)
 f22b=$(grep -c 'Spoon!CtParameter.all' "$ETL" 2>/dev/null)
 f22c=$(grep -c 'enumNamesForParamLookup.includes' "$ETL" 2>/dev/null)
 if [ "${f22a:-0}" -ge 3 ] && [ "${f22b:-0}" -ge 1 ] && [ "${f22c:-0}" -ge 1 ]; then
-  echo "   OK   extractor carries repair22 repair (enum-parameter typing, enum-scoped)"
+  echo "   OK   extractor carries F22 repair (enum-parameter typing, enum-scoped)"
 else
-  echo "   FAIL repair22 repair absent or not enum-scoped (${f22a}/${f22b}/${f22c}) — wrong SHA"; fail=1
+  echo "   FAIL F22 repair absent or not enum-scoped (${f22a}/${f22b}/${f22c}) — wrong SHA"; fail=1
 fi
 
-# repair23/repair23b (85e6ee51, thirteenth cut, 2026-09-19): csp_corrections.py's
+# F23/F23b (85e6ee51, thirteenth cut, 2026-09-19): csp_corrections.py's
 # communicated-constant scan keys rct_consts LOWER-CASED but matched the raw
 # action line case-sensitively, so a camelCase constant never registered and the
 # domain widening never fired -- FDR aborted "not a member of {0,1}" and every
 # assertion came back inconclusive. Found by the autonomous arm's sranger run-2,
 # which worked around it in its own Java rather than editing the instrument.
-# The wait-strip (repair23b) is load-bearing, not cosmetic: the case-fix ALONE would
+# The wait-strip (F23b) is load-bearing, not cosmetic: the case-fix ALONE would
 # have widened chem claude run-1, whose `wait ( outPeriod )` carries a 2 yet
 # whose fdr4 passed 9/9 at real={0..1} -- a wait argument is a timed delay, not
 # a communicated payload.
@@ -389,26 +389,26 @@ CSPC=forge.dashboard/web/csp_corrections.py
 f23a=$(grep -c 'scan_line, re.I' "$CSPC" 2>/dev/null)
 f23b=$(grep -c -F 'wait\s*\([^)]*\)' "$CSPC" 2>/dev/null)
 if [ "${f23a:-0}" -ge 1 ] && [ "${f23b:-0}" -ge 1 ]; then
-  echo "   OK   dashboard carries repair23 repair (case-insensitive scan, wait-args excluded)"
+  echo "   OK   dashboard carries F23 repair (case-insensitive scan, wait-args excluded)"
 else
-  echo "   FAIL repair23 repair absent or missing the wait-strip (${f23a}/${f23b}) -- wrong SHA"; fail=1
+  echo "   FAIL F23 repair absent or missing the wait-strip (${f23a}/${f23b}) -- wrong SHA"; fail=1
 fi
 
-# repair24 (535099f5, fourteenth cut, 2026-09-19): the ZERO-ARGUMENT abstracted-call branch in
+# F24 (535099f5, fourteenth cut, 2026-09-19): the ZERO-ARGUMENT abstracted-call branch in
 # java2dafny.egl registered the method but recorded no return type, so emission
 # fell to the "real" default. A Java `int cstc()` called NESTED --
 # `sensor.odist(calcCStc.cstc())` -- emitted `function cstc(): real` and Dafny
 # rejected the call ("expected int, found real"). Found by the autonomous arm's
 # lre run-3, which hoisted the call into an int local to work around it.
 DFY=forge.transformations/src/main/resources/transformations/java2dafny.egl
-f24=$(grep -c 'repair24 FIX' "$DFY" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f24=$(grep -c 'zero-argument branch' "$DFY" 2>/dev/null)
+f24=$(grep -c 'F24 FIX' "$DFY" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f24=$(grep -c 'zero-argument branch' "$DFY" 2>/dev/null)
 if [ "${f24:-0}" -ge 1 ]; then
-  echo "   OK   extractor carries repair24 repair (zero-arg return typing)"
+  echo "   OK   extractor carries F24 repair (zero-arg return typing)"
 else
-  echo "   FAIL repair24 repair absent -- wrong SHA"; fail=1
+  echo "   FAIL F24 repair absent -- wrong SHA"; fail=1
 fi
 
-# repair25 (358232f5, fifteenth cut, 2026-09-19): the FloatExp render site emitted Java's
+# F25 (358232f5, fifteenth cut, 2026-09-19): the FloatExp render site emitted Java's
 # SCIENTIFIC notation verbatim (`1.0E-9`). Isabelle/HOL has no `E` exponent, so
 # the theory read it as the application `(1.0) (-9)` -- "Type error in
 # application: operator not of function type", 54 occurrences in one theory.
@@ -418,12 +418,12 @@ THY=forge.transformations/src/main/resources/transformations/thy_generation_rule
 f25a=$(grep -c 'operation normaliseFloatLiteral' "$THY" 2>/dev/null)
 f25b=$(grep -c 'normaliseFloatLiteral(self.value.toString())' "$THY" 2>/dev/null)
 if [ "${f25a:-0}" -ge 1 ] && [ "${f25b:-0}" -ge 1 ]; then
-  echo "   OK   extractor carries repair25 repair (scientific-notation literals)"
+  echo "   OK   extractor carries F25 repair (scientific-notation literals)"
 else
-  echo "   FAIL repair25 repair absent or not wired (${f25a}/${f25b}) -- wrong SHA"; fail=1
+  echo "   FAIL F25 repair absent or not wired (${f25a}/${f25b}) -- wrong SHA"; fail=1
 fi
 
-# repair26 (b57f185a, sixteenth cut, 2026-09-19): buildInferredFunction read only
+# F26 (b57f185a, sixteenth cut, 2026-09-19): buildInferredFunction read only
 # javaParams.first() and added exactly ONE RoboChart Parameter, so every
 # multi-argument Java method was modelled as unary. The theory generator's own
 # CASE 2 (`a \<times> b \<Rightarrow> r`) was unreachable from inferred
@@ -432,30 +432,30 @@ fi
 # site, and Isabelle failed with "Type unification failed: Clash of types
 # _ x _ and R". Found by the autonomous arm's lre run-5.
 ETL2=forge.transformations/src/main/resources/transformations/java2robochart.etl
-f26a=$(grep -c 'repair26 FIX' "$ETL2" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f26a=$(grep -c 'while (pi < nParams)' "$ETL2" 2>/dev/null)
+f26a=$(grep -c 'F26 FIX' "$ETL2" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f26a=$(grep -c 'while (pi < nParams)' "$ETL2" 2>/dev/null)
 f26b=$(grep -c 'while (pi < nParams)' "$ETL2" 2>/dev/null)
 if [ "${f26a:-0}" -ge 1 ] && [ "${f26b:-0}" -ge 1 ]; then
-  echo "   OK   extractor carries repair26 repair (multi-parameter inferred functions)"
+  echo "   OK   extractor carries F26 repair (multi-parameter inferred functions)"
 else
-  echo "   FAIL repair26 repair absent or not looping (${f26a}/${f26b}) -- wrong SHA"; fail=1
+  echo "   FAIL F26 repair absent or not looping (${f26a}/${f26b}) -- wrong SHA"; fail=1
 fi
 
-# repair27/repair28 (seventeenth cut, 2026-09-20), both found by chemical_detector run-5:
-#  repair27 - the params guard and the bare-Assignment update path both required a
+# F27/F28 (seventeenth cut, 2026-09-20), both found by chemical_detector run-5:
+#  F27 - the params guard and the bare-Assignment update path both required a
 #        SeqStatement action, so a transition whose action is a SINGLE assignment
 #        emitted no `<sv>_input` param while still rendering the lens read as
 #        `v()`: "Extra variables on rhs: v".
-#  repair28 - the payload-set `definition <Set> = UNIV` was emitted once per
+#  F28 - the payload-set `definition <Set> = UNIV` was emitted once per
 #        rebinding transition rather than once per theory: "Duplicate constant
 #        declaration".
 THY2=forge.transformations/src/main/resources/transformations/thy_generation_rule.egl
-f27=$(grep -c 'repair27 FIX' "$THY2" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f27=$(grep -c 'bareSkip' "$THY2" 2>/dev/null)
+f27=$(grep -c 'F27 FIX' "$THY2" 2>/dev/null); [ "$LABEL_SCRUBBED" = 1 ] && f27=$(grep -c 'bareSkip' "$THY2" 2>/dev/null)
 f27b=$(grep -c 'bareSkip' "$THY2" 2>/dev/null)
 f28=$(grep -c 'emittedPayloadSets' "$THY2" 2>/dev/null)
 if [ "${f27:-0}" -ge 2 ] && [ "${f27b:-0}" -ge 1 ] && [ "${f28:-0}" -ge 2 ]; then
-  echo "   OK   extractor carries repair27+repair28 repairs (single-assignment params, payload-set dedup)"
+  echo "   OK   extractor carries F27+F28 repairs (single-assignment params, payload-set dedup)"
 else
-  echo "   FAIL repair27/repair28 repair absent (${f27}/${f27b}/${f28}) -- wrong SHA"; fail=1
+  echo "   FAIL F27/F28 repair absent (${f27}/${f27b}/${f28}) -- wrong SHA"; fail=1
 fi
 
 k=$(find . \( -name '*blind_reference_spec*' -o -name 'LRE_REQUIREMENTS_REFERENCE_SPEC*' \) 2>/dev/null | wc -l | tr -d ' ')

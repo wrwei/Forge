@@ -1,0 +1,2444 @@
+<?xml version="1.0" encoding="ASCII"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:spoon="http://spoon.gforge.inria.fr/spoon">
+  <spoon:CtClass name="Actuator">
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Differential-drive actuator (SR-DM6): receives Move commands from the&#xA;controller and stores the last one issued for inspection."/>
+    <modifier>FINAL</modifier>
+    <modifier>PUBLIC</modifier>
+    <typeMember xsi:type="spoon:CtConstructor" isImplicit="true" name="&lt;init>">
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+          <type name="Object">
+            <packageRef name="java.lang"/>
+          </type>
+          <executableRef isImplicit="true" name="&lt;init>">
+            <declaringType name="Object">
+              <packageRef name="java.lang"/>
+            </declaringType>
+          </executableRef>
+        </statement>
+      </body>
+      <type name="Actuator">
+        <packageRef name="sranger.actuator"/>
+      </type>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="lastLinearVelocity">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <modifier>PRIVATE</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="lastAngularVelocity">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <modifier>PRIVATE</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="apply">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Receives an output event from the controller and records it.">
+        <commentTag documentationTypeRealname="param" commentContent="the command issued by the controller" javadocTagValue="command"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtIf">
+          <condition xsi:type="spoon:CtBinaryOperator" operatorKind="INSTANCEOF">
+            <type name="boolean"/>
+            <leftOperand xsi:type="spoon:CtVariableRead">
+              <type name="OutputEvent">
+                <packageRef name="sranger.event"/>
+              </type>
+              <variable xsi:type="spoon:CtParameterReference" name="command"/>
+            </leftOperand>
+            <rightOperand xsi:type="spoon:CtTypeAccess">
+              <type name="void"/>
+              <accessedType name="Move">
+                <declaringType name="OutputEvent">
+                  <packageRef isImplicit="true" name="sranger.event"/>
+                </declaringType>
+              </accessedType>
+            </rightOperand>
+          </condition>
+          <then xsi:type="spoon:CtBlock">
+            <statement xsi:type="spoon:CtLocalVariable" name="mv">
+              <type name="Move">
+                <declaringType name="OutputEvent">
+                  <packageRef isImplicit="true" name="sranger.event"/>
+                </declaringType>
+              </type>
+              <assignment xsi:type="spoon:CtVariableRead">
+                <type name="OutputEvent">
+                  <packageRef name="sranger.event"/>
+                </type>
+                <cast name="Move">
+                  <declaringType name="OutputEvent">
+                    <packageRef isImplicit="true" name="sranger.event"/>
+                  </declaringType>
+                </cast>
+                <variable xsi:type="spoon:CtParameterReference" name="command"/>
+              </assignment>
+            </statement>
+            <statement xsi:type="spoon:CtAssignment">
+              <type name="double"/>
+              <assignment xsi:type="spoon:CtInvocation">
+                <type name="double"/>
+                <target xsi:type="spoon:CtVariableRead">
+                  <type name="Move">
+                    <declaringType name="OutputEvent">
+                      <packageRef name="sranger.event"/>
+                    </declaringType>
+                  </type>
+                  <variable xsi:type="spoon:CtLocalVariableReference" name="mv"/>
+                </target>
+                <executableRef name="lv">
+                  <declaringType name="Move">
+                    <declaringType name="OutputEvent">
+                      <packageRef name="sranger.event"/>
+                    </declaringType>
+                  </declaringType>
+                </executableRef>
+              </assignment>
+              <assigned xsi:type="spoon:CtFieldWrite">
+                <type name="double"/>
+                <target xsi:type="spoon:CtThisAccess">
+                  <type name="Actuator">
+                    <packageRef name="sranger.actuator"/>
+                  </type>
+                  <target xsi:type="spoon:CtTypeAccess">
+                    <type name="void"/>
+                    <accessedType name="Actuator">
+                      <packageRef name="sranger.actuator"/>
+                    </accessedType>
+                  </target>
+                </target>
+                <variable xsi:type="spoon:CtFieldReference" name="lastLinearVelocity">
+                  <declaringType name="Actuator">
+                    <packageRef name="sranger.actuator"/>
+                  </declaringType>
+                </variable>
+              </assigned>
+            </statement>
+            <statement xsi:type="spoon:CtAssignment">
+              <type name="double"/>
+              <assignment xsi:type="spoon:CtInvocation">
+                <type name="double"/>
+                <target xsi:type="spoon:CtVariableRead">
+                  <type name="Move">
+                    <declaringType name="OutputEvent">
+                      <packageRef name="sranger.event"/>
+                    </declaringType>
+                  </type>
+                  <variable xsi:type="spoon:CtLocalVariableReference" name="mv"/>
+                </target>
+                <executableRef name="av">
+                  <declaringType name="Move">
+                    <declaringType name="OutputEvent">
+                      <packageRef name="sranger.event"/>
+                    </declaringType>
+                  </declaringType>
+                </executableRef>
+              </assignment>
+              <assigned xsi:type="spoon:CtFieldWrite">
+                <type name="double"/>
+                <target xsi:type="spoon:CtThisAccess">
+                  <type name="Actuator">
+                    <packageRef name="sranger.actuator"/>
+                  </type>
+                  <target xsi:type="spoon:CtTypeAccess">
+                    <type name="void"/>
+                    <accessedType name="Actuator">
+                      <packageRef name="sranger.actuator"/>
+                    </accessedType>
+                  </target>
+                </target>
+                <variable xsi:type="spoon:CtFieldReference" name="lastAngularVelocity">
+                  <declaringType name="Actuator">
+                    <packageRef name="sranger.actuator"/>
+                  </declaringType>
+                </variable>
+              </assigned>
+            </statement>
+          </then>
+        </statement>
+      </body>
+      <type name="void"/>
+      <parameter name="command">
+        <type name="OutputEvent">
+          <packageRef isImplicit="true" name="sranger.event"/>
+        </type>
+      </parameter>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="lastLinearVelocity">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="">
+        <commentTag documentationTypeRealname="return" commentContent="the last commanded linear velocity (m/s)"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtReturn">
+          <expression xsi:type="spoon:CtFieldRead">
+            <type name="double"/>
+            <variable xsi:type="spoon:CtFieldReference" name="lastLinearVelocity">
+              <declaringType name="Actuator">
+                <packageRef name="sranger.actuator"/>
+              </declaringType>
+            </variable>
+            <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+              <type name="Actuator">
+                <packageRef name="sranger.actuator"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="Actuator">
+                  <packageRef name="sranger.actuator"/>
+                </accessedType>
+              </target>
+            </target>
+          </expression>
+        </statement>
+      </body>
+      <type name="double"/>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="lastAngularVelocity">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="">
+        <commentTag documentationTypeRealname="return" commentContent="the last commanded angular velocity (rad/s)"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtReturn">
+          <expression xsi:type="spoon:CtFieldRead">
+            <type name="double"/>
+            <variable xsi:type="spoon:CtFieldReference" name="lastAngularVelocity">
+              <declaringType name="Actuator">
+                <packageRef name="sranger.actuator"/>
+              </declaringType>
+            </variable>
+            <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+              <type name="Actuator">
+                <packageRef name="sranger.actuator"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="Actuator">
+                  <packageRef name="sranger.actuator"/>
+                </accessedType>
+              </target>
+            </target>
+          </expression>
+        </statement>
+      </body>
+      <type name="double"/>
+    </typeMember>
+  </spoon:CtClass>
+  <spoon:CtAnnotationType name="RoboChartType">
+    <annotation>
+      <type name="Retention">
+        <packageRef name="java.lang.annotation"/>
+      </type>
+      <annotationType name="Retention">
+        <packageRef isImplicit="true" name="java.lang.annotation"/>
+      </annotationType>
+    </annotation>
+    <annotation>
+      <type name="Target">
+        <packageRef name="java.lang.annotation"/>
+      </type>
+      <annotationType name="Target">
+        <packageRef isImplicit="true" name="java.lang.annotation"/>
+      </annotationType>
+    </annotation>
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Names the RoboChart type a Java field, parameter or return value maps to&#xA;(&quot;real&quot; for doubles, &quot;nat&quot; for non-negative integers)."/>
+    <modifier>ABSTRACT</modifier>
+    <modifier>PUBLIC</modifier>
+    <typeMember xsi:type="spoon:CtAnnotationMethod" name="value">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="The RoboChart type name."/>
+      <modifier>ABSTRACT</modifier>
+      <modifier>PUBLIC</modifier>
+      <type name="String">
+        <packageRef isImplicit="true" name="java.lang"/>
+      </type>
+    </typeMember>
+  </spoon:CtAnnotationType>
+  <spoon:CtClass name="SRangerConstants">
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Fixed configuration constants of the SRanger controller (SR-DM2)."/>
+    <modifier>FINAL</modifier>
+    <modifier>PUBLIC</modifier>
+    <typeMember xsi:type="spoon:CtField" name="MOVE_VEL">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Linear velocity commanded in Moving (m/s)."/>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="1.0" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="TURN_VEL">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Angular velocity commanded in Turning (rad/s)."/>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="2.0" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="OBSTACLE_THRESHOLD">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="IR-distance threshold for obstacle detection (metres)."/>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="0.5" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="TURN_DURATION">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Time spent in Turning before returning to Moving (seconds)."/>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="2.0" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtConstructor" name="&lt;init>">
+      <modifier>PRIVATE</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+          <type name="Object">
+            <packageRef name="java.lang"/>
+          </type>
+          <executableRef isImplicit="true" name="&lt;init>">
+            <declaringType name="Object">
+              <packageRef name="java.lang"/>
+            </declaringType>
+          </executableRef>
+        </statement>
+      </body>
+      <type name="SRangerConstants">
+        <packageRef name="sranger.controller"/>
+      </type>
+    </typeMember>
+  </spoon:CtClass>
+  <spoon:CtClass name="SRangerController">
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Reactive SRanger controller (SR-ARCH1, SR-ARCH2): drives forward in Moving,&#xA;turns in place for turnDuration seconds after an obstacle, and stops in&#xA;Final on endTask."/>
+    <modifier>FINAL</modifier>
+    <modifier>PUBLIC</modifier>
+    <typeMember xsi:type="spoon:CtField" name="currentMode">
+      <modifier>PRIVATE</modifier>
+      <type name="SRangerMode">
+        <packageRef isImplicit="true" name="sranger.controller"/>
+      </type>
+      <assignment xsi:type="spoon:CtFieldRead">
+        <type name="SRangerMode">
+          <packageRef name="sranger.controller"/>
+        </type>
+        <variable xsi:type="spoon:CtFieldReference" name="MOVING" isFinal="true" isStatic="true">
+          <declaringType name="SRangerMode">
+            <packageRef name="sranger.controller"/>
+          </declaringType>
+        </variable>
+        <target xsi:type="spoon:CtTypeAccess">
+          <type name="void"/>
+          <accessedType name="SRangerMode">
+            <packageRef isImplicit="true" name="sranger.controller"/>
+          </accessedType>
+        </target>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="clockResetTime">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Time at which the controller most recently entered Turning (SR-Var1)."/>
+      <modifier>PRIVATE</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="sensor">
+      <modifier>FINAL</modifier>
+      <modifier>PRIVATE</modifier>
+      <type name="Sensor">
+        <packageRef isImplicit="true" name="sranger.sensor"/>
+      </type>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="actuator">
+      <modifier>FINAL</modifier>
+      <modifier>PRIVATE</modifier>
+      <type name="Actuator">
+        <packageRef isImplicit="true" name="sranger.actuator"/>
+      </type>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="timer">
+      <modifier>FINAL</modifier>
+      <modifier>PRIVATE</modifier>
+      <type name="Clock">
+        <packageRef isImplicit="true" name="sranger.time"/>
+      </type>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtConstructor" name="&lt;init>">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Creates the controller in its initial mode, Moving, and issues Moving's&#xA;entry command Move(moveVel, 0) (SR-Beh1, SR-FR1).">
+        <commentTag documentationTypeRealname="param" commentContent="the IR distance sensor" javadocTagValue="sensor"/>
+        <commentTag documentationTypeRealname="param" commentContent="the differential-drive actuator" javadocTagValue="actuator"/>
+        <commentTag documentationTypeRealname="param" commentContent="the controller's time source" javadocTagValue="timer"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+          <type name="Object">
+            <packageRef name="java.lang"/>
+          </type>
+          <executableRef isImplicit="true" name="&lt;init>">
+            <declaringType name="Object">
+              <packageRef name="java.lang"/>
+            </declaringType>
+          </executableRef>
+        </statement>
+        <statement xsi:type="spoon:CtAssignment">
+          <type name="Sensor">
+            <packageRef name="sranger.sensor"/>
+          </type>
+          <assignment xsi:type="spoon:CtVariableRead">
+            <type name="Sensor">
+              <packageRef name="sranger.sensor"/>
+            </type>
+            <variable xsi:type="spoon:CtParameterReference" name="sensor"/>
+          </assignment>
+          <assigned xsi:type="spoon:CtFieldWrite">
+            <type name="Sensor">
+              <packageRef name="sranger.sensor"/>
+            </type>
+            <target xsi:type="spoon:CtThisAccess">
+              <type name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerController">
+                  <packageRef name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </target>
+            <variable xsi:type="spoon:CtFieldReference" name="sensor" isFinal="true">
+              <declaringType name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </declaringType>
+            </variable>
+          </assigned>
+        </statement>
+        <statement xsi:type="spoon:CtAssignment">
+          <type name="Actuator">
+            <packageRef name="sranger.actuator"/>
+          </type>
+          <assignment xsi:type="spoon:CtVariableRead">
+            <type name="Actuator">
+              <packageRef name="sranger.actuator"/>
+            </type>
+            <variable xsi:type="spoon:CtParameterReference" name="actuator"/>
+          </assignment>
+          <assigned xsi:type="spoon:CtFieldWrite">
+            <type name="Actuator">
+              <packageRef name="sranger.actuator"/>
+            </type>
+            <target xsi:type="spoon:CtThisAccess">
+              <type name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerController">
+                  <packageRef name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </target>
+            <variable xsi:type="spoon:CtFieldReference" name="actuator" isFinal="true">
+              <declaringType name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </declaringType>
+            </variable>
+          </assigned>
+        </statement>
+        <statement xsi:type="spoon:CtAssignment">
+          <type name="Clock">
+            <packageRef name="sranger.time"/>
+          </type>
+          <assignment xsi:type="spoon:CtVariableRead">
+            <type name="Clock">
+              <packageRef name="sranger.time"/>
+            </type>
+            <variable xsi:type="spoon:CtParameterReference" name="timer"/>
+          </assignment>
+          <assigned xsi:type="spoon:CtFieldWrite">
+            <type name="Clock">
+              <packageRef name="sranger.time"/>
+            </type>
+            <target xsi:type="spoon:CtThisAccess">
+              <type name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerController">
+                  <packageRef name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </target>
+            <variable xsi:type="spoon:CtFieldReference" name="timer" isFinal="true">
+              <declaringType name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </declaringType>
+            </variable>
+          </assigned>
+        </statement>
+        <statement xsi:type="spoon:CtInvocation">
+          <type name="void"/>
+          <target xsi:type="spoon:CtFieldRead">
+            <type name="Actuator">
+              <packageRef name="sranger.actuator"/>
+            </type>
+            <variable xsi:type="spoon:CtFieldReference" name="actuator" isFinal="true">
+              <declaringType name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </declaringType>
+            </variable>
+            <target xsi:type="spoon:CtThisAccess">
+              <type name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerController">
+                  <packageRef name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </target>
+          </target>
+          <executableRef name="apply">
+            <argumentType name="OutputEvent">
+              <packageRef name="sranger.event"/>
+            </argumentType>
+            <declaringType name="Actuator">
+              <packageRef name="sranger.actuator"/>
+            </declaringType>
+          </executableRef>
+          <argument xsi:type="spoon:CtConstructorCall">
+            <type name="Move">
+              <declaringType name="OutputEvent">
+                <packageRef isImplicit="true" name="sranger.event"/>
+              </declaringType>
+            </type>
+            <executableRef isImplicit="true" name="&lt;init>">
+              <argumentType name="double"/>
+              <argumentType name="double"/>
+              <declaringType name="Move">
+                <declaringType name="OutputEvent">
+                  <packageRef name="sranger.event"/>
+                </declaringType>
+              </declaringType>
+            </executableRef>
+            <argument xsi:type="spoon:CtFieldRead">
+              <type name="double"/>
+              <variable xsi:type="spoon:CtFieldReference" name="MOVE_VEL" isFinal="true" isStatic="true">
+                <declaringType name="SRangerConstants">
+                  <packageRef name="sranger.controller"/>
+                </declaringType>
+              </variable>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerConstants">
+                  <packageRef isImplicit="true" name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </argument>
+            <argument xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+              <type name="double"/>
+            </argument>
+          </argument>
+        </statement>
+      </body>
+      <type name="SRangerController">
+        <packageRef name="sranger.controller"/>
+      </type>
+      <parameter name="sensor">
+        <type name="Sensor">
+          <packageRef isImplicit="true" name="sranger.sensor"/>
+        </type>
+      </parameter>
+      <parameter name="actuator">
+        <type name="Actuator">
+          <packageRef isImplicit="true" name="sranger.actuator"/>
+        </type>
+      </parameter>
+      <parameter name="timer">
+        <type name="Clock">
+          <packageRef isImplicit="true" name="sranger.time"/>
+        </type>
+      </parameter>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="currentMode">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="">
+        <commentTag documentationTypeRealname="return" commentContent="the current operating mode"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtReturn">
+          <expression xsi:type="spoon:CtFieldRead">
+            <type name="SRangerMode">
+              <packageRef name="sranger.controller"/>
+            </type>
+            <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+              <declaringType name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </declaringType>
+            </variable>
+            <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+              <type name="SRangerController">
+                <packageRef name="sranger.controller"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerController">
+                  <packageRef name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </target>
+          </expression>
+        </statement>
+      </body>
+      <type name="SRangerMode">
+        <packageRef isImplicit="true" name="sranger.controller"/>
+      </type>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="step">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Executes one control cycle: takes at most one transition of the current&#xA;mode, chosen by the input event, the IR distance and the time in Turning.">
+        <commentTag documentationTypeRealname="param" commentContent="the input event delivered this cycle" javadocTagValue="event"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtLocalVariable" name="obstacleDetected">
+          <comment commentContent="Guard predicates (SR-GP1, SR-GP2)."/>
+          <type name="boolean"/>
+          <assignment xsi:type="spoon:CtBinaryOperator" operatorKind="LE">
+            <type name="boolean"/>
+            <leftOperand xsi:type="spoon:CtInvocation">
+              <type name="double"/>
+              <target xsi:type="spoon:CtFieldRead">
+                <type name="Sensor">
+                  <packageRef name="sranger.sensor"/>
+                </type>
+                <variable xsi:type="spoon:CtFieldReference" name="sensor" isFinal="true">
+                  <declaringType name="SRangerController">
+                    <packageRef name="sranger.controller"/>
+                  </declaringType>
+                </variable>
+                <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                  <type name="SRangerController">
+                    <packageRef name="sranger.controller"/>
+                  </type>
+                  <target xsi:type="spoon:CtTypeAccess">
+                    <type name="void"/>
+                    <accessedType name="SRangerController">
+                      <packageRef name="sranger.controller"/>
+                    </accessedType>
+                  </target>
+                </target>
+              </target>
+              <executableRef name="distance">
+                <declaringType name="Sensor">
+                  <packageRef name="sranger.sensor"/>
+                </declaringType>
+              </executableRef>
+            </leftOperand>
+            <rightOperand xsi:type="spoon:CtFieldRead">
+              <type name="double"/>
+              <variable xsi:type="spoon:CtFieldReference" name="OBSTACLE_THRESHOLD" isFinal="true" isStatic="true">
+                <declaringType name="SRangerConstants">
+                  <packageRef name="sranger.controller"/>
+                </declaringType>
+              </variable>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerConstants">
+                  <packageRef isImplicit="true" name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </rightOperand>
+          </assignment>
+        </statement>
+        <statement xsi:type="spoon:CtLocalVariable" name="turnDurationElapsed">
+          <type name="boolean"/>
+          <assignment xsi:type="spoon:CtBinaryOperator" operatorKind="GE">
+            <type name="boolean"/>
+            <leftOperand xsi:type="spoon:CtBinaryOperator" operatorKind="MINUS">
+              <type name="double"/>
+              <leftOperand xsi:type="spoon:CtInvocation">
+                <type name="double"/>
+                <target xsi:type="spoon:CtFieldRead">
+                  <type name="Clock">
+                    <packageRef name="sranger.time"/>
+                  </type>
+                  <variable xsi:type="spoon:CtFieldReference" name="timer" isFinal="true">
+                    <declaringType name="SRangerController">
+                      <packageRef name="sranger.controller"/>
+                    </declaringType>
+                  </variable>
+                  <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                    <type name="SRangerController">
+                      <packageRef name="sranger.controller"/>
+                    </type>
+                    <target xsi:type="spoon:CtTypeAccess">
+                      <type name="void"/>
+                      <accessedType name="SRangerController">
+                        <packageRef name="sranger.controller"/>
+                      </accessedType>
+                    </target>
+                  </target>
+                </target>
+                <executableRef name="now">
+                  <declaringType name="Clock">
+                    <packageRef name="sranger.time"/>
+                  </declaringType>
+                </executableRef>
+              </leftOperand>
+              <rightOperand xsi:type="spoon:CtFieldRead">
+                <type name="double"/>
+                <variable xsi:type="spoon:CtFieldReference" name="clockResetTime">
+                  <declaringType name="SRangerController">
+                    <packageRef name="sranger.controller"/>
+                  </declaringType>
+                </variable>
+                <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                  <type name="SRangerController">
+                    <packageRef name="sranger.controller"/>
+                  </type>
+                  <target xsi:type="spoon:CtTypeAccess">
+                    <type name="void"/>
+                    <accessedType name="SRangerController">
+                      <packageRef name="sranger.controller"/>
+                    </accessedType>
+                  </target>
+                </target>
+              </rightOperand>
+            </leftOperand>
+            <rightOperand xsi:type="spoon:CtFieldRead">
+              <type name="double"/>
+              <variable xsi:type="spoon:CtFieldReference" name="TURN_DURATION" isFinal="true" isStatic="true">
+                <declaringType name="SRangerConstants">
+                  <packageRef name="sranger.controller"/>
+                </declaringType>
+              </variable>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerConstants">
+                  <packageRef isImplicit="true" name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </rightOperand>
+          </assignment>
+        </statement>
+        <statement xsi:type="spoon:CtIf">
+          <else xsi:type="spoon:CtBlock" isImplicit="true">
+            <statement xsi:type="spoon:CtIf">
+              <else xsi:type="spoon:CtBlock" isImplicit="true">
+                <statement xsi:type="spoon:CtIf">
+                  <condition xsi:type="spoon:CtBinaryOperator" operatorKind="EQ">
+                    <type name="boolean"/>
+                    <leftOperand xsi:type="spoon:CtFieldRead">
+                      <type name="SRangerMode">
+                        <packageRef name="sranger.controller"/>
+                      </type>
+                      <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                        <declaringType name="SRangerController">
+                          <packageRef name="sranger.controller"/>
+                        </declaringType>
+                      </variable>
+                      <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                        <type name="SRangerController">
+                          <packageRef name="sranger.controller"/>
+                        </type>
+                        <target xsi:type="spoon:CtTypeAccess">
+                          <type name="void"/>
+                          <accessedType name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </accessedType>
+                        </target>
+                      </target>
+                    </leftOperand>
+                    <rightOperand xsi:type="spoon:CtFieldRead">
+                      <type name="SRangerMode">
+                        <packageRef name="sranger.controller"/>
+                      </type>
+                      <variable xsi:type="spoon:CtFieldReference" name="FINAL" isFinal="true" isStatic="true">
+                        <declaringType name="SRangerMode">
+                          <packageRef name="sranger.controller"/>
+                        </declaringType>
+                      </variable>
+                      <target xsi:type="spoon:CtTypeAccess">
+                        <type name="void"/>
+                        <accessedType name="SRangerMode">
+                          <packageRef isImplicit="true" name="sranger.controller"/>
+                        </accessedType>
+                      </target>
+                    </rightOperand>
+                  </condition>
+                  <then xsi:type="spoon:CtBlock">
+                    <statement xsi:type="spoon:CtComment" commentContent="SR-FR3: terminal mode, no outgoing transitions."/>
+                  </then>
+                </statement>
+              </else>
+              <condition xsi:type="spoon:CtBinaryOperator" operatorKind="EQ">
+                <type name="boolean"/>
+                <leftOperand xsi:type="spoon:CtFieldRead">
+                  <type name="SRangerMode">
+                    <packageRef name="sranger.controller"/>
+                  </type>
+                  <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                    <declaringType name="SRangerController">
+                      <packageRef name="sranger.controller"/>
+                    </declaringType>
+                  </variable>
+                  <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                    <type name="SRangerController">
+                      <packageRef name="sranger.controller"/>
+                    </type>
+                    <target xsi:type="spoon:CtTypeAccess">
+                      <type name="void"/>
+                      <accessedType name="SRangerController">
+                        <packageRef name="sranger.controller"/>
+                      </accessedType>
+                    </target>
+                  </target>
+                </leftOperand>
+                <rightOperand xsi:type="spoon:CtFieldRead">
+                  <type name="SRangerMode">
+                    <packageRef name="sranger.controller"/>
+                  </type>
+                  <variable xsi:type="spoon:CtFieldReference" name="TURNING" isFinal="true" isStatic="true">
+                    <declaringType name="SRangerMode">
+                      <packageRef name="sranger.controller"/>
+                    </declaringType>
+                  </variable>
+                  <target xsi:type="spoon:CtTypeAccess">
+                    <type name="void"/>
+                    <accessedType name="SRangerMode">
+                      <packageRef isImplicit="true" name="sranger.controller"/>
+                    </accessedType>
+                  </target>
+                </rightOperand>
+              </condition>
+              <then xsi:type="spoon:CtBlock">
+                <statement xsi:type="spoon:CtIf">
+                  <else xsi:type="spoon:CtBlock" isImplicit="true">
+                    <statement xsi:type="spoon:CtIf">
+                      <else xsi:type="spoon:CtBlock" isImplicit="true">
+                        <statement xsi:type="spoon:CtIf">
+                          <condition xsi:type="spoon:CtBinaryOperator" operatorKind="AND">
+                            <type name="boolean"/>
+                            <leftOperand xsi:type="spoon:CtBinaryOperator" operatorKind="INSTANCEOF">
+                              <type name="boolean"/>
+                              <leftOperand xsi:type="spoon:CtVariableRead">
+                                <type name="InputEvent">
+                                  <packageRef name="sranger.event"/>
+                                </type>
+                                <variable xsi:type="spoon:CtParameterReference" name="event"/>
+                              </leftOperand>
+                              <rightOperand xsi:type="spoon:CtTypeAccess">
+                                <type name="void"/>
+                                <accessedType name="Tick">
+                                  <declaringType name="InputEvent">
+                                    <packageRef isImplicit="true" name="sranger.event"/>
+                                  </declaringType>
+                                </accessedType>
+                              </rightOperand>
+                            </leftOperand>
+                            <rightOperand xsi:type="spoon:CtUnaryOperator" operatorKind="NOT">
+                              <type name="boolean"/>
+                              <expression xsi:type="spoon:CtVariableRead">
+                                <type name="boolean"/>
+                                <variable xsi:type="spoon:CtLocalVariableReference" name="turnDurationElapsed"/>
+                              </expression>
+                            </rightOperand>
+                          </condition>
+                          <then xsi:type="spoon:CtBlock">
+                            <statement xsi:type="spoon:CtAssignment">
+                              <comment commentContent="SR-Beh7: Turning -> Turning on tick, no action."/>
+                              <type name="SRangerMode">
+                                <packageRef name="sranger.controller"/>
+                              </type>
+                              <assignment xsi:type="spoon:CtFieldRead">
+                                <type name="SRangerMode">
+                                  <packageRef name="sranger.controller"/>
+                                </type>
+                                <variable xsi:type="spoon:CtFieldReference" name="TURNING" isFinal="true" isStatic="true">
+                                  <declaringType name="SRangerMode">
+                                    <packageRef name="sranger.controller"/>
+                                  </declaringType>
+                                </variable>
+                                <target xsi:type="spoon:CtTypeAccess">
+                                  <type name="void"/>
+                                  <accessedType name="SRangerMode">
+                                    <packageRef isImplicit="true" name="sranger.controller"/>
+                                  </accessedType>
+                                </target>
+                              </assignment>
+                              <assigned xsi:type="spoon:CtFieldWrite">
+                                <type name="SRangerMode">
+                                  <packageRef name="sranger.controller"/>
+                                </type>
+                                <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                                  <type name="SRangerController">
+                                    <packageRef name="sranger.controller"/>
+                                  </type>
+                                  <target xsi:type="spoon:CtTypeAccess">
+                                    <type name="void"/>
+                                    <accessedType name="SRangerController">
+                                      <packageRef name="sranger.controller"/>
+                                    </accessedType>
+                                  </target>
+                                </target>
+                                <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                                  <declaringType name="SRangerController">
+                                    <packageRef name="sranger.controller"/>
+                                  </declaringType>
+                                </variable>
+                              </assigned>
+                            </statement>
+                          </then>
+                        </statement>
+                      </else>
+                      <condition xsi:type="spoon:CtVariableRead">
+                        <type name="boolean"/>
+                        <variable xsi:type="spoon:CtLocalVariableReference" name="turnDurationElapsed"/>
+                      </condition>
+                      <then xsi:type="spoon:CtBlock">
+                        <statement xsi:type="spoon:CtAssignment">
+                          <comment commentContent="SR-Beh5: Turning -> Moving, autonomous; entry of Moving (SR-FR1)."/>
+                          <type name="SRangerMode">
+                            <packageRef name="sranger.controller"/>
+                          </type>
+                          <assignment xsi:type="spoon:CtFieldRead">
+                            <type name="SRangerMode">
+                              <packageRef name="sranger.controller"/>
+                            </type>
+                            <variable xsi:type="spoon:CtFieldReference" name="MOVING" isFinal="true" isStatic="true">
+                              <declaringType name="SRangerMode">
+                                <packageRef name="sranger.controller"/>
+                              </declaringType>
+                            </variable>
+                            <target xsi:type="spoon:CtTypeAccess">
+                              <type name="void"/>
+                              <accessedType name="SRangerMode">
+                                <packageRef isImplicit="true" name="sranger.controller"/>
+                              </accessedType>
+                            </target>
+                          </assignment>
+                          <assigned xsi:type="spoon:CtFieldWrite">
+                            <type name="SRangerMode">
+                              <packageRef name="sranger.controller"/>
+                            </type>
+                            <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                              <type name="SRangerController">
+                                <packageRef name="sranger.controller"/>
+                              </type>
+                              <target xsi:type="spoon:CtTypeAccess">
+                                <type name="void"/>
+                                <accessedType name="SRangerController">
+                                  <packageRef name="sranger.controller"/>
+                                </accessedType>
+                              </target>
+                            </target>
+                            <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                              <declaringType name="SRangerController">
+                                <packageRef name="sranger.controller"/>
+                              </declaringType>
+                            </variable>
+                          </assigned>
+                        </statement>
+                        <statement xsi:type="spoon:CtInvocation">
+                          <type name="void"/>
+                          <target xsi:type="spoon:CtFieldRead">
+                            <type name="Actuator">
+                              <packageRef name="sranger.actuator"/>
+                            </type>
+                            <variable xsi:type="spoon:CtFieldReference" name="actuator" isFinal="true">
+                              <declaringType name="SRangerController">
+                                <packageRef name="sranger.controller"/>
+                              </declaringType>
+                            </variable>
+                            <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                              <type name="SRangerController">
+                                <packageRef name="sranger.controller"/>
+                              </type>
+                              <target xsi:type="spoon:CtTypeAccess">
+                                <type name="void"/>
+                                <accessedType name="SRangerController">
+                                  <packageRef name="sranger.controller"/>
+                                </accessedType>
+                              </target>
+                            </target>
+                          </target>
+                          <executableRef name="apply">
+                            <argumentType name="OutputEvent">
+                              <packageRef name="sranger.event"/>
+                            </argumentType>
+                            <declaringType name="Actuator">
+                              <packageRef name="sranger.actuator"/>
+                            </declaringType>
+                          </executableRef>
+                          <argument xsi:type="spoon:CtConstructorCall">
+                            <type name="Move">
+                              <declaringType name="OutputEvent">
+                                <packageRef isImplicit="true" name="sranger.event"/>
+                              </declaringType>
+                            </type>
+                            <executableRef isImplicit="true" name="&lt;init>">
+                              <argumentType name="double"/>
+                              <argumentType name="double"/>
+                              <declaringType name="Move">
+                                <declaringType name="OutputEvent">
+                                  <packageRef name="sranger.event"/>
+                                </declaringType>
+                              </declaringType>
+                            </executableRef>
+                            <argument xsi:type="spoon:CtFieldRead">
+                              <type name="double"/>
+                              <variable xsi:type="spoon:CtFieldReference" name="MOVE_VEL" isFinal="true" isStatic="true">
+                                <declaringType name="SRangerConstants">
+                                  <packageRef name="sranger.controller"/>
+                                </declaringType>
+                              </variable>
+                              <target xsi:type="spoon:CtTypeAccess">
+                                <type name="void"/>
+                                <accessedType name="SRangerConstants">
+                                  <packageRef isImplicit="true" name="sranger.controller"/>
+                                </accessedType>
+                              </target>
+                            </argument>
+                            <argument xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+                              <type name="double"/>
+                            </argument>
+                          </argument>
+                        </statement>
+                      </then>
+                    </statement>
+                  </else>
+                  <condition xsi:type="spoon:CtBinaryOperator" operatorKind="INSTANCEOF">
+                    <type name="boolean"/>
+                    <leftOperand xsi:type="spoon:CtVariableRead">
+                      <type name="InputEvent">
+                        <packageRef name="sranger.event"/>
+                      </type>
+                      <variable xsi:type="spoon:CtParameterReference" name="event"/>
+                    </leftOperand>
+                    <rightOperand xsi:type="spoon:CtTypeAccess">
+                      <type name="void"/>
+                      <accessedType name="EndTask">
+                        <declaringType name="InputEvent">
+                          <packageRef isImplicit="true" name="sranger.event"/>
+                        </declaringType>
+                      </accessedType>
+                    </rightOperand>
+                  </condition>
+                  <then xsi:type="spoon:CtBlock">
+                    <statement xsi:type="spoon:CtAssignment">
+                      <comment commentContent="SR-Beh6: Turning -> Final; entry of Final (SR-FR3)."/>
+                      <type name="SRangerMode">
+                        <packageRef name="sranger.controller"/>
+                      </type>
+                      <assignment xsi:type="spoon:CtFieldRead">
+                        <type name="SRangerMode">
+                          <packageRef name="sranger.controller"/>
+                        </type>
+                        <variable xsi:type="spoon:CtFieldReference" name="FINAL" isFinal="true" isStatic="true">
+                          <declaringType name="SRangerMode">
+                            <packageRef name="sranger.controller"/>
+                          </declaringType>
+                        </variable>
+                        <target xsi:type="spoon:CtTypeAccess">
+                          <type name="void"/>
+                          <accessedType name="SRangerMode">
+                            <packageRef isImplicit="true" name="sranger.controller"/>
+                          </accessedType>
+                        </target>
+                      </assignment>
+                      <assigned xsi:type="spoon:CtFieldWrite">
+                        <type name="SRangerMode">
+                          <packageRef name="sranger.controller"/>
+                        </type>
+                        <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                          <type name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </type>
+                          <target xsi:type="spoon:CtTypeAccess">
+                            <type name="void"/>
+                            <accessedType name="SRangerController">
+                              <packageRef name="sranger.controller"/>
+                            </accessedType>
+                          </target>
+                        </target>
+                        <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                          <declaringType name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </declaringType>
+                        </variable>
+                      </assigned>
+                    </statement>
+                    <statement xsi:type="spoon:CtInvocation">
+                      <type name="void"/>
+                      <target xsi:type="spoon:CtFieldRead">
+                        <type name="Actuator">
+                          <packageRef name="sranger.actuator"/>
+                        </type>
+                        <variable xsi:type="spoon:CtFieldReference" name="actuator" isFinal="true">
+                          <declaringType name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </declaringType>
+                        </variable>
+                        <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                          <type name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </type>
+                          <target xsi:type="spoon:CtTypeAccess">
+                            <type name="void"/>
+                            <accessedType name="SRangerController">
+                              <packageRef name="sranger.controller"/>
+                            </accessedType>
+                          </target>
+                        </target>
+                      </target>
+                      <executableRef name="apply">
+                        <argumentType name="OutputEvent">
+                          <packageRef name="sranger.event"/>
+                        </argumentType>
+                        <declaringType name="Actuator">
+                          <packageRef name="sranger.actuator"/>
+                        </declaringType>
+                      </executableRef>
+                      <argument xsi:type="spoon:CtConstructorCall">
+                        <type name="Move">
+                          <declaringType name="OutputEvent">
+                            <packageRef isImplicit="true" name="sranger.event"/>
+                          </declaringType>
+                        </type>
+                        <executableRef isImplicit="true" name="&lt;init>">
+                          <argumentType name="double"/>
+                          <argumentType name="double"/>
+                          <declaringType name="Move">
+                            <declaringType name="OutputEvent">
+                              <packageRef name="sranger.event"/>
+                            </declaringType>
+                          </declaringType>
+                        </executableRef>
+                        <argument xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+                          <type name="double"/>
+                        </argument>
+                        <argument xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+                          <type name="double"/>
+                        </argument>
+                      </argument>
+                    </statement>
+                  </then>
+                </statement>
+              </then>
+            </statement>
+          </else>
+          <condition xsi:type="spoon:CtBinaryOperator" operatorKind="EQ">
+            <type name="boolean"/>
+            <leftOperand xsi:type="spoon:CtFieldRead">
+              <type name="SRangerMode">
+                <packageRef name="sranger.controller"/>
+              </type>
+              <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                <declaringType name="SRangerController">
+                  <packageRef name="sranger.controller"/>
+                </declaringType>
+              </variable>
+              <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                <type name="SRangerController">
+                  <packageRef name="sranger.controller"/>
+                </type>
+                <target xsi:type="spoon:CtTypeAccess">
+                  <type name="void"/>
+                  <accessedType name="SRangerController">
+                    <packageRef name="sranger.controller"/>
+                  </accessedType>
+                </target>
+              </target>
+            </leftOperand>
+            <rightOperand xsi:type="spoon:CtFieldRead">
+              <type name="SRangerMode">
+                <packageRef name="sranger.controller"/>
+              </type>
+              <variable xsi:type="spoon:CtFieldReference" name="MOVING" isFinal="true" isStatic="true">
+                <declaringType name="SRangerMode">
+                  <packageRef name="sranger.controller"/>
+                </declaringType>
+              </variable>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="SRangerMode">
+                  <packageRef isImplicit="true" name="sranger.controller"/>
+                </accessedType>
+              </target>
+            </rightOperand>
+          </condition>
+          <then xsi:type="spoon:CtBlock">
+            <statement xsi:type="spoon:CtIf">
+              <else xsi:type="spoon:CtBlock" isImplicit="true">
+                <statement xsi:type="spoon:CtIf">
+                  <else xsi:type="spoon:CtBlock" isImplicit="true">
+                    <statement xsi:type="spoon:CtIf">
+                      <condition xsi:type="spoon:CtBinaryOperator" operatorKind="INSTANCEOF">
+                        <type name="boolean"/>
+                        <leftOperand xsi:type="spoon:CtVariableRead">
+                          <type name="InputEvent">
+                            <packageRef name="sranger.event"/>
+                          </type>
+                          <variable xsi:type="spoon:CtParameterReference" name="event"/>
+                        </leftOperand>
+                        <rightOperand xsi:type="spoon:CtTypeAccess">
+                          <type name="void"/>
+                          <accessedType name="Tick">
+                            <declaringType name="InputEvent">
+                              <packageRef isImplicit="true" name="sranger.event"/>
+                            </declaringType>
+                          </accessedType>
+                        </rightOperand>
+                      </condition>
+                      <then xsi:type="spoon:CtBlock">
+                        <statement xsi:type="spoon:CtAssignment">
+                          <comment commentContent="SR-Beh4: Moving -> Moving on tick, no action."/>
+                          <type name="SRangerMode">
+                            <packageRef name="sranger.controller"/>
+                          </type>
+                          <assignment xsi:type="spoon:CtFieldRead">
+                            <type name="SRangerMode">
+                              <packageRef name="sranger.controller"/>
+                            </type>
+                            <variable xsi:type="spoon:CtFieldReference" name="MOVING" isFinal="true" isStatic="true">
+                              <declaringType name="SRangerMode">
+                                <packageRef name="sranger.controller"/>
+                              </declaringType>
+                            </variable>
+                            <target xsi:type="spoon:CtTypeAccess">
+                              <type name="void"/>
+                              <accessedType name="SRangerMode">
+                                <packageRef isImplicit="true" name="sranger.controller"/>
+                              </accessedType>
+                            </target>
+                          </assignment>
+                          <assigned xsi:type="spoon:CtFieldWrite">
+                            <type name="SRangerMode">
+                              <packageRef name="sranger.controller"/>
+                            </type>
+                            <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                              <type name="SRangerController">
+                                <packageRef name="sranger.controller"/>
+                              </type>
+                              <target xsi:type="spoon:CtTypeAccess">
+                                <type name="void"/>
+                                <accessedType name="SRangerController">
+                                  <packageRef name="sranger.controller"/>
+                                </accessedType>
+                              </target>
+                            </target>
+                            <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                              <declaringType name="SRangerController">
+                                <packageRef name="sranger.controller"/>
+                              </declaringType>
+                            </variable>
+                          </assigned>
+                        </statement>
+                      </then>
+                    </statement>
+                  </else>
+                  <condition xsi:type="spoon:CtBinaryOperator" operatorKind="AND">
+                    <type name="boolean"/>
+                    <leftOperand xsi:type="spoon:CtBinaryOperator" operatorKind="INSTANCEOF">
+                      <type name="boolean"/>
+                      <leftOperand xsi:type="spoon:CtVariableRead">
+                        <type name="InputEvent">
+                          <packageRef name="sranger.event"/>
+                        </type>
+                        <variable xsi:type="spoon:CtParameterReference" name="event"/>
+                      </leftOperand>
+                      <rightOperand xsi:type="spoon:CtTypeAccess">
+                        <type name="void"/>
+                        <accessedType name="Obstacle">
+                          <declaringType name="InputEvent">
+                            <packageRef isImplicit="true" name="sranger.event"/>
+                          </declaringType>
+                        </accessedType>
+                      </rightOperand>
+                    </leftOperand>
+                    <rightOperand xsi:type="spoon:CtVariableRead">
+                      <type name="boolean"/>
+                      <variable xsi:type="spoon:CtLocalVariableReference" name="obstacleDetected"/>
+                    </rightOperand>
+                  </condition>
+                  <then xsi:type="spoon:CtBlock">
+                    <statement xsi:type="spoon:CtAssignment">
+                      <comment commentContent="SR-Beh2: Moving -> Turning; entry of Turning (SR-FR2, SR-Var1)."/>
+                      <type name="SRangerMode">
+                        <packageRef name="sranger.controller"/>
+                      </type>
+                      <assignment xsi:type="spoon:CtFieldRead">
+                        <type name="SRangerMode">
+                          <packageRef name="sranger.controller"/>
+                        </type>
+                        <variable xsi:type="spoon:CtFieldReference" name="TURNING" isFinal="true" isStatic="true">
+                          <declaringType name="SRangerMode">
+                            <packageRef name="sranger.controller"/>
+                          </declaringType>
+                        </variable>
+                        <target xsi:type="spoon:CtTypeAccess">
+                          <type name="void"/>
+                          <accessedType name="SRangerMode">
+                            <packageRef isImplicit="true" name="sranger.controller"/>
+                          </accessedType>
+                        </target>
+                      </assignment>
+                      <assigned xsi:type="spoon:CtFieldWrite">
+                        <type name="SRangerMode">
+                          <packageRef name="sranger.controller"/>
+                        </type>
+                        <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                          <type name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </type>
+                          <target xsi:type="spoon:CtTypeAccess">
+                            <type name="void"/>
+                            <accessedType name="SRangerController">
+                              <packageRef name="sranger.controller"/>
+                            </accessedType>
+                          </target>
+                        </target>
+                        <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                          <declaringType name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </declaringType>
+                        </variable>
+                      </assigned>
+                    </statement>
+                    <statement xsi:type="spoon:CtAssignment">
+                      <type name="double"/>
+                      <assignment xsi:type="spoon:CtInvocation">
+                        <type name="double"/>
+                        <target xsi:type="spoon:CtFieldRead">
+                          <type name="Clock">
+                            <packageRef name="sranger.time"/>
+                          </type>
+                          <variable xsi:type="spoon:CtFieldReference" name="timer" isFinal="true">
+                            <declaringType name="SRangerController">
+                              <packageRef name="sranger.controller"/>
+                            </declaringType>
+                          </variable>
+                          <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                            <type name="SRangerController">
+                              <packageRef name="sranger.controller"/>
+                            </type>
+                            <target xsi:type="spoon:CtTypeAccess">
+                              <type name="void"/>
+                              <accessedType name="SRangerController">
+                                <packageRef name="sranger.controller"/>
+                              </accessedType>
+                            </target>
+                          </target>
+                        </target>
+                        <executableRef name="now">
+                          <declaringType name="Clock">
+                            <packageRef name="sranger.time"/>
+                          </declaringType>
+                        </executableRef>
+                      </assignment>
+                      <assigned xsi:type="spoon:CtFieldWrite">
+                        <type name="double"/>
+                        <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                          <type name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </type>
+                          <target xsi:type="spoon:CtTypeAccess">
+                            <type name="void"/>
+                            <accessedType name="SRangerController">
+                              <packageRef name="sranger.controller"/>
+                            </accessedType>
+                          </target>
+                        </target>
+                        <variable xsi:type="spoon:CtFieldReference" name="clockResetTime">
+                          <declaringType name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </declaringType>
+                        </variable>
+                      </assigned>
+                    </statement>
+                    <statement xsi:type="spoon:CtInvocation">
+                      <type name="void"/>
+                      <target xsi:type="spoon:CtFieldRead">
+                        <type name="Actuator">
+                          <packageRef name="sranger.actuator"/>
+                        </type>
+                        <variable xsi:type="spoon:CtFieldReference" name="actuator" isFinal="true">
+                          <declaringType name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </declaringType>
+                        </variable>
+                        <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                          <type name="SRangerController">
+                            <packageRef name="sranger.controller"/>
+                          </type>
+                          <target xsi:type="spoon:CtTypeAccess">
+                            <type name="void"/>
+                            <accessedType name="SRangerController">
+                              <packageRef name="sranger.controller"/>
+                            </accessedType>
+                          </target>
+                        </target>
+                      </target>
+                      <executableRef name="apply">
+                        <argumentType name="OutputEvent">
+                          <packageRef name="sranger.event"/>
+                        </argumentType>
+                        <declaringType name="Actuator">
+                          <packageRef name="sranger.actuator"/>
+                        </declaringType>
+                      </executableRef>
+                      <argument xsi:type="spoon:CtConstructorCall">
+                        <type name="Move">
+                          <declaringType name="OutputEvent">
+                            <packageRef isImplicit="true" name="sranger.event"/>
+                          </declaringType>
+                        </type>
+                        <executableRef isImplicit="true" name="&lt;init>">
+                          <argumentType name="double"/>
+                          <argumentType name="double"/>
+                          <declaringType name="Move">
+                            <declaringType name="OutputEvent">
+                              <packageRef name="sranger.event"/>
+                            </declaringType>
+                          </declaringType>
+                        </executableRef>
+                        <argument xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+                          <type name="double"/>
+                        </argument>
+                        <argument xsi:type="spoon:CtFieldRead">
+                          <type name="double"/>
+                          <variable xsi:type="spoon:CtFieldReference" name="TURN_VEL" isFinal="true" isStatic="true">
+                            <declaringType name="SRangerConstants">
+                              <packageRef name="sranger.controller"/>
+                            </declaringType>
+                          </variable>
+                          <target xsi:type="spoon:CtTypeAccess">
+                            <type name="void"/>
+                            <accessedType name="SRangerConstants">
+                              <packageRef isImplicit="true" name="sranger.controller"/>
+                            </accessedType>
+                          </target>
+                        </argument>
+                      </argument>
+                    </statement>
+                  </then>
+                </statement>
+              </else>
+              <condition xsi:type="spoon:CtBinaryOperator" operatorKind="INSTANCEOF">
+                <type name="boolean"/>
+                <leftOperand xsi:type="spoon:CtVariableRead">
+                  <type name="InputEvent">
+                    <packageRef name="sranger.event"/>
+                  </type>
+                  <variable xsi:type="spoon:CtParameterReference" name="event"/>
+                </leftOperand>
+                <rightOperand xsi:type="spoon:CtTypeAccess">
+                  <type name="void"/>
+                  <accessedType name="EndTask">
+                    <declaringType name="InputEvent">
+                      <packageRef isImplicit="true" name="sranger.event"/>
+                    </declaringType>
+                  </accessedType>
+                </rightOperand>
+              </condition>
+              <then xsi:type="spoon:CtBlock">
+                <statement xsi:type="spoon:CtAssignment">
+                  <comment commentContent="SR-Beh3: Moving -> Final; entry of Final (SR-FR3)."/>
+                  <type name="SRangerMode">
+                    <packageRef name="sranger.controller"/>
+                  </type>
+                  <assignment xsi:type="spoon:CtFieldRead">
+                    <type name="SRangerMode">
+                      <packageRef name="sranger.controller"/>
+                    </type>
+                    <variable xsi:type="spoon:CtFieldReference" name="FINAL" isFinal="true" isStatic="true">
+                      <declaringType name="SRangerMode">
+                        <packageRef name="sranger.controller"/>
+                      </declaringType>
+                    </variable>
+                    <target xsi:type="spoon:CtTypeAccess">
+                      <type name="void"/>
+                      <accessedType name="SRangerMode">
+                        <packageRef isImplicit="true" name="sranger.controller"/>
+                      </accessedType>
+                    </target>
+                  </assignment>
+                  <assigned xsi:type="spoon:CtFieldWrite">
+                    <type name="SRangerMode">
+                      <packageRef name="sranger.controller"/>
+                    </type>
+                    <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                      <type name="SRangerController">
+                        <packageRef name="sranger.controller"/>
+                      </type>
+                      <target xsi:type="spoon:CtTypeAccess">
+                        <type name="void"/>
+                        <accessedType name="SRangerController">
+                          <packageRef name="sranger.controller"/>
+                        </accessedType>
+                      </target>
+                    </target>
+                    <variable xsi:type="spoon:CtFieldReference" name="currentMode">
+                      <declaringType name="SRangerController">
+                        <packageRef name="sranger.controller"/>
+                      </declaringType>
+                    </variable>
+                  </assigned>
+                </statement>
+                <statement xsi:type="spoon:CtInvocation">
+                  <type name="void"/>
+                  <target xsi:type="spoon:CtFieldRead">
+                    <type name="Actuator">
+                      <packageRef name="sranger.actuator"/>
+                    </type>
+                    <variable xsi:type="spoon:CtFieldReference" name="actuator" isFinal="true">
+                      <declaringType name="SRangerController">
+                        <packageRef name="sranger.controller"/>
+                      </declaringType>
+                    </variable>
+                    <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                      <type name="SRangerController">
+                        <packageRef name="sranger.controller"/>
+                      </type>
+                      <target xsi:type="spoon:CtTypeAccess">
+                        <type name="void"/>
+                        <accessedType name="SRangerController">
+                          <packageRef name="sranger.controller"/>
+                        </accessedType>
+                      </target>
+                    </target>
+                  </target>
+                  <executableRef name="apply">
+                    <argumentType name="OutputEvent">
+                      <packageRef name="sranger.event"/>
+                    </argumentType>
+                    <declaringType name="Actuator">
+                      <packageRef name="sranger.actuator"/>
+                    </declaringType>
+                  </executableRef>
+                  <argument xsi:type="spoon:CtConstructorCall">
+                    <type name="Move">
+                      <declaringType name="OutputEvent">
+                        <packageRef isImplicit="true" name="sranger.event"/>
+                      </declaringType>
+                    </type>
+                    <executableRef isImplicit="true" name="&lt;init>">
+                      <argumentType name="double"/>
+                      <argumentType name="double"/>
+                      <declaringType name="Move">
+                        <declaringType name="OutputEvent">
+                          <packageRef name="sranger.event"/>
+                        </declaringType>
+                      </declaringType>
+                    </executableRef>
+                    <argument xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+                      <type name="double"/>
+                    </argument>
+                    <argument xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+                      <type name="double"/>
+                    </argument>
+                  </argument>
+                </statement>
+              </then>
+            </statement>
+          </then>
+        </statement>
+      </body>
+      <type name="void"/>
+      <parameter name="event">
+        <type name="InputEvent">
+          <packageRef isImplicit="true" name="sranger.event"/>
+        </type>
+      </parameter>
+    </typeMember>
+  </spoon:CtClass>
+  <spoon:CtEnum name="SRangerMode">
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Operating modes of the SRanger controller (SR-DM1). MOVING is the initial mode."/>
+    <modifier>FINAL</modifier>
+    <modifier>PUBLIC</modifier>
+    <typeMember xsi:type="spoon:CtConstructor" isImplicit="true" name="&lt;init>">
+      <modifier>PRIVATE</modifier>
+      <body xsi:type="spoon:CtBlock"/>
+      <type name="SRangerMode">
+        <packageRef name="sranger.controller"/>
+      </type>
+    </typeMember>
+    <superType name="Enum">
+      <packageRef name="java.lang"/>
+    </superType>
+    <value name="MOVING">
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <type name="SRangerMode">
+        <packageRef name="sranger.controller"/>
+      </type>
+      <defaultExpression xsi:type="spoon:CtConstructorCall" isImplicit="true">
+        <type name="SRangerMode">
+          <packageRef name="sranger.controller"/>
+        </type>
+        <executableRef isImplicit="true" name="&lt;init>">
+          <declaringType name="SRangerMode">
+            <packageRef name="sranger.controller"/>
+          </declaringType>
+        </executableRef>
+      </defaultExpression>
+    </value>
+    <value name="TURNING">
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <type name="SRangerMode">
+        <packageRef name="sranger.controller"/>
+      </type>
+      <defaultExpression xsi:type="spoon:CtConstructorCall" isImplicit="true">
+        <type name="SRangerMode">
+          <packageRef name="sranger.controller"/>
+        </type>
+        <executableRef isImplicit="true" name="&lt;init>">
+          <declaringType name="SRangerMode">
+            <packageRef name="sranger.controller"/>
+          </declaringType>
+        </executableRef>
+      </defaultExpression>
+    </value>
+    <value name="FINAL">
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <type name="SRangerMode">
+        <packageRef name="sranger.controller"/>
+      </type>
+      <defaultExpression xsi:type="spoon:CtConstructorCall" isImplicit="true">
+        <type name="SRangerMode">
+          <packageRef name="sranger.controller"/>
+        </type>
+        <executableRef isImplicit="true" name="&lt;init>">
+          <declaringType name="SRangerMode">
+            <packageRef name="sranger.controller"/>
+          </declaringType>
+        </executableRef>
+      </defaultExpression>
+    </value>
+  </spoon:CtEnum>
+  <spoon:CtInterface name="InputEvent">
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Input events of the SRanger controller (SR-DM3). All three are signals&#xA;without payload."/>
+    <permittedType isImplicit="true" name="EndTask">
+      <declaringType name="InputEvent">
+        <packageRef name="sranger.event"/>
+      </declaringType>
+    </permittedType>
+    <permittedType isImplicit="true" name="Obstacle">
+      <declaringType name="InputEvent">
+        <packageRef name="sranger.event"/>
+      </declaringType>
+    </permittedType>
+    <permittedType isImplicit="true" name="Tick">
+      <declaringType name="InputEvent">
+        <packageRef name="sranger.event"/>
+      </declaringType>
+    </permittedType>
+    <modifier>ABSTRACT</modifier>
+    <modifier>PUBLIC</modifier>
+    <modifier>SEALED</modifier>
+    <typeMember xsi:type="spoon:CtRecord" name="Obstacle">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Emitted by the IR sensor framework when the distance reading crosses below obstacleThreshold."/>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <interface name="InputEvent">
+        <packageRef isImplicit="true" name="sranger.event"/>
+      </interface>
+      <typeMember xsi:type="spoon:CtConstructor" isImplicit="true" name="&lt;init>">
+        <modifier>PUBLIC</modifier>
+        <body xsi:type="spoon:CtBlock">
+          <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+            <type name="Record">
+              <packageRef name="java.lang"/>
+            </type>
+            <executableRef isImplicit="true" name="&lt;init>">
+              <declaringType name="Record">
+                <packageRef name="java.lang"/>
+              </declaringType>
+            </executableRef>
+          </statement>
+        </body>
+        <type name="Obstacle">
+          <declaringType name="InputEvent">
+            <packageRef name="sranger.event"/>
+          </declaringType>
+        </type>
+      </typeMember>
+      <superType name="Record">
+        <packageRef name="java.lang"/>
+      </superType>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtRecord" name="Tick">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Delivered each control cycle by the system framework."/>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <interface name="InputEvent">
+        <packageRef isImplicit="true" name="sranger.event"/>
+      </interface>
+      <typeMember xsi:type="spoon:CtConstructor" isImplicit="true" name="&lt;init>">
+        <modifier>PUBLIC</modifier>
+        <body xsi:type="spoon:CtBlock">
+          <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+            <type name="Record">
+              <packageRef name="java.lang"/>
+            </type>
+            <executableRef isImplicit="true" name="&lt;init>">
+              <declaringType name="Record">
+                <packageRef name="java.lang"/>
+              </declaringType>
+            </executableRef>
+          </statement>
+        </body>
+        <type name="Tick">
+          <declaringType name="InputEvent">
+            <packageRef name="sranger.event"/>
+          </declaringType>
+        </type>
+      </typeMember>
+      <superType name="Record">
+        <packageRef name="java.lang"/>
+      </superType>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtRecord" name="EndTask">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Emitted by the operator-level shutdown channel; terminates the controller into Final."/>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <interface name="InputEvent">
+        <packageRef isImplicit="true" name="sranger.event"/>
+      </interface>
+      <typeMember xsi:type="spoon:CtConstructor" isImplicit="true" name="&lt;init>">
+        <modifier>PUBLIC</modifier>
+        <body xsi:type="spoon:CtBlock">
+          <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+            <type name="Record">
+              <packageRef name="java.lang"/>
+            </type>
+            <executableRef isImplicit="true" name="&lt;init>">
+              <declaringType name="Record">
+                <packageRef name="java.lang"/>
+              </declaringType>
+            </executableRef>
+          </statement>
+        </body>
+        <type name="EndTask">
+          <declaringType name="InputEvent">
+            <packageRef name="sranger.event"/>
+          </declaringType>
+        </type>
+      </typeMember>
+      <superType name="Record">
+        <packageRef name="java.lang"/>
+      </superType>
+    </typeMember>
+  </spoon:CtInterface>
+  <spoon:CtInterface name="OutputEvent">
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Output events of the SRanger controller (SR-DM4). Move is the only output:&#xA;a combined linear / angular velocity command to the differential-drive layer."/>
+    <permittedType isImplicit="true" name="Move">
+      <declaringType name="OutputEvent">
+        <packageRef name="sranger.event"/>
+      </declaringType>
+    </permittedType>
+    <modifier>ABSTRACT</modifier>
+    <modifier>PUBLIC</modifier>
+    <modifier>SEALED</modifier>
+    <typeMember xsi:type="spoon:CtRecord" name="Move">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Motor command.">
+        <commentTag documentationTypeRealname="param" commentContent="target linear velocity (m/s)" javadocTagValue="lv"/>
+        <commentTag documentationTypeRealname="param" commentContent="target angular velocity (rad/s)" javadocTagValue="av"/>
+      </comment>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PUBLIC</modifier>
+      <interface name="OutputEvent">
+        <packageRef isImplicit="true" name="sranger.event"/>
+      </interface>
+      <typeMember xsi:type="spoon:CtConstructor" isImplicit="true" name="&lt;init>">
+        <modifier>PUBLIC</modifier>
+        <body xsi:type="spoon:CtBlock">
+          <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+            <type name="Record">
+              <packageRef name="java.lang"/>
+            </type>
+            <executableRef isImplicit="true" name="&lt;init>">
+              <declaringType name="Record">
+                <packageRef name="java.lang"/>
+              </declaringType>
+            </executableRef>
+          </statement>
+          <statement xsi:type="spoon:CtAssignment">
+            <type name="double"/>
+            <assignment xsi:type="spoon:CtVariableRead">
+              <type name="double"/>
+              <variable xsi:type="spoon:CtParameterReference" name="lv"/>
+            </assignment>
+            <assigned xsi:type="spoon:CtFieldWrite">
+              <type name="double"/>
+              <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                <type name="Move">
+                  <declaringType name="OutputEvent">
+                    <packageRef name="sranger.event"/>
+                  </declaringType>
+                </type>
+                <target xsi:type="spoon:CtTypeAccess">
+                  <type name="void"/>
+                  <accessedType name="Move">
+                    <declaringType name="OutputEvent">
+                      <packageRef name="sranger.event"/>
+                    </declaringType>
+                  </accessedType>
+                </target>
+              </target>
+              <variable xsi:type="spoon:CtFieldReference" name="lv" isFinal="true">
+                <declaringType name="Move">
+                  <declaringType name="OutputEvent">
+                    <packageRef name="sranger.event"/>
+                  </declaringType>
+                </declaringType>
+              </variable>
+            </assigned>
+          </statement>
+          <statement xsi:type="spoon:CtAssignment">
+            <type name="double"/>
+            <assignment xsi:type="spoon:CtVariableRead">
+              <type name="double"/>
+              <variable xsi:type="spoon:CtParameterReference" name="av"/>
+            </assignment>
+            <assigned xsi:type="spoon:CtFieldWrite">
+              <type name="double"/>
+              <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                <type name="Move">
+                  <declaringType name="OutputEvent">
+                    <packageRef name="sranger.event"/>
+                  </declaringType>
+                </type>
+                <target xsi:type="spoon:CtTypeAccess">
+                  <type name="void"/>
+                  <accessedType name="Move">
+                    <declaringType name="OutputEvent">
+                      <packageRef name="sranger.event"/>
+                    </declaringType>
+                  </accessedType>
+                </target>
+              </target>
+              <variable xsi:type="spoon:CtFieldReference" name="av" isFinal="true">
+                <declaringType name="Move">
+                  <declaringType name="OutputEvent">
+                    <packageRef name="sranger.event"/>
+                  </declaringType>
+                </declaringType>
+              </variable>
+            </assigned>
+          </statement>
+        </body>
+        <type name="Move">
+          <declaringType name="OutputEvent">
+            <packageRef name="sranger.event"/>
+          </declaringType>
+        </type>
+        <parameter name="lv">
+          <annotation>
+            <type name="RoboChartType">
+              <packageRef name="sranger.annotation"/>
+            </type>
+            <annotationType name="RoboChartType">
+              <packageRef isImplicit="true" name="sranger.annotation"/>
+            </annotationType>
+          </annotation>
+          <annotation>
+            <type name="RoboChartType">
+              <packageRef name="sranger.annotation"/>
+            </type>
+            <annotationType name="RoboChartType">
+              <packageRef isImplicit="true" name="sranger.annotation"/>
+            </annotationType>
+          </annotation>
+          <type name="double"/>
+        </parameter>
+        <parameter name="av">
+          <annotation>
+            <type name="RoboChartType">
+              <packageRef name="sranger.annotation"/>
+            </type>
+            <annotationType name="RoboChartType">
+              <packageRef isImplicit="true" name="sranger.annotation"/>
+            </annotationType>
+          </annotation>
+          <annotation>
+            <type name="RoboChartType">
+              <packageRef name="sranger.annotation"/>
+            </type>
+            <annotationType name="RoboChartType">
+              <packageRef isImplicit="true" name="sranger.annotation"/>
+            </annotationType>
+          </annotation>
+          <type name="double"/>
+        </parameter>
+      </typeMember>
+      <typeMember xsi:type="spoon:CtMethod" isImplicit="true" name="av">
+        <annotation>
+          <type name="RoboChartType">
+            <packageRef name="sranger.annotation"/>
+          </type>
+          <annotationType name="RoboChartType">
+            <packageRef isImplicit="true" name="sranger.annotation"/>
+          </annotationType>
+        </annotation>
+        <modifier>PUBLIC</modifier>
+        <body xsi:type="spoon:CtBlock" isImplicit="true">
+          <statement xsi:type="spoon:CtReturn" isImplicit="true">
+            <expression xsi:type="spoon:CtFieldRead" isImplicit="true">
+              <type isImplicit="true" name="double"/>
+              <variable xsi:type="spoon:CtFieldReference" isImplicit="true" name="av" isFinal="true">
+                <declaringType isImplicit="true" name="Move"/>
+              </variable>
+              <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                <type isImplicit="true" name="Move"/>
+                <target xsi:type="spoon:CtTypeAccess" isImplicit="true">
+                  <type name="void"/>
+                  <accessedType isImplicit="true" name="Move"/>
+                </target>
+              </target>
+            </expression>
+          </statement>
+        </body>
+        <type isImplicit="true" name="double"/>
+      </typeMember>
+      <typeMember xsi:type="spoon:CtMethod" isImplicit="true" name="lv">
+        <annotation>
+          <type name="RoboChartType">
+            <packageRef name="sranger.annotation"/>
+          </type>
+          <annotationType name="RoboChartType">
+            <packageRef isImplicit="true" name="sranger.annotation"/>
+          </annotationType>
+        </annotation>
+        <modifier>PUBLIC</modifier>
+        <body xsi:type="spoon:CtBlock" isImplicit="true">
+          <statement xsi:type="spoon:CtReturn" isImplicit="true">
+            <expression xsi:type="spoon:CtFieldRead" isImplicit="true">
+              <type isImplicit="true" name="double"/>
+              <variable xsi:type="spoon:CtFieldReference" isImplicit="true" name="lv" isFinal="true">
+                <declaringType isImplicit="true" name="Move"/>
+              </variable>
+              <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+                <type isImplicit="true" name="Move"/>
+                <target xsi:type="spoon:CtTypeAccess" isImplicit="true">
+                  <type name="void"/>
+                  <accessedType isImplicit="true" name="Move"/>
+                </target>
+              </target>
+            </expression>
+          </statement>
+        </body>
+        <type isImplicit="true" name="double"/>
+      </typeMember>
+      <typeMember xsi:type="spoon:CtField" isImplicit="true" name="lv">
+        <annotation>
+          <type name="RoboChartType">
+            <packageRef name="sranger.annotation"/>
+          </type>
+          <annotationType name="RoboChartType">
+            <packageRef isImplicit="true" name="sranger.annotation"/>
+          </annotationType>
+        </annotation>
+        <modifier>FINAL</modifier>
+        <modifier>PRIVATE</modifier>
+        <type name="double"/>
+      </typeMember>
+      <typeMember xsi:type="spoon:CtField" isImplicit="true" name="av">
+        <annotation>
+          <type name="RoboChartType">
+            <packageRef name="sranger.annotation"/>
+          </type>
+          <annotationType name="RoboChartType">
+            <packageRef isImplicit="true" name="sranger.annotation"/>
+          </annotationType>
+        </annotation>
+        <modifier>FINAL</modifier>
+        <modifier>PRIVATE</modifier>
+        <type name="double"/>
+      </typeMember>
+      <superType name="Record">
+        <packageRef name="java.lang"/>
+      </superType>
+      <recordComponent isImplicit="true" name="lv">
+        <annotation>
+          <type name="RoboChartType">
+            <packageRef name="sranger.annotation"/>
+          </type>
+          <annotationType name="RoboChartType">
+            <packageRef isImplicit="true" name="sranger.annotation"/>
+          </annotationType>
+        </annotation>
+        <type name="double"/>
+      </recordComponent>
+      <recordComponent isImplicit="true" name="av">
+        <annotation>
+          <type name="RoboChartType">
+            <packageRef name="sranger.annotation"/>
+          </type>
+          <annotationType name="RoboChartType">
+            <packageRef isImplicit="true" name="sranger.annotation"/>
+          </annotationType>
+        </annotation>
+        <type name="double"/>
+      </recordComponent>
+    </typeMember>
+  </spoon:CtInterface>
+  <spoon:CtClass name="Sensor">
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Sensor service exposing the latest forward IR distance reading (SR-DM5, SR-SF1)."/>
+    <modifier>FINAL</modifier>
+    <modifier>PUBLIC</modifier>
+    <typeMember xsi:type="spoon:CtConstructor" isImplicit="true" name="&lt;init>">
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+          <type name="Object">
+            <packageRef name="java.lang"/>
+          </type>
+          <executableRef isImplicit="true" name="&lt;init>">
+            <declaringType name="Object">
+              <packageRef name="java.lang"/>
+            </declaringType>
+          </executableRef>
+        </statement>
+      </body>
+      <type name="Sensor">
+        <packageRef name="sranger.sensor"/>
+      </type>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="NO_READING_DISTANCE">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Value reported when no reading is available (not yet initialised, or the&#xA;last reading was invalid). Far above any obstacle threshold, so missing&#xA;data never triggers the obstacle-detection condition."/>
+      <modifier>STATIC</modifier>
+      <modifier>FINAL</modifier>
+      <modifier>PRIVATE</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="100.0" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="latestDistance">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <modifier>PRIVATE</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtFieldRead">
+        <type name="double"/>
+        <variable xsi:type="spoon:CtFieldReference" name="NO_READING_DISTANCE" isFinal="true" isStatic="true">
+          <declaringType name="Sensor">
+            <packageRef name="sranger.sensor"/>
+          </declaringType>
+        </variable>
+        <target xsi:type="spoon:CtTypeAccess" isImplicit="true">
+          <type name="void"/>
+          <accessedType isImplicit="true" name="Sensor">
+            <packageRef name="sranger.sensor"/>
+          </accessedType>
+        </target>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="update">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Records a new IR measurement in metres. A negative or NaN measurement is&#xA;not a valid distance and is treated as &quot;no reading available&quot;.">
+        <commentTag documentationTypeRealname="param" commentContent="the measured distance in metres" javadocTagValue="reading"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtIf">
+          <else xsi:type="spoon:CtBlock">
+            <statement xsi:type="spoon:CtAssignment">
+              <type name="double"/>
+              <assignment xsi:type="spoon:CtFieldRead">
+                <type name="double"/>
+                <variable xsi:type="spoon:CtFieldReference" name="NO_READING_DISTANCE" isFinal="true" isStatic="true">
+                  <declaringType name="Sensor">
+                    <packageRef name="sranger.sensor"/>
+                  </declaringType>
+                </variable>
+                <target xsi:type="spoon:CtTypeAccess" isImplicit="true">
+                  <type name="void"/>
+                  <accessedType isImplicit="true" name="Sensor">
+                    <packageRef name="sranger.sensor"/>
+                  </accessedType>
+                </target>
+              </assignment>
+              <assigned xsi:type="spoon:CtFieldWrite">
+                <type name="double"/>
+                <target xsi:type="spoon:CtThisAccess">
+                  <type name="Sensor">
+                    <packageRef name="sranger.sensor"/>
+                  </type>
+                  <target xsi:type="spoon:CtTypeAccess">
+                    <type name="void"/>
+                    <accessedType name="Sensor">
+                      <packageRef name="sranger.sensor"/>
+                    </accessedType>
+                  </target>
+                </target>
+                <variable xsi:type="spoon:CtFieldReference" name="latestDistance">
+                  <declaringType name="Sensor">
+                    <packageRef name="sranger.sensor"/>
+                  </declaringType>
+                </variable>
+              </assigned>
+            </statement>
+          </else>
+          <condition xsi:type="spoon:CtBinaryOperator" operatorKind="GE">
+            <type name="boolean"/>
+            <leftOperand xsi:type="spoon:CtVariableRead">
+              <type name="double"/>
+              <variable xsi:type="spoon:CtParameterReference" name="reading"/>
+            </leftOperand>
+            <rightOperand xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+              <type name="double"/>
+            </rightOperand>
+          </condition>
+          <then xsi:type="spoon:CtBlock">
+            <statement xsi:type="spoon:CtAssignment">
+              <type name="double"/>
+              <assignment xsi:type="spoon:CtVariableRead">
+                <type name="double"/>
+                <variable xsi:type="spoon:CtParameterReference" name="reading"/>
+              </assignment>
+              <assigned xsi:type="spoon:CtFieldWrite">
+                <type name="double"/>
+                <target xsi:type="spoon:CtThisAccess">
+                  <type name="Sensor">
+                    <packageRef name="sranger.sensor"/>
+                  </type>
+                  <target xsi:type="spoon:CtTypeAccess">
+                    <type name="void"/>
+                    <accessedType name="Sensor">
+                      <packageRef name="sranger.sensor"/>
+                    </accessedType>
+                  </target>
+                </target>
+                <variable xsi:type="spoon:CtFieldReference" name="latestDistance">
+                  <declaringType name="Sensor">
+                    <packageRef name="sranger.sensor"/>
+                  </declaringType>
+                </variable>
+              </assigned>
+            </statement>
+          </then>
+        </statement>
+      </body>
+      <type name="void"/>
+      <parameter name="reading">
+        <annotation>
+          <type name="RoboChartType">
+            <packageRef name="sranger.annotation"/>
+          </type>
+          <annotationType name="RoboChartType">
+            <packageRef isImplicit="true" name="sranger.annotation"/>
+          </annotationType>
+        </annotation>
+        <type name="double"/>
+      </parameter>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="distance">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Latest IR distance reading in metres (non-negative); a large default when&#xA;no reading is available.">
+        <commentTag documentationTypeRealname="return" commentContent="the distance in metres"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtReturn">
+          <expression xsi:type="spoon:CtFieldRead">
+            <type name="double"/>
+            <variable xsi:type="spoon:CtFieldReference" name="latestDistance">
+              <declaringType name="Sensor">
+                <packageRef name="sranger.sensor"/>
+              </declaringType>
+            </variable>
+            <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+              <type name="Sensor">
+                <packageRef name="sranger.sensor"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="Sensor">
+                  <packageRef name="sranger.sensor"/>
+                </accessedType>
+              </target>
+            </target>
+          </expression>
+        </statement>
+      </body>
+      <type name="double"/>
+    </typeMember>
+  </spoon:CtClass>
+  <spoon:CtClass name="Clock">
+    <comment xsi:type="spoon:CtJavaDoc" commentContent="Monotonic time source of the controller, in seconds since power-up. The&#xA;system framework advances it each control cycle."/>
+    <modifier>FINAL</modifier>
+    <modifier>PUBLIC</modifier>
+    <typeMember xsi:type="spoon:CtConstructor" isImplicit="true" name="&lt;init>">
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtInvocation" isImplicit="true">
+          <type name="Object">
+            <packageRef name="java.lang"/>
+          </type>
+          <executableRef isImplicit="true" name="&lt;init>">
+            <declaringType name="Object">
+              <packageRef name="java.lang"/>
+            </declaringType>
+          </executableRef>
+        </statement>
+      </body>
+      <type name="Clock">
+        <packageRef name="sranger.time"/>
+      </type>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtField" name="currentTime">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <modifier>PRIVATE</modifier>
+      <type name="double"/>
+      <assignment xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+        <type name="double"/>
+      </assignment>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="advance">
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="Advances the clock. Time never runs backwards: a negative amount is ignored.">
+        <commentTag documentationTypeRealname="param" commentContent="the time elapsed since the previous advance, in seconds" javadocTagValue="elapsedSeconds"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtIf">
+          <condition xsi:type="spoon:CtBinaryOperator" operatorKind="GT">
+            <type name="boolean"/>
+            <leftOperand xsi:type="spoon:CtVariableRead">
+              <type name="double"/>
+              <variable xsi:type="spoon:CtParameterReference" name="elapsedSeconds"/>
+            </leftOperand>
+            <rightOperand xsi:type="spoon:CtLiteral" value="0.0" valueKind="Double">
+              <type name="double"/>
+            </rightOperand>
+          </condition>
+          <then xsi:type="spoon:CtBlock">
+            <statement xsi:type="spoon:CtAssignment">
+              <type name="double"/>
+              <assignment xsi:type="spoon:CtBinaryOperator" operatorKind="PLUS">
+                <type name="double"/>
+                <leftOperand xsi:type="spoon:CtFieldRead">
+                  <type name="double"/>
+                  <variable xsi:type="spoon:CtFieldReference" name="currentTime">
+                    <declaringType name="Clock">
+                      <packageRef name="sranger.time"/>
+                    </declaringType>
+                  </variable>
+                  <target xsi:type="spoon:CtThisAccess">
+                    <type name="Clock">
+                      <packageRef name="sranger.time"/>
+                    </type>
+                    <target xsi:type="spoon:CtTypeAccess">
+                      <type name="void"/>
+                      <accessedType name="Clock">
+                        <packageRef name="sranger.time"/>
+                      </accessedType>
+                    </target>
+                  </target>
+                </leftOperand>
+                <rightOperand xsi:type="spoon:CtVariableRead">
+                  <type name="double"/>
+                  <variable xsi:type="spoon:CtParameterReference" name="elapsedSeconds"/>
+                </rightOperand>
+              </assignment>
+              <assigned xsi:type="spoon:CtFieldWrite">
+                <type name="double"/>
+                <target xsi:type="spoon:CtThisAccess">
+                  <type name="Clock">
+                    <packageRef name="sranger.time"/>
+                  </type>
+                  <target xsi:type="spoon:CtTypeAccess">
+                    <type name="void"/>
+                    <accessedType name="Clock">
+                      <packageRef name="sranger.time"/>
+                    </accessedType>
+                  </target>
+                </target>
+                <variable xsi:type="spoon:CtFieldReference" name="currentTime">
+                  <declaringType name="Clock">
+                    <packageRef name="sranger.time"/>
+                  </declaringType>
+                </variable>
+              </assigned>
+            </statement>
+          </then>
+        </statement>
+      </body>
+      <type name="void"/>
+      <parameter name="elapsedSeconds">
+        <annotation>
+          <type name="RoboChartType">
+            <packageRef name="sranger.annotation"/>
+          </type>
+          <annotationType name="RoboChartType">
+            <packageRef isImplicit="true" name="sranger.annotation"/>
+          </annotationType>
+        </annotation>
+        <type name="double"/>
+      </parameter>
+    </typeMember>
+    <typeMember xsi:type="spoon:CtMethod" name="now">
+      <annotation>
+        <type name="RoboChartType">
+          <packageRef name="sranger.annotation"/>
+        </type>
+        <annotationType name="RoboChartType">
+          <packageRef isImplicit="true" name="sranger.annotation"/>
+        </annotationType>
+      </annotation>
+      <comment xsi:type="spoon:CtJavaDoc" commentContent="">
+        <commentTag documentationTypeRealname="return" commentContent="the current time in seconds"/>
+      </comment>
+      <modifier>PUBLIC</modifier>
+      <body xsi:type="spoon:CtBlock">
+        <statement xsi:type="spoon:CtReturn">
+          <expression xsi:type="spoon:CtFieldRead">
+            <type name="double"/>
+            <variable xsi:type="spoon:CtFieldReference" name="currentTime">
+              <declaringType name="Clock">
+                <packageRef name="sranger.time"/>
+              </declaringType>
+            </variable>
+            <target xsi:type="spoon:CtThisAccess" isImplicit="true">
+              <type name="Clock">
+                <packageRef name="sranger.time"/>
+              </type>
+              <target xsi:type="spoon:CtTypeAccess">
+                <type name="void"/>
+                <accessedType name="Clock">
+                  <packageRef name="sranger.time"/>
+                </accessedType>
+              </target>
+            </target>
+          </expression>
+        </statement>
+      </body>
+      <type name="double"/>
+    </typeMember>
+  </spoon:CtClass>
+</xmi:XMI>

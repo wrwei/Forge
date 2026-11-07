@@ -8,7 +8,8 @@ C=/Users/ranwei/Gitee/formal_method_guided_vibe_coding
 case "$COND" in
   cold)      COLL=v3-cold;      PFX=forge-v3c9; STG=/Users/ranwei/Gitee/v3c9-staging; LABEL="Cold v3" ;;
   reference) COLL=v3-reference; PFX=forge-v3r10; STG=/Users/ranwei/Gitee/v3r10-staging; LABEL="Reference v3" ;;
-  *) echo "FAIL condition must be cold or reference"; exit 1 ;;
+  compileonly) COLL=v3-compile-only; PFX=forge-v3o18; STG=/Users/ranwei/Gitee/v3o18-staging; LABEL="Compile-only v3" ;;   # Amendment 18
+  *) echo "FAIL condition must be cold, reference or compileonly"; exit 1 ;;
 esac
 # Amendments 15 and 16: the Steam Boiler is re-collected at the Amendment 16 pin, with new names.
 if [ "$STUDY" = steam_boiler ]; then

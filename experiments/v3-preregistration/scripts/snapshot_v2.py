@@ -423,7 +423,7 @@ def main() -> int:
     _CARRY = ("converged", "convergence_note", "failure_summary",
               "actor_codegen_summary",
               "vacuity_rescore_14ab1c3c",   # historical: VAC-1 rescore
-              "f5_rescore_b518c017")        # historical: repair5 rescore
+              "f5_rescore_b518c017")        # historical: F5 rescore
     _prev = {}
     _old = {}
     _prev_p = final_dst / "summary.json"

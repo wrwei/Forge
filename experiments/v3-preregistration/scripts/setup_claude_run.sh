@@ -74,9 +74,10 @@ if [ -n "$WANT55" ]; then
   [ "${FORGE_SHA:-$SHA}" = "$WANT55" ] || { echo "FAIL: $(basename "$FORGE_ARM_DIR") $STUDY must run at $WANT55 (FORGE_SHA=${FORGE_SHA:-unset})"; exit 1; }
 fi
 # PRE-REGISTRATION v3 (review/prereg-v3-study-free.md): one pin for every study.
-case "$(basename "${FORGE_ARM_DIR:-}")" in v3-cold|v3-reference)
+case "$(basename "${FORGE_ARM_DIR:-}")" in v3-cold|v3-reference|v3-compile-only)
   WANTV3=56cb43d7835b43e8a986e6ba4c0e82f35083d6f1
   [ "$STUDY" = steam_boiler ] && WANTV3=aaddf2225b38eb1eb749e816f6f5874d7ec93eaa   # Amendments 14-16
+  [ "$(basename "$FORGE_ARM_DIR")" = v3-compile-only ] && WANTV3=aaddf2225b38eb1eb749e816f6f5874d7ec93eaa   # Amendment 18
   [ "${FORGE_SHA:-}" = "$WANTV3" ] || { echo "FAIL: $(basename "$FORGE_ARM_DIR") must run at $WANTV3 (FORGE_SHA=${FORGE_SHA:-unset})"; exit 1; }
   # Amendments 11 and 12: cold Steam Boiler passes 1-10 (11, 12, ... only as void replacements;
   # the order, replacements included, is enforced by v3_start.sh).
@@ -221,6 +222,9 @@ case "$(basename "${FORGE_ARM_DIR:-}")" in
   v3-cold)
     COND="V3-cold-single-pass"
     CNOTE="one cold pass, no iteration, study-free instructions (review/prereg-v3-study-free.md). Never pool with loop runs or earlier collections." ;;
+  v3-compile-only)
+    COND="V3-compile-only-loop"
+    CNOTE="Compile-only feedback loop (eight visible phases; verifier reports withheld by the runner), up to 7 iterations, study-free instructions (review/prereg-v3-study-free.md, Amendment 18). Never pool with earlier collections." ;;
   v3-reference)
     COND="V3-reference-loop"
     CNOTE="Reference (full) feedback loop, up to 7 iterations, study-free instructions (review/prereg-v3-study-free.md). Never pool with earlier collections." ;;
@@ -268,6 +272,7 @@ case "$(basename "${FORGE_ARM_DIR:-}")" in
   cold-baseline-v2)         PROMPT="$(dirname "$P")/cold-v2-prompts/cold-v2-$STUDY-run$RUNK.md" ;;
   v3-cold)                  PROMPT="$(dirname "$P")/v3-prompts/v3-cold-$STUDY-run$RUNK.md" ;;
   v3-reference)             PROMPT="$(dirname "$P")/v3-prompts/v3-reference-$STUDY-run$RUNK.md" ;;
+  v3-compile-only)          PROMPT="$(dirname "$P")/v3-prompts/v3-compileonly-$STUDY-run$RUNK.md" ;;
   convergence-c-opus55)     PROMPT="$(dirname "$P")/opus55-prompts/c55-cold-$STUDY-run$RUNK.md" ;;
   ablation-d2-opus55)       PROMPT="$(dirname "$P")/opus55-prompts/d255-cold-$STUDY-run$RUNK.md" ;;
   multicontroller-e-opus55) PROMPT="$(dirname "$P")/opus55-prompts/e55-cold-$STUDY-run$RUNK.md" ;;

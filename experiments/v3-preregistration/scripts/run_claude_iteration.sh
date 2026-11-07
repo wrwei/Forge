@@ -30,8 +30,8 @@ if [ "$(basename "${FORGE_ARM_DIR:-}")" = "cold-baseline-v2" ] || [ "$(basename 
   [ ! -e "$STAGE/$STUDY/run-$RUNK/iter-1" ] || { echo "REFUSED: pass $RUNK of $STUDY is already recorded; a second run of the pipeline voids the pass. Stop and report this line."; exit 3; }
 fi
 # v3 Reference runs: iteration cap 7 (review/prereg-v3-study-free.md).
-if [ "$(basename "${FORGE_ARM_DIR:-}")" = "v3-reference" ]; then
-  # Amendment 13: no iteration cap for the Steam Boiler Reference runs.
+if [ "$(basename "${FORGE_ARM_DIR:-}")" = "v3-reference" ] || [ "$(basename "${FORGE_ARM_DIR:-}")" = "v3-compile-only" ]; then
+  # Amendment 13: no iteration cap for the Steam Boiler Reference runs. Amendment 18: cap 7 for Compile-only.
   if [ "$STUDY" != "steam_boiler" ]; then
     case "$ITER" in [1-7]) ;; *) echo "REFUSED: iteration $ITER is past the cap of 7. Stop and report non-convergence."; exit 3 ;; esac
   fi
@@ -164,7 +164,7 @@ echo "=== docker / isabelle pre-flight ==="
 # which uses `docker run --rm`. That only removes the container on a CLEAN client
 # exit; an interrupted run ORPHANS it, and the orphaned build keeps consuming VM
 # memory. Later runs then die faster than earlier ones and look like proof
-# failures rather than resource exhaustion (finding repair9d). Sweep ours first.
+# failures rather than resource exhaustion (finding F9d). Sweep ours first.
 DOCKER=${DOCKER:-/usr/local/bin/docker}
 OURS="forge/isabelle:2023-cyphyassure"
 if command -v "$DOCKER" >/dev/null 2>&1 && "$DOCKER" info >/dev/null 2>&1; then
@@ -193,7 +193,8 @@ echo
 # (which the actor may not read), the four verifier reports and phase_timings.json
 # are removed from the worktree once recorded, and the next step is decided from
 # the eight visible phases alone.
-if [ "$(basename "${FORGE_ARM_DIR:-}")" = "compile-only-opus55" ]; then
+# Amendment 18 (review/prereg-v3-study-free.md): the same branch serves v3-compile-only.
+if [ "$(basename "${FORGE_ARM_DIR:-}")" = "compile-only-opus55" ] || [ "$(basename "${FORGE_ARM_DIR:-}")" = "v3-compile-only" ]; then
   VIS="compile coverage preflight t2m m2m m2t dafny_gen isabelle_gen"
   HID="fdr4 dafny_verify isabelle_verify vacuity"
   LOGD="$STAGE/$STUDY/run-$RUNK"; mkdir -p "$LOGD"

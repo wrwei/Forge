@@ -1,0 +1,182 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "SRanger controller generated in nine files (one controller, three modes, seven transitions, two guard predicates, one clock). All 23 requirements are traced. The issues below are defaults and choices the requirements did not settle; none blocks verification.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Sensor value when no IR reading is available",
+      "raw": "SR-DM5 asks for 'a large default value' when no reading is available but gives no number.",
+      "fix_directive": "Sensor.distance() returns 100.0 m (private constant NO_READING_DISTANCE) before the first reading and after an invalid one (negative or NaN, which update() treats as 'no reading'). 100.0 m is far above obstacleThreshold, so missing data never satisfies obstacleDetected. Replace it if the platform specifies a different value.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/sranger/sensor/Sensor.java",
+          "lines": [
+            15,
+            31
+          ],
+          "element": "Sensor.update / NO_READING_DISTANCE",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "invented_default",
+      "title": "Actuator's recorded command before the first Move",
+      "raw": "SR-DM6 does not say what the actuator reports before any command is issued.",
+      "fix_directive": "Actuator initialises its last linear and angular velocity to 0.0 (stopped). The controller's constructor overwrites them right away with Move(moveVel, 0).",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/sranger/actuator/Actuator.java",
+          "lines": [
+            12,
+            13
+          ],
+          "element": "Actuator.lastLinearVelocity / lastAngularVelocity",
+          "requirement_ids": [
+            "SR-DM6"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Moving's entry command at power-up is issued in the constructor",
+      "raw": "SR-FR1: 'on entering Moving, the controller issues Move(moveVel, 0)'; SR-Beh1: the controller begins in Moving.",
+      "fix_directive": "The constructor issues Move(moveVel, 0) once, so the robot drives forward from power-up and not only after its first turn. Every transition into a mode performs that mode's entry action inline in step(). The extracted model's initial transition may not carry this power-up command.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "lines": [
+            34,
+            39
+          ],
+          "element": "SRangerController(Sensor, Actuator, Clock)",
+          "requirement_ids": [
+            "SR-FR1",
+            "SR-Beh1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Moving -> Turning: event trigger and obstacleDetected guard",
+      "raw": "SR-Beh2 triggers Moving -> Turning on the obstacle event; SR-GP1 says obstacleDetected (distance <= obstacleThreshold) is the guard on the same transition.",
+      "fix_directive": "Both are implemented: the trigger is the Obstacle event and the guard is obstacleDetected. An Obstacle event that arrives while distance() > obstacleThreshold (for example with no reading) is ignored.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "lines": [
+            56,
+            56
+          ],
+          "element": "obstacleDetected",
+          "requirement_ids": [
+            "SR-GP1"
+          ]
+        },
+        {
+          "file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "lines": [
+            64,
+            68
+          ],
+          "element": "step (Moving -> Turning)",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Priority of Turning's transitions",
+      "raw": "SR-Beh5, SR-Beh6 and SR-Beh7 all leave Turning; no priority is given.",
+      "fix_directive": "The order is endTask (override), then the autonomous timeout turnDurationElapsed, then tick && !turnDurationElapsed. If tick came before the timeout, the controller would never leave Turning, because a tick arrives every cycle. The tick self-loop has no action, so it does not reset clockResetTime.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "lines": [
+            74,
+            87
+          ],
+          "element": "step (Turning block)",
+          "requirement_ids": [
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7",
+            "SR-GP2",
+            "SR-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "clockResetTime is modelled as a clock; time source named timer",
+      "raw": "SR-Var1 calls clockResetTime a real variable set to the current time on entry to Turning; SR-GP2 tests the time elapsed since it.",
+      "fix_directive": "clockResetTime is a real field assigned from timer.now() (the field is typed Clock and named timer because 'clock' is reserved), and the guard is timer.now() - clockResetTime >= TURN_DURATION. Under the extractor's clock convention this becomes a RoboChart clock reset with since(clockResetTime) >= turnDuration. The Clock class (sranger.time) is advanced by the framework and never runs backwards.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "lines": [
+            20,
+            20
+          ],
+          "element": "clockResetTime",
+          "requirement_ids": [
+            "SR-Var1"
+          ]
+        },
+        {
+          "file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "lines": [
+            57,
+            57
+          ],
+          "element": "turnDurationElapsed",
+          "requirement_ids": [
+            "SR-GP2"
+          ]
+        },
+        {
+          "file": "java.generated.project/src/main/java/sranger/time/Clock.java",
+          "lines": [
+            18,
+            30
+          ],
+          "element": "Clock.advance / Clock.now",
+          "requirement_ids": [
+            "SR-Var1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "scope_question",
+      "title": "obstacleThreshold = 0.5 is rounded up to 1 in the model",
+      "raw": "Rules section 2: a fractional constant is rounded up to the next integer in the model's constants interface.",
+      "fix_directive": "The Java guard compares distance() <= 0.5 exactly. In the model, obstacleDetected becomes distance() <= 1, which is more permissive. The exact value matters to the guard, so model-level results about obstacle detection are about the rounded threshold. The other three constants are whole numbers and are not affected.",
+      "java_trace": [
+        {
+          "file": "java.generated.project/src/main/java/sranger/controller/SRangerConstants.java",
+          "lines": [
+            17,
+            17
+          ],
+          "element": "OBSTACLE_THRESHOLD",
+          "requirement_ids": [
+            "SR-DM2",
+            "SR-GP1"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline. If a verifier fails, read the post_<phase>.md for that phase and fix the Java."
+}

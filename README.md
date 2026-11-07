@@ -398,55 +398,18 @@ Unlike the previous AutoGen pipeline (which regenerated all files each iteration
 
 ---
 
-### Feedback configurations used in the paper
+### The experiments
 
-The code on `main` is the **full-feedback** configuration: the structural
-linter, the code-generation rules and the Phase 7 feedback compilers state the
-diagnosis *and* a prescriptive fix. This is the configuration described in
-Section 3 of the paper, and it produced Table 7 (`experiments/convergence/`), the
-*Reference* experiment of Table 8 (`experiments/convergence-v3-frozen/`;
-its Chemical Detector row is `experiments/reference-multicontroller-f/`) and the
-Steam Boiler run (`experiments/steam-boiler/`).
-
-The *Diagnosis-only* experiment of Table 8 (both of its Chemical Detector blocks)
-(`experiments/ablation-d2-diagnostic/`, `experiments/multicontroller-e/`) used
-the **diagnosis-only** configuration, in which every prescriptive fix
-instruction is removed and only the diagnosis of which obligation failed, and
-where, is kept. It is shipped as a patch over five files:
-
-```
-git apply experiments/ablation-d2-diagnostic/diagnosis-only.patch      # switch to diagnosis-only
-git apply -R experiments/ablation-d2-diagnostic/diagnosis-only.patch   # back to full feedback
-```
-
-The patch touches only `forge.transformations/.../preflight/StructuralLinter.java`,
-`forge.assets/prompts/java_codegen_rules.txt` and
-`forge.dashboard/web/feedback/{gradle,fdr4,isabelle}.py`. The condition-E Chemical Detector runs (`multicontroller-e/`)
-additionally use the per-controller Dafny and Isabelle generators,
-which are on `main`.
-
-**Pipeline version per experiment.** Each Table 8 row ran at a single
-fixed version of the pipeline (development commits given for reference). Apart
-from comment text, `main` differs from each of them only as follows:
-
-| experiment | development commit | difference from `main` |
-|---|---|---|
-| Reference | `b808424c` | no per-controller Dafny/Isabelle generators; Dafny `InputEvent` datatype emitted only when `step()` tests an event |
-| Diagnosis-only | `35f6d557` | as Reference, with `diagnosis-only.patch` applied |
-| Diagnosis-only, Chemical Detector (condition E) | `99952b9b` | `diagnosis-only.patch` applied; Dafny `InputEvent` datatype emitted only when `step()` tests an event |
-| Reference, Chemical Detector (condition F) | `09e67fca` (this repository, plus the executable-bit fix `d88ad2a1`) | none; the runs used these trees byte-for-byte |
-
-The Table 7 runs predate the extractor repairs described in Section 5.5; their
-generated artefacts are kept as recorded under `experiments/convergence/` and
-`reference-runs/`.
-
-**Comment text in archived artefacts.** After the runs, comment text inside the
-archived Isabelle theories under `experiments/convergence-v3-frozen/`,
-`experiments/ablation-d2-diagnostic/` and `experiments/multicontroller-e/`, and in the
-transformation templates under `forge.transformations/`, was edited to remove
-internal working labels. No lemma, definition, tactic or verdict was changed. A
-byte-level replay at the recorded commit therefore differs from these files only
-inside `(* ... *)` comments; compare after stripping comments.
+The code on `main` is the pipeline at the revision the paper reports. The 75 LLM
+sessions of Section 4 (`experiments/v3-cold/`, `experiments/v3-reference/`,
+`experiments/v3-compile-only/`) all ran against this pipeline under the study-free
+code-generation instructions in `forge.assets/prompts/`; the design of the collection,
+the prompt every session received and the scripts that set up, ran, recorded and audited
+each session are in `experiments/v3-preregistration/`. The mutation campaign
+(`experiments/mutation-testing/`), the requirements-conformance checks
+(`experiments/requirements-conformance/`, `experiments/blind-spec/`) and the guard-level
+enumeration (`experiments/conformance-tierB/`) were run at the same revision.
+`experiments/README.md` maps each folder to the section and table it supports.
 
 **Checks that run from this repository.**
 
@@ -471,17 +434,10 @@ python experiments/conformance-tierB/run_tierb.py prefix   # guard-level enumera
 | Dafny | 4.11.0 | See below |
 | Isabelle2023-CyPhyAssure | 2023 fork | Linux container via `scripts/isabelle-docker.sh` (native Linux or WSL also work) |
 
-### Installing Dafny (Windows)
+### Installing Dafny
 
-```powershell
-# Default: installs v4.11.0 to %USERPROFILE%\dafny and adds to PATH
-.\scripts\install-dafny-windows.ps1
-
-# Custom version or location
-.\scripts\install-dafny-windows.ps1 -Version 4.11.0 -InstallDir C:\tools\dafny
-```
-
-Downloads `dafny-4.11.0-x64-windows-2022.zip` from GitHub releases, extracts, finds `dafny.exe` recursively, and adds the binary directory to the user PATH.
+Install Dafny 4.11.0 from its GitHub releases page and put `dafny` on the `PATH`; the
+pipeline invokes it as `dafny verify` with the bundled Z3.
 
 ### Dashboard setup
 
@@ -524,15 +480,16 @@ The Phase 6c (Isabelle) verifier runs in the Linux container that
 ## Directory structure
 
 ```
-formal_method_guided_vibe_coding/
+Forge/
 ├── README.md
-├── CLAUDE.md                        # Project rules for Claude Code / Cline (references prompts/)
-├── RoboChart-manual.pdf
+├── LICENSE
+├── CLAUDE.md                        # Project rules read by the Claude Code sessions (references forge.assets/prompts/)
+├── pipeline.yaml                    # Phase manifest: order, commands, time and memory limits
 ├── .gitignore
 │
-├── .claude/                         # Claude Code workspace (tracked in git)
-│   ├── skills/                      #   Slash commands: /run-pipeline, /verify, /gen-trace, /fix-from-feedback
-│   └── memory/                      #   Persistent project memory across sessions
+├── docker/                          # Isabelle/UTP (CyPhyAssure 2023) container used by the Isabelle phase
+├── reference-runs/                  # The three RoboStar case studies as recorded before the evaluation: Java and artefacts
+├── experiments/                     # Records behind Section 4 (see experiments/README.md)
 │
 ├── forge.assets/                 # Shared assets (domain-independent + case studies)
 │   ├── prompts/                     #   LLM-context material (auto-loaded via CLAUDE.md @file)
@@ -605,15 +562,15 @@ formal_method_guided_vibe_coding/
 │       └── annotation/RoboChartType.java  # Type hint annotation
 │
 │
-└── scripts/
-    └── install-dafny-windows.ps1    # Dafny 4.11.0 Windows installer
+└── scripts/                         # Regression test and the Isabelle container wrapper
 ```
 
 ---
 
 ## Development
 
-Run `python scripts/check_manifest_consistency.py` to verify `pipeline.yaml` validates against the schema and all `kind:java` phases resolve to existing Java classes.
+`bash scripts/regression_test.sh` re-extracts the fixtures under `scripts/regression-fixtures/` and
+checks the extracted state-machine structure and generated CSP against the recorded output.
 
 ## References
 

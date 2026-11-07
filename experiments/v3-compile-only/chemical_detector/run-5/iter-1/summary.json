@@ -1,0 +1,51 @@
+{
+  "study": "chemical_detector",
+  "run": 5,
+  "iteration": 1,
+  "recorded_utc": "2026-11-05 19:19:52",
+  "infrastructure_sha": "aaddf2225b38eb1eb749e816f6f5874d7ec93eaa",
+  "worktree": "/Users/ranwei/Gitee/forge-v3o18-run5-chemical_detector",
+  "actor": "claude-code",
+  "actor_note": "DIFFERENT ACTORS ARE DIFFERENT CONDITIONS. Do not pool runs with different `actor` values into one convergence rate; report per actor.",
+  "codex_thread": null,
+  "actor_session_label": "CLAUDE-chemical_detector-run5",
+  "files": {
+    "java": 18,
+    "java_test": 0,
+    "formal_artefacts": 64,
+    "codegen_trace": 1,
+    "agent_summary": 1,
+    "feedback": 13,
+    "feedback_json": 13
+  },
+  "java_loc": 624,
+  "phase_status": {
+    "compile": "passed",
+    "coverage": "passed",
+    "preflight": "passed",
+    "t2m": "passed",
+    "m2m": "passed",
+    "m2t": "passed",
+    "dafny_gen": "passed",
+    "isabelle_gen": "passed",
+    "fdr4": "passed",
+    "dafny_verify": "failed",
+    "isabelle_verify": "passed",
+    "vacuity": "passed"
+  },
+  "phases_without_verdict": [],
+  "codegen_cost": {
+    "kind": "unavailable",
+    "source": "operator transcription of Claude Code's own session figure (~/.claude has no documented stable schema; a labelled self-report is preferred over an undocumented scrape)",
+    "total_tokens": null,
+    "turns": null,
+    "schema": "unavailable",
+    "tokens_in": null,
+    "tokens_out": null,
+    "scope": "per_turn_sum",
+    "notes": "full per-turn split available"
+  },
+  "converged": null,
+  "failure_summary": null,
+  "actor_codegen_summary": "# ITER_SUMMARY \u2014 chemical_detector, run 5\n\n## Iteration 1\n\n**What I wrote.** There are two controllers, one per reasoning subsystem.\n`GasAnalysisController` has the states Reading, Analysis, NoGas, GasDetected\nand a terminal CONCLUDED. `MovementController` has Waiting, Going, Found,\nAvoiding, TryingAgain, AvoidingAgain and GettingOut. Around them are the\ndomain types (Status, Angle, Loc, Chem, GasSample), the sealed\n`InputEvent`/`OutputEvent` hierarchies, `ChemicalDetectorConstants`, a `Clock`\n(clock T is `since(evasionStart)`, and `pause` gives the waits), two sensors\n(the gas-analysis functions and the odometer) and two actuators. turn, stop\nand resume are declared as outputs of gas analysis and inputs of movement,\nwith the same names, so the module connects them.\n\n**Decisions the requirements left open:**\n- Constant values: THR 2, LV 1, EVADE_TIME 1, STUCK_PERIOD 2, STUCK_DIST 1,\n  OUT_PERIOD 1. All are integral, so rounding is harmless.\n- A value \"indicates\" the target when its chemical equals a configured target\n  and its intensity is above 0.\n- Sensor positions 1\u20134 map to Left/Right/Back/Front and wrap round. A tie goes\n  to the lowest position.\n- Intensity is real and Chem is a record with a nat id. The GasSensor record is\n  named GasSample, to avoid the sensor-name convention.\n- move, randomWalk, shortRandomWalk and changeDirection are Vehicle actuator\n  calls. An argument-less `compute()` cannot pass lv, a or l.\n- randomWalk runs on entry to Waiting, because the profile has no during\n  actions.\n- NoGas\u2192Reading is guarded by `sts == noGas`, which always holds there.\n- Found is terminal; no Found\u2192Final step.\n- The odometer is a sensor read, not an event.\n\n**Unresolved.** Whether evadeTime should count towards stuckPeriod. There is\nno Java runtime wiring between the subsystems.\n\nDetails: `post_codegen.md`."
+}

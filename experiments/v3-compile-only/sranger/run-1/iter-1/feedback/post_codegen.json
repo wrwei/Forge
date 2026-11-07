@@ -1,0 +1,140 @@
+{
+  "phase": "codegen",
+  "status": "uncertain",
+  "summary": "All 23 requirements are implemented and traced; the project compiles. Six items are flagged for review: one invented default, one ambiguity and four design choices. Nothing is unimplemented.",
+  "issues": [
+    {
+      "kind": "invented_default",
+      "title": "Sensor no-reading distance is 1000.0 m; negative readings treated as no reading",
+      "raw": "SR-DM5 requires distance() to return 'a large default value' when no reading is available but gives no number. Chosen: NO_READING_DISTANCE = 1000.0 m (far above obstacleThreshold = 0.5). Sensor.update() also maps a negative (invalid) reading to this default so distance() stays non-negative.",
+      "fix_directive": "Confirm 1000.0 m is acceptable as the no-reading value, and that an invalid negative reading should count as 'no reading' rather than 0.0 (which would trigger obstacle detection).",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/sensor/Sensor.java",
+          "line_start": 13,
+          "line_end": 36,
+          "element": "Sensor.NO_READING_DISTANCE / update / clearReading",
+          "requirement_ids": [
+            "SR-DM5",
+            "SR-SF1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Fractional constant OBSTACLE_THRESHOLD = 0.5 matters to the obstacleDetected guard",
+      "raw": "The model's constants interface rounds fractional constants up, so OBSTACLE_THRESHOLD (0.5 m) becomes 1 in the model and the guard distance() <= obstacleThreshold is looser in the model than in Java. The requirements fix both the value (0.5) and the unit (metres), so the constant is kept as specified. MOVE_VEL, TURN_VEL and TURN_DURATION are integral and are not affected.",
+      "fix_directive": "None in Java. When reading verification results, remember that the model threshold is 1, not 0.5.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerConstants.java",
+          "line_start": 18,
+          "line_end": 20,
+          "element": "OBSTACLE_THRESHOLD",
+          "requirement_ids": [
+            "SR-DM2",
+            "SR-GP1"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 59,
+          "line_end": 59,
+          "element": "obstacleDetected",
+          "requirement_ids": [
+            "SR-GP1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "ambiguous_requirement",
+      "title": "Moving -> Turning uses both the obstacle event and the obstacleDetected guard",
+      "raw": "SR-Beh2 triggers the transition on the obstacle event; SR-GP1 says obstacleDetected (distance <= threshold) is the guard on the same transition. SR-DM3 says the event fires when the distance crosses *below* the threshold (strict), while SR-GP1 uses 'at or below'. Implemented as trigger Obstacle with condition obstacleDetected, so an obstacle event that arrives while distance() > threshold is ignored.",
+      "fix_directive": "Confirm the transition should require both, rather than the event alone.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 66,
+          "line_end": 69,
+          "element": "step: MOVING -> TURNING",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-GP1",
+            "SR-DM3"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Transition priority in Turning: endTask, then timed return, then tick",
+      "raw": "No priorities are given. endTask is the override, so it is first in both Moving and Turning. In Turning the autonomous turnDurationElapsed transition comes before the tick self-loop, and the tick branch conjoins !turnDurationElapsed; with tick first, a tick every cycle would keep the robot in Turning forever. Tick self-loops perform no action (SR-Beh4, SR-Beh7) and in particular do not reset clockResetTime, so the turn duration counts from the Moving -> Turning transition. Obstacle in Turning, and every event in Final, have no transition and are ignored.",
+      "fix_directive": "Confirm the priority order.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 62,
+          "line_end": 85,
+          "element": "step",
+          "requirement_ids": [
+            "SR-Beh2",
+            "SR-Beh3",
+            "SR-Beh4",
+            "SR-Beh5",
+            "SR-Beh6",
+            "SR-Beh7",
+            "SR-DC1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Initial Move(moveVel, 0) is issued in the constructor",
+      "raw": "SR-FR1 says entering Moving issues Move(moveVel, 0), and Moving is the initial mode (SR-Beh1). Entry actions are written inline on each transition into a mode (Turning -> Moving), and the power-up entry is issued once in the controller constructor. The extracted model may not carry the constructor's command onto its initial transition.",
+      "fix_directive": "None unless the model must show the power-up Move command.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 36,
+          "line_end": 41,
+          "element": "SRangerController constructor",
+          "requirement_ids": [
+            "SR-FR1",
+            "SR-Beh1"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "design_choice",
+      "title": "Move carries two real components; the clock field is named timer",
+      "raw": "OutputEvent.Move(lv, av) has two real components, as SR-DM4 gives it, rather than one datatype component. The time source is a class named Clock (sranger.time.Clock), held in the controller field 'timer' because 'clock' is a RoboChart reserved word. clockResetTime = timer.now() makes clockResetTime a RoboChart clock, and the guard timer.now() - clockResetTime >= TURN_DURATION becomes since(clockResetTime) >= turnDuration (SR-Var1, SR-GP2).",
+      "fix_directive": "If the toolchain cannot type an event with two components, wrap (lv, av) in a datatype record.",
+      "java_trace": [
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/event/OutputEvent.java",
+          "line_start": 17,
+          "line_end": 17,
+          "element": "Move",
+          "requirement_ids": [
+            "SR-DM4"
+          ]
+        },
+        {
+          "java_file": "java.generated.project/src/main/java/sranger/controller/SRangerController.java",
+          "line_start": 20,
+          "line_end": 26,
+          "element": "clockResetTime / timer",
+          "requirement_ids": [
+            "SR-Var1",
+            "SR-GP2"
+          ]
+        }
+      ]
+    }
+  ],
+  "next_step": "Run the pipeline. Revisit these items only if verification feedback points at them."
+}

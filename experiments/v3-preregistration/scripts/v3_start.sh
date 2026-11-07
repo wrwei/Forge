@@ -10,7 +10,8 @@ PR=/Users/ranwei/Git/TOSEM_Formal_Guided_Vibe_Coding/review/v3-prompts
 case "$COND" in
   cold)      COLL=v3-cold;      PFX=forge-v3c9; STG=/Users/ranwei/Gitee/v3c9-staging ;;
   reference) COLL=v3-reference; PFX=forge-v3r10; STG=/Users/ranwei/Gitee/v3r10-staging ;;
-  *) echo "FAIL condition must be cold or reference"; exit 1 ;;
+  compileonly) COLL=v3-compile-only; PFX=forge-v3o18; STG=/Users/ranwei/Gitee/v3o18-staging ;;   # Amendment 18
+  *) echo "FAIL condition must be cold, reference or compileonly"; exit 1 ;;
 esac
 # Amendments 15 and 16: the Steam Boiler is re-collected at the Amendment 16 pin, with new names.
 if [ "$STUDY" = steam_boiler ]; then
@@ -21,6 +22,7 @@ PROMPT="$PR/v3-$COND-$STUDY-run$K.md"
 export FORGE_ARM_DIR=$C/experiments/$COLL FORGE_WT_PREFIX=$PFX FORGE_STAGE_DIR=$STG \
        FORGE_SHA=56cb43d7835b43e8a986e6ba4c0e82f35083d6f1
 [ "$STUDY" = steam_boiler ] && export FORGE_SHA=aaddf2225b38eb1eb749e816f6f5874d7ec93eaa   # Amendments 14-16
+[ "$COND" = compileonly ] && export FORGE_SHA=aaddf2225b38eb1eb749e816f6f5874d7ec93eaa   # Amendment 18
 if [ "$K" -gt 1 ]; then
   PREV=$((K-1))
   [ -d "${V3_ORDER_ROOT:-$C/experiments}/$COLL/$STUDY/run-$PREV/iter-1" ] || { echo "FAIL $COND $STUDY $PREV is not committed yet; finish it first (v3_finish.sh)"; exit 1; }
@@ -66,6 +68,12 @@ for coll in cold reference; do
     i=0; while [ "$i" -lt "$nv" ]; do
       k=$((base + i)); [ -z "$NEXT" ] && [ ! -d "$OR/v3-$coll/$s/run-$k/iter-1" ] && NEXT="$coll $s $k"; i=$((i + 1))
     done
+  done
+done
+# Amendment 18: the Compile-only condition, after every session above: round j = SRanger, LRE, Chemical Detector (j = 1..5).
+for k in 1 2 3 4 5; do
+  for s in sranger lre chemical_detector; do
+    [ -z "$NEXT" ] && [ ! -d "$OR/v3-compile-only/$s/run-$k/iter-1" ] && NEXT="compileonly $s $k"
   done
 done
 [ -n "$NEXT" ] || { echo "FAIL every pre-registered session is already committed"; exit 1; }
