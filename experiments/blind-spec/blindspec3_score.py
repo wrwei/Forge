@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Score the LRE mutants that survive every verifier against the independently
-written LRE reference specification, round 3 (LRE-reference-spec.md; paper Section 4.9.1).
+written LRE reference specification, round 3 (LRE-reference-spec.pdf; paper Section 4.9.1).
 
 The specification's relation R(mode, event, observation) is the set of (destination,
 output sequence) pairs of all enabled rows T02-T18, with a hold row when none is

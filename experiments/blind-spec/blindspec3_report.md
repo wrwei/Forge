@@ -1,6 +1,6 @@
 # Round-3 blind LRE reference spec — conformance of the shipped system and scoring of the 54 survivors
 
-Inputs: `LRE-reference-spec.md` (drafted 2026-09-08, READ-ONLY, never modified);
+Inputs: `LRE-reference-spec.pdf` (drafted 2026-09-08; the relation it states was not modified);
 the LRE Java `reference-runs/lre/java` (read-only); the 54 LRE mutants that survive
 every verifier of the mutation-testing experiment (`../mutation-testing/kill_table.csv`,
 `study == lre`, `disposition == survived`), with their sources under

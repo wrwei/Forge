@@ -1,210 +1,544 @@
-\documentclass[10pt,a4paper]{article}
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+  10pt,
+]{article}
+\usepackage{xcolor}
 \usepackage[margin=22mm]{geometry}
 \usepackage{amsmath,amssymb}
-\usepackage{booktabs,longtable,array}
-\usepackage[T1]{fontenc}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
 \usepackage{lmodern}
-\usepackage{microtype}
-\usepackage[hidelinks]{hyperref}
-\setlength{\parskip}{4pt plus 1pt}
-\setlength{\parindent}{0pt}
-\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
-\title{Requirements-Level Reference Specification of the LRE Controller}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+  \setmainfont[]{Times New Roman}
+  \setmonofont[]{Menlo}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{longtable,booktabs,array}
+\usepackage{caption}
+\captionsetup[table]{skip=6pt}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+% fallback for those not using the hyperref driver hyperxmp:
+\makeatletter
+\@ifundefined{xmpquote}{\newcommand{\xmpquote}[1]{#1}}{}
+\makeatother
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Requirements-level reference specification of the LRE controller}
 \author{}
-\date{Drafted 8 September 2026}
+\date{8 September 2026}
+
 \begin{document}
 \maketitle
-\paragraph{Provenance.} Drafted by me from \texttt{lre\_requirement\_all.txt} (SHA-256 above) alone; I did not consult the FORGE repository, any implementation artefact, or any prior spec draft, and the interpretive decisions are my own.
 
-Source SHA-256: \texttt{aa9a0e2a27b8043e645353d20053789202922432c32ee2024e605e4edf5f149b}
+\textbf{Source.} The specification is derived from the requirements file
+\texttt{lre\_requirement\_all.txt} alone, which has 51 LRE entries and
+declares four operating modes. No repository content, implementation
+artefact or earlier draft was consulted. The interpretive decisions it
+needed are listed in Table~\ref{tab:ambiguities}.
 
-This is a requirements-level mode-transition reference, drafted on 2026-09-08. The digest was verified before the source was read. The source contains 51 distinct LRE entries, declares exactly four operating modes, and contains no SB-prefixed identifiers or five-mode declaration. Only the supplied requirements file was used as evidence. The output was created in a new directory outside the workspace without inspecting any repository or existing draft. Exposure disclosure: no prohibited material was present in the conversation context available to me; I cannot audit exposure in conversations outside that context.
+\textbf{Scope.} The relation below specifies the mode changes, the
+handling of operator input, and the output events that go with them,
+over one sensor snapshot per step. It does not define the vehicle's
+dynamics, a CPA algorithm or an evasive manoeuvre. The statements
+labelled A01--A17 are interpretive decisions, not claims about what the
+requirements say.
 
-\paragraph{Scope.} The relation below specifies mode changes, operator input handling, and the output events associated with those changes. It is a relation over one freshly evaluated sensor/derived-data snapshot per step. It does not define vehicle dynamics or invent a numerical CPA algorithm or evasive manoeuvre. Statements labelled A01--A17 are interpretive decisions, not additional claims about what the requirements explicitly say.
+\textbf{State and observations.} The modes are
 
-\paragraph{State and observations.} The operating-mode set is exactly
+\texttt{Mode\ =\ \{OCM,\ MOM,\ HCM,\ CAM\}}.
 
-$\mathit{Mode} = \{\mathit{OCM}, \mathit{MOM}, \mathit{HCM}, \mathit{CAM}\}$.
+At power-up the mode is OCM; there is no separate initialisation mode.
+Two optional actuator records, \texttt{lastVel} and \texttt{lastHdng},
+hold the most recently emitted values and are unspecified before the
+first output; the mode relation does not depend on them. {[}LRE-DM1,
+DM8, FR1, Beh1; A09{]}
 
-At power-up the mode becomes OCM. There is no fifth initialization mode. Optional actuator-state variables $\mathit{lastVel}$ and $\mathit{lastHdng}$ record the most recently emitted values; before their first corresponding output, their values are unspecified. The mode relation does not depend on those stored values. [LRE-DM1, DM8, FR1, Beh1; A09]
+A step observes one input
 
-An ordinary step observes one input
+\texttt{e\ ∈\ \{none,\ reqVel(v),\ reqHdng(h),\ reqOCM,\ reqMOM,\ reqHCM,\ endTask\}},
 
-$\mathit{e} \in  \{\mathit{none}, \mathit{reqVel}(\mathit{v}), \mathit{reqHdng}(\mathit{h}), \mathit{reqOCM}, \mathit{reqMOM}, \mathit{reqHCM}, \mathit{endTask}\}$,
+where \texttt{v} and \texttt{h} are reals. \texttt{none} is a step with
+no operator input, not an interface event. A step whose input has no
+handler in the current mode can still take an autonomous transition.
+{[}LRE-ARCH2, DM6; A01, A03{]}
 
-where $\mathit{v}$ and $\mathit{h}$ are real values. $\mathit{none}$ denotes a step without an operator input; it is not an interface event. A step can still take an autonomous transition when its input has no handler in the current mode. [LRE-ARCH2, DM6; A01, A03]
+All derived quantities and guards in a step use the same sensor
+snapshot. Table~\ref{tab:symbols} gives the symbols used below.
 
-The same sensor snapshot is used for all derived quantities and guards in a step. Write:
-
-\begin{longtable}{@{}L{0.18\textwidth}L{0.74\textwidth}@{}}
-\toprule
-\textbf{Symbol} & \textbf{Meaning} \\
-\midrule
+\begin{longtable}[]{@{}ll@{}}
+\caption{Symbols used in the guards. The four thresholds are parameters with default 1; the distances are evaluated for the closest static obstacle (\texttt{cstc}) and the closest dynamic obstacle (\texttt{cdyn}) of the current snapshot.}\label{tab:symbols}\\
+\toprule\noalign{}
+Symbol & Meaning \\
+\midrule\noalign{}
 \endhead
-
-$\mathit{s}$ & $\mathit{minSafeDist}$ \\
-$\mathit{H}$ & $\mathit{staticObsHorizDist}$ \\
-$\mathit{V}$ & $\mathit{staticObsVertDist}$ \\
-$\mathit{D}$ & $\mathit{staticObsDfltVertDist}$ \\
-$\mathit{ds}$ & $\mathit{odist}(\mathit{cstc})$ \\
-$\mathit{dd}$ & $\mathit{odist}(\mathit{cdyn})$ \\
-$\mathit{hs}$ & $\mathit{hdist}(\mathit{cstc})$ \\
-$\mathit{vs}$ & $\mathit{vdist}(\mathit{cstc})$ \\
-$\mathit{P}$ & $\mathit{inOpez}$ \\
-$\mathit{C}$ & $\mathit{cda} < \mathit{s} \land  \mathit{tcpa} \ge  0$ \\
-\bottomrule
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{s} & \texttt{minSafeDist} \\
+\texttt{H} & \texttt{staticObsHorizDist} \\
+\texttt{V} & \texttt{staticObsVertDist} \\
+\texttt{D} & \texttt{staticObsDfltVertDist} \\
+\texttt{ds} & \texttt{odist(cstc)} \\
+\texttt{dd} & \texttt{odist(cdyn)} \\
+\texttt{hs} & \texttt{hdist(cstc)} \\
+\texttt{vs} & \texttt{vdist(cstc)} \\
+\texttt{P} & \texttt{inOpez} \\
+\texttt{C} & \texttt{cda\ \textless{}\ s\ ∧\ tcpa\ ≥\ 0} \\
 \end{longtable}
 
-All four thresholds default to 1. They remain distinct parameters. Literal $1$ values in the transition table are not replaced by one of these parameters. [LRE-DM4; A12]
+The four thresholds default to 1 and remain distinct parameters; a
+literal \texttt{1} in the transition table is a literal, not one of
+them. {[}LRE-DM4; A12{]}
 
-For an existing obstacle $\mathit{i}$, evaluated at the current AUV depth:
+For an obstacle \texttt{i} that exists, at the current depth,
 
-$\mathit{hdist}(\mathit{i}) = \sqrt{\mathit{ns\_rel\_dist}(\mathit{i})^{2} + \mathit{ew\_rel\_dist}(\mathit{i})^{2}}$
+\texttt{hdist(i)\ =\ sqrt(ns\_rel\_dist(i)²\ +\ ew\_rel\_dist(i)²)}
 
-$\mathit{vdist}(\mathit{i}) = \operatorname{abs}(\mathit{depth} - \mathit{obs\_depth}(\mathit{i}))$
+\texttt{vdist(i)\ =\ abs(depth\ −\ obs\_depth(i))}
 
-$\mathit{odist}(\mathit{i}) = \sqrt{\mathit{hdist}(\mathit{i})^{2} + \mathit{vdist}(\mathit{i})^{2}}$.
+\texttt{odist(i)\ =\ sqrt(hdist(i)²\ +\ vdist(i)²)}.
 
-An obstacle is static exactly when both its horizontal velocity components are zero; its rate of climb does not affect this classification. $\mathit{cstc}$ and $\mathit{cdyn}$ select the static and dynamic obstacles, respectively, with minimum \textbf{overall} distance. For equal minimum distances, choose the smallest identifier. Use $-1$ when the corresponding class is empty. Thus both index variables have domain $\mathbb{N} \cup  \{-1\}$. [LRE-DM2, DM3, DM5, SF1--SF3, OP3, OP4, Var5, Var6; A05, A06]
+An obstacle is static exactly when both horizontal velocity components
+are zero; its rate of climb plays no part. \texttt{cstc} and
+\texttt{cdyn} are the static and the dynamic obstacle at minimum
+\textbf{overall} distance; ties go to the smallest identifier, and
+\texttt{−1} stands for an empty class, so both indices range over
+\texttt{ℕ\ ∪\ \{−1\}}. {[}LRE-DM2, DM3, DM5, SF1--SF3, OP3, OP4, Var5,
+Var6; A05, A06{]}
 
-Before evaluating any transition guard, establish:
+Before any guard is evaluated,
 
-$\mathit{hvel} = \sqrt{\mathit{ns\_vel}^{2} + \mathit{ew\_vel}^{2}}$
+\texttt{hvel\ =\ sqrt(ns\_vel²\ +\ ew\_vel²)}
 
-$\mathit{vvel} = \mathit{rate\_of\_climb}$
+\texttt{vvel\ =\ rate\_of\_climb}
 
-$\mathit{vel} = \sqrt{\mathit{hvel}^{2} + \mathit{vvel}^{2}}$
+\texttt{vel\ =\ sqrt(hvel²\ +\ vvel²)}
 
-$\mathit{P} = (\mathit{ds} \le  \mathit{s}) \lor  (\mathit{depth} \le  0)$.
+\texttt{P\ =\ (ds\ ≤\ s)\ ∨\ (depth\ ≤\ 0)}.
 
-$\mathit{CalcCStc}$ precedes $\mathit{CheckOPEZ}$; $\mathit{CalcCDyn}$ precedes $\mathit{CalcCPA}$. All derived values used in one step come from that step's snapshot. Advice emitted during the step does not replace measured velocity or cause guards to be reevaluated within that step. [LRE-OP1--OP5, Var1--Var8, GP1; A01]
+\texttt{CalcCStc} runs before \texttt{CheckOPEZ}, and \texttt{CalcCDyn}
+before \texttt{CalcCPA}. Everything used in a step comes from that
+step's snapshot: advice emitted during the step neither replaces the
+measured velocity nor causes the guards to be re-evaluated.
+{[}LRE-OP1--OP5, Var1--Var8, GP1; A01{]}
 
-For the no-obstacle defaults, let $\mathit{F}$ be a fixed real value satisfying
+When a class of obstacle is absent, let \texttt{F} be a fixed real with
 
-$\mathit{F} > \max(0, 1, \mathit{s}, \mathit{H}, \mathit{V}, \mathit{D})$.
+\texttt{F\ \textgreater{}\ max(0,\ 1,\ s,\ H,\ V,\ D)}.
 
-At index $-1$, take $\mathit{odist} = \mathit{hdist} = \mathit{vdist} = \mathit{F}$ and the four obstacle field accessors listed in DM5 to be zero. These sentinel distances do not obey the existing-obstacle geometry equations above. When $\mathit{cdyn} = -1$, take $\mathit{cda} = \mathit{F}$ and $\mathit{tcpa} = 0$. In particular, absence of dynamic obstacles cannot enable $\mathit{C}$ and does enable $\mathit{cda} \ge  \mathit{s}$. Absence of static obstacles makes the obstacle part of $\mathit{P}$ false, but does not disable the $\mathit{depth} \le  0$ part. [LRE-DM5, OP2, OP5; A07]
+At index \texttt{−1}, \texttt{odist\ =\ hdist\ =\ vdist\ =\ F}, and the
+four obstacle field accessors of DM5 are zero; these sentinel distances
+do not follow the geometry above. When \texttt{cdyn\ =\ −1},
+\texttt{cda\ =\ F} and \texttt{tcpa\ =\ 0}. So the absence of dynamic
+obstacles never enables \texttt{C} and always enables
+\texttt{cda\ ≥\ s}; the absence of static obstacles makes the obstacle
+part of \texttt{P} false but leaves the \texttt{depth\ ≤\ 0} part.
+{[}LRE-DM5, OP2, OP5; A07{]}
 
-When a dynamic obstacle exists, $\mathit{cda} \ge  0$ and $\mathit{tcpa} \in  \mathbb{R}$ are supplied as the freshly evaluated results of $\mathit{CalcCPA}$. The transition relation accepts them as observations. No formula relating them to raw position and velocity is imposed here: OP5 does not specify one. This leaves the mode relation defined for every admissible observation, while deliberately not defining a complete raw-sensor-to-command function. [LRE-OP5, Var7, Var8; A08]
+When a dynamic obstacle exists, \texttt{cda\ ≥\ 0} and
+\texttt{tcpa\ ∈\ ℝ} are the results of \texttt{CalcCPA} for that step
+and are taken as observations. OP5 gives no formula relating them to
+position and velocity, so none is imposed: the mode relation is defined
+for every admissible observation, but it does not define a function from
+raw sensor values to commands. {[}LRE-OP5, Var7, Var8; A08{]}
 
-\paragraph{How to read the relation.} In the table, an input trigger requires that exact current input. An $\mathit{autonomous}$ trigger requires no operator event and remains eligible whatever $\mathit{e}$ is. Each guard is evaluated in the source mode using the current snapshot.
+\textbf{How to read the relation.} Table~\ref{tab:transitions} gives the relation. An input trigger requires exactly
+that input. An \texttt{autonomous} trigger requires no operator event
+and is eligible whatever \texttt{e} is. Guards are evaluated in the
+source mode on the current snapshot.
 
-For an ordinary step, let $\mathit{E}(\mathit{m},\mathit{e},\mathit{x})$ be the set of rows T02--T18 whose source is $\mathit{m}$, whose input trigger, if any, matches $\mathit{e}$, and whose guard is true in snapshot $\mathit{x}$. If this set is nonempty, choose exactly one row in it, change to its destination, and emit exactly its listed output sequence. If the set is empty, retain the mode and emit $[\,]$. The current input is consumed in either case. The snapshot $\mathit{x}$ is an observation, not an internal value preserved by this transition. There is no priority among enabled rows and no optional stuttering when a row is enabled. [A01--A04]
+For a step, let \texttt{E(m,e,x)} be the set of rows T02--T18 whose
+source is \texttt{m}, whose input trigger (if any) matches \texttt{e},
+and whose guard holds in snapshot \texttt{x}. If the set is non-empty,
+exactly one of its rows is taken: the mode changes to that row's
+destination and exactly its output sequence is emitted. If the set is
+empty, the mode is kept and \texttt{{[}{]}} is emitted. The input is
+consumed either way. There is no priority among enabled rows, and no
+stuttering while a row is enabled. {[}A01--A04{]}
 
-Equivalently, the mode/output relation is:
+That is,
 
-$\mathit{R}(\mathit{m},\mathit{e},\mathit{x}) = \{(\mathit{destination}(\mathit{t}), \mathit{outputs}(\mathit{t})) : \mathit{t} \in  \mathit{E}(\mathit{m},\mathit{e},\mathit{x})\}$ when $\mathit{E}(\mathit{m},\mathit{e},\mathit{x}) \ne  \emptyset $;
+\texttt{R(m,e,x)\ =\ \{(destination(t),\ outputs(t))\ :\ t\ ∈\ E(m,e,x)\}}
+when \texttt{E(m,e,x)\ ≠\ ∅};
 
-$\mathit{R}(\mathit{m},\mathit{e},\mathit{x}) = \{(\mathit{m}, [\,])\}$ otherwise.
+\texttt{R(m,e,x)\ =\ \{(m,\ {[}{]})\}} otherwise.
 
-Each listed output updates its corresponding actuator record, and the other record retains its previous value. $[\,]$ means no output event: it does not mean a zero command or a reset. The table includes destination-entry advice, so that advice must not be emitted a second time. Startup is the separate T01 initialization rule. [LRE-DM7, DM8, FR2, FR3; A09, A10]
+Each output updates its actuator record; the other record keeps its
+value. \texttt{{[}{]}} means no output event, not a zero command or a
+reset. Entry advice is already in the table, so it is not emitted a
+second time. Startup is the separate rule T01. {[}LRE-DM7, DM8, FR2,
+FR3; A09, A10{]}
 
-\begin{longtable}{@{}L{0.14\textwidth}L{0.09\textwidth}L{0.11\textwidth}L{0.26\textwidth}L{0.10\textwidth}L{0.17\textwidth}@{}}
-\toprule
-\textbf{Row / source requirement} & \textbf{Source} & \textbf{Trigger} & \textbf{Guard} & \textbf{Destination} & \textbf{Output sequence} \\
-\midrule
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.18}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.14}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.12}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.23}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.11}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.22}}@{}}
+\caption{The transition relation. One row per behavioural requirement; an \texttt{autonomous} trigger needs no operator input. Where several rows are enabled at once, any one of them may be taken (A02).}\label{tab:transitions}\\
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Row / source requirement
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Source
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Trigger
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Guard
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Destination
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Output sequence
+\end{minipage} \\
+\midrule\noalign{}
 \endhead
-
-T01 / LRE-Beh1 & Power-up, outside the operating-mode relation & Power-up & $\mathit{true}$ & OCM & $[\,]$ \\
-T02 / LRE-Beh2 & OCM & $\mathit{reqVel}(\mathit{v})$ & $\mathit{true}$ & OCM & $[\mathit{advVel}(\mathit{v})]$ \\
-T03 / LRE-Beh3 & OCM & $\mathit{reqHdng}(\mathit{h})$ & $\mathit{true}$ & OCM & $[\mathit{advHdng}(\mathit{h})]$ \\
-T04 / LRE-Beh4 & OCM & $\mathit{reqMOM}$ & $\mathit{vel} \le  1 \land  \lnot \mathit{P} \land  \mathit{dd} > 1 \land  \mathit{ds} > 1$ & MOM & $[\mathit{advVel}(1)]$ on entry \\
-T05 / LRE-Beh5 & MOM & autonomous & $\mathit{P}$ & OCM & $[\,]$ \\
-T06 / LRE-Beh6 & MOM & $\mathit{reqOCM}$ & $\mathit{true}$ & OCM & $[\,]$ \\
-T07 / LRE-Beh7 & MOM & $\mathit{endTask}$ & $\mathit{true}$ & OCM & $[\mathit{advVel}(0)]$ \\
-T08 / LRE-Beh8 & MOM & autonomous & $\mathit{cda} < \mathit{s} \land  \mathit{tcpa} \ge  0$ & CAM & $[\,]$ under A10 \\
-T09 / LRE-Beh9 & MOM & autonomous & $\mathit{hvel} \ge  1 \land  \mathit{hs} \le  \mathit{H}$ & HCM & $[\mathit{advVel}(0)]$ on entry \\
-T10 / LRE-Beh10 & MOM & autonomous & $\mathit{vs} \le  \mathit{D}$ & HCM & $[\mathit{advVel}(0)]$ on entry \\
-T11 / LRE-Beh11 & MOM & autonomous & $\mathit{vvel} \ge  1 \land  \mathit{vs} \le  \mathit{V}$ & HCM & $[\mathit{advVel}(0)]$ on entry \\
-T12 / LRE-Beh12 & MOM & $\mathit{reqHCM}$ & $\mathit{true}$ & HCM & $[\mathit{advVel}(0)]$ on entry \\
-T13 / LRE-Beh13 & HCM & autonomous & $\mathit{hs} > \mathit{H} \land  \mathit{vs} > \mathit{V}$ & MOM & $[\mathit{advVel}(1)]$ on entry \\
-T14 / LRE-Beh14 & HCM & autonomous & $\mathit{cda} < \mathit{s} \land  \mathit{tcpa} \ge  0$ & CAM & $[\,]$ under A10 \\
-T15 / LRE-Beh15 & HCM & $\mathit{reqOCM}$ & $\mathit{true}$ & OCM & $[\,]$ \\
-T16 / LRE-Beh16 & HCM & autonomous & $\mathit{P}$ & OCM & $[\,]$ \\
-T17 / LRE-Beh17 & CAM & $\mathit{reqOCM}$ & $\mathit{true}$ & OCM & $[\,]$ \\
-T18 / LRE-Beh18 & CAM & autonomous & $\mathit{cda} \ge  \mathit{s}$ & OCM & $[\mathit{advVel}(0)]$ \\
-\bottomrule
+\bottomrule\noalign{}
+\endlastfoot
+T01 / LRE-Beh1 & Power-up, outside the operating-mode relation &
+Power-up & \texttt{true} & OCM & \texttt{{[}{]}} \\
+T02 / LRE-Beh2 & OCM & \texttt{reqVel(v)} & \texttt{true} & OCM &
+\texttt{{[}advVel(v){]}} \\
+T03 / LRE-Beh3 & OCM & \texttt{reqHdng(h)} & \texttt{true} & OCM &
+\texttt{{[}advHdng(h){]}} \\
+T04 / LRE-Beh4 & OCM & \texttt{reqMOM} &
+\texttt{vel\ ≤\ 1\ ∧\ ¬P\ ∧\ dd\ \textgreater{}\ 1\ ∧\ ds\ \textgreater{}\ 1}
+& MOM & \texttt{{[}advVel(1){]}} on entry \\
+T05 / LRE-Beh5 & MOM & autonomous & \texttt{P} & OCM &
+\texttt{{[}{]}} \\
+T06 / LRE-Beh6 & MOM & \texttt{reqOCM} & \texttt{true} & OCM &
+\texttt{{[}{]}} \\
+T07 / LRE-Beh7 & MOM & \texttt{endTask} & \texttt{true} & OCM &
+\texttt{{[}advVel(0){]}} \\
+T08 / LRE-Beh8 & MOM & autonomous &
+\texttt{cda\ \textless{}\ s\ ∧\ tcpa\ ≥\ 0} & CAM & \texttt{{[}{]}}
+under A10 \\
+T09 / LRE-Beh9 & MOM & autonomous & \texttt{hvel\ ≥\ 1\ ∧\ hs\ ≤\ H} &
+HCM & \texttt{{[}advVel(0){]}} on entry \\
+T10 / LRE-Beh10 & MOM & autonomous & \texttt{vs\ ≤\ D} & HCM &
+\texttt{{[}advVel(0){]}} on entry \\
+T11 / LRE-Beh11 & MOM & autonomous & \texttt{vvel\ ≥\ 1\ ∧\ vs\ ≤\ V} &
+HCM & \texttt{{[}advVel(0){]}} on entry \\
+T12 / LRE-Beh12 & MOM & \texttt{reqHCM} & \texttt{true} & HCM &
+\texttt{{[}advVel(0){]}} on entry \\
+T13 / LRE-Beh13 & HCM & autonomous &
+\texttt{hs\ \textgreater{}\ H\ ∧\ vs\ \textgreater{}\ V} & MOM &
+\texttt{{[}advVel(1){]}} on entry \\
+T14 / LRE-Beh14 & HCM & autonomous &
+\texttt{cda\ \textless{}\ s\ ∧\ tcpa\ ≥\ 0} & CAM & \texttt{{[}{]}}
+under A10 \\
+T15 / LRE-Beh15 & HCM & \texttt{reqOCM} & \texttt{true} & OCM &
+\texttt{{[}{]}} \\
+T16 / LRE-Beh16 & HCM & autonomous & \texttt{P} & OCM &
+\texttt{{[}{]}} \\
+T17 / LRE-Beh17 & CAM & \texttt{reqOCM} & \texttt{true} & OCM &
+\texttt{{[}{]}} \\
+T18 / LRE-Beh18 & CAM & autonomous & \texttt{cda\ ≥\ s} & OCM &
+\texttt{{[}advVel(0){]}} \\
 \end{longtable}
 
-The three autonomous MOM-to-HCM conditions are alternatives, not a conjunction. T10 has no velocity condition. T13 uses $\mathit{V}$, not $\mathit{D}$, and has neither an OPEZ veto nor a CPA veto; those would be new guards. T18 has no $\mathit{tcpa}$ condition. There is no autonomous OCM exit, CAM-to-MOM or CAM-to-HCM transition, or CAM exit solely because OPEZ holds. [LRE-Beh4, Beh9--Beh14, Beh17, Beh18; A11]
+The three autonomous MOM-to-HCM conditions are alternatives, not a
+conjunction. T10 has no velocity condition. T13 uses \texttt{V}, not
+\texttt{D}, and has no OPEZ or CPA veto; either would be a new guard.
+T18 has no \texttt{tcpa} condition. There is no autonomous exit from
+OCM, no transition from CAM to MOM or HCM, and no exit from CAM on OPEZ
+alone. {[}LRE-Beh4, Beh9--Beh14, Beh17, Beh18; A11{]}
 
-\paragraph{Input handling where no explicit row applies.} This table describes only input-specific handling. An autonomous row can still be taken during that step.
+\textbf{Input handling where no row applies.} Table~\ref{tab:inputs} covers
+input-specific handling only; an autonomous row can still be taken in
+the same step.
 
-\begin{longtable}{@{}L{0.12\textwidth}L{0.34\textwidth}L{0.46\textwidth}@{}}
-\toprule
-\textbf{Current mode} & \textbf{Inputs with explicit handlers} & \textbf{Inputs consumed without an input-specific action} \\
-\midrule
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\caption{Handling of operator inputs by mode. An input with no explicit handler is consumed without effect; an autonomous row may still be taken in the same step.}\label{tab:inputs}\\
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Current mode
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Inputs with explicit handlers
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Inputs consumed without an input-specific action
+\end{minipage} \\
+\midrule\noalign{}
 \endhead
-
-OCM & $\mathit{reqVel}$, $\mathit{reqHdng}$, guarded $\mathit{reqMOM}$ & $\mathit{reqOCM}$, $\mathit{reqHCM}$, $\mathit{endTask}$; also $\mathit{reqMOM}$ when T04's guard is false \\
-MOM & $\mathit{reqOCM}$, $\mathit{reqHCM}$, $\mathit{endTask}$ & $\mathit{reqVel}$, $\mathit{reqHdng}$, $\mathit{reqMOM}$ \\
-HCM & $\mathit{reqOCM}$ & $\mathit{reqVel}$, $\mathit{reqHdng}$, $\mathit{reqMOM}$, $\mathit{reqHCM}$, $\mathit{endTask}$ \\
-CAM & $\mathit{reqOCM}$ & $\mathit{reqVel}$, $\mathit{reqHdng}$, $\mathit{reqMOM}$, $\mathit{reqHCM}$, $\mathit{endTask}$ \\
-\bottomrule
+\bottomrule\noalign{}
+\endlastfoot
+OCM & \texttt{reqVel}, \texttt{reqHdng}, guarded \texttt{reqMOM} &
+\texttt{reqOCM}, \texttt{reqHCM}, \texttt{endTask}; also \texttt{reqMOM}
+when T04's guard is false \\
+MOM & \texttt{reqOCM}, \texttt{reqHCM}, \texttt{endTask} &
+\texttt{reqVel}, \texttt{reqHdng}, \texttt{reqMOM} \\
+HCM & \texttt{reqOCM} & \texttt{reqVel}, \texttt{reqHdng},
+\texttt{reqMOM}, \texttt{reqHCM}, \texttt{endTask} \\
+CAM & \texttt{reqOCM} & \texttt{reqVel}, \texttt{reqHdng},
+\texttt{reqMOM}, \texttt{reqHCM}, \texttt{endTask} \\
 \end{longtable}
 
-OCM passes velocity and heading payloads unchanged, without range checks, clipping, normalization, or unit conversion. In other modes, those requests are neither forwarded nor remembered for later forwarding. A request arriving during a transition into OCM is handled according to the source mode; it is not replayed after entry. [LRE-Beh2, Beh3, Beh19; A03, A14]
+In OCM, velocity and heading payloads are passed on unchanged, with no
+range check, clipping, normalisation or unit conversion. In the other
+modes such requests are neither forwarded nor kept for later. A request
+that arrives in the step that enters OCM is handled by the source mode
+and is not replayed after entry. {[}LRE-Beh2, Beh3, Beh19; A03, A14{]}
 
-\paragraph{Ambiguity ledger.} These decisions complete the transition relation. Their effects should remain distinguishable from direct requirements when using the reference as an oracle.
+\textbf{Ambiguities.} The decisions in Table~\ref{tab:ambiguities} complete the relation. When
+the specification is used as an oracle, their effects should be kept
+apart from what the requirements state directly.
 
-\begin{longtable}{@{}L{0.07\textwidth}L{0.40\textwidth}L{0.45\textwidth}@{}}
-\toprule
-\textbf{ID} & \textbf{Underdetermined point or tension} & \textbf{Resolution used in this reference} \\
-\midrule
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.06}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.42}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.52}}@{}}
+\caption{The list of ambiguities: each point the requirements leave open, and the reading used in this specification.}\label{tab:ambiguities}\\
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+ID
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Underdetermined point or tension
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Resolution
+\end{minipage} \\
+\midrule\noalign{}
 \endhead
-
-A01 & ARCH2 says guards are evaluated each step, but gives no timing model, event/sensor order, or rule for cascading transitions. & Use an atomic step with one coherent current sensor snapshot, fresh derived quantities, and at most one selected transition. Evaluate input-triggered and autonomous guards together against the source mode. Autonomous conditions are level-triggered, not rising-edge-triggered. Entry outputs do not cause another transition within that step. \\
-A02 & Several transitions can be enabled together; the file assigns no priority, including between operator commands, OPEZ, collision avoidance, and caution. & Admit every enabled row as a possible alternative, selecting exactly one. Requirement numbering and table order confer no priority. No extra veto is inferred. This is an explicitly nondeterministic resolution; it does not require a fixed safety or operator priority. \\
-A03 & There is no event-queue, retry, or blocked-request policy. Beh19 explicitly excludes some input handling but does not give a full rule for all modes. & Consume every presented input in its current step. Unhandled inputs and failed guarded requests have no input-specific effect. If an autonomous row is selected instead of an enabled input row, the input is still consumed. No buffering, deferral, or replay occurs. \\
-A04 & The file does not specify simultaneous operator events or whether enabled autonomous transitions may be postponed indefinitely. & Present at most one operator event per step. Simultaneous arrivals can be serialized in any order, with one step per event; the source fixes no order or intervening sensor evolution. With no operator event, steps still occur. Take some enabled row on each step; stutter only if no row is enabled. No fairness or real-time bound beyond this per-step rule is imposed. \\
-A05 & Var5 and Var6 call the indices natural numbers while also prescribing $-1$; ties between closest obstacles are not resolved. & Extend each index domain to $\mathbb{N} \cup  \{-1\}$. Among equally close obstacles of the appropriate class, use the smallest natural identifier. The tie rule can affect $\mathit{hs}$, $\mathit{vs}$, or CPA and is an interpretive choice. \\
-A06 & DM3 permits a partial function over natural identifiers without stating finiteness; minimum selection can fail for certain infinite collections. & Assume every operational obstacle register is finite. Static classification uses exactly DM2's two horizontal zero tests, even if an obstacle has nonzero vertical velocity. \\
-A07 & DM5 prescribes zero relative-position/velocity accessors for missing obstacles, while OP5 refers to large-distance defaults without defining the resulting CPA pair. ``Safe large'' has no numeric value. & Use the real sentinel $\mathit{F}$ defined above for missing distances and $\mathit{cda}$, and choose $\mathit{tcpa} = 0$ for no dynamic obstacle. Treat the missing-obstacle case explicitly; do not feed its zero relative-position accessors into an invented CPA formula. This is a chosen safe completion, not a formula stated in OP5. \\
-A08 & OP5 does not specify relative-velocity sign, two- versus three-dimensional CPA, treatment of a past CPA, or zero relative speed. & Leave CPA for existing dynamic obstacles abstract at the mode interface: provide a nonnegative real $\mathit{cda}$ and real $\mathit{tcpa}$ each step. Do not clamp negative $\mathit{tcpa}$, assume a collision cone, or add a numerical formula. A raw-sensor-level checker must separately identify its CPA convention; this reference does not independently validate that convention. \\
-A09 & Startup actuator values, OCM entry outputs, exit actions, and repeated in-mode advice are unspecified. & Emit nothing on startup or OCM entry unless a selected row explicitly supplies output. Emit MOM/HCM advice once on each actual entry. Empty-output steps preserve actuator records. No periodic reissue or exit output is added; initial record values remain unspecified. \\
-A10 & FR4 requires evasive manoeuvres in CAM but specifies no command, direction, speed, timing, or algorithm. Other general mode descriptions also do not specify ongoing output schedules. & For this mode-transition reference, use a minimal output completion: emit only the outputs in the table, with no additional CAM entry or in-mode output. This does not specify or discharge FR4's physical manoeuvre obligation. A comparison of evasive-command algorithms cannot be supported by this file alone. \\
-A11 & Descriptive text such as ``potential collision'' or ``reduced velocity'' could invite extra guards, broader exits, or inferred actions absent from the numbered behaviours. & Use the numbered guards literally. In particular, HCM entry advises exactly zero; $\mathit{endTask}$ acts only in MOM; negative $\mathit{tcpa}$ alone does not release CAM; and OPEZ alone does not release CAM. No additional transitions or safety vetoes are inferred from mode names. \\
-A12 & DM4 gives defaults but no valid configuration range or relationship between thresholds. Several guards use literal 1, and some use different static thresholds. & Keep thresholds as finite real parameters with default 1 and no added ordering or positivity precondition. Keep all literal 1 values literal. Require $\mathit{F}$ to exceed every relevant threshold. No hysteresis or equivalence between $\mathit{V}$ and $\mathit{D}$ is inferred. \\
-A13 & Equality at thresholds and the sign of vertical velocity are common implementation choices, but the relevant prose here is explicit. & Use exact real comparisons with the strictness shown in the table; add no tolerance. Use signed $\mathit{vvel} = \mathit{rate\_of\_climb}$, not its absolute value. This records that no unresolved equality decision was needed for these guards. \\
-A14 & Payload validity, stale data, sensor failures, and numeric exceptional values are not specified. & Model finite real sensor values and request payloads and coherent snapshots. Forward OCM payloads exactly. NaN, infinities, hardware failures, malformed events, and stale-snapshot recovery are outside this reference's input domain, not newly invented controller behaviours. \\
-A15 & DC1 requires one transition per Beh1--Beh18 and forbids duplicate source/trigger combinations, yet several behaviours are autonomous exits from the same mode. & Keep exactly one labelled row per Beh1--Beh18, including initialization and the two pass-through transitions. Read source/event uniqueness as applying to explicitly named input events; retain distinct autonomous requirement rows with their own guards. DC1 supplies no priority or global guard-disjointness rule. If it was intended to forbid all multiple autonomous exits, it conflicts with the listed behaviours. \\
-A16 & No sampling frequency, environmental evolution, actuator-to-plant delay, or liveness guarantee is given. Overlapping entry and exit conditions can cause repeated mode changes across steps. & State only the per-step relation. Do not promise eventual stability, eventual OCM, or physical collision avoidance. Permit repeated transitions allowed by unchanged or changing observations; do not insert dwell times, debounce, or stabilization logic. \\
-A17 & Different enabled rows can have the same destination but different output obligations. It is unspecified whether their actions should be merged. & Execute only the selected row's actions plus its destination-entry advice, as already combined in the table. Do not merge enabled rows' actions. Preserve row identity when recording a witness; for conformance compare both destination and output sequence. \\
-\bottomrule
+\bottomrule\noalign{}
+\endlastfoot
+A01 & ARCH2 says guards are evaluated each step, but gives no timing
+model, event/sensor order, or rule for cascading transitions. & Use an
+atomic step with one coherent current sensor snapshot, fresh derived
+quantities, and at most one selected transition. Evaluate
+input-triggered and autonomous guards together against the source mode.
+Autonomous conditions are level-triggered, not rising-edge-triggered.
+Entry outputs do not cause another transition within that step. \\
+A02 & Several transitions can be enabled together; the file assigns no
+priority, including between operator commands, OPEZ, collision
+avoidance, and caution. & Admit every enabled row as a possible
+alternative, selecting exactly one. Requirement numbering and table
+order confer no priority. No extra veto is inferred. This is an
+explicitly nondeterministic resolution; it does not require a fixed
+safety or operator priority. \\
+A03 & There is no event-queue, retry, or blocked-request policy. Beh19
+explicitly excludes some input handling but does not give a full rule
+for all modes. & Consume every presented input in its current step.
+Unhandled inputs and failed guarded requests have no input-specific
+effect. If an autonomous row is selected instead of an enabled input
+row, the input is still consumed. No buffering, deferral, or replay
+occurs. \\
+A04 & The file does not specify simultaneous operator events or whether
+enabled autonomous transitions may be postponed indefinitely. & Present
+at most one operator event per step. Simultaneous arrivals can be
+serialized in any order, with one step per event; the source fixes no
+order or intervening sensor evolution. With no operator event, steps
+still occur. Take some enabled row on each step; stutter only if no row
+is enabled. No fairness or real-time bound beyond this per-step rule is
+imposed. \\
+A05 & Var5 and Var6 call the indices natural numbers while also
+prescribing \texttt{−1}; ties between closest obstacles are not
+resolved. & Extend each index domain to \texttt{ℕ\ ∪\ \{−1\}}. Among
+equally close obstacles of the appropriate class, use the smallest
+natural identifier. The tie rule can affect \texttt{hs}, \texttt{vs}, or
+CPA and is an interpretive choice. \\
+A06 & DM3 permits a partial function over natural identifiers without
+stating finiteness; minimum selection can fail for certain infinite
+collections. & Assume every operational obstacle register is finite.
+Static classification uses exactly DM2's two horizontal zero tests, even
+if an obstacle has nonzero vertical velocity. \\
+A07 & DM5 prescribes zero relative-position/velocity accessors for
+missing obstacles, while OP5 refers to large-distance defaults without
+defining the resulting CPA pair. ``Safe large'' has no numeric value. &
+Use the real sentinel \texttt{F} defined above for missing distances and
+\texttt{cda}, and choose \texttt{tcpa\ =\ 0} for no dynamic obstacle.
+Treat the missing-obstacle case explicitly; do not feed its zero
+relative-position accessors into an invented CPA formula. This is a
+chosen safe completion, not a formula stated in OP5. \\
+A08 & OP5 does not specify relative-velocity sign, two- versus
+three-dimensional CPA, treatment of a past CPA, or zero relative speed.
+& Leave CPA for existing dynamic obstacles abstract at the mode
+interface: provide a nonnegative real \texttt{cda} and real
+\texttt{tcpa} each step. Do not clamp negative \texttt{tcpa}, assume a
+collision cone, or add a numerical formula. A raw-sensor-level checker
+must separately identify its CPA convention; this reference does not
+independently validate that convention. \\
+A09 & Startup actuator values, OCM entry outputs, exit actions, and
+repeated in-mode advice are unspecified. & Emit nothing on startup or
+OCM entry unless a selected row explicitly supplies output. Emit MOM/HCM
+advice once on each actual entry. Empty-output steps preserve actuator
+records. No periodic reissue or exit output is added; initial record
+values remain unspecified. \\
+A10 & FR4 requires evasive manoeuvres in CAM but specifies no command,
+direction, speed, timing, or algorithm. Other general mode descriptions
+also do not specify ongoing output schedules. & For this mode-transition
+reference, use a minimal output completion: emit only the outputs in the
+table, with no additional CAM entry or in-mode output. This does not
+specify or discharge FR4's physical manoeuvre obligation. A comparison
+of evasive-command algorithms cannot be supported by this file alone. \\
+A11 & Descriptive text such as ``potential collision'' or ``reduced
+velocity'' could invite extra guards, broader exits, or inferred actions
+absent from the numbered behaviours. & Use the numbered guards
+literally. In particular, HCM entry advises exactly zero;
+\texttt{endTask} acts only in MOM; negative \texttt{tcpa} alone does not
+release CAM; and OPEZ alone does not release CAM. No additional
+transitions or safety vetoes are inferred from mode names. \\
+A12 & DM4 gives defaults but no valid configuration range or
+relationship between thresholds. Several guards use literal 1, and some
+use different static thresholds. & Keep thresholds as finite real
+parameters with default 1 and no added ordering or positivity
+precondition. Keep all literal 1 values literal. Require \texttt{F} to
+exceed every relevant threshold. No hysteresis or equivalence between
+\texttt{V} and \texttt{D} is inferred. \\
+A13 & Equality at thresholds and the sign of vertical velocity are
+common implementation choices, but the relevant prose here is explicit.
+& Use exact real comparisons with the strictness shown in the table; add
+no tolerance. Use signed \texttt{vvel\ =\ rate\_of\_climb}, not its
+absolute value. This records that no unresolved equality decision was
+needed for these guards. \\
+A14 & Payload validity, stale data, sensor failures, and numeric
+exceptional values are not specified. & Model finite real sensor values
+and request payloads and coherent snapshots. Forward OCM payloads
+exactly. NaN, infinities, hardware failures, malformed events, and
+stale-snapshot recovery are outside this reference's input domain, not
+newly invented controller behaviours. \\
+A15 & DC1 requires one transition per Beh1--Beh18 and forbids duplicate
+source/trigger combinations, yet several behaviours are autonomous exits
+from the same mode. & Keep exactly one labelled row per Beh1--Beh18,
+including initialization and the two pass-through transitions. Read
+source/event uniqueness as applying to explicitly named input events;
+retain distinct autonomous requirement rows with their own guards. DC1
+supplies no priority or global guard-disjointness rule. If it was
+intended to forbid all multiple autonomous exits, it conflicts with the
+listed behaviours. \\
+A16 & No sampling frequency, environmental evolution, actuator-to-plant
+delay, or liveness guarantee is given. Overlapping entry and exit
+conditions can cause repeated mode changes across steps. & State only
+the per-step relation. Do not promise eventual stability, eventual OCM,
+or physical collision avoidance. Permit repeated transitions allowed by
+unchanged or changing observations; do not insert dwell times, debounce,
+or stabilization logic. \\
+A17 & Different enabled rows can have the same destination but different
+output obligations. It is unspecified whether their actions should be
+merged. & Execute only the selected row's actions plus its
+destination-entry advice, as already combined in the table. Do not merge
+enabled rows' actions. Preserve row identity when recording a witness;
+for conformance compare both destination and output sequence. \\
 \end{longtable}
 
-\paragraph{Boundary and overlap consequences.} Each boundary statement concerns the indicated guard; another enabled row can still determine the selected outcome.
+\textbf{Boundary and overlap cases.} Each line of Table~\ref{tab:boundary} concerns the named guard
+only; another enabled row may still decide the outcome.
 
-\begin{longtable}{@{}L{0.18\textwidth}L{0.74\textwidth}@{}}
-\toprule
-\textbf{Observation} & \textbf{Consequence} \\
-\midrule
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\caption{Boundary and overlap cases, read from the strictness of the comparisons in Table~\ref{tab:transitions}.}\label{tab:boundary}\\
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Observation
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Consequence
+\end{minipage} \\
+\midrule\noalign{}
 \endhead
-
-$\mathit{vel} = 1$ & Satisfies T04's velocity conjunct. \\
-$\mathit{dd} = 1$ or $\mathit{ds} = 1$ & Fails T04's corresponding strict-distance conjunct. \\
-$\mathit{ds} = \mathit{s}$ or $\mathit{depth} = 0$ & Makes $\mathit{P}$ true. \\
-$\mathit{cda} = \mathit{s}$ & Disables T08/T14 and enables T18, regardless of $\mathit{tcpa}$. \\
-$\mathit{cda} < \mathit{s}$ and $\mathit{tcpa} = 0$ & Enables the collision guard $\mathit{C}$. \\
-$\mathit{cda} < \mathit{s}$ and $\mathit{tcpa} < 0$ & Disables $\mathit{C}$; also does not enable T18. CAM therefore remains CAM unless $\mathit{reqOCM}$ is selected. \\
-$\mathit{hvel} = 1$ and $\mathit{hs} = \mathit{H}$ & Enables T09. \\
-$\mathit{vs} = \mathit{D}$ & Enables T10 at any velocity. \\
-$\mathit{vvel} = 1$ and $\mathit{vs} = \mathit{V}$ & Enables T11. \\
-$\mathit{vvel} = -1$ and $\mathit{vs} \le  \mathit{V}$ & Does not satisfy T11's velocity condition; T10 may independently apply. \\
-$\mathit{hs} = \mathit{H}$ or $\mathit{vs} = \mathit{V}$ & Fails T13. Both distances must strictly exceed their respective thresholds. \\
-\bottomrule
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{vel\ =\ 1} & Satisfies T04's velocity conjunct. \\
+\texttt{dd\ =\ 1} or \texttt{ds\ =\ 1} & Fails T04's corresponding
+strict-distance conjunct. \\
+\texttt{ds\ =\ s} or \texttt{depth\ =\ 0} & Makes \texttt{P} true. \\
+\texttt{cda\ =\ s} & Disables T08/T14 and enables T18, regardless of
+\texttt{tcpa}. \\
+\texttt{cda\ \textless{}\ s} and \texttt{tcpa\ =\ 0} & Enables the
+collision guard \texttt{C}. \\
+\texttt{cda\ \textless{}\ s} and \texttt{tcpa\ \textless{}\ 0} &
+Disables \texttt{C}; also does not enable T18. CAM therefore remains CAM
+unless \texttt{reqOCM} is selected. \\
+\texttt{hvel\ =\ 1} and \texttt{hs\ =\ H} & Enables T09. \\
+\texttt{vs\ =\ D} & Enables T10 at any velocity. \\
+\texttt{vvel\ =\ 1} and \texttt{vs\ =\ V} & Enables T11. \\
+\texttt{vvel\ =\ −1} and \texttt{vs\ ≤\ V} & Does not satisfy T11's
+velocity condition; T10 may independently apply. \\
+\texttt{hs\ =\ H} or \texttt{vs\ =\ V} & Fails T13. Both distances must
+strictly exceed their respective thresholds. \\
 \end{longtable}
 
-For example, in CAM with input $\mathit{reqOCM}$ and $\mathit{cda} \ge  \mathit{s}$, T17 and T18 are both eligible. The allowed outcomes are $(\mathit{OCM}, [\,])$ and $(\mathit{OCM}, [\mathit{advVel}(0)])$. Choosing OCM does not by itself determine whether velocity advice was emitted.
+For example, in CAM with input \texttt{reqOCM} and \texttt{cda\ ≥\ s},
+both T17 and T18 are eligible, so \texttt{(OCM,\ {[}{]})} and
+\texttt{(OCM,\ {[}advVel(0){]})} are both allowed: the move to OCM does
+not by itself fix whether velocity advice was emitted.
 
-In MOM, if $\mathit{P}$ and $\mathit{C}$ are true and at least one static-caution guard is true, OCM, CAM, and HCM are all permitted destinations. HCM includes entry output $[\mathit{advVel}(0)]$; the other two alternatives emit nothing. This overlap is intentional under A02.
+In MOM, if \texttt{P} and \texttt{C} hold and at least one
+static-caution guard holds, OCM, CAM and HCM are all permitted
+destinations; HCM comes with \texttt{{[}advVel(0){]}}, the other two
+with nothing. This overlap is intended (A02).
 
-With no obstacles, positive depth, and no operator input, HCM transitions to MOM; CAM transitions to OCM with $[\mathit{advVel}(0)]$; MOM remains MOM. OCM remains OCM until a guarded $\mathit{reqMOM}$ arrives. If depth is nonpositive, absence of obstacles still leaves $\mathit{P}$ true; for example, HCM can have both T13 and T16 enabled.
+With no obstacles, positive depth and no operator input: HCM goes to
+MOM, CAM goes to OCM with \texttt{{[}advVel(0){]}}, MOM stays in MOM,
+and OCM stays in OCM until a guarded \texttt{reqMOM} arrives. If depth
+is not positive, \texttt{P} holds even with no obstacles, so HCM can
+have both T13 and T16 enabled.
 
-There is no stability guarantee even with constant observations. For example, when $\mathit{D} > \mathit{V}$, observations with $\mathit{hs} > \mathit{H}$ and $\mathit{V} < \mathit{vs} \le  \mathit{D}$ enable HCM-to-MOM via T13 and then MOM-to-HCM via T10 on the next step. With no competing guards, the modes alternate and the entry advice alternates between 1 and 0. No repair to this requirements-permitted behaviour is introduced here.
+Nothing guarantees stability, even under constant observations. When
+\texttt{D\ \textgreater{}\ V}, an observation with
+\texttt{hs\ \textgreater{}\ H} and \texttt{V\ \textless{}\ vs\ ≤\ D}
+enables HCM-to-MOM by T13 and then MOM-to-HCM by T10 on the next step;
+with no competing guard the modes alternate and the entry advice
+alternates between 1 and 0. The requirements permit this, and this
+specification does not repair it.
 
-\paragraph{Use as a reference oracle.} A single-step mode/output observation conforms exactly when its $(\mathit{destination}, \mathit{output} \mathit{sequence})$ belongs to $\mathit{R}(\mathit{m},\mathit{e},\mathit{x})$, starting from the specified OCM initialization. An implementation with a fixed priority can select a subset of the allowed alternatives; this reference does not require it to exercise every alternative. Conversely, a mode change or output absent from the relation is rejected under this reference's recorded decisions. The trace-level interpretation is successive application of the same rule, with no additional fairness requirement.
+\textbf{Use as an oracle.} A single-step observation conforms exactly
+when its \texttt{(destination,\ output\ sequence)} is in
+\texttt{R(m,e,x)}, starting from OCM. An implementation with a fixed
+priority selects a subset of the allowed alternatives and need not
+exercise them all; a mode change or output outside the relation is a
+violation under the decisions recorded here. A trace conforms when every
+step does; no fairness condition is added.
 
-Priority-only differences may therefore remain undetected by this reference. Findings involving event consumption, obstacle ties, missing-obstacle CPA, or unspecified output behaviour depend on the corresponding ledger choices and should be reported as such. Findings about CPA arithmetic for existing obstacles or the effectiveness of evasive manoeuvres are outside this mode relation's evidential scope. No extracted model, mutation population, verifier result, or measured kill rate was consulted, and no such result is claimed here.
+Differences of priority alone are therefore not detected. Findings that
+turn on event consumption, obstacle ties, the missing-obstacle CPA or
+unspecified outputs depend on the readings in Table~\ref{tab:ambiguities} and should be reported as such.
+The CPA arithmetic for existing obstacles and the effectiveness of
+evasive manoeuvres are outside this relation's scope. No extracted
+model, mutant, verifier result or kill rate informed the relation.
 
 \end{document}
