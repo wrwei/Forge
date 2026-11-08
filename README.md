@@ -583,3 +583,12 @@ checks the extracted state-machine structure and generated CSP against the recor
 - [Spoon](https://spoon.gforge.inria.fr/) — Java source analysis and transformation framework
 - [Epsilon](https://eclipse.dev/epsilon/) — model management (ETL, EGL, EOL)
 - [Dafny](https://dafny.org/) — formal verification language (Z3 SMT backend)
+
+## Licence
+
+Forge is released under the [PolyForm Noncommercial License 1.0.0](LICENSE):
+free for research, teaching and other noncommercial use. Commercial use needs a
+separate licence; see [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
+Third-party components in `forge.transformations/lib/` keep their own licences
+(`forge.transformations/lib/THIRD_PARTY_LICENSES.md`).
+
