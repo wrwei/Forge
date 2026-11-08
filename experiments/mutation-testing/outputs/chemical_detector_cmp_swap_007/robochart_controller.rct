@@ -77,19 +77,19 @@ operation ChangeDirection ( ) {
 stm GasAnalysisController {
 	uses Inputs uses Outputs uses Shared requires GasAnalysisController_State requires Constants
 	var v : real
+	state Reading {
+	}
 	state Analysis {
 		entry sts = analysis ( gs )
+	}
+	state NoGas {
+		entry send resume
 	}
 	state GasDetected {
 		entry insVal = peakIntensity ( gs )
 	}
 	state Final {
 		entry send stop
-	}
-	state NoGas {
-		entry send resume
-	}
-	state Reading {
 	}
 	initial i0
 	transition t_init {
@@ -165,27 +165,27 @@ stm MovementController {
 	uses Inputs uses Outputs uses Shared requires MovementController_State requires Constants requires LOperations
 	var v : real
 	clock clockResetTime
+	state AvoidingAgain {
+		entry d1 = 0
+	}
 	state Avoiding {
 		entry d0 = 0 ; compute ! l ; wait ( evadetime )
-	}
-	state Waiting {
-		entry send randomWalk
-	}
-	state GettingOut {
 	}
 	state Found {
 		entry send flag ; move ( 0 , Front )
 	}
-	state TryingAgain {
-		entry move ( lv , a )
+	state Waiting {
+		entry send randomWalk
 	}
-	state AvoidingAgain {
-		entry d1 = 0
+	state Final {
+	}
+	state GettingOut {
 	}
 	state Going {
 		entry move ( lv , a )
 	}
-	state Final {
+	state TryingAgain {
+		entry move ( lv , a )
 	}
 	initial i0
 	transition t_init {

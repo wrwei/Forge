@@ -112,6 +112,15 @@ for (f in stateVars) {
 var stepMethod = findStepMethod(controllerClass);
 var predicateDefs = new Map;
 var modeTransitions = new Sequence;
+// Amendment 20: controller fields assigned in step() before the mode dispatch from an
+// expression the translator renders (the derived flags, e.g.
+// `this.camActive = this.cda < minSafeDist && this.tcpa >= 0.0`). Each is inlined at its
+// uses like a local predicate and assigned at the start of every transition method, in
+// source order. An assignment from an accessor call on an operation object
+// (`this.cda = calcCPA.cda()`) or any other form stays as before: the field is free state.
+var fieldFlagOrder = new Sequence;
+var stateFieldNames = new OrderedSet;
+for (f in stateVars) { stateFieldNames.add(f.get("name")); }
 
 if (stepMethod.isDefined()) {
     var body = getFeature(stepMethod, "body");
@@ -120,6 +129,28 @@ if (stepMethod.isDefined()) {
         var stmts = getFeature(body, "statement");
         if (stmts.isDefined()) {
             for (stmt in stmts) {
+                if (stmt.eClass().getName() = "CtIf") { break; }
+                if (stmt.eClass().getName() = "CtAssignment") {
+                    var lhs = getFeature(stmt, "assigned");
+                    var rhs = getFeature(stmt, "assignment");
+                    if (lhs.isDefined() and rhs.isDefined() and lhs.eClass().getName() = "CtFieldWrite"
+                            and (rhs.eClass().getName() = "CtBinaryOperator" or rhs.eClass().getName() = "CtUnaryOperator")) {
+                        var fref = getFeature(lhs, "variable");
+                        var fname = "";
+                        if (fref.isDefined()) { fname = getFeature(fref, "name"); }
+                        if (fname <> "" and stateFieldNames.includes(fname) and not predicateDefs.containsKey(fname)) {
+                            var fdef = formatSpoonExpr(rhs, abstractedMethods, abstractedTargets,
+                                abstractedArgTypes, abstractedReturnTypes, realNames);
+                            if (fdef.isDefined() and fdef <> "" and fdef.indexOf("???") < 0) {
+                                predicateDefs.put(fname, fdef);
+                                fieldFlagOrder.add(fname);
+                            } else {
+                                ("Amendment 20: field assignment to " + fname + " not rendered; left as free state").println();
+                            }
+                        }
+                    }
+                    continue;
+                }
                 if (stmt.eClass().getName() = "CtLocalVariable") {
                     var varName = getFeature(stmt, "name");
                     var typeRef = getFeature(stmt, "type");
@@ -323,7 +354,7 @@ class [%=controllerName%] {
 [% } %]
 [% if (predicateDefs.size() > 0) { %]
 
-    // Guard predicates (inlined from Java local variables in step())
+    // Guard predicates (inlined from Java local variables and field assignments in step())
 [%
     // FORK: sort keys for deterministic comment ordering.
     var predicateDefNames = predicateDefs.keySet().asSequence();
@@ -466,7 +497,13 @@ class [%=controllerName%] {
 %]
         ensures Valid()
     {
-[%  var first = true;
+[%  // Amendment 20: the derived flags are computed before the dispatch, as in the Java,
+    // into locals (a heap write here would detach the guards from their `old(...)`
+    // postconditions), and stored into their fields after it.
+    for (ff in fieldFlagOrder) { %]
+        var [%=ff%]_pre := [%=predicateDefs.get(ff)%];
+[%  }
+    var first = true;
     for (t in transitions) {
         var condition = "";
         if (t.get("eventType").isDefined() and t.get("eventType") <> "" and
@@ -513,6 +550,9 @@ class [%=controllerName%] {
         }
 [%      first = false;
     }
+    for (ff in fieldFlagOrder) { %]
+        [%=ff%] := [%=ff%]_pre;
+[%  }
 %]
     }
 [% } %]
@@ -881,6 +921,12 @@ operation extractStateFields(classDecl : Any) : Sequence {
     return fields;
 }
 
+operation isArrayTypedStaticFinal(tm : Any) : Boolean {
+    var ty = getFeature(tm, "type");
+    if (ty.isUndefined()) { return false; }
+    return ty.eClass().getName() = "CtArrayTypeReference";
+}
+
 operation extractStaticConstants(classDecl : Any, abstractedMethods : Map,
         abstractedTargets : OrderedSet, abstractedArgTypes : Map,
         abstractedReturnTypes : Map, realNames : OrderedSet, staticConstants : Map) {
@@ -912,6 +958,10 @@ operation extractStaticConstants(classDecl : Any, abstractedMethods : Map,
                 var name = getFeature(tm, "name");
                 if (name.isUndefined()) { continue; }
                 if (staticConstants.containsKey(name)) { continue; }
+                // Amendment 19: an array-typed static final (e.g. `Angle[] DIRECTIONS =
+                // Angle.values()`) has no Dafny counterpart and is never referenced by a
+                // controller guard; emitting it produced an unresolvable const.
+                if (isArrayTypedStaticFinal(tm)) { continue; }
                 var init = getFeature(tm, "assignment");
                 if (init.isUndefined()) { init = getFeature(tm, "defaultExpression"); }
                 var value = "0.0";
@@ -1126,6 +1176,19 @@ operation formatGuardCondition(cond : Any, skipInstanceof : Boolean, predicateDe
     // Skip pure instanceof leaf nodes when requested
     if (skipInstanceof and typeName = "CtBinaryOperator" and opKind = "INSTANCEOF") {
         return "";
+    }
+
+    // Amendment 20: a read of a controller field assigned in step() from a rendered
+    // expression is inlined like a local predicate.
+    if (typeName = "CtFieldRead") {
+        var fRef = getFeature(cond, "variable");
+        var fName = "";
+        if (fRef.isDefined()) { fName = getFeature(fRef, "name"); }
+        if (fName <> "" and predicateDefs.containsKey(fName)) {
+            var fDef = predicateDefs.get(fName);
+            if (fDef.indexOf("||") >= 0 or fDef.indexOf("&&") >= 0) { return "(" + fDef + ")"; }
+            return fDef;
+        }
     }
 
     // Variable read (boolean predicate reference) — inline the definition

@@ -27,7 +27,7 @@ python experiments/conformance-tierB/run_tierb.py fixed --thy-root /tmp/tierb-th
 `generate_isabelle.sh` needs JDK 21 and a built extractor
 (`cd forge.transformations && ./gradlew classes`).
 
-The two settings differ only in how the triggering event is read from a theory.
+The two settings differ only in how the triggering event is read from a theory. `tierb_fixed_rows.csv` holds the fixed arm's rows for the theories the current extractor generates from `reference-runs/<study>/java` (the campaign's `mutation-testing/outputs/baseline-<study>/isabelle/`); in the 2,412 LRE cells where no Java branch applies, exactly one operation is enabled, the mode's idle operation, as Section 5.5 states.
 The archived extraction puts no event in an operation's precondition, so the
 event is read from the operation's trace update; the current extractor puts it
 in the precondition as `e ∈ offered`. Both settings use the same Java side and the

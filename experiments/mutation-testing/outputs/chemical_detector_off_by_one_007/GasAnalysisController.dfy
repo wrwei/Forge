@@ -26,7 +26,7 @@ class GasAnalysisController {
     var insVal: real
     var anl: Angle
 
-    // Guard predicates (inlined from Java local variables in step())
+    // Guard predicates (inlined from Java local variables and field assignments in step())
     //   stsIsNoGas := sts == noGas
     //   stsIsGasD := sts == gasD
     //   insAboveThr := insVal >= 11.0

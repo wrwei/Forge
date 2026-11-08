@@ -23,7 +23,7 @@ class SRangerController {
     function distance(): real
         reads this
 
-    // Guard predicates (inlined from Java local variables in step())
+    // Guard predicates (inlined from Java local variables and field assignments in step())
     //   obstacleDetected := distance() <= 1.5
 
     ghost predicate Valid()

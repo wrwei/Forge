@@ -49,24 +49,24 @@ show_record Obstacle
 
 text \<open> function definition \<close>
 
+consts vdist :: " int \<Rightarrow> real"
+consts sqrt :: " real \<Rightarrow> real"
 consts odist :: " int \<Rightarrow> real"
+consts nsRelDist :: " int \<Rightarrow> real"
 consts hdist :: " int \<Rightarrow> real"
-consts ewRelDist :: " int \<Rightarrow> real"
 consts obsNsVel :: " int \<Rightarrow> real"
 consts obsEwVel :: " int \<Rightarrow> real"
-consts sqrt :: " real \<Rightarrow> real"
-consts nsRelDist :: " int \<Rightarrow> real"
-consts vdist :: " int \<Rightarrow> real"
-consts minsafedist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+consts ewRelDist :: " int \<Rightarrow> real"
+definition minsafedist :: "unit \<Rightarrow> real" where "minsafedist u = 1"  (* named constant; value from the model *)
 consts closestDynamicIndex :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts ns_vel :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts ew_vel :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts closestStaticIndex :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts rate_of_climb :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts depth_fn :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobshorizdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobsdfltvertdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobsvertdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition staticobshorizdist :: "unit \<Rightarrow> real" where "staticobshorizdist u = 1"  (* named constant; value from the model *)
+definition staticobsdfltvertdist :: "unit \<Rightarrow> real" where "staticobsdfltvertdist u = 1"  (* named constant; value from the model *)
+definition staticobsvertdist :: "unit \<Rightarrow> real" where "staticobsvertdist u = 1"  (* named constant; value from the model *)
 
 subsection \<open> State Space \<close>
 

@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:27:50
+-- Automatically generated on 07-11-2026 11:28:22
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -498,11 +498,11 @@ module GasAnalysisController_System_Module
 				-- Transition identifiers
 				-- declaring identifiers of transitions
 				datatype NIDS = 
+				              NID_Reading|
 				              NID_Analysis|
+				              NID_NoGas|
 				              NID_GasDetected|
 				              NID_Final|
-				              NID_NoGas|
-				              NID_Reading|
 				              NID_i0
 				
 				channel internal__ : NIDS
@@ -553,20 +553,20 @@ module GasAnalysisController_System_Module
 				-- Declaring call and ret events for undefined operations
 				
 				enterSS = {|
+				Reading::enter,
 				Analysis::enter,
+				NoGas::enter,
 				GasDetected::enter,
 				Final::enter,
-				NoGas::enter,
-				Reading::enter,
 				i0::enter
 				|}
 				
 				enteredSS = 	{|
+				Reading::entered,
 				Analysis::entered,
-				GasDetected::entered,
-				Final::entered,
 				NoGas::entered,
-				Reading::entered
+				GasDetected::entered,
+				Final::entered
 				|}
 				
 				internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -602,28 +602,14 @@ module GasAnalysisController_System_Module
 				localClockResets = {||}
 				
 				
-				channel get_CLID_Reading : core_clock_type 
-				channel get_CLID_NoGas : core_clock_type 
-				channel get_CLID_Final : core_clock_type 
 				channel get_CLID_Analysis : core_clock_type 
+				channel get_CLID_Final : core_clock_type 
 				channel get_CLID_GasDetected : core_clock_type 
+				channel get_CLID_NoGas : core_clock_type 
+				channel get_CLID_Reading : core_clock_type 
 				--channel increment__
 				
-				CLID_Reading_clock_type(id__,
-						          const_GasAnalysisController_lv,
-						          const_GasAnalysisController_evadetime,
-						          const_GasAnalysisController_stuckperiod,
-						          const_GasAnalysisController_stuckdist,
-						          const_GasAnalysisController_outperiod) = 
-					let
-						max = (clock_type_max(Union({
-				{}
-				}))+1)
-					ctype = {0..max}
-				within
-					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
-				
-				CLID_NoGas_clock_type(id__,
+				CLID_Analysis_clock_type(id__,
 						          const_GasAnalysisController_lv,
 						          const_GasAnalysisController_evadetime,
 						          const_GasAnalysisController_stuckperiod,
@@ -651,7 +637,7 @@ module GasAnalysisController_System_Module
 				within
 					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
-				CLID_Analysis_clock_type(id__,
+				CLID_GasDetected_clock_type(id__,
 						          const_GasAnalysisController_lv,
 						          const_GasAnalysisController_evadetime,
 						          const_GasAnalysisController_stuckperiod,
@@ -665,7 +651,21 @@ module GasAnalysisController_System_Module
 				within
 					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
-				CLID_GasDetected_clock_type(id__,
+				CLID_NoGas_clock_type(id__,
+						          const_GasAnalysisController_lv,
+						          const_GasAnalysisController_evadetime,
+						          const_GasAnalysisController_stuckperiod,
+						          const_GasAnalysisController_stuckdist,
+						          const_GasAnalysisController_outperiod) = 
+					let
+						max = (clock_type_max(Union({
+				{}
+				}))+1)
+					ctype = {0..max}
+				within
+					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+				
+				CLID_Reading_clock_type(id__,
 						          const_GasAnalysisController_lv,
 						          const_GasAnalysisController_evadetime,
 						          const_GasAnalysisController_stuckperiod,
@@ -683,6 +683,98 @@ module GasAnalysisController_System_Module
 			
 					-- Nodes --
 					-- declaring all nodes
+					
+					----------------------------------------------------------------------
+					-- State: Reading
+					module Reading
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__,
+									    const_GasAnalysisController_lv,
+									    const_GasAnalysisController_evadetime,
+									    const_GasAnalysisController_stuckperiod,
+									    const_GasAnalysisController_stuckdist,
+									    const_GasAnalysisController_outperiod) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__,
+									    const_GasAnalysisController_lv,
+									    const_GasAnalysisController_evadetime,
+									    const_GasAnalysisController_stuckperiod,
+									    const_GasAnalysisController_stuckdist,
+									    const_GasAnalysisController_outperiod) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__,
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
 					
 					----------------------------------------------------------------------
 					-- State: Analysis
@@ -750,6 +842,98 @@ module GasAnalysisController_System_Module
 								Termination = terminate -> SKIP
 								
 								Active 		= share__choice(share__choice(get_gs?gs -> true & (share__choice(set_sts!analysis(gs) -> SKIP)))) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__,
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: NoGas
+					module NoGas
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__,
+									    const_GasAnalysisController_lv,
+									    const_GasAnalysisController_evadetime,
+									    const_GasAnalysisController_stuckperiod,
+									    const_GasAnalysisController_stuckdist,
+									    const_GasAnalysisController_outperiod) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(resume.out -> SKIP)) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__,
+									    const_GasAnalysisController_lv,
+									    const_GasAnalysisController_evadetime,
+									    const_GasAnalysisController_stuckperiod,
+									    const_GasAnalysisController_stuckdist,
+									    const_GasAnalysisController_outperiod) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(resume.out -> SKIP)) ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -961,190 +1145,6 @@ module GasAnalysisController_System_Module
 					
 					
 					----------------------------------------------------------------------
-					-- State: NoGas
-					module NoGas
-					
-					enterSS = {}
-					
-					enteredSS = {}
-					
-					exports
-					
-						--  Declarations
-						
-						channel enter, entered, interrupt
-						channel enteredL, enteredR
-						
-										
-						
-						--channel increment__
-						
-						
-						--	Nodes
-						-- declaring all nodes
-						
-						
-						Timed(OneStep) {
-							--	Rule: behaviours(Node)
-							--  Note that FDR has problems with efficiently compiling the process below
-							-- 	if using a different recursion pattern.
-							D__(id__,
-									    const_GasAnalysisController_lv,
-									    const_GasAnalysisController_evadetime,
-									    const_GasAnalysisController_stuckperiod,
-									    const_GasAnalysisController_stuckdist,
-									    const_GasAnalysisController_outperiod) = 
-							dbisim(let
-								-- IMPLEMENTATION NOTE: 
-								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-								-- however FDR struggles with that form in certain cases. So we use the exception operator
-								-- instead to 'terminate'.
-								
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= true&(share__choice(resume.out -> SKIP)) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-								
-							VS_O__(id__,
-									    const_GasAnalysisController_lv,
-									    const_GasAnalysisController_evadetime,
-									    const_GasAnalysisController_stuckperiod,
-									    const_GasAnalysisController_stuckdist,
-									    const_GasAnalysisController_outperiod) = 
-							dbisim(let
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= true&(share__choice(resume.out -> SKIP)) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-							
-							
-							-- Clocks
-							
-							StateClocks(id__,
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod) = terminate -> SKIP
-							
-							stateClockSync = {||}
-						}
-					
-					endmodule
-					----------------------------------------------------------------------
-					
-					
-					----------------------------------------------------------------------
-					-- State: Reading
-					module Reading
-					
-					enterSS = {}
-					
-					enteredSS = {}
-					
-					exports
-					
-						--  Declarations
-						
-						channel enter, entered, interrupt
-						channel enteredL, enteredR
-						
-										
-						
-						--channel increment__
-						
-						
-						--	Nodes
-						-- declaring all nodes
-						
-						
-						Timed(OneStep) {
-							--	Rule: behaviours(Node)
-							--  Note that FDR has problems with efficiently compiling the process below
-							-- 	if using a different recursion pattern.
-							D__(id__,
-									    const_GasAnalysisController_lv,
-									    const_GasAnalysisController_evadetime,
-									    const_GasAnalysisController_stuckperiod,
-									    const_GasAnalysisController_stuckdist,
-									    const_GasAnalysisController_outperiod) = 
-							dbisim(let
-								-- IMPLEMENTATION NOTE: 
-								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-								-- however FDR struggles with that form in certain cases. So we use the exception operator
-								-- instead to 'terminate'.
-								
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= SKIP ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-								
-							VS_O__(id__,
-									    const_GasAnalysisController_lv,
-									    const_GasAnalysisController_evadetime,
-									    const_GasAnalysisController_stuckperiod,
-									    const_GasAnalysisController_stuckdist,
-									    const_GasAnalysisController_outperiod) = 
-							dbisim(let
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= SKIP ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-							
-							
-							-- Clocks
-							
-							StateClocks(id__,
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod) = terminate -> SKIP
-							
-							stateClockSync = {||}
-						}
-					
-					endmodule
-					----------------------------------------------------------------------
-					
-					
-					----------------------------------------------------------------------
 					-- Initial: i0
 					module i0
 					exports
@@ -1305,11 +1305,11 @@ module GasAnalysisController_System_Module
 								-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 								-- modules for defining the semantics of each node.
 								enterSS = {|
+								Reading::enter,
 								Analysis::enter,
+								NoGas::enter,
 								GasDetected::enter,
 								Final::enter,
-								NoGas::enter,
-								Reading::enter,
 								i0::enter
 								|}
 								hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -1322,7 +1322,21 @@ module GasAnalysisController_System_Module
 								within
 									((
 									 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+									   Reading::D__(id__,
+									   		    const_GasAnalysisController_lv,
+									   		    const_GasAnalysisController_evadetime,
+									   		    const_GasAnalysisController_stuckperiod,
+									   		    const_GasAnalysisController_stuckdist,
+									   		    const_GasAnalysisController_outperiod)
+									   [| { share__, terminate } |] (
 									   Analysis::D__(id__,
+									   		    const_GasAnalysisController_lv,
+									   		    const_GasAnalysisController_evadetime,
+									   		    const_GasAnalysisController_stuckperiod,
+									   		    const_GasAnalysisController_stuckdist,
+									   		    const_GasAnalysisController_outperiod)
+									   [| { share__, terminate } |] (
+									   NoGas::D__(id__,
 									   		    const_GasAnalysisController_lv,
 									   		    const_GasAnalysisController_evadetime,
 									   		    const_GasAnalysisController_stuckperiod,
@@ -1343,20 +1357,6 @@ module GasAnalysisController_System_Module
 									   		    const_GasAnalysisController_stuckdist,
 									   		    const_GasAnalysisController_outperiod)
 									   [| { share__, terminate } |] (
-									   NoGas::D__(id__,
-									   		    const_GasAnalysisController_lv,
-									   		    const_GasAnalysisController_evadetime,
-									   		    const_GasAnalysisController_stuckperiod,
-									   		    const_GasAnalysisController_stuckdist,
-									   		    const_GasAnalysisController_outperiod)
-									   [| { share__, terminate } |] (
-									   Reading::D__(id__,
-									   		    const_GasAnalysisController_lv,
-									   		    const_GasAnalysisController_evadetime,
-									   		    const_GasAnalysisController_stuckperiod,
-									   		    const_GasAnalysisController_stuckdist,
-									   		    const_GasAnalysisController_outperiod)
-									   [| { share__, terminate } |] (
 									   i0::D__(id__,
 									   		    const_GasAnalysisController_lv,
 									   		    const_GasAnalysisController_evadetime,
@@ -1369,11 +1369,11 @@ module GasAnalysisController_System_Module
 									   )
 									   )
 									 )
+									 [[Reading::interrupt <- x__ | x__ <- {|interrupt,gas__.NID_Reading.in,tick__.NID_Reading.in|}]]
 									 [[Analysis::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Analysis,internal__.NID_Analysis,tick__.NID_Analysis.in|}]]
+									 [[NoGas::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NoGas|}]]
 									 [[GasDetected::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_GasDetected,internal__.NID_GasDetected,tick__.NID_GasDetected.in|}]]
 									 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
-									 [[NoGas::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NoGas|}]]
-									 [[Reading::interrupt <- x__ | x__ <- {|interrupt,gas__.NID_Reading.in,tick__.NID_Reading.in|}]]
 									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 									 )
 									  [[ share__ <- x__ | x__ <- {| share__,setR_gs |} ]] 
@@ -1432,7 +1432,7 @@ module GasAnalysisController_System_Module
 							    const_GasAnalysisController_stuckdist,
 							    const_GasAnalysisController_outperiod) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Reading,Reading::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Final,Final::entered,get_CLID_Analysis,Analysis::entered,get_CLID_GasDetected,GasDetected::entered|}
+							stateClockSync = {|get_CLID_Analysis,Analysis::entered,get_CLID_Final,Final::entered,get_CLID_GasDetected,GasDetected::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Reading,Reading::entered|}
 						 within
 							(MachineBody(id__,
 									    const_GasAnalysisController_lv,
@@ -1455,7 +1455,7 @@ module GasAnalysisController_System_Module
 							    const_GasAnalysisController_stuckdist,
 							    const_GasAnalysisController_outperiod) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Reading,Reading::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Final,Final::entered,get_CLID_Analysis,Analysis::entered,get_CLID_GasDetected,GasDetected::entered|}
+							stateClockSync = {|get_CLID_Analysis,Analysis::entered,get_CLID_Final,Final::entered,get_CLID_GasDetected,GasDetected::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Reading,Reading::entered|}
 						 within
 							(dbisim(
 								sbisim(
@@ -1473,50 +1473,50 @@ module GasAnalysisController_System_Module
 																			    const_GasAnalysisController_stuckperiod,
 																			    const_GasAnalysisController_stuckdist,
 																			    const_GasAnalysisController_outperiod)
-																	[| {|get_CLID_GasDetected,GasDetected::entered,terminate|} |]
-																	dbisim(Clock_CLID_GasDetected(id__,0,
+																	[| {|get_CLID_Reading,Reading::entered,terminate|} |]
+																	dbisim(Clock_CLID_Reading(id__,0,
 																			          const_GasAnalysisController_lv,
 																			          const_GasAnalysisController_evadetime,
 																			          const_GasAnalysisController_stuckperiod,
 																			          const_GasAnalysisController_stuckdist,
 																			          const_GasAnalysisController_outperiod))
-																)\{|get_CLID_GasDetected|}
+																)\{|get_CLID_Reading|}
 															)
-															[| {|get_CLID_Analysis,Analysis::entered,terminate|} |]
-															dbisim(Clock_CLID_Analysis(id__,0,
+															[| {|get_CLID_NoGas,NoGas::entered,terminate|} |]
+															dbisim(Clock_CLID_NoGas(id__,0,
 																	          const_GasAnalysisController_lv,
 																	          const_GasAnalysisController_evadetime,
 																	          const_GasAnalysisController_stuckperiod,
 																	          const_GasAnalysisController_stuckdist,
 																	          const_GasAnalysisController_outperiod))
-														)\{|get_CLID_Analysis|}
+														)\{|get_CLID_NoGas|}
 													)
-													[| {|get_CLID_Final,Final::entered,terminate|} |]
-													dbisim(Clock_CLID_Final(id__,0,
+													[| {|get_CLID_GasDetected,GasDetected::entered,terminate|} |]
+													dbisim(Clock_CLID_GasDetected(id__,0,
 															          const_GasAnalysisController_lv,
 															          const_GasAnalysisController_evadetime,
 															          const_GasAnalysisController_stuckperiod,
 															          const_GasAnalysisController_stuckdist,
 															          const_GasAnalysisController_outperiod))
-												)\{|get_CLID_Final|}
+												)\{|get_CLID_GasDetected|}
 											)
-											[| {|get_CLID_NoGas,NoGas::entered,terminate|} |]
-											dbisim(Clock_CLID_NoGas(id__,0,
+											[| {|get_CLID_Final,Final::entered,terminate|} |]
+											dbisim(Clock_CLID_Final(id__,0,
 													          const_GasAnalysisController_lv,
 													          const_GasAnalysisController_evadetime,
 													          const_GasAnalysisController_stuckperiod,
 													          const_GasAnalysisController_stuckdist,
 													          const_GasAnalysisController_outperiod))
-										)\{|get_CLID_NoGas|}
+										)\{|get_CLID_Final|}
 									)
-									[| {|get_CLID_Reading,Reading::entered,terminate|} |]
-									dbisim(Clock_CLID_Reading(id__,0,
+									[| {|get_CLID_Analysis,Analysis::entered,terminate|} |]
+									dbisim(Clock_CLID_Analysis(id__,0,
 											          const_GasAnalysisController_lv,
 											          const_GasAnalysisController_evadetime,
 											          const_GasAnalysisController_stuckperiod,
 											          const_GasAnalysisController_stuckdist,
 											          const_GasAnalysisController_outperiod))
-								)\{|get_CLID_Reading|}
+								)\{|get_CLID_Analysis|}
 							)
 							) \ union(stateClockSync,enteredSS)
 						)
@@ -1590,11 +1590,11 @@ module GasAnalysisController_System_Module
 								-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 								-- modules for defining the semantics of each node.
 								enterSS = {|
+								Reading::enter,
 								Analysis::enter,
+								NoGas::enter,
 								GasDetected::enter,
 								Final::enter,
-								NoGas::enter,
-								Reading::enter,
 								i0::enter
 								|}
 								hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -1607,7 +1607,21 @@ module GasAnalysisController_System_Module
 								within
 									((
 									 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
+									   Reading::VS_O__(id__,
+									   		    const_GasAnalysisController_lv,
+									   		    const_GasAnalysisController_evadetime,
+									   		    const_GasAnalysisController_stuckperiod,
+									   		    const_GasAnalysisController_stuckdist,
+									   		    const_GasAnalysisController_outperiod)
+									   [| { share__, terminate } |] (
 									   Analysis::VS_O__(id__,
+									   		    const_GasAnalysisController_lv,
+									   		    const_GasAnalysisController_evadetime,
+									   		    const_GasAnalysisController_stuckperiod,
+									   		    const_GasAnalysisController_stuckdist,
+									   		    const_GasAnalysisController_outperiod)
+									   [| { share__, terminate } |] (
+									   NoGas::VS_O__(id__,
 									   		    const_GasAnalysisController_lv,
 									   		    const_GasAnalysisController_evadetime,
 									   		    const_GasAnalysisController_stuckperiod,
@@ -1628,20 +1642,6 @@ module GasAnalysisController_System_Module
 									   		    const_GasAnalysisController_stuckdist,
 									   		    const_GasAnalysisController_outperiod)
 									   [| { share__, terminate } |] (
-									   NoGas::VS_O__(id__,
-									   		    const_GasAnalysisController_lv,
-									   		    const_GasAnalysisController_evadetime,
-									   		    const_GasAnalysisController_stuckperiod,
-									   		    const_GasAnalysisController_stuckdist,
-									   		    const_GasAnalysisController_outperiod)
-									   [| { share__, terminate } |] (
-									   Reading::VS_O__(id__,
-									   		    const_GasAnalysisController_lv,
-									   		    const_GasAnalysisController_evadetime,
-									   		    const_GasAnalysisController_stuckperiod,
-									   		    const_GasAnalysisController_stuckdist,
-									   		    const_GasAnalysisController_outperiod)
-									   [| { share__, terminate } |] (
 									   i0::VS_O__(id__,
 									   		    const_GasAnalysisController_lv,
 									   		    const_GasAnalysisController_evadetime,
@@ -1654,11 +1654,11 @@ module GasAnalysisController_System_Module
 									   )
 									   )
 									 )
+									 [[Reading::interrupt <- x__ | x__ <- {|interrupt,gas__.NID_Reading.in,tick__.NID_Reading.in|}]]
 									 [[Analysis::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Analysis,internal__.NID_Analysis,tick__.NID_Analysis.in|}]]
+									 [[NoGas::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NoGas|}]]
 									 [[GasDetected::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_GasDetected,internal__.NID_GasDetected,tick__.NID_GasDetected.in|}]]
 									 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
-									 [[NoGas::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NoGas|}]]
-									 [[Reading::interrupt <- x__ | x__ <- {|interrupt,gas__.NID_Reading.in,tick__.NID_Reading.in|}]]
 									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 									 )
 									  [[ share__ <- x__ | x__ <- {| share__,setR_gs |} ]] 
@@ -1717,7 +1717,7 @@ module GasAnalysisController_System_Module
 							    const_GasAnalysisController_stuckdist,
 							    const_GasAnalysisController_outperiod) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Reading,Reading::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Final,Final::entered,get_CLID_Analysis,Analysis::entered,get_CLID_GasDetected,GasDetected::entered|}
+							stateClockSync = {|get_CLID_Analysis,Analysis::entered,get_CLID_Final,Final::entered,get_CLID_GasDetected,GasDetected::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Reading,Reading::entered|}
 						 within
 							(MachineBody_VS_O(id__,
 									    const_GasAnalysisController_lv,
@@ -1740,7 +1740,7 @@ module GasAnalysisController_System_Module
 							    const_GasAnalysisController_stuckdist,
 							    const_GasAnalysisController_outperiod) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Reading,Reading::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Final,Final::entered,get_CLID_Analysis,Analysis::entered,get_CLID_GasDetected,GasDetected::entered|}
+							stateClockSync = {|get_CLID_Analysis,Analysis::entered,get_CLID_Final,Final::entered,get_CLID_GasDetected,GasDetected::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Reading,Reading::entered|}
 						 within
 							(dbisim(
 								sbisim(
@@ -1758,50 +1758,50 @@ module GasAnalysisController_System_Module
 																			    const_GasAnalysisController_stuckperiod,
 																			    const_GasAnalysisController_stuckdist,
 																			    const_GasAnalysisController_outperiod)
-																	[| {|get_CLID_GasDetected,GasDetected::entered,terminate|} |]
-																	dbisim(Clock_CLID_GasDetected(id__,0,
+																	[| {|get_CLID_Reading,Reading::entered,terminate|} |]
+																	dbisim(Clock_CLID_Reading(id__,0,
 																			          const_GasAnalysisController_lv,
 																			          const_GasAnalysisController_evadetime,
 																			          const_GasAnalysisController_stuckperiod,
 																			          const_GasAnalysisController_stuckdist,
 																			          const_GasAnalysisController_outperiod))
-																)\{|get_CLID_GasDetected|}
+																)\{|get_CLID_Reading|}
 															)
-															[| {|get_CLID_Analysis,Analysis::entered,terminate|} |]
-															dbisim(Clock_CLID_Analysis(id__,0,
+															[| {|get_CLID_NoGas,NoGas::entered,terminate|} |]
+															dbisim(Clock_CLID_NoGas(id__,0,
 																	          const_GasAnalysisController_lv,
 																	          const_GasAnalysisController_evadetime,
 																	          const_GasAnalysisController_stuckperiod,
 																	          const_GasAnalysisController_stuckdist,
 																	          const_GasAnalysisController_outperiod))
-														)\{|get_CLID_Analysis|}
+														)\{|get_CLID_NoGas|}
 													)
-													[| {|get_CLID_Final,Final::entered,terminate|} |]
-													dbisim(Clock_CLID_Final(id__,0,
+													[| {|get_CLID_GasDetected,GasDetected::entered,terminate|} |]
+													dbisim(Clock_CLID_GasDetected(id__,0,
 															          const_GasAnalysisController_lv,
 															          const_GasAnalysisController_evadetime,
 															          const_GasAnalysisController_stuckperiod,
 															          const_GasAnalysisController_stuckdist,
 															          const_GasAnalysisController_outperiod))
-												)\{|get_CLID_Final|}
+												)\{|get_CLID_GasDetected|}
 											)
-											[| {|get_CLID_NoGas,NoGas::entered,terminate|} |]
-											dbisim(Clock_CLID_NoGas(id__,0,
+											[| {|get_CLID_Final,Final::entered,terminate|} |]
+											dbisim(Clock_CLID_Final(id__,0,
 													          const_GasAnalysisController_lv,
 													          const_GasAnalysisController_evadetime,
 													          const_GasAnalysisController_stuckperiod,
 													          const_GasAnalysisController_stuckdist,
 													          const_GasAnalysisController_outperiod))
-										)\{|get_CLID_NoGas|}
+										)\{|get_CLID_Final|}
 									)
-									[| {|get_CLID_Reading,Reading::entered,terminate|} |]
-									dbisim(Clock_CLID_Reading(id__,0,
+									[| {|get_CLID_Analysis,Analysis::entered,terminate|} |]
+									dbisim(Clock_CLID_Analysis(id__,0,
 											          const_GasAnalysisController_lv,
 											          const_GasAnalysisController_evadetime,
 											          const_GasAnalysisController_stuckperiod,
 											          const_GasAnalysisController_stuckdist,
 											          const_GasAnalysisController_outperiod))
-								)\{|get_CLID_Reading|}
+								)\{|get_CLID_Analysis|}
 							)
 							) \ diff(union(stateClockSync,enteredSS),enteredSS)
 						)
@@ -1981,60 +1981,28 @@ module GasAnalysisController_System_Module
 					
 					clockSync = {||}
 					
-					Clock_CLID_Reading(id__,x__,
+					Clock_CLID_Analysis(id__,x__,
 							          const_GasAnalysisController_lv,
 							          const_GasAnalysisController_evadetime,
 							          const_GasAnalysisController_stuckperiod,
 							          const_GasAnalysisController_stuckdist,
 							          const_GasAnalysisController_outperiod) = 
 						TimeOut_1(
-							Reading::entered -> Clock_CLID_Reading(id__,0,
+							Analysis::entered -> Clock_CLID_Analysis(id__,0,
 									          const_GasAnalysisController_lv,
 									          const_GasAnalysisController_evadetime,
 									          const_GasAnalysisController_stuckperiod,
 									          const_GasAnalysisController_stuckdist,
 									          const_GasAnalysisController_outperiod)
 							[]
-							get_CLID_Reading!x__ -> Clock_CLID_Reading(id__,x__,
+							get_CLID_Analysis!x__ -> Clock_CLID_Analysis(id__,x__,
 									          const_GasAnalysisController_lv,
 									          const_GasAnalysisController_evadetime,
 									          const_GasAnalysisController_stuckperiod,
 									          const_GasAnalysisController_stuckdist,
 									          const_GasAnalysisController_outperiod)
 							[]
-							terminate -> SKIP,Clock_CLID_Reading(id__,clock_type_plus(x__,1,CLID_Reading_clock_type(id__,
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod)),
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod))
-					Clock_CLID_NoGas(id__,x__,
-							          const_GasAnalysisController_lv,
-							          const_GasAnalysisController_evadetime,
-							          const_GasAnalysisController_stuckperiod,
-							          const_GasAnalysisController_stuckdist,
-							          const_GasAnalysisController_outperiod) = 
-						TimeOut_1(
-							NoGas::entered -> Clock_CLID_NoGas(id__,0,
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod)
-							[]
-							get_CLID_NoGas!x__ -> Clock_CLID_NoGas(id__,x__,
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod)
-							[]
-							terminate -> SKIP,Clock_CLID_NoGas(id__,clock_type_plus(x__,1,CLID_NoGas_clock_type(id__,
+							terminate -> SKIP,Clock_CLID_Analysis(id__,clock_type_plus(x__,1,CLID_Analysis_clock_type(id__,
 									          const_GasAnalysisController_lv,
 									          const_GasAnalysisController_evadetime,
 									          const_GasAnalysisController_stuckperiod,
@@ -2077,38 +2045,6 @@ module GasAnalysisController_System_Module
 									          const_GasAnalysisController_stuckperiod,
 									          const_GasAnalysisController_stuckdist,
 									          const_GasAnalysisController_outperiod))
-					Clock_CLID_Analysis(id__,x__,
-							          const_GasAnalysisController_lv,
-							          const_GasAnalysisController_evadetime,
-							          const_GasAnalysisController_stuckperiod,
-							          const_GasAnalysisController_stuckdist,
-							          const_GasAnalysisController_outperiod) = 
-						TimeOut_1(
-							Analysis::entered -> Clock_CLID_Analysis(id__,0,
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod)
-							[]
-							get_CLID_Analysis!x__ -> Clock_CLID_Analysis(id__,x__,
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod)
-							[]
-							terminate -> SKIP,Clock_CLID_Analysis(id__,clock_type_plus(x__,1,CLID_Analysis_clock_type(id__,
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod)),
-									          const_GasAnalysisController_lv,
-									          const_GasAnalysisController_evadetime,
-									          const_GasAnalysisController_stuckperiod,
-									          const_GasAnalysisController_stuckdist,
-									          const_GasAnalysisController_outperiod))
 					Clock_CLID_GasDetected(id__,x__,
 							          const_GasAnalysisController_lv,
 							          const_GasAnalysisController_evadetime,
@@ -2141,20 +2077,77 @@ module GasAnalysisController_System_Module
 									          const_GasAnalysisController_stuckperiod,
 									          const_GasAnalysisController_stuckdist,
 									          const_GasAnalysisController_outperiod))
+					Clock_CLID_NoGas(id__,x__,
+							          const_GasAnalysisController_lv,
+							          const_GasAnalysisController_evadetime,
+							          const_GasAnalysisController_stuckperiod,
+							          const_GasAnalysisController_stuckdist,
+							          const_GasAnalysisController_outperiod) = 
+						TimeOut_1(
+							NoGas::entered -> Clock_CLID_NoGas(id__,0,
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod)
+							[]
+							get_CLID_NoGas!x__ -> Clock_CLID_NoGas(id__,x__,
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod)
+							[]
+							terminate -> SKIP,Clock_CLID_NoGas(id__,clock_type_plus(x__,1,CLID_NoGas_clock_type(id__,
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod)),
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod))
+					Clock_CLID_Reading(id__,x__,
+							          const_GasAnalysisController_lv,
+							          const_GasAnalysisController_evadetime,
+							          const_GasAnalysisController_stuckperiod,
+							          const_GasAnalysisController_stuckdist,
+							          const_GasAnalysisController_outperiod) = 
+						TimeOut_1(
+							Reading::entered -> Clock_CLID_Reading(id__,0,
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod)
+							[]
+							get_CLID_Reading!x__ -> Clock_CLID_Reading(id__,x__,
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod)
+							[]
+							terminate -> SKIP,Clock_CLID_Reading(id__,clock_type_plus(x__,1,CLID_Reading_clock_type(id__,
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod)),
+									          const_GasAnalysisController_lv,
+									          const_GasAnalysisController_evadetime,
+									          const_GasAnalysisController_stuckperiod,
+									          const_GasAnalysisController_stuckdist,
+									          const_GasAnalysisController_outperiod))
 					
 					StateClocks(id__,
 							          const_GasAnalysisController_lv,
 							          const_GasAnalysisController_evadetime,
 							          const_GasAnalysisController_stuckperiod,
 							          const_GasAnalysisController_stuckdist,
-							          const_GasAnalysisController_outperiod) = dbisim(Clock_CLID_Reading(id__,0,
-							          const_GasAnalysisController_lv,
-							          const_GasAnalysisController_evadetime,
-							          const_GasAnalysisController_stuckperiod,
-							          const_GasAnalysisController_stuckdist,
-							          const_GasAnalysisController_outperiod))
-					[| { terminate } |] (
-					dbisim(Clock_CLID_NoGas(id__,0,
+							          const_GasAnalysisController_outperiod) = dbisim(Clock_CLID_Analysis(id__,0,
 							          const_GasAnalysisController_lv,
 							          const_GasAnalysisController_evadetime,
 							          const_GasAnalysisController_stuckperiod,
@@ -2168,14 +2161,21 @@ module GasAnalysisController_System_Module
 							          const_GasAnalysisController_stuckdist,
 							          const_GasAnalysisController_outperiod))
 					[| { terminate } |] (
-					dbisim(Clock_CLID_Analysis(id__,0,
+					dbisim(Clock_CLID_GasDetected(id__,0,
 							          const_GasAnalysisController_lv,
 							          const_GasAnalysisController_evadetime,
 							          const_GasAnalysisController_stuckperiod,
 							          const_GasAnalysisController_stuckdist,
 							          const_GasAnalysisController_outperiod))
 					[| { terminate } |] (
-					dbisim(Clock_CLID_GasDetected(id__,0,
+					dbisim(Clock_CLID_NoGas(id__,0,
+							          const_GasAnalysisController_lv,
+							          const_GasAnalysisController_evadetime,
+							          const_GasAnalysisController_stuckperiod,
+							          const_GasAnalysisController_stuckdist,
+							          const_GasAnalysisController_outperiod))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_Reading(id__,0,
 							          const_GasAnalysisController_lv,
 							          const_GasAnalysisController_evadetime,
 							          const_GasAnalysisController_stuckperiod,
@@ -2186,7 +2186,7 @@ module GasAnalysisController_System_Module
 					)
 					)
 					
-					stateClockSync = {|get_CLID_Reading,Reading::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Final,Final::entered,get_CLID_Analysis,Analysis::entered,get_CLID_GasDetected,GasDetected::entered|}
+					stateClockSync = {|get_CLID_Analysis,Analysis::entered,get_CLID_Final,Final::entered,get_CLID_GasDetected,GasDetected::entered,get_CLID_NoGas,NoGas::entered,get_CLID_Reading,Reading::entered|}
 					
 					-- Shared memory
 					-- Shared memory variables
@@ -2990,14 +2990,14 @@ module GasAnalysisController_System_Module
 				-- Transition identifiers
 				-- declaring identifiers of transitions
 				datatype NIDS = 
-				              NID_TryingAgain|
-				              NID_Waiting|
 				              NID_Found|
-				              NID_AvoidingAgain|
 				              NID_Final|
+				              NID_Waiting|
 				              NID_Going|
-				              NID_GettingOut|
+				              NID_TryingAgain|
+				              NID_AvoidingAgain|
 				              NID_Avoiding|
+				              NID_GettingOut|
 				              NID_i0
 				
 				channel internal__ : NIDS
@@ -3049,26 +3049,26 @@ module GasAnalysisController_System_Module
 				channel moveCall: core_real.Angle
 				
 				enterSS = {|
-				TryingAgain::enter,
-				Waiting::enter,
 				Found::enter,
-				AvoidingAgain::enter,
 				Final::enter,
+				Waiting::enter,
 				Going::enter,
-				GettingOut::enter,
+				TryingAgain::enter,
+				AvoidingAgain::enter,
 				Avoiding::enter,
+				GettingOut::enter,
 				i0::enter
 				|}
 				
 				enteredSS = 	{|
-				TryingAgain::entered,
-				Waiting::entered,
 				Found::entered,
-				AvoidingAgain::entered,
 				Final::entered,
+				Waiting::entered,
 				Going::entered,
-				GettingOut::entered,
-				Avoiding::entered
+				TryingAgain::entered,
+				AvoidingAgain::entered,
+				Avoiding::entered,
+				GettingOut::entered
 				|}
 				
 				internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -3107,18 +3107,18 @@ module GasAnalysisController_System_Module
 				localClockResets = {|clockReset.CLID_clockResetTime|}
 				
 				
-				channel get_CLID_Going : core_clock_type 
-				channel get_CLID_Avoiding : core_clock_type 
-				channel get_CLID_Waiting : core_clock_type 
-				channel get_CLID_Final : core_clock_type 
+				channel get_CLID_AvoidingAgain : core_clock_type 
 				channel get_CLID_GettingOut : core_clock_type 
+				channel get_CLID_Final : core_clock_type 
+				channel get_CLID_Avoiding : core_clock_type 
+				channel get_CLID_Found : core_clock_type 
 				channel get_CLID_TryingAgain : core_clock_type 
 				channel get_CLID_clockResetTime : core_clock_type 
-				channel get_CLID_AvoidingAgain : core_clock_type 
-				channel get_CLID_Found : core_clock_type 
+				channel get_CLID_Going : core_clock_type 
+				channel get_CLID_Waiting : core_clock_type 
 				--channel increment__
 				
-				CLID_Going_clock_type(id__,
+				CLID_AvoidingAgain_clock_type(id__,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
@@ -3132,21 +3132,7 @@ module GasAnalysisController_System_Module
 				within
 					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
-				CLID_Avoiding_clock_type(id__,
-						          const_MovementController_lv,
-						          const_MovementController_evadetime,
-						          const_MovementController_stuckperiod,
-						          const_MovementController_stuckdist,
-						          const_MovementController_outperiod) = 
-					let
-						max = (clock_type_max(Union({
-				{}
-				}))+1)
-					ctype = {0..max}
-				within
-					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
-				
-				CLID_Waiting_clock_type(id__,
+				CLID_GettingOut_clock_type(id__,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
@@ -3174,7 +3160,21 @@ module GasAnalysisController_System_Module
 				within
 					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
-				CLID_GettingOut_clock_type(id__,
+				CLID_Avoiding_clock_type(id__,
+						          const_MovementController_lv,
+						          const_MovementController_evadetime,
+						          const_MovementController_stuckperiod,
+						          const_MovementController_stuckdist,
+						          const_MovementController_outperiod) = 
+					let
+						max = (clock_type_max(Union({
+				{}
+				}))+1)
+					ctype = {0..max}
+				within
+					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+				
+				CLID_Found_clock_type(id__,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
@@ -3218,7 +3218,7 @@ module GasAnalysisController_System_Module
 				within
 					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
-				CLID_AvoidingAgain_clock_type(id__,
+				CLID_Going_clock_type(id__,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
@@ -3232,7 +3232,7 @@ module GasAnalysisController_System_Module
 				within
 					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
-				CLID_Found_clock_type(id__,
+				CLID_Waiting_clock_type(id__,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
@@ -3250,208 +3250,6 @@ module GasAnalysisController_System_Module
 			
 					-- Nodes --
 					-- declaring all nodes
-					
-					----------------------------------------------------------------------
-					-- State: TryingAgain
-					module TryingAgain
-					
-					enterSS = {}
-					
-					enteredSS = {}
-					
-					exports
-					
-						--  Declarations
-						
-						channel enter, entered, interrupt
-						channel enteredL, enteredR
-						
-										
-						
-						--channel increment__
-						
-						
-						--	Nodes
-						-- declaring all nodes
-						
-						
-						Timed(OneStep) {
-							--	Rule: behaviours(Node)
-							--  Note that FDR has problems with efficiently compiling the process below
-							-- 	if using a different recursion pattern.
-							D__(id__,
-									    const_MovementController_lv,
-									    const_MovementController_evadetime,
-									    const_MovementController_stuckperiod,
-									    const_MovementController_stuckdist,
-									    const_MovementController_outperiod) = 
-							dbisim(let
-								-- IMPLEMENTATION NOTE: 
-								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-								-- however FDR struggles with that form in certain cases. So we use the exception operator
-								-- instead to 'terminate'.
-								
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= share__choice(get_a?a -> true&CALL__move(
-											id__,
-										    const_MovementController_lv,
-										    const_MovementController_evadetime,
-										    const_MovementController_stuckperiod,
-										    const_MovementController_stuckdist,
-										    const_MovementController_outperiod,
-											const_MovementController_lv,
-											a
-										)) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-								
-							VS_O__(id__,
-									    const_MovementController_lv,
-									    const_MovementController_evadetime,
-									    const_MovementController_stuckperiod,
-									    const_MovementController_stuckdist,
-									    const_MovementController_outperiod) = 
-							dbisim(let
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= share__choice(get_a?a -> true&CALL__move(
-											id__,
-										    const_MovementController_lv,
-										    const_MovementController_evadetime,
-										    const_MovementController_stuckperiod,
-										    const_MovementController_stuckdist,
-										    const_MovementController_outperiod,
-											const_MovementController_lv,
-											a
-										)) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-							
-							
-							-- Clocks
-							
-							StateClocks(id__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod) = terminate -> SKIP
-							
-							stateClockSync = {||}
-						}
-					
-					endmodule
-					----------------------------------------------------------------------
-					
-					
-					----------------------------------------------------------------------
-					-- State: Waiting
-					module Waiting
-					
-					enterSS = {}
-					
-					enteredSS = {}
-					
-					exports
-					
-						--  Declarations
-						
-						channel enter, entered, interrupt
-						channel enteredL, enteredR
-						
-										
-						
-						--channel increment__
-						
-						
-						--	Nodes
-						-- declaring all nodes
-						
-						
-						Timed(OneStep) {
-							--	Rule: behaviours(Node)
-							--  Note that FDR has problems with efficiently compiling the process below
-							-- 	if using a different recursion pattern.
-							D__(id__,
-									    const_MovementController_lv,
-									    const_MovementController_evadetime,
-									    const_MovementController_stuckperiod,
-									    const_MovementController_stuckdist,
-									    const_MovementController_outperiod) = 
-							dbisim(let
-								-- IMPLEMENTATION NOTE: 
-								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-								-- however FDR struggles with that form in certain cases. So we use the exception operator
-								-- instead to 'terminate'.
-								
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= true&(share__choice(randomWalk.out -> SKIP)) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-								
-							VS_O__(id__,
-									    const_MovementController_lv,
-									    const_MovementController_evadetime,
-									    const_MovementController_stuckperiod,
-									    const_MovementController_stuckdist,
-									    const_MovementController_outperiod) = 
-							dbisim(let
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= true&(share__choice(randomWalk.out -> SKIP)) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-							
-							
-							-- Clocks
-							
-							StateClocks(id__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod) = terminate -> SKIP
-							
-							stateClockSync = {||}
-						}
-					
-					endmodule
-					----------------------------------------------------------------------
-					
 					
 					----------------------------------------------------------------------
 					-- State: Found
@@ -3564,98 +3362,6 @@ module GasAnalysisController_System_Module
 					
 					
 					----------------------------------------------------------------------
-					-- State: AvoidingAgain
-					module AvoidingAgain
-					
-					enterSS = {}
-					
-					enteredSS = {}
-					
-					exports
-					
-						--  Declarations
-						
-						channel enter, entered, interrupt
-						channel enteredL, enteredR
-						
-										
-						
-						--channel increment__
-						
-						
-						--	Nodes
-						-- declaring all nodes
-						
-						
-						Timed(OneStep) {
-							--	Rule: behaviours(Node)
-							--  Note that FDR has problems with efficiently compiling the process below
-							-- 	if using a different recursion pattern.
-							D__(id__,
-									    const_MovementController_lv,
-									    const_MovementController_evadetime,
-									    const_MovementController_stuckperiod,
-									    const_MovementController_stuckdist,
-									    const_MovementController_outperiod) = 
-							dbisim(let
-								-- IMPLEMENTATION NOTE: 
-								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-								-- however FDR struggles with that form in certain cases. So we use the exception operator
-								-- instead to 'terminate'.
-								
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-								
-							VS_O__(id__,
-									    const_MovementController_lv,
-									    const_MovementController_evadetime,
-									    const_MovementController_stuckperiod,
-									    const_MovementController_stuckdist,
-									    const_MovementController_outperiod) = 
-							dbisim(let
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-							
-							
-							-- Clocks
-							
-							StateClocks(id__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod) = terminate -> SKIP
-							
-							stateClockSync = {||}
-						}
-					
-					endmodule
-					----------------------------------------------------------------------
-					
-					
-					----------------------------------------------------------------------
 					-- State: Final
 					module Final
 					
@@ -3721,6 +3427,98 @@ module GasAnalysisController_System_Module
 								Termination = terminate -> SKIP
 								
 								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: Waiting
+					module Waiting
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__,
+									    const_MovementController_lv,
+									    const_MovementController_evadetime,
+									    const_MovementController_stuckperiod,
+									    const_MovementController_stuckdist,
+									    const_MovementController_outperiod) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(randomWalk.out -> SKIP)) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__,
+									    const_MovementController_lv,
+									    const_MovementController_evadetime,
+									    const_MovementController_stuckperiod,
+									    const_MovementController_stuckdist,
+									    const_MovementController_outperiod) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(randomWalk.out -> SKIP)) ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -3858,8 +3656,8 @@ module GasAnalysisController_System_Module
 					
 					
 					----------------------------------------------------------------------
-					-- State: GettingOut
-					module GettingOut
+					-- State: TryingAgain
+					module TryingAgain
 					
 					enterSS = {}
 					
@@ -3901,7 +3699,16 @@ module GasAnalysisController_System_Module
 								
 								Termination = terminate -> SKIP
 								
-								Active 		= true&(share__choice(shortRandomWalk.out -> SKIP));SHARE_WAIT(const_MovementController_outperiod) ; 
+								Active 		= share__choice(get_a?a -> true&CALL__move(
+											id__,
+										    const_MovementController_lv,
+										    const_MovementController_evadetime,
+										    const_MovementController_stuckperiod,
+										    const_MovementController_stuckdist,
+										    const_MovementController_outperiod,
+											const_MovementController_lv,
+											a
+										)) ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -3922,7 +3729,108 @@ module GasAnalysisController_System_Module
 								
 								Termination = terminate -> SKIP
 								
-								Active 		= true&(share__choice(shortRandomWalk.out -> SKIP));SHARE_WAIT(const_MovementController_outperiod) ; 
+								Active 		= share__choice(get_a?a -> true&CALL__move(
+											id__,
+										    const_MovementController_lv,
+										    const_MovementController_evadetime,
+										    const_MovementController_stuckperiod,
+										    const_MovementController_stuckdist,
+										    const_MovementController_outperiod,
+											const_MovementController_lv,
+											a
+										)) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: AvoidingAgain
+					module AvoidingAgain
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__,
+									    const_MovementController_lv,
+									    const_MovementController_evadetime,
+									    const_MovementController_stuckperiod,
+									    const_MovementController_stuckdist,
+									    const_MovementController_outperiod) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__,
+									    const_MovementController_lv,
+									    const_MovementController_evadetime,
+									    const_MovementController_stuckperiod,
+									    const_MovementController_stuckdist,
+									    const_MovementController_outperiod) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -4015,6 +3923,98 @@ module GasAnalysisController_System_Module
 								Termination = terminate -> SKIP
 								
 								Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SHARE_WAIT(const_MovementController_evadetime) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: GettingOut
+					module GettingOut
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__,
+									    const_MovementController_lv,
+									    const_MovementController_evadetime,
+									    const_MovementController_stuckperiod,
+									    const_MovementController_stuckdist,
+									    const_MovementController_outperiod) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(shortRandomWalk.out -> SKIP));SHARE_WAIT(const_MovementController_outperiod) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__,
+									    const_MovementController_lv,
+									    const_MovementController_evadetime,
+									    const_MovementController_stuckperiod,
+									    const_MovementController_stuckdist,
+									    const_MovementController_outperiod) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(shortRandomWalk.out -> SKIP));SHARE_WAIT(const_MovementController_outperiod) ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -4230,14 +4230,14 @@ module GasAnalysisController_System_Module
 								-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 								-- modules for defining the semantics of each node.
 								enterSS = {|
-								TryingAgain::enter,
-								Waiting::enter,
 								Found::enter,
-								AvoidingAgain::enter,
 								Final::enter,
+								Waiting::enter,
 								Going::enter,
-								GettingOut::enter,
+								TryingAgain::enter,
+								AvoidingAgain::enter,
 								Avoiding::enter,
+								GettingOut::enter,
 								i0::enter
 								|}
 								hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -4250,28 +4250,7 @@ module GasAnalysisController_System_Module
 								within
 									((
 									 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-									   TryingAgain::D__(id__,
-									   		    const_MovementController_lv,
-									   		    const_MovementController_evadetime,
-									   		    const_MovementController_stuckperiod,
-									   		    const_MovementController_stuckdist,
-									   		    const_MovementController_outperiod)
-									   [| { share__, terminate } |] (
-									   Waiting::D__(id__,
-									   		    const_MovementController_lv,
-									   		    const_MovementController_evadetime,
-									   		    const_MovementController_stuckperiod,
-									   		    const_MovementController_stuckdist,
-									   		    const_MovementController_outperiod)
-									   [| { share__, terminate } |] (
 									   Found::D__(id__,
-									   		    const_MovementController_lv,
-									   		    const_MovementController_evadetime,
-									   		    const_MovementController_stuckperiod,
-									   		    const_MovementController_stuckdist,
-									   		    const_MovementController_outperiod)
-									   [| { share__, terminate } |] (
-									   AvoidingAgain::D__(id__,
 									   		    const_MovementController_lv,
 									   		    const_MovementController_evadetime,
 									   		    const_MovementController_stuckperiod,
@@ -4285,6 +4264,13 @@ module GasAnalysisController_System_Module
 									   		    const_MovementController_stuckdist,
 									   		    const_MovementController_outperiod)
 									   [| { share__, terminate } |] (
+									   Waiting::D__(id__,
+									   		    const_MovementController_lv,
+									   		    const_MovementController_evadetime,
+									   		    const_MovementController_stuckperiod,
+									   		    const_MovementController_stuckdist,
+									   		    const_MovementController_outperiod)
+									   [| { share__, terminate } |] (
 									   Going::D__(id__,
 									   		    const_MovementController_lv,
 									   		    const_MovementController_evadetime,
@@ -4292,7 +4278,14 @@ module GasAnalysisController_System_Module
 									   		    const_MovementController_stuckdist,
 									   		    const_MovementController_outperiod)
 									   [| { share__, terminate } |] (
-									   GettingOut::D__(id__,
+									   TryingAgain::D__(id__,
+									   		    const_MovementController_lv,
+									   		    const_MovementController_evadetime,
+									   		    const_MovementController_stuckperiod,
+									   		    const_MovementController_stuckdist,
+									   		    const_MovementController_outperiod)
+									   [| { share__, terminate } |] (
+									   AvoidingAgain::D__(id__,
 									   		    const_MovementController_lv,
 									   		    const_MovementController_evadetime,
 									   		    const_MovementController_stuckperiod,
@@ -4300,6 +4293,13 @@ module GasAnalysisController_System_Module
 									   		    const_MovementController_outperiod)
 									   [| { share__, terminate } |] (
 									   Avoiding::D__(id__,
+									   		    const_MovementController_lv,
+									   		    const_MovementController_evadetime,
+									   		    const_MovementController_stuckperiod,
+									   		    const_MovementController_stuckdist,
+									   		    const_MovementController_outperiod)
+									   [| { share__, terminate } |] (
+									   GettingOut::D__(id__,
 									   		    const_MovementController_lv,
 									   		    const_MovementController_evadetime,
 									   		    const_MovementController_stuckperiod,
@@ -4321,14 +4321,14 @@ module GasAnalysisController_System_Module
 									   )
 									   )
 									 )
-									 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
-									 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
 									 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
-									 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
 									 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+									 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
 									 [[Going::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Going.in,turn__.NID_Going.in,obstacle__.NID_Going.in,resume__.NID_Going.in|}]]
-									 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_GettingOut.in,turn__.NID_GettingOut.in,resume__.NID_GettingOut.in|}]]
+									 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
+									 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
 									 [[Avoiding::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Avoiding.in,turn__.NID_Avoiding.in,resume__.NID_Avoiding.in|}]]
+									 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_GettingOut.in,turn__.NID_GettingOut.in,resume__.NID_GettingOut.in|}]]
 									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 									 )
 									  [[ share__ <- x__ | x__ <- {| share__,setR_a,setR_l |} ]] 
@@ -4389,7 +4389,7 @@ module GasAnalysisController_System_Module
 							    const_MovementController_stuckdist,
 							    const_MovementController_outperiod) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Waiting,Waiting::entered,get_CLID_Final,Final::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Found,Found::entered|}
+							stateClockSync = {|get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered|}
 						 within
 							(MachineBody(id__,
 									    const_MovementController_lv,
@@ -4412,7 +4412,7 @@ module GasAnalysisController_System_Module
 							    const_MovementController_stuckdist,
 							    const_MovementController_outperiod) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Waiting,Waiting::entered,get_CLID_Final,Final::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Found,Found::entered|}
+							stateClockSync = {|get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered|}
 						 within
 							(dbisim(
 								sbisim(
@@ -4436,23 +4436,23 @@ module GasAnalysisController_System_Module
 																									    const_MovementController_stuckperiod,
 																									    const_MovementController_stuckdist,
 																									    const_MovementController_outperiod)
-																							[| {|get_CLID_Found,Found::entered,terminate|} |]
-																							dbisim(Clock_CLID_Found(id__,0,
+																							[| {|get_CLID_Waiting,Waiting::entered,terminate|} |]
+																							dbisim(Clock_CLID_Waiting(id__,0,
 																									          const_MovementController_lv,
 																									          const_MovementController_evadetime,
 																									          const_MovementController_stuckperiod,
 																									          const_MovementController_stuckdist,
 																									          const_MovementController_outperiod))
-																						)\{|get_CLID_Found|}
+																						)\{|get_CLID_Waiting|}
 																					)
-																					[| {|get_CLID_AvoidingAgain,AvoidingAgain::entered,terminate|} |]
-																					dbisim(Clock_CLID_AvoidingAgain(id__,0,
+																					[| {|get_CLID_Going,Going::entered,terminate|} |]
+																					dbisim(Clock_CLID_Going(id__,0,
 																							          const_MovementController_lv,
 																							          const_MovementController_evadetime,
 																							          const_MovementController_stuckperiod,
 																							          const_MovementController_stuckdist,
 																							          const_MovementController_outperiod))
-																				)\{|get_CLID_AvoidingAgain|}
+																				)\{|get_CLID_Going|}
 																			)
 																			[| {|get_CLID_TryingAgain,TryingAgain::entered,terminate|} |]
 																			dbisim(Clock_CLID_TryingAgain(id__,0,
@@ -4463,50 +4463,50 @@ module GasAnalysisController_System_Module
 																					          const_MovementController_outperiod))
 																		)\{|get_CLID_TryingAgain|}
 																	)
-																	[| {|get_CLID_GettingOut,GettingOut::entered,terminate|} |]
-																	dbisim(Clock_CLID_GettingOut(id__,0,
+																	[| {|get_CLID_Found,Found::entered,terminate|} |]
+																	dbisim(Clock_CLID_Found(id__,0,
 																			          const_MovementController_lv,
 																			          const_MovementController_evadetime,
 																			          const_MovementController_stuckperiod,
 																			          const_MovementController_stuckdist,
 																			          const_MovementController_outperiod))
-																)\{|get_CLID_GettingOut|}
+																)\{|get_CLID_Found|}
 															)
-															[| {|get_CLID_Final,Final::entered,terminate|} |]
-															dbisim(Clock_CLID_Final(id__,0,
+															[| {|get_CLID_Avoiding,Avoiding::entered,terminate|} |]
+															dbisim(Clock_CLID_Avoiding(id__,0,
 																	          const_MovementController_lv,
 																	          const_MovementController_evadetime,
 																	          const_MovementController_stuckperiod,
 																	          const_MovementController_stuckdist,
 																	          const_MovementController_outperiod))
-														)\{|get_CLID_Final|}
+														)\{|get_CLID_Avoiding|}
 													)
-													[| {|get_CLID_Waiting,Waiting::entered,terminate|} |]
-													dbisim(Clock_CLID_Waiting(id__,0,
+													[| {|get_CLID_Final,Final::entered,terminate|} |]
+													dbisim(Clock_CLID_Final(id__,0,
 															          const_MovementController_lv,
 															          const_MovementController_evadetime,
 															          const_MovementController_stuckperiod,
 															          const_MovementController_stuckdist,
 															          const_MovementController_outperiod))
-												)\{|get_CLID_Waiting|}
+												)\{|get_CLID_Final|}
 											)
-											[| {|get_CLID_Avoiding,Avoiding::entered,terminate|} |]
-											dbisim(Clock_CLID_Avoiding(id__,0,
+											[| {|get_CLID_GettingOut,GettingOut::entered,terminate|} |]
+											dbisim(Clock_CLID_GettingOut(id__,0,
 													          const_MovementController_lv,
 													          const_MovementController_evadetime,
 													          const_MovementController_stuckperiod,
 													          const_MovementController_stuckdist,
 													          const_MovementController_outperiod))
-										)\{|get_CLID_Avoiding|}
+										)\{|get_CLID_GettingOut|}
 									)
-									[| {|get_CLID_Going,Going::entered,terminate|} |]
-									dbisim(Clock_CLID_Going(id__,0,
+									[| {|get_CLID_AvoidingAgain,AvoidingAgain::entered,terminate|} |]
+									dbisim(Clock_CLID_AvoidingAgain(id__,0,
 											          const_MovementController_lv,
 											          const_MovementController_evadetime,
 											          const_MovementController_stuckperiod,
 											          const_MovementController_stuckdist,
 											          const_MovementController_outperiod))
-								)\{|get_CLID_Going|}
+								)\{|get_CLID_AvoidingAgain|}
 							)
 							) \ union(stateClockSync,enteredSS)
 						)
@@ -4591,14 +4591,14 @@ module GasAnalysisController_System_Module
 								-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 								-- modules for defining the semantics of each node.
 								enterSS = {|
-								TryingAgain::enter,
-								Waiting::enter,
 								Found::enter,
-								AvoidingAgain::enter,
 								Final::enter,
+								Waiting::enter,
 								Going::enter,
-								GettingOut::enter,
+								TryingAgain::enter,
+								AvoidingAgain::enter,
 								Avoiding::enter,
+								GettingOut::enter,
 								i0::enter
 								|}
 								hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -4611,28 +4611,7 @@ module GasAnalysisController_System_Module
 								within
 									((
 									 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-									   TryingAgain::VS_O__(id__,
-									   		    const_MovementController_lv,
-									   		    const_MovementController_evadetime,
-									   		    const_MovementController_stuckperiod,
-									   		    const_MovementController_stuckdist,
-									   		    const_MovementController_outperiod)
-									   [| { share__, terminate } |] (
-									   Waiting::VS_O__(id__,
-									   		    const_MovementController_lv,
-									   		    const_MovementController_evadetime,
-									   		    const_MovementController_stuckperiod,
-									   		    const_MovementController_stuckdist,
-									   		    const_MovementController_outperiod)
-									   [| { share__, terminate } |] (
 									   Found::VS_O__(id__,
-									   		    const_MovementController_lv,
-									   		    const_MovementController_evadetime,
-									   		    const_MovementController_stuckperiod,
-									   		    const_MovementController_stuckdist,
-									   		    const_MovementController_outperiod)
-									   [| { share__, terminate } |] (
-									   AvoidingAgain::VS_O__(id__,
 									   		    const_MovementController_lv,
 									   		    const_MovementController_evadetime,
 									   		    const_MovementController_stuckperiod,
@@ -4646,6 +4625,13 @@ module GasAnalysisController_System_Module
 									   		    const_MovementController_stuckdist,
 									   		    const_MovementController_outperiod)
 									   [| { share__, terminate } |] (
+									   Waiting::VS_O__(id__,
+									   		    const_MovementController_lv,
+									   		    const_MovementController_evadetime,
+									   		    const_MovementController_stuckperiod,
+									   		    const_MovementController_stuckdist,
+									   		    const_MovementController_outperiod)
+									   [| { share__, terminate } |] (
 									   Going::VS_O__(id__,
 									   		    const_MovementController_lv,
 									   		    const_MovementController_evadetime,
@@ -4653,7 +4639,14 @@ module GasAnalysisController_System_Module
 									   		    const_MovementController_stuckdist,
 									   		    const_MovementController_outperiod)
 									   [| { share__, terminate } |] (
-									   GettingOut::VS_O__(id__,
+									   TryingAgain::VS_O__(id__,
+									   		    const_MovementController_lv,
+									   		    const_MovementController_evadetime,
+									   		    const_MovementController_stuckperiod,
+									   		    const_MovementController_stuckdist,
+									   		    const_MovementController_outperiod)
+									   [| { share__, terminate } |] (
+									   AvoidingAgain::VS_O__(id__,
 									   		    const_MovementController_lv,
 									   		    const_MovementController_evadetime,
 									   		    const_MovementController_stuckperiod,
@@ -4661,6 +4654,13 @@ module GasAnalysisController_System_Module
 									   		    const_MovementController_outperiod)
 									   [| { share__, terminate } |] (
 									   Avoiding::VS_O__(id__,
+									   		    const_MovementController_lv,
+									   		    const_MovementController_evadetime,
+									   		    const_MovementController_stuckperiod,
+									   		    const_MovementController_stuckdist,
+									   		    const_MovementController_outperiod)
+									   [| { share__, terminate } |] (
+									   GettingOut::VS_O__(id__,
 									   		    const_MovementController_lv,
 									   		    const_MovementController_evadetime,
 									   		    const_MovementController_stuckperiod,
@@ -4682,14 +4682,14 @@ module GasAnalysisController_System_Module
 									   )
 									   )
 									 )
-									 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
-									 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
 									 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
-									 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
 									 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+									 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
 									 [[Going::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Going.in,turn__.NID_Going.in,obstacle__.NID_Going.in,resume__.NID_Going.in|}]]
-									 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_GettingOut.in,turn__.NID_GettingOut.in,resume__.NID_GettingOut.in|}]]
+									 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
+									 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
 									 [[Avoiding::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Avoiding.in,turn__.NID_Avoiding.in,resume__.NID_Avoiding.in|}]]
+									 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_GettingOut.in,turn__.NID_GettingOut.in,resume__.NID_GettingOut.in|}]]
 									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 									 )
 									  [[ share__ <- x__ | x__ <- {| share__,setR_a,setR_l |} ]] 
@@ -4750,7 +4750,7 @@ module GasAnalysisController_System_Module
 							    const_MovementController_stuckdist,
 							    const_MovementController_outperiod) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Waiting,Waiting::entered,get_CLID_Final,Final::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Found,Found::entered|}
+							stateClockSync = {|get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered|}
 						 within
 							(MachineBody_VS_O(id__,
 									    const_MovementController_lv,
@@ -4773,7 +4773,7 @@ module GasAnalysisController_System_Module
 							    const_MovementController_stuckdist,
 							    const_MovementController_outperiod) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Waiting,Waiting::entered,get_CLID_Final,Final::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Found,Found::entered|}
+							stateClockSync = {|get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered|}
 						 within
 							(dbisim(
 								sbisim(
@@ -4797,23 +4797,23 @@ module GasAnalysisController_System_Module
 																									    const_MovementController_stuckperiod,
 																									    const_MovementController_stuckdist,
 																									    const_MovementController_outperiod)
-																							[| {|get_CLID_Found,Found::entered,terminate|} |]
-																							dbisim(Clock_CLID_Found(id__,0,
+																							[| {|get_CLID_Waiting,Waiting::entered,terminate|} |]
+																							dbisim(Clock_CLID_Waiting(id__,0,
 																									          const_MovementController_lv,
 																									          const_MovementController_evadetime,
 																									          const_MovementController_stuckperiod,
 																									          const_MovementController_stuckdist,
 																									          const_MovementController_outperiod))
-																						)\{|get_CLID_Found|}
+																						)\{|get_CLID_Waiting|}
 																					)
-																					[| {|get_CLID_AvoidingAgain,AvoidingAgain::entered,terminate|} |]
-																					dbisim(Clock_CLID_AvoidingAgain(id__,0,
+																					[| {|get_CLID_Going,Going::entered,terminate|} |]
+																					dbisim(Clock_CLID_Going(id__,0,
 																							          const_MovementController_lv,
 																							          const_MovementController_evadetime,
 																							          const_MovementController_stuckperiod,
 																							          const_MovementController_stuckdist,
 																							          const_MovementController_outperiod))
-																				)\{|get_CLID_AvoidingAgain|}
+																				)\{|get_CLID_Going|}
 																			)
 																			[| {|get_CLID_TryingAgain,TryingAgain::entered,terminate|} |]
 																			dbisim(Clock_CLID_TryingAgain(id__,0,
@@ -4824,50 +4824,50 @@ module GasAnalysisController_System_Module
 																					          const_MovementController_outperiod))
 																		)\{|get_CLID_TryingAgain|}
 																	)
-																	[| {|get_CLID_GettingOut,GettingOut::entered,terminate|} |]
-																	dbisim(Clock_CLID_GettingOut(id__,0,
+																	[| {|get_CLID_Found,Found::entered,terminate|} |]
+																	dbisim(Clock_CLID_Found(id__,0,
 																			          const_MovementController_lv,
 																			          const_MovementController_evadetime,
 																			          const_MovementController_stuckperiod,
 																			          const_MovementController_stuckdist,
 																			          const_MovementController_outperiod))
-																)\{|get_CLID_GettingOut|}
+																)\{|get_CLID_Found|}
 															)
-															[| {|get_CLID_Final,Final::entered,terminate|} |]
-															dbisim(Clock_CLID_Final(id__,0,
+															[| {|get_CLID_Avoiding,Avoiding::entered,terminate|} |]
+															dbisim(Clock_CLID_Avoiding(id__,0,
 																	          const_MovementController_lv,
 																	          const_MovementController_evadetime,
 																	          const_MovementController_stuckperiod,
 																	          const_MovementController_stuckdist,
 																	          const_MovementController_outperiod))
-														)\{|get_CLID_Final|}
+														)\{|get_CLID_Avoiding|}
 													)
-													[| {|get_CLID_Waiting,Waiting::entered,terminate|} |]
-													dbisim(Clock_CLID_Waiting(id__,0,
+													[| {|get_CLID_Final,Final::entered,terminate|} |]
+													dbisim(Clock_CLID_Final(id__,0,
 															          const_MovementController_lv,
 															          const_MovementController_evadetime,
 															          const_MovementController_stuckperiod,
 															          const_MovementController_stuckdist,
 															          const_MovementController_outperiod))
-												)\{|get_CLID_Waiting|}
+												)\{|get_CLID_Final|}
 											)
-											[| {|get_CLID_Avoiding,Avoiding::entered,terminate|} |]
-											dbisim(Clock_CLID_Avoiding(id__,0,
+											[| {|get_CLID_GettingOut,GettingOut::entered,terminate|} |]
+											dbisim(Clock_CLID_GettingOut(id__,0,
 													          const_MovementController_lv,
 													          const_MovementController_evadetime,
 													          const_MovementController_stuckperiod,
 													          const_MovementController_stuckdist,
 													          const_MovementController_outperiod))
-										)\{|get_CLID_Avoiding|}
+										)\{|get_CLID_GettingOut|}
 									)
-									[| {|get_CLID_Going,Going::entered,terminate|} |]
-									dbisim(Clock_CLID_Going(id__,0,
+									[| {|get_CLID_AvoidingAgain,AvoidingAgain::entered,terminate|} |]
+									dbisim(Clock_CLID_AvoidingAgain(id__,0,
 											          const_MovementController_lv,
 											          const_MovementController_evadetime,
 											          const_MovementController_stuckperiod,
 											          const_MovementController_stuckdist,
 											          const_MovementController_outperiod))
-								)\{|get_CLID_Going|}
+								)\{|get_CLID_AvoidingAgain|}
 							)
 							) \ diff(union(stateClockSync,enteredSS),enteredSS)
 						)
@@ -5095,124 +5095,28 @@ module GasAnalysisController_System_Module
 					
 					clockSync = {|get_CLID_clockResetTime,clockReset.CLID_clockResetTime|}
 					
-					Clock_CLID_Going(id__,x__,
+					Clock_CLID_AvoidingAgain(id__,x__,
 							          const_MovementController_lv,
 							          const_MovementController_evadetime,
 							          const_MovementController_stuckperiod,
 							          const_MovementController_stuckdist,
 							          const_MovementController_outperiod) = 
 						TimeOut_1(
-							Going::entered -> Clock_CLID_Going(id__,0,
+							AvoidingAgain::entered -> Clock_CLID_AvoidingAgain(id__,0,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod)
 							[]
-							get_CLID_Going!x__ -> Clock_CLID_Going(id__,x__,
+							get_CLID_AvoidingAgain!x__ -> Clock_CLID_AvoidingAgain(id__,x__,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod)
 							[]
-							terminate -> SKIP,Clock_CLID_Going(id__,clock_type_plus(x__,1,CLID_Going_clock_type(id__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)),
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod))
-					Clock_CLID_Avoiding(id__,x__,
-							          const_MovementController_lv,
-							          const_MovementController_evadetime,
-							          const_MovementController_stuckperiod,
-							          const_MovementController_stuckdist,
-							          const_MovementController_outperiod) = 
-						TimeOut_1(
-							Avoiding::entered -> Clock_CLID_Avoiding(id__,0,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)
-							[]
-							get_CLID_Avoiding!x__ -> Clock_CLID_Avoiding(id__,x__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)
-							[]
-							terminate -> SKIP,Clock_CLID_Avoiding(id__,clock_type_plus(x__,1,CLID_Avoiding_clock_type(id__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)),
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod))
-					Clock_CLID_Waiting(id__,x__,
-							          const_MovementController_lv,
-							          const_MovementController_evadetime,
-							          const_MovementController_stuckperiod,
-							          const_MovementController_stuckdist,
-							          const_MovementController_outperiod) = 
-						TimeOut_1(
-							Waiting::entered -> Clock_CLID_Waiting(id__,0,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)
-							[]
-							get_CLID_Waiting!x__ -> Clock_CLID_Waiting(id__,x__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)
-							[]
-							terminate -> SKIP,Clock_CLID_Waiting(id__,clock_type_plus(x__,1,CLID_Waiting_clock_type(id__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)),
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod))
-					Clock_CLID_Final(id__,x__,
-							          const_MovementController_lv,
-							          const_MovementController_evadetime,
-							          const_MovementController_stuckperiod,
-							          const_MovementController_stuckdist,
-							          const_MovementController_outperiod) = 
-						TimeOut_1(
-							Final::entered -> Clock_CLID_Final(id__,0,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)
-							[]
-							get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
-									          const_MovementController_lv,
-									          const_MovementController_evadetime,
-									          const_MovementController_stuckperiod,
-									          const_MovementController_stuckdist,
-									          const_MovementController_outperiod)
-							[]
-							terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
+							terminate -> SKIP,Clock_CLID_AvoidingAgain(id__,clock_type_plus(x__,1,CLID_AvoidingAgain_clock_type(id__,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
@@ -5255,28 +5159,28 @@ module GasAnalysisController_System_Module
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod))
-					Clock_CLID_TryingAgain(id__,x__,
+					Clock_CLID_Final(id__,x__,
 							          const_MovementController_lv,
 							          const_MovementController_evadetime,
 							          const_MovementController_stuckperiod,
 							          const_MovementController_stuckdist,
 							          const_MovementController_outperiod) = 
 						TimeOut_1(
-							TryingAgain::entered -> Clock_CLID_TryingAgain(id__,0,
+							Final::entered -> Clock_CLID_Final(id__,0,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod)
 							[]
-							get_CLID_TryingAgain!x__ -> Clock_CLID_TryingAgain(id__,x__,
+							get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod)
 							[]
-							terminate -> SKIP,Clock_CLID_TryingAgain(id__,clock_type_plus(x__,1,CLID_TryingAgain_clock_type(id__,
+							terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
@@ -5287,28 +5191,28 @@ module GasAnalysisController_System_Module
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod))
-					Clock_CLID_AvoidingAgain(id__,x__,
+					Clock_CLID_Avoiding(id__,x__,
 							          const_MovementController_lv,
 							          const_MovementController_evadetime,
 							          const_MovementController_stuckperiod,
 							          const_MovementController_stuckdist,
 							          const_MovementController_outperiod) = 
 						TimeOut_1(
-							AvoidingAgain::entered -> Clock_CLID_AvoidingAgain(id__,0,
+							Avoiding::entered -> Clock_CLID_Avoiding(id__,0,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod)
 							[]
-							get_CLID_AvoidingAgain!x__ -> Clock_CLID_AvoidingAgain(id__,x__,
+							get_CLID_Avoiding!x__ -> Clock_CLID_Avoiding(id__,x__,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod)
 							[]
-							terminate -> SKIP,Clock_CLID_AvoidingAgain(id__,clock_type_plus(x__,1,CLID_AvoidingAgain_clock_type(id__,
+							terminate -> SKIP,Clock_CLID_Avoiding(id__,clock_type_plus(x__,1,CLID_Avoiding_clock_type(id__,
 									          const_MovementController_lv,
 									          const_MovementController_evadetime,
 									          const_MovementController_stuckperiod,
@@ -5351,34 +5255,109 @@ module GasAnalysisController_System_Module
 									          const_MovementController_stuckperiod,
 									          const_MovementController_stuckdist,
 									          const_MovementController_outperiod))
+					Clock_CLID_TryingAgain(id__,x__,
+							          const_MovementController_lv,
+							          const_MovementController_evadetime,
+							          const_MovementController_stuckperiod,
+							          const_MovementController_stuckdist,
+							          const_MovementController_outperiod) = 
+						TimeOut_1(
+							TryingAgain::entered -> Clock_CLID_TryingAgain(id__,0,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)
+							[]
+							get_CLID_TryingAgain!x__ -> Clock_CLID_TryingAgain(id__,x__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)
+							[]
+							terminate -> SKIP,Clock_CLID_TryingAgain(id__,clock_type_plus(x__,1,CLID_TryingAgain_clock_type(id__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)),
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod))
+					Clock_CLID_Going(id__,x__,
+							          const_MovementController_lv,
+							          const_MovementController_evadetime,
+							          const_MovementController_stuckperiod,
+							          const_MovementController_stuckdist,
+							          const_MovementController_outperiod) = 
+						TimeOut_1(
+							Going::entered -> Clock_CLID_Going(id__,0,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)
+							[]
+							get_CLID_Going!x__ -> Clock_CLID_Going(id__,x__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)
+							[]
+							terminate -> SKIP,Clock_CLID_Going(id__,clock_type_plus(x__,1,CLID_Going_clock_type(id__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)),
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod))
+					Clock_CLID_Waiting(id__,x__,
+							          const_MovementController_lv,
+							          const_MovementController_evadetime,
+							          const_MovementController_stuckperiod,
+							          const_MovementController_stuckdist,
+							          const_MovementController_outperiod) = 
+						TimeOut_1(
+							Waiting::entered -> Clock_CLID_Waiting(id__,0,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)
+							[]
+							get_CLID_Waiting!x__ -> Clock_CLID_Waiting(id__,x__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)
+							[]
+							terminate -> SKIP,Clock_CLID_Waiting(id__,clock_type_plus(x__,1,CLID_Waiting_clock_type(id__,
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod)),
+									          const_MovementController_lv,
+									          const_MovementController_evadetime,
+									          const_MovementController_stuckperiod,
+									          const_MovementController_stuckdist,
+									          const_MovementController_outperiod))
 					
 					StateClocks(id__,
 							          const_MovementController_lv,
 							          const_MovementController_evadetime,
 							          const_MovementController_stuckperiod,
 							          const_MovementController_stuckdist,
-							          const_MovementController_outperiod) = dbisim(Clock_CLID_Going(id__,0,
-							          const_MovementController_lv,
-							          const_MovementController_evadetime,
-							          const_MovementController_stuckperiod,
-							          const_MovementController_stuckdist,
-							          const_MovementController_outperiod))
-					[| { terminate } |] (
-					dbisim(Clock_CLID_Avoiding(id__,0,
-							          const_MovementController_lv,
-							          const_MovementController_evadetime,
-							          const_MovementController_stuckperiod,
-							          const_MovementController_stuckdist,
-							          const_MovementController_outperiod))
-					[| { terminate } |] (
-					dbisim(Clock_CLID_Waiting(id__,0,
-							          const_MovementController_lv,
-							          const_MovementController_evadetime,
-							          const_MovementController_stuckperiod,
-							          const_MovementController_stuckdist,
-							          const_MovementController_outperiod))
-					[| { terminate } |] (
-					dbisim(Clock_CLID_Final(id__,0,
+							          const_MovementController_outperiod) = dbisim(Clock_CLID_AvoidingAgain(id__,0,
 							          const_MovementController_lv,
 							          const_MovementController_evadetime,
 							          const_MovementController_stuckperiod,
@@ -5392,14 +5371,14 @@ module GasAnalysisController_System_Module
 							          const_MovementController_stuckdist,
 							          const_MovementController_outperiod))
 					[| { terminate } |] (
-					dbisim(Clock_CLID_TryingAgain(id__,0,
+					dbisim(Clock_CLID_Final(id__,0,
 							          const_MovementController_lv,
 							          const_MovementController_evadetime,
 							          const_MovementController_stuckperiod,
 							          const_MovementController_stuckdist,
 							          const_MovementController_outperiod))
 					[| { terminate } |] (
-					dbisim(Clock_CLID_AvoidingAgain(id__,0,
+					dbisim(Clock_CLID_Avoiding(id__,0,
 							          const_MovementController_lv,
 							          const_MovementController_evadetime,
 							          const_MovementController_stuckperiod,
@@ -5407,6 +5386,27 @@ module GasAnalysisController_System_Module
 							          const_MovementController_outperiod))
 					[| { terminate } |] (
 					dbisim(Clock_CLID_Found(id__,0,
+							          const_MovementController_lv,
+							          const_MovementController_evadetime,
+							          const_MovementController_stuckperiod,
+							          const_MovementController_stuckdist,
+							          const_MovementController_outperiod))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_TryingAgain(id__,0,
+							          const_MovementController_lv,
+							          const_MovementController_evadetime,
+							          const_MovementController_stuckperiod,
+							          const_MovementController_stuckdist,
+							          const_MovementController_outperiod))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_Going(id__,0,
+							          const_MovementController_lv,
+							          const_MovementController_evadetime,
+							          const_MovementController_stuckperiod,
+							          const_MovementController_stuckdist,
+							          const_MovementController_outperiod))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_Waiting(id__,0,
 							          const_MovementController_lv,
 							          const_MovementController_evadetime,
 							          const_MovementController_stuckperiod,
@@ -5420,7 +5420,7 @@ module GasAnalysisController_System_Module
 					)
 					)
 					
-					stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Waiting,Waiting::entered,get_CLID_Final,Final::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Found,Found::entered|}
+					stateClockSync = {|get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered|}
 					
 					-- Shared memory
 					-- Shared memory variables

@@ -2,13 +2,14 @@
 
 The 186 mutant sources (`mutants/<id>/java/`, generated deterministically from the three unmutated
 sources `reference-runs/<study>/java` by `mutant_generator.py`, manifest in `mutants_manifest.csv`)
-and the three unmutated sources were run end to end through the extractor at Forge commit `44c1492e` (T2M, M2M, Dafny, RCT, Isabelle, then the RoboChart CSP generator), and every
-generated artefact was checked by its verifier.
+and the three unmutated sources were run end to end through the extractor of this repository's `main` (T2M, M2M, Dafny, RCT, Isabelle, then the RoboChart CSP generator), and every
+generated artefact was checked by its verifier. The results are those of the pipeline version the paper reports; the Java sources and the mutants are unchanged since the first campaign.
 
 ## Files
 
-- `kill_table.csv` — one row per mutant: which artefacts changed, each verifier's outcome, and the
-  disposition (`outside`, `killed`, `rejected`, `survived`). This is Table 10 of the paper.
+- `kill_table.csv` — one row per mutant: which artefacts changed (`dafny_changed`, `rct_changed`, `csp_changed`, `theory_changed`), each verifier's outcome, and the
+  disposition (`outside`, `killed`, `rejected`, `survived`). Table 9 of the paper is built from it, including its Changed columns.
+- `traceability/` — every changed line of every artefact of the 152 inside-boundary mutants linked back to the injection site through the pipeline's trace records (`changed_lines_trace.csv`, produced by `trace_changed_lines.py`; its README gives the footprint rules and the two trace-record imprecisions found). Section 4.8 reports its totals.
 - `mutants/<id>/java/`, `mutants_manifest.csv` — the 186 mutant sources and, per mutant, the file,
   line, original and mutated text; `scripts/mutant_generator.py` produces them from the unmutated
   sources with seed 20260815.

@@ -28,11 +28,18 @@ class LreController {
     var momReturn: bool
 
     // Abstracted functions (from dependency objects -- uninterpreted)
+    function vdist(p0: int): real
+        reads this
+    function hdist(p0: int): real
+        reads this
     function odist(p0: int): real
         reads this
 
-    // Guard predicates (inlined from Java local variables in step())
+    // Guard predicates (inlined from Java local variables and field assignments in step())
     //   cdaAboveOrAtMinSafe := cda >= 1.0
+    //   camActive := cda < 1.0 && tcpa >= 0.0
+    //   hcmActive := (hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0)
+    //   momReturn := hdist(cstc) > 1.0 && vdist(cstc) > 1.0
     //   odistCstcAboveOne := odist(cstc) > 1.0
     //   odistCdynAboveOne := odist(cdyn) > 1.0
     //   velBelowOrAtOne := vel <= 1.0
@@ -68,6 +75,9 @@ class LreController {
         ensures old(!(event == ReqHdng) && !(event == EndTask) && event == ReqMOM && vel <= 1.0 && !(inOpez) && odist(cdyn) > 1.0 && odist(cstc) > 1.0) ==> mode == MOM
         ensures Valid()
     {
+        var camActive_pre := cda < 1.0 && tcpa >= 0.0;
+        var hcmActive_pre := (hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0);
+        var momReturn_pre := hdist(cstc) > 1.0 && vdist(cstc) > 1.0;
         if (event == EndTask) {
             mode := OCM;
             // action: AdvVel(rv.value())
@@ -80,25 +90,31 @@ class LreController {
             mode := MOM;
             // action: AdvVel(1.0)
         }
+        camActive := camActive_pre;
+        hcmActive := hcmActive_pre;
+        momReturn := momReturn_pre;
     }
 
     method transitionFromMOM(event: InputEvent)
         requires mode == MOM
         requires Valid()
         modifies this
-        ensures old(camActive) ==> mode == CAM
-        ensures old(!(camActive) && hcmActive && !(camActive)) ==> mode == HCM
-        ensures old(!(hcmActive && !(camActive)) && !(camActive) && inOpez && !(camActive) && !(hcmActive)) ==> mode == OCM
+        ensures old((cda < 1.0 && tcpa >= 0.0)) ==> mode == CAM
+        ensures old(!((cda < 1.0 && tcpa >= 0.0)) && ((hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0)) && !((cda < 1.0 && tcpa >= 0.0))) ==> mode == HCM
+        ensures old(!(((hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0)) && !((cda < 1.0 && tcpa >= 0.0))) && !((cda < 1.0 && tcpa >= 0.0)) && inOpez && !((cda < 1.0 && tcpa >= 0.0)) && !(((hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0)))) ==> mode == OCM
         ensures Valid()
     {
-        if (camActive) {
+        var camActive_pre := cda < 1.0 && tcpa >= 0.0;
+        var hcmActive_pre := (hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0);
+        var momReturn_pre := hdist(cstc) > 1.0 && vdist(cstc) > 1.0;
+        if ((cda < 1.0 && tcpa >= 0.0)) {
             mode := CAM;
         }
-        else if (hcmActive && !(camActive)) {
+        else if (((hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0)) && !((cda < 1.0 && tcpa >= 0.0))) {
             mode := HCM;
             // action: AdvVel(0.0)
         }
-        else if (inOpez && !(camActive) && !(hcmActive)) {
+        else if (inOpez && !((cda < 1.0 && tcpa >= 0.0)) && !(((hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0)))) {
             mode := OCM;
         }
         else if (event == ReqOCM) {
@@ -112,30 +128,39 @@ class LreController {
             mode := HCM;
             // action: AdvVel(0.0)
         }
+        camActive := camActive_pre;
+        hcmActive := hcmActive_pre;
+        momReturn := momReturn_pre;
     }
 
     method transitionFromHCM(event: InputEvent)
         requires mode == HCM
         requires Valid()
         modifies this
-        ensures old(camActive) ==> mode == CAM
-        ensures old(!(camActive) && inOpez && !(camActive)) ==> mode == OCM
-        ensures old(!(inOpez && !(camActive)) && !(camActive) && momReturn && !(camActive) && !(inOpez)) ==> mode == MOM
+        ensures old((cda < 1.0 && tcpa >= 0.0)) ==> mode == CAM
+        ensures old(!((cda < 1.0 && tcpa >= 0.0)) && inOpez && !((cda < 1.0 && tcpa >= 0.0))) ==> mode == OCM
+        ensures old(!(inOpez && !((cda < 1.0 && tcpa >= 0.0))) && !((cda < 1.0 && tcpa >= 0.0)) && (hdist(cstc) > 1.0 && vdist(cstc) > 1.0) && !((cda < 1.0 && tcpa >= 0.0)) && !(inOpez)) ==> mode == MOM
         ensures Valid()
     {
-        if (camActive) {
+        var camActive_pre := cda < 1.0 && tcpa >= 0.0;
+        var hcmActive_pre := (hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0);
+        var momReturn_pre := hdist(cstc) > 1.0 && vdist(cstc) > 1.0;
+        if ((cda < 1.0 && tcpa >= 0.0)) {
             mode := CAM;
         }
-        else if (inOpez && !(camActive)) {
+        else if (inOpez && !((cda < 1.0 && tcpa >= 0.0))) {
             mode := OCM;
         }
-        else if (momReturn && !(camActive) && !(inOpez)) {
+        else if ((hdist(cstc) > 1.0 && vdist(cstc) > 1.0) && !((cda < 1.0 && tcpa >= 0.0)) && !(inOpez)) {
             mode := MOM;
             // action: AdvVel(1.0)
         }
         else if (event == ReqOCM) {
             mode := OCM;
         }
+        camActive := camActive_pre;
+        hcmActive := hcmActive_pre;
+        momReturn := momReturn_pre;
     }
 
     method transitionFromCAM(event: InputEvent)
@@ -145,6 +170,9 @@ class LreController {
         ensures old(!(event == ReqOCM) && cda >= 1.0) ==> mode == OCM
         ensures Valid()
     {
+        var camActive_pre := cda < 1.0 && tcpa >= 0.0;
+        var hcmActive_pre := (hvel >= 1.0 && hdist(cstc) <= 1.0) || vdist(cstc) <= 1.0 || (vvel >= 1.0 && vdist(cstc) <= 1.0);
+        var momReturn_pre := hdist(cstc) > 1.0 && vdist(cstc) > 1.0;
         if (event == ReqOCM) {
             mode := OCM;
         }
@@ -152,6 +180,9 @@ class LreController {
             mode := OCM;
             // action: AdvVel(0.0)
         }
+        camActive := camActive_pre;
+        hcmActive := hcmActive_pre;
+        momReturn := momReturn_pre;
     }
 
     method step(event: InputEvent)

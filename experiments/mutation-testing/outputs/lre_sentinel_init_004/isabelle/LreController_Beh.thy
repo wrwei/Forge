@@ -49,24 +49,24 @@ show_record Obstacle
 
 text \<open> function definition \<close>
 
+consts vdist :: " int \<Rightarrow> real"
 consts ewRelDist :: " int \<Rightarrow> real"
 consts obsEwVel :: " int \<Rightarrow> real"
 consts sqrt :: " real \<Rightarrow> real"
+consts odist :: " int \<Rightarrow> real"
+consts obsNsVel :: " int \<Rightarrow> real"
 consts hdist :: " int \<Rightarrow> real"
 consts nsRelDist :: " int \<Rightarrow> real"
-consts vdist :: " int \<Rightarrow> real"
-consts obsNsVel :: " int \<Rightarrow> real"
-consts odist :: " int \<Rightarrow> real"
-consts minsafedist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition minsafedist :: "unit \<Rightarrow> real" where "minsafedist u = 1"  (* named constant; value from the model *)
 consts closestDynamicIndex :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts ns_vel :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts ew_vel :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts closestStaticIndex :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts rate_of_climb :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts depth_fn :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobshorizdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobsdfltvertdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobsvertdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition staticobshorizdist :: "unit \<Rightarrow> real" where "staticobshorizdist u = 1"  (* named constant; value from the model *)
+definition staticobsdfltvertdist :: "unit \<Rightarrow> real" where "staticobsdfltvertdist u = 1"  (* named constant; value from the model *)
+definition staticobsvertdist :: "unit \<Rightarrow> real" where "staticobsvertdist u = 1"  (* named constant; value from the model *)
 
 subsection \<open> State Space \<close>
 
@@ -99,11 +99,11 @@ zstore LreController =
   where inv:
     "tr \<noteq> []
                       \<and> (st = OCM \<longrightarrow> listens = {reqHdng, reqMOM, reqVel})
-                      \<and> (st = MOM \<longrightarrow> listens = {reqOCM, endTask, reqHCM})
+                      \<and> (st = MOM \<longrightarrow> listens = {endTask, reqHCM, reqOCM})
                       \<and> (st = HCM \<longrightarrow> listens = {reqOCM})
                       \<and> (st = CAM \<longrightarrow> listens = {reqOCM})
                                                                                \<and> (st = OCM \<longrightarrow> (offered = {} \<or> offered = {reqHdng} \<or> offered = {reqMOM} \<or> offered = {reqVel}))
-                                                                               \<and> (st = MOM \<longrightarrow> (offered = {} \<or> offered = {reqOCM} \<or> offered = {endTask} \<or> offered = {reqHCM}))
+                                                                               \<and> (st = MOM \<longrightarrow> (offered = {} \<or> offered = {endTask} \<or> offered = {reqHCM} \<or> offered = {reqOCM}))
                                                                                \<and> (st = HCM \<longrightarrow> (offered = {} \<or> offered = {reqOCM}))
                                                                                \<and> (st = CAM \<longrightarrow> (offered = {} \<or> offered = {reqOCM}))
                                                                                \<and> (st = initial \<longrightarrow> (offered = {}))"
@@ -175,7 +175,7 @@ zoperation OCMToOCM_1 =
         
 zoperation OCMToMOM =
   over LreController
-  params nxt \<in> "{{}, {reqOCM}, {endTask}, {reqHCM}}" 
+  params nxt \<in> "{{}, {endTask}, {reqHCM}, {reqOCM}}" 
   pre "st= OCM \<and> vel\<le>1.0 \<and> \<not>inOpez \<and> odist(cdyn)>1.0 \<and> odist(cstc)>1.0 \<and> reqMOM \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= MOM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -190,7 +190,7 @@ zoperation OCMToMOM =
          ,hcmActive\<Zprime> = (((sqrt(((ns_vel() * ns_vel()) + (ew_vel() * ew_vel()))))\<ge>1.0 \<and> hdist((closestStaticIndex()))\<le>staticobshorizdist() \<or> vdist((closestStaticIndex()))\<le>staticobsdfltvertdist()) \<or> (rate_of_climb())\<ge>1.0 \<and> vdist((closestStaticIndex()))\<le>staticobsvertdist())
          ,momReturn\<Zprime> = hdist((closestStaticIndex()))>staticobshorizdist() \<and> vdist((closestStaticIndex()))>staticobsvertdist()
          ,tr\<Zprime> =tr @ [Event reqMOM]@ [Event advVel] @ [State MOM]
-         ,listens\<Zprime> = {reqOCM, endTask, reqHCM}
+         ,listens\<Zprime> = {endTask, reqHCM, reqOCM}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -364,7 +364,7 @@ zoperation HCMToOCM =
         
 zoperation HCMToMOM =
   over LreController
-  params nxt \<in> "{{}, {reqOCM}, {endTask}, {reqHCM}}" 
+  params nxt \<in> "{{}, {endTask}, {reqHCM}, {reqOCM}}" 
   pre "st= HCM \<and> momReturn \<and> \<not>camActive \<and> \<not>inOpez"
   update "[st\<Zprime>= MOM
          ,cdyn\<Zprime> = closestDynamicIndex()
@@ -379,7 +379,7 @@ zoperation HCMToMOM =
          ,hcmActive\<Zprime> = (((sqrt(((ns_vel() * ns_vel()) + (ew_vel() * ew_vel()))))\<ge>1.0 \<and> hdist((closestStaticIndex()))\<le>staticobshorizdist() \<or> vdist((closestStaticIndex()))\<le>staticobsdfltvertdist()) \<or> (rate_of_climb())\<ge>1.0 \<and> vdist((closestStaticIndex()))\<le>staticobsvertdist())
          ,momReturn\<Zprime> = hdist((closestStaticIndex()))>staticobshorizdist() \<and> vdist((closestStaticIndex()))>staticobsvertdist()
          ,tr\<Zprime> =tr @ [Event advVel] @ [State MOM]
-         ,listens\<Zprime> = {reqOCM, endTask, reqHCM}
+         ,listens\<Zprime> = {endTask, reqHCM, reqOCM}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -459,7 +459,7 @@ zoperation Idle_OCM =
 
 zoperation Idle_MOM =
   over LreController
-  params nxt \<in> "{{}, {reqOCM}, {endTask}, {reqHCM}}"
+  params nxt \<in> "{{}, {endTask}, {reqHCM}, {reqOCM}}"
   pre "st= MOM \<and> \<not>(camActive) \<and> \<not>(hcmActive) \<and> \<not>(inOpez) \<and> \<not>(reqOCM \<in> offered) \<and> \<not>(endTask \<in> offered) \<and> \<not>(reqHCM \<in> offered)"
   update "[st\<Zprime>= MOM
          ,tr\<Zprime> = tr

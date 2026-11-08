@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:31:40
+-- Automatically generated on 07-11-2026 11:31:52
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -490,9 +490,9 @@ module SRangerController_Module
 				-- Transition identifiers
 				-- declaring identifiers of transitions
 				datatype NIDS = 
-				              NID_Turning|
-				              NID_Final|
 				              NID_Moving|
+				              NID_Final|
+				              NID_Turning|
 				              NID_i0
 				
 				channel internal__ : NIDS
@@ -536,16 +536,16 @@ module SRangerController_Module
 				-- Declaring call and ret events for undefined operations
 				
 				enterSS = {|
-				Turning::enter,
-				Final::enter,
 				Moving::enter,
+				Final::enter,
+				Turning::enter,
 				i0::enter
 				|}
 				
 				enteredSS = 	{|
-				Turning::entered,
+				Moving::entered,
 				Final::entered,
-				Moving::entered
+				Turning::entered
 				|}
 				
 				internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -580,12 +580,12 @@ module SRangerController_Module
 				localClockResets = {||}
 				
 				
-				channel get_CLID_Final : core_clock_type 
 				channel get_CLID_Turning : core_clock_type 
+				channel get_CLID_Final : core_clock_type 
 				channel get_CLID_Moving : core_clock_type 
 				--channel increment__
 				
-				CLID_Final_clock_type(id__,
+				CLID_Turning_clock_type(id__,
 						          const_SRangerController_obstaclethreshold) = 
 					let
 						max = (clock_type_max(Union({
@@ -595,7 +595,7 @@ module SRangerController_Module
 				within
 					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
-				CLID_Turning_clock_type(id__,
+				CLID_Final_clock_type(id__,
 						          const_SRangerController_obstaclethreshold) = 
 					let
 						max = (clock_type_max(Union({
@@ -621,8 +621,8 @@ module SRangerController_Module
 					-- declaring all nodes
 					
 					----------------------------------------------------------------------
-					-- State: Turning
-					module Turning
+					-- State: Moving
+					module Moving
 					
 					enterSS = {}
 					
@@ -660,7 +660,7 @@ module SRangerController_Module
 								
 								Termination = terminate -> SKIP
 								
-								Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
+								Active 		= SKIP ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -677,7 +677,7 @@ module SRangerController_Module
 								
 								Termination = terminate -> SKIP
 								
-								Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
+								Active 		= SKIP ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -781,8 +781,8 @@ module SRangerController_Module
 					
 					
 					----------------------------------------------------------------------
-					-- State: Moving
-					module Moving
+					-- State: Turning
+					module Turning
 					
 					enterSS = {}
 					
@@ -820,7 +820,7 @@ module SRangerController_Module
 								
 								Termination = terminate -> SKIP
 								
-								Active 		= SKIP ; 
+								Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -837,7 +837,7 @@ module SRangerController_Module
 								
 								Termination = terminate -> SKIP
 								
-								Active 		= SKIP ; 
+								Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -971,9 +971,9 @@ module SRangerController_Module
 								-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 								-- modules for defining the semantics of each node.
 								enterSS = {|
-								Turning::enter,
-								Final::enter,
 								Moving::enter,
+								Final::enter,
+								Turning::enter,
 								i0::enter
 								|}
 								hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -986,13 +986,13 @@ module SRangerController_Module
 								within
 									((
 									 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-									   Turning::D__(id__,
+									   Moving::D__(id__,
 									   		    const_SRangerController_obstaclethreshold)
 									   [| { share__, terminate } |] (
 									   Final::D__(id__,
 									   		    const_SRangerController_obstaclethreshold)
 									   [| { share__, terminate } |] (
-									   Moving::D__(id__,
+									   Turning::D__(id__,
 									   		    const_SRangerController_obstaclethreshold)
 									   [| { share__, terminate } |] (
 									   i0::D__(id__,
@@ -1001,9 +1001,9 @@ module SRangerController_Module
 									   )
 									   )
 									 )
-									 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
-									 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 									 [[Moving::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_Moving.in,obstacle__.NID_Moving.in,tick__.NID_Moving.in|}]]
+									 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+									 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
 									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 									 )
 									  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -1041,7 +1041,7 @@ module SRangerController_Module
 					Behaviour(id__,
 							    const_SRangerController_obstaclethreshold) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+							stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 						 within
 							(MachineBody(id__,
 									    const_SRangerController_obstaclethreshold) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
@@ -1052,7 +1052,7 @@ module SRangerController_Module
 					IteratedBehaviour(id__,
 							    const_SRangerController_obstaclethreshold) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+							stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 						 within
 							(dbisim(
 								sbisim(
@@ -1067,15 +1067,15 @@ module SRangerController_Module
 															          const_SRangerController_obstaclethreshold))
 												)\{|get_CLID_Moving|}
 											)
-											[| {|get_CLID_Turning,Turning::entered,terminate|} |]
-											dbisim(Clock_CLID_Turning(id__,0,
+											[| {|get_CLID_Final,Final::entered,terminate|} |]
+											dbisim(Clock_CLID_Final(id__,0,
 													          const_SRangerController_obstaclethreshold))
-										)\{|get_CLID_Turning|}
+										)\{|get_CLID_Final|}
 									)
-									[| {|get_CLID_Final,Final::entered,terminate|} |]
-									dbisim(Clock_CLID_Final(id__,0,
+									[| {|get_CLID_Turning,Turning::entered,terminate|} |]
+									dbisim(Clock_CLID_Turning(id__,0,
 											          const_SRangerController_obstaclethreshold))
-								)\{|get_CLID_Final|}
+								)\{|get_CLID_Turning|}
 							)
 							) \ union(stateClockSync,enteredSS)
 						)
@@ -1114,9 +1114,9 @@ module SRangerController_Module
 								-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 								-- modules for defining the semantics of each node.
 								enterSS = {|
-								Turning::enter,
-								Final::enter,
 								Moving::enter,
+								Final::enter,
+								Turning::enter,
 								i0::enter
 								|}
 								hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -1129,13 +1129,13 @@ module SRangerController_Module
 								within
 									((
 									 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-									   Turning::VS_O__(id__,
+									   Moving::VS_O__(id__,
 									   		    const_SRangerController_obstaclethreshold)
 									   [| { share__, terminate } |] (
 									   Final::VS_O__(id__,
 									   		    const_SRangerController_obstaclethreshold)
 									   [| { share__, terminate } |] (
-									   Moving::VS_O__(id__,
+									   Turning::VS_O__(id__,
 									   		    const_SRangerController_obstaclethreshold)
 									   [| { share__, terminate } |] (
 									   i0::VS_O__(id__,
@@ -1144,9 +1144,9 @@ module SRangerController_Module
 									   )
 									   )
 									 )
-									 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
-									 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 									 [[Moving::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_Moving.in,obstacle__.NID_Moving.in,tick__.NID_Moving.in|}]]
+									 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+									 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
 									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 									 )
 									  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -1184,7 +1184,7 @@ module SRangerController_Module
 					Behaviour_VS_O(id__,
 							    const_SRangerController_obstaclethreshold) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+							stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 						 within
 							(MachineBody_VS_O(id__,
 									    const_SRangerController_obstaclethreshold) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
@@ -1195,7 +1195,7 @@ module SRangerController_Module
 					IteratedBehaviour_VS_O(id__,
 							    const_SRangerController_obstaclethreshold) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+							stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 						 within
 							(dbisim(
 								sbisim(
@@ -1210,15 +1210,15 @@ module SRangerController_Module
 															          const_SRangerController_obstaclethreshold))
 												)\{|get_CLID_Moving|}
 											)
-											[| {|get_CLID_Turning,Turning::entered,terminate|} |]
-											dbisim(Clock_CLID_Turning(id__,0,
+											[| {|get_CLID_Final,Final::entered,terminate|} |]
+											dbisim(Clock_CLID_Final(id__,0,
 													          const_SRangerController_obstaclethreshold))
-										)\{|get_CLID_Turning|}
+										)\{|get_CLID_Final|}
 									)
-									[| {|get_CLID_Final,Final::entered,terminate|} |]
-									dbisim(Clock_CLID_Final(id__,0,
+									[| {|get_CLID_Turning,Turning::entered,terminate|} |]
+									dbisim(Clock_CLID_Turning(id__,0,
 											          const_SRangerController_obstaclethreshold))
-								)\{|get_CLID_Final|}
+								)\{|get_CLID_Turning|}
 							)
 							) \ diff(union(stateClockSync,enteredSS),enteredSS)
 						)
@@ -1289,18 +1289,6 @@ module SRangerController_Module
 					
 					clockSync = {||}
 					
-					Clock_CLID_Final(id__,x__,
-							          const_SRangerController_obstaclethreshold) = 
-						TimeOut_1(
-							Final::entered -> Clock_CLID_Final(id__,0,
-									          const_SRangerController_obstaclethreshold)
-							[]
-							get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
-									          const_SRangerController_obstaclethreshold)
-							[]
-							terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
-									          const_SRangerController_obstaclethreshold)),
-									          const_SRangerController_obstaclethreshold))
 					Clock_CLID_Turning(id__,x__,
 							          const_SRangerController_obstaclethreshold) = 
 						TimeOut_1(
@@ -1311,6 +1299,18 @@ module SRangerController_Module
 									          const_SRangerController_obstaclethreshold)
 							[]
 							terminate -> SKIP,Clock_CLID_Turning(id__,clock_type_plus(x__,1,CLID_Turning_clock_type(id__,
+									          const_SRangerController_obstaclethreshold)),
+									          const_SRangerController_obstaclethreshold))
+					Clock_CLID_Final(id__,x__,
+							          const_SRangerController_obstaclethreshold) = 
+						TimeOut_1(
+							Final::entered -> Clock_CLID_Final(id__,0,
+									          const_SRangerController_obstaclethreshold)
+							[]
+							get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
+									          const_SRangerController_obstaclethreshold)
+							[]
+							terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
 									          const_SRangerController_obstaclethreshold)),
 									          const_SRangerController_obstaclethreshold))
 					Clock_CLID_Moving(id__,x__,
@@ -1327,10 +1327,10 @@ module SRangerController_Module
 									          const_SRangerController_obstaclethreshold))
 					
 					StateClocks(id__,
-							          const_SRangerController_obstaclethreshold) = dbisim(Clock_CLID_Final(id__,0,
+							          const_SRangerController_obstaclethreshold) = dbisim(Clock_CLID_Turning(id__,0,
 							          const_SRangerController_obstaclethreshold))
 					[| { terminate } |] (
-					dbisim(Clock_CLID_Turning(id__,0,
+					dbisim(Clock_CLID_Final(id__,0,
 							          const_SRangerController_obstaclethreshold))
 					[| { terminate } |] (
 					dbisim(Clock_CLID_Moving(id__,0,
@@ -1338,7 +1338,7 @@ module SRangerController_Module
 					)
 					)
 					
-					stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+					stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 					
 					-- Shared memory
 					-- Shared memory variables
@@ -2393,9 +2393,9 @@ endmodule
 			-- Transition identifiers
 			-- declaring identifiers of transitions
 			datatype NIDS = 
-			              NID_Turning|
-			              NID_Final|
 			              NID_Moving|
+			              NID_Final|
+			              NID_Turning|
 			              NID_i0
 			
 			channel internal__ : NIDS
@@ -2439,16 +2439,16 @@ endmodule
 			-- Declaring call and ret events for undefined operations
 			
 			enterSS = {|
-			Turning::enter,
-			Final::enter,
 			Moving::enter,
+			Final::enter,
+			Turning::enter,
 			i0::enter
 			|}
 			
 			enteredSS = 	{|
-			Turning::entered,
+			Moving::entered,
 			Final::entered,
-			Moving::entered
+			Turning::entered
 			|}
 			
 			internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -2483,12 +2483,12 @@ endmodule
 			localClockResets = {||}
 			
 			
-			channel get_CLID_Final : core_clock_type 
 			channel get_CLID_Turning : core_clock_type 
+			channel get_CLID_Final : core_clock_type 
 			channel get_CLID_Moving : core_clock_type 
 			--channel increment__
 			
-			CLID_Final_clock_type(id__,
+			CLID_Turning_clock_type(id__,
 					          const_SRangerController_obstaclethreshold) = 
 				let
 					max = (clock_type_max(Union({
@@ -2498,7 +2498,7 @@ endmodule
 			within
 				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 			
-			CLID_Turning_clock_type(id__,
+			CLID_Final_clock_type(id__,
 					          const_SRangerController_obstaclethreshold) = 
 				let
 					max = (clock_type_max(Union({
@@ -2524,8 +2524,8 @@ endmodule
 				-- declaring all nodes
 				
 				----------------------------------------------------------------------
-				-- State: Turning
-				module Turning
+				-- State: Moving
+				module Moving
 				
 				enterSS = {}
 				
@@ -2563,7 +2563,7 @@ endmodule
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
+							Active 		= SKIP ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -2580,7 +2580,7 @@ endmodule
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
+							Active 		= SKIP ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -2684,8 +2684,8 @@ endmodule
 				
 				
 				----------------------------------------------------------------------
-				-- State: Moving
-				module Moving
+				-- State: Turning
+				module Turning
 				
 				enterSS = {}
 				
@@ -2723,7 +2723,7 @@ endmodule
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= SKIP ; 
+							Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -2740,7 +2740,7 @@ endmodule
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= SKIP ; 
+							Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -2874,9 +2874,9 @@ endmodule
 							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 							-- modules for defining the semantics of each node.
 							enterSS = {|
-							Turning::enter,
-							Final::enter,
 							Moving::enter,
+							Final::enter,
+							Turning::enter,
 							i0::enter
 							|}
 							hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -2889,13 +2889,13 @@ endmodule
 							within
 								((
 								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-								   Turning::D__(id__,
+								   Moving::D__(id__,
 								   		    const_SRangerController_obstaclethreshold)
 								   [| { share__, terminate } |] (
 								   Final::D__(id__,
 								   		    const_SRangerController_obstaclethreshold)
 								   [| { share__, terminate } |] (
-								   Moving::D__(id__,
+								   Turning::D__(id__,
 								   		    const_SRangerController_obstaclethreshold)
 								   [| { share__, terminate } |] (
 								   i0::D__(id__,
@@ -2904,9 +2904,9 @@ endmodule
 								   )
 								   )
 								 )
-								 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
-								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 								 [[Moving::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_Moving.in,obstacle__.NID_Moving.in,tick__.NID_Moving.in|}]]
+								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+								 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
 								  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -2944,7 +2944,7 @@ endmodule
 				Behaviour(id__,
 						    const_SRangerController_obstaclethreshold) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+						stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 					 within
 						(MachineBody(id__,
 								    const_SRangerController_obstaclethreshold) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
@@ -2955,7 +2955,7 @@ endmodule
 				IteratedBehaviour(id__,
 						    const_SRangerController_obstaclethreshold) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+						stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 					 within
 						(dbisim(
 							sbisim(
@@ -2970,15 +2970,15 @@ endmodule
 														          const_SRangerController_obstaclethreshold))
 											)\{|get_CLID_Moving|}
 										)
-										[| {|get_CLID_Turning,Turning::entered,terminate|} |]
-										dbisim(Clock_CLID_Turning(id__,0,
+										[| {|get_CLID_Final,Final::entered,terminate|} |]
+										dbisim(Clock_CLID_Final(id__,0,
 												          const_SRangerController_obstaclethreshold))
-									)\{|get_CLID_Turning|}
+									)\{|get_CLID_Final|}
 								)
-								[| {|get_CLID_Final,Final::entered,terminate|} |]
-								dbisim(Clock_CLID_Final(id__,0,
+								[| {|get_CLID_Turning,Turning::entered,terminate|} |]
+								dbisim(Clock_CLID_Turning(id__,0,
 										          const_SRangerController_obstaclethreshold))
-							)\{|get_CLID_Final|}
+							)\{|get_CLID_Turning|}
 						)
 						) \ union(stateClockSync,enteredSS)
 					)
@@ -3017,9 +3017,9 @@ endmodule
 							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 							-- modules for defining the semantics of each node.
 							enterSS = {|
-							Turning::enter,
-							Final::enter,
 							Moving::enter,
+							Final::enter,
+							Turning::enter,
 							i0::enter
 							|}
 							hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -3032,13 +3032,13 @@ endmodule
 							within
 								((
 								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-								   Turning::VS_O__(id__,
+								   Moving::VS_O__(id__,
 								   		    const_SRangerController_obstaclethreshold)
 								   [| { share__, terminate } |] (
 								   Final::VS_O__(id__,
 								   		    const_SRangerController_obstaclethreshold)
 								   [| { share__, terminate } |] (
-								   Moving::VS_O__(id__,
+								   Turning::VS_O__(id__,
 								   		    const_SRangerController_obstaclethreshold)
 								   [| { share__, terminate } |] (
 								   i0::VS_O__(id__,
@@ -3047,9 +3047,9 @@ endmodule
 								   )
 								   )
 								 )
-								 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
-								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 								 [[Moving::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_Moving.in,obstacle__.NID_Moving.in,tick__.NID_Moving.in|}]]
+								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+								 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
 								  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -3087,7 +3087,7 @@ endmodule
 				Behaviour_VS_O(id__,
 						    const_SRangerController_obstaclethreshold) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+						stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 					 within
 						(MachineBody_VS_O(id__,
 								    const_SRangerController_obstaclethreshold) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
@@ -3098,7 +3098,7 @@ endmodule
 				IteratedBehaviour_VS_O(id__,
 						    const_SRangerController_obstaclethreshold) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+						stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 					 within
 						(dbisim(
 							sbisim(
@@ -3113,15 +3113,15 @@ endmodule
 														          const_SRangerController_obstaclethreshold))
 											)\{|get_CLID_Moving|}
 										)
-										[| {|get_CLID_Turning,Turning::entered,terminate|} |]
-										dbisim(Clock_CLID_Turning(id__,0,
+										[| {|get_CLID_Final,Final::entered,terminate|} |]
+										dbisim(Clock_CLID_Final(id__,0,
 												          const_SRangerController_obstaclethreshold))
-									)\{|get_CLID_Turning|}
+									)\{|get_CLID_Final|}
 								)
-								[| {|get_CLID_Final,Final::entered,terminate|} |]
-								dbisim(Clock_CLID_Final(id__,0,
+								[| {|get_CLID_Turning,Turning::entered,terminate|} |]
+								dbisim(Clock_CLID_Turning(id__,0,
 										          const_SRangerController_obstaclethreshold))
-							)\{|get_CLID_Final|}
+							)\{|get_CLID_Turning|}
 						)
 						) \ diff(union(stateClockSync,enteredSS),enteredSS)
 					)
@@ -3192,18 +3192,6 @@ endmodule
 				
 				clockSync = {||}
 				
-				Clock_CLID_Final(id__,x__,
-						          const_SRangerController_obstaclethreshold) = 
-					TimeOut_1(
-						Final::entered -> Clock_CLID_Final(id__,0,
-								          const_SRangerController_obstaclethreshold)
-						[]
-						get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
-								          const_SRangerController_obstaclethreshold)
-						[]
-						terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
-								          const_SRangerController_obstaclethreshold)),
-								          const_SRangerController_obstaclethreshold))
 				Clock_CLID_Turning(id__,x__,
 						          const_SRangerController_obstaclethreshold) = 
 					TimeOut_1(
@@ -3214,6 +3202,18 @@ endmodule
 								          const_SRangerController_obstaclethreshold)
 						[]
 						terminate -> SKIP,Clock_CLID_Turning(id__,clock_type_plus(x__,1,CLID_Turning_clock_type(id__,
+								          const_SRangerController_obstaclethreshold)),
+								          const_SRangerController_obstaclethreshold))
+				Clock_CLID_Final(id__,x__,
+						          const_SRangerController_obstaclethreshold) = 
+					TimeOut_1(
+						Final::entered -> Clock_CLID_Final(id__,0,
+								          const_SRangerController_obstaclethreshold)
+						[]
+						get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
+								          const_SRangerController_obstaclethreshold)
+						[]
+						terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
 								          const_SRangerController_obstaclethreshold)),
 								          const_SRangerController_obstaclethreshold))
 				Clock_CLID_Moving(id__,x__,
@@ -3230,10 +3230,10 @@ endmodule
 								          const_SRangerController_obstaclethreshold))
 				
 				StateClocks(id__,
-						          const_SRangerController_obstaclethreshold) = dbisim(Clock_CLID_Final(id__,0,
+						          const_SRangerController_obstaclethreshold) = dbisim(Clock_CLID_Turning(id__,0,
 						          const_SRangerController_obstaclethreshold))
 				[| { terminate } |] (
-				dbisim(Clock_CLID_Turning(id__,0,
+				dbisim(Clock_CLID_Final(id__,0,
 						          const_SRangerController_obstaclethreshold))
 				[| { terminate } |] (
 				dbisim(Clock_CLID_Moving(id__,0,
@@ -3241,7 +3241,7 @@ endmodule
 				)
 				)
 				
-				stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+				stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 				
 				-- Shared memory
 				-- Shared memory variables
@@ -3555,9 +3555,9 @@ exports
 	-- Transition identifiers
 	-- declaring identifiers of transitions
 	datatype NIDS = 
-	              NID_Turning|
-	              NID_Final|
 	              NID_Moving|
+	              NID_Final|
+	              NID_Turning|
 	              NID_i0
 	
 	channel internal__ : NIDS
@@ -3601,16 +3601,16 @@ exports
 	-- Declaring call and ret events for undefined operations
 	
 	enterSS = {|
-	Turning::enter,
-	Final::enter,
 	Moving::enter,
+	Final::enter,
+	Turning::enter,
 	i0::enter
 	|}
 	
 	enteredSS = 	{|
-	Turning::entered,
+	Moving::entered,
 	Final::entered,
-	Moving::entered
+	Turning::entered
 	|}
 	
 	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -3645,12 +3645,12 @@ exports
 	localClockResets = {||}
 	
 	
-	channel get_CLID_Final : core_clock_type 
 	channel get_CLID_Turning : core_clock_type 
+	channel get_CLID_Final : core_clock_type 
 	channel get_CLID_Moving : core_clock_type 
 	--channel increment__
 	
-	CLID_Final_clock_type(id__,
+	CLID_Turning_clock_type(id__,
 			          const_SRangerController_obstaclethreshold) = 
 		let
 			max = (clock_type_max(Union({
@@ -3660,7 +3660,7 @@ exports
 	within
 		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 	
-	CLID_Turning_clock_type(id__,
+	CLID_Final_clock_type(id__,
 			          const_SRangerController_obstaclethreshold) = 
 		let
 			max = (clock_type_max(Union({
@@ -3686,8 +3686,8 @@ exports
 		-- declaring all nodes
 		
 		----------------------------------------------------------------------
-		-- State: Turning
-		module Turning
+		-- State: Moving
+		module Moving
 		
 		enterSS = {}
 		
@@ -3725,7 +3725,7 @@ exports
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
+					Active 		= SKIP ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -3742,7 +3742,7 @@ exports
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
+					Active 		= SKIP ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -3846,8 +3846,8 @@ exports
 		
 		
 		----------------------------------------------------------------------
-		-- State: Moving
-		module Moving
+		-- State: Turning
+		module Turning
 		
 		enterSS = {}
 		
@@ -3885,7 +3885,7 @@ exports
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= SKIP ; 
+					Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -3902,7 +3902,7 @@ exports
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= SKIP ; 
+					Active 		= true&(share__choice(markReset.out -> SKIP));true&(share__choice(move.out!0 -> SKIP)) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -4036,9 +4036,9 @@ exports
 					-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 					-- modules for defining the semantics of each node.
 					enterSS = {|
-					Turning::enter,
-					Final::enter,
 					Moving::enter,
+					Final::enter,
+					Turning::enter,
 					i0::enter
 					|}
 					hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -4051,13 +4051,13 @@ exports
 					within
 						((
 						 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-						   Turning::D__(id__,
+						   Moving::D__(id__,
 						   		    const_SRangerController_obstaclethreshold)
 						   [| { share__, terminate } |] (
 						   Final::D__(id__,
 						   		    const_SRangerController_obstaclethreshold)
 						   [| { share__, terminate } |] (
-						   Moving::D__(id__,
+						   Turning::D__(id__,
 						   		    const_SRangerController_obstaclethreshold)
 						   [| { share__, terminate } |] (
 						   i0::D__(id__,
@@ -4066,9 +4066,9 @@ exports
 						   )
 						   )
 						 )
-						 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
-						 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 						 [[Moving::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_Moving.in,obstacle__.NID_Moving.in,tick__.NID_Moving.in|}]]
+						 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+						 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
 						 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 						 )
 						  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -4106,7 +4106,7 @@ exports
 		Behaviour(id__,
 				    const_SRangerController_obstaclethreshold) = 
 			dbisim((let
-				stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+				stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 			 within
 				(MachineBody(id__,
 						    const_SRangerController_obstaclethreshold) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
@@ -4117,7 +4117,7 @@ exports
 		IteratedBehaviour(id__,
 				    const_SRangerController_obstaclethreshold) = 
 			dbisim((let
-				stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+				stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 			 within
 				(dbisim(
 					sbisim(
@@ -4132,15 +4132,15 @@ exports
 												          const_SRangerController_obstaclethreshold))
 									)\{|get_CLID_Moving|}
 								)
-								[| {|get_CLID_Turning,Turning::entered,terminate|} |]
-								dbisim(Clock_CLID_Turning(id__,0,
+								[| {|get_CLID_Final,Final::entered,terminate|} |]
+								dbisim(Clock_CLID_Final(id__,0,
 										          const_SRangerController_obstaclethreshold))
-							)\{|get_CLID_Turning|}
+							)\{|get_CLID_Final|}
 						)
-						[| {|get_CLID_Final,Final::entered,terminate|} |]
-						dbisim(Clock_CLID_Final(id__,0,
+						[| {|get_CLID_Turning,Turning::entered,terminate|} |]
+						dbisim(Clock_CLID_Turning(id__,0,
 								          const_SRangerController_obstaclethreshold))
-					)\{|get_CLID_Final|}
+					)\{|get_CLID_Turning|}
 				)
 				) \ union(stateClockSync,enteredSS)
 			)
@@ -4179,9 +4179,9 @@ exports
 					-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 					-- modules for defining the semantics of each node.
 					enterSS = {|
-					Turning::enter,
-					Final::enter,
 					Moving::enter,
+					Final::enter,
+					Turning::enter,
 					i0::enter
 					|}
 					hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -4194,13 +4194,13 @@ exports
 					within
 						((
 						 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-						   Turning::VS_O__(id__,
+						   Moving::VS_O__(id__,
 						   		    const_SRangerController_obstaclethreshold)
 						   [| { share__, terminate } |] (
 						   Final::VS_O__(id__,
 						   		    const_SRangerController_obstaclethreshold)
 						   [| { share__, terminate } |] (
-						   Moving::VS_O__(id__,
+						   Turning::VS_O__(id__,
 						   		    const_SRangerController_obstaclethreshold)
 						   [| { share__, terminate } |] (
 						   i0::VS_O__(id__,
@@ -4209,9 +4209,9 @@ exports
 						   )
 						   )
 						 )
-						 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
-						 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 						 [[Moving::interrupt <- x__ | x__ <- {|interrupt,endTask__.NID_Moving.in,obstacle__.NID_Moving.in,tick__.NID_Moving.in|}]]
+						 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+						 [[Turning::interrupt <- x__ | x__ <- {|interrupt|}]]
 						 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 						 )
 						  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -4249,7 +4249,7 @@ exports
 		Behaviour_VS_O(id__,
 				    const_SRangerController_obstaclethreshold) = 
 			dbisim((let
-				stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+				stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 			 within
 				(MachineBody_VS_O(id__,
 						    const_SRangerController_obstaclethreshold) [| union(stateClockSync,{terminate}) |] StateClocks(id__,
@@ -4260,7 +4260,7 @@ exports
 		IteratedBehaviour_VS_O(id__,
 				    const_SRangerController_obstaclethreshold) = 
 			dbisim((let
-				stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+				stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 			 within
 				(dbisim(
 					sbisim(
@@ -4275,15 +4275,15 @@ exports
 												          const_SRangerController_obstaclethreshold))
 									)\{|get_CLID_Moving|}
 								)
-								[| {|get_CLID_Turning,Turning::entered,terminate|} |]
-								dbisim(Clock_CLID_Turning(id__,0,
+								[| {|get_CLID_Final,Final::entered,terminate|} |]
+								dbisim(Clock_CLID_Final(id__,0,
 										          const_SRangerController_obstaclethreshold))
-							)\{|get_CLID_Turning|}
+							)\{|get_CLID_Final|}
 						)
-						[| {|get_CLID_Final,Final::entered,terminate|} |]
-						dbisim(Clock_CLID_Final(id__,0,
+						[| {|get_CLID_Turning,Turning::entered,terminate|} |]
+						dbisim(Clock_CLID_Turning(id__,0,
 								          const_SRangerController_obstaclethreshold))
-					)\{|get_CLID_Final|}
+					)\{|get_CLID_Turning|}
 				)
 				) \ diff(union(stateClockSync,enteredSS),enteredSS)
 			)
@@ -4354,18 +4354,6 @@ exports
 		
 		clockSync = {||}
 		
-		Clock_CLID_Final(id__,x__,
-				          const_SRangerController_obstaclethreshold) = 
-			TimeOut_1(
-				Final::entered -> Clock_CLID_Final(id__,0,
-						          const_SRangerController_obstaclethreshold)
-				[]
-				get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
-						          const_SRangerController_obstaclethreshold)
-				[]
-				terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
-						          const_SRangerController_obstaclethreshold)),
-						          const_SRangerController_obstaclethreshold))
 		Clock_CLID_Turning(id__,x__,
 				          const_SRangerController_obstaclethreshold) = 
 			TimeOut_1(
@@ -4376,6 +4364,18 @@ exports
 						          const_SRangerController_obstaclethreshold)
 				[]
 				terminate -> SKIP,Clock_CLID_Turning(id__,clock_type_plus(x__,1,CLID_Turning_clock_type(id__,
+						          const_SRangerController_obstaclethreshold)),
+						          const_SRangerController_obstaclethreshold))
+		Clock_CLID_Final(id__,x__,
+				          const_SRangerController_obstaclethreshold) = 
+			TimeOut_1(
+				Final::entered -> Clock_CLID_Final(id__,0,
+						          const_SRangerController_obstaclethreshold)
+				[]
+				get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
+						          const_SRangerController_obstaclethreshold)
+				[]
+				terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
 						          const_SRangerController_obstaclethreshold)),
 						          const_SRangerController_obstaclethreshold))
 		Clock_CLID_Moving(id__,x__,
@@ -4392,10 +4392,10 @@ exports
 						          const_SRangerController_obstaclethreshold))
 		
 		StateClocks(id__,
-				          const_SRangerController_obstaclethreshold) = dbisim(Clock_CLID_Final(id__,0,
+				          const_SRangerController_obstaclethreshold) = dbisim(Clock_CLID_Turning(id__,0,
 				          const_SRangerController_obstaclethreshold))
 		[| { terminate } |] (
-		dbisim(Clock_CLID_Turning(id__,0,
+		dbisim(Clock_CLID_Final(id__,0,
 				          const_SRangerController_obstaclethreshold))
 		[| { terminate } |] (
 		dbisim(Clock_CLID_Moving(id__,0,
@@ -4403,7 +4403,7 @@ exports
 		)
 		)
 		
-		stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Turning,Turning::entered,get_CLID_Moving,Moving::entered|}
+		stateClockSync = {|get_CLID_Turning,Turning::entered,get_CLID_Final,Final::entered,get_CLID_Moving,Moving::entered|}
 		
 		-- Shared memory
 		-- Shared memory variables

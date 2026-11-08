@@ -87,13 +87,13 @@ stm GasAnalysisController {
 	state GasDetected {
 		entry insVal = peakIntensity ( gs )
 	}
-	state Final {
-		entry send stop
-	}
 	state Reading {
 	}
 	state Analysis {
 		entry sts = analysis ( gs )
+	}
+	state Final {
+		entry send stop
 	}
 	initial i0
 	transition t_init {
@@ -181,28 +181,28 @@ stm MovementController {
 	uses Inputs uses Outputs uses Shared requires MovementController_State requires Constants requires LOperations
 	var v : real
 	clock clockResetTime
-	state Final {
-	}
-	state GettingOut {
-		entry send shortRandomWalk ; wait ( outperiod )
-	}
-	state Found {
-		entry send flag ; move ( 0 , Front )
-	}
 	state Going {
 		entry move ( lv , a )
 	}
-	state AvoidingAgain {
-		entry d1 = 0
+	state TryingAgain {
+		entry move ( lv , a )
 	}
 	state Avoiding {
 		entry d0 = 0 ; compute ! l ; wait ( evadetime )
 	}
+	state GettingOut {
+		entry send shortRandomWalk ; wait ( outperiod )
+	}
+	state AvoidingAgain {
+		entry d1 = 0
+	}
+	state Final {
+	}
+	state Found {
+		entry send flag ; move ( 0 , Front )
+	}
 	state Waiting {
 		entry send randomWalk
-	}
-	state TryingAgain {
-		entry move ( lv , a )
 	}
 	initial i0
 	transition t_init {

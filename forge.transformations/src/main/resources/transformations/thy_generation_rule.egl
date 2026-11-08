@@ -386,6 +386,14 @@ for(iface in p.interfaces){
 // declared `unit \<Rightarrow> real` and the theory failed to type-check (or
 // aborted with `exception Empty` inside a zoperation precondition). A declared
 // simple type now wins over the usage guess.
+// Amendment 20: the named constants of the Java (`static final` fields) with their
+// values, injected by IsabelleEgxRunner from constant_defaults.json (written by the
+// T2M phase; the RCT generator reads the same file). A call identifier naming one is
+// emitted as a definition carrying the value instead of an uninterpreted `consts`.
+var constValues: Map;
+if (constantDefaults.isDefined()){
+	for (k in constantDefaults.keySet()){ constValues.put(k, constantDefaults.get(k).asString()); }
+}
 var sensorVarTypes: Map;
 for(iface in p.interfaces){
 	if(iface.name = "Sensors"){
@@ -1034,8 +1042,25 @@ for (funcName in undeclaredFuncNames){
 	// any clock-value type.
 	var domType: String = "unit";
 	if (funcName == "since"){ domType = "'a"; }
+	if (constValues.containsKey(funcName) and domType == "unit"){
+		// Amendment 20: a named constant with a known value. The type follows the
+		// value where it is decisive (fractional -> real, true/false -> bool) and the
+		// usage heuristic above otherwise.
+		var raw = constValues.get(funcName);
+		var cType = sigType;
+		var cVal = raw;
+		if (raw == "true" or raw == "false"){ cType = "bool"; cVal = raw.firstToUpperCase(); }
+		else {
+			if (raw.contains(".") or raw.contains("E") or raw.contains("e")){ cType = "real"; }
+			cVal = normaliseFloatLiteral(raw);
+			if (cVal.startsWith("-")){ cVal = "(" + cVal + ")"; }
+		}
+%][%=("definition " + funcName + " :: \"unit \\<Rightarrow> " + cType + "\" where \"" + funcName + " u = " + cVal + "\"  (* named constant; value from the model *)")%]
+[%
+	} else {
 %][%=("consts " + funcName + " :: \"" + domType + " \\<Rightarrow> " + sigType + "\"  (* FORK: auto-emitted for CallExp identifier used in guards *)")%]
 [%
+	}
 }
 %]
 
@@ -1567,7 +1592,7 @@ tr.reset.clock.name.println();
 // escape the literal parens.
 for(svName in stateVarNames){
 	if((svName + "()").isSubstringOf(pre_string)){
-		pre_string = pre_string.replace(svName + "\\(\\)", svName);
+		pre_string = pre_string.replace("(?<![A-Za-z0-9_])" + svName + "\\(\\)", svName);
 	}
 }
 // FORK: enum literals are likewise rendered with empty parens (`noGas()`)
@@ -1575,7 +1600,7 @@ for(svName in stateVarNames){
 // typechecks against the Status datatype.
 for(elName in enumLiteralNames){
 	if((elName + "()").isSubstringOf(pre_string)){
-		pre_string = pre_string.replace(elName + "\\(\\)", elName);
+		pre_string = pre_string.replace("(?<![A-Za-z0-9_])" + elName + "\\(\\)", elName);
 	}
 }
 //SUBSECTION 3b: event-ABSENCE conjuncts for TRIGGERLESS transitions.
@@ -1867,7 +1892,7 @@ for(p in zop_tuple.paras){
 // as `\\(\\)` to avoid matching an empty capture group.
 if(zop_tuple.lensParas.includes(p)){
 if((p + "()").isSubstringOf(tr_action_string)){
-	tr_action_string = tr_action_string.replace(p + "\\(\\)", p + "_input");
+	tr_action_string = tr_action_string.replace("(?<![A-Za-z0-9_])" + p + "\\(\\)", p + "_input");
 }
 } else {
 if(p.isSubstringOf(tr_action_string))
@@ -1882,13 +1907,13 @@ if(p.isSubstringOf(tr_action_string))
 // is left alone.
 for(svName in stateVarNames){
 	if((svName + "()").isSubstringOf(tr_action_string)){
-		tr_action_string = tr_action_string.replace(svName + "\\(\\)", svName);
+		tr_action_string = tr_action_string.replace("(?<![A-Za-z0-9_])" + svName + "\\(\\)", svName);
 	}
 }
 // FORK: same for enum literals — bare constructor name, not `noGas()`.
 for(elName in enumLiteralNames){
 	if((elName + "()").isSubstringOf(tr_action_string)){
-		tr_action_string = tr_action_string.replace(elName + "\\(\\)", elName);
+		tr_action_string = tr_action_string.replace("(?<![A-Za-z0-9_])" + elName + "\\(\\)", elName);
 	}
 }
 %]
@@ -1954,7 +1979,7 @@ else if(tr.action.isTypeOf(Assignment) and tr.action.left.isDefined()
 	for(p in zop_tuple.paras){
 		if(zop_tuple.lensParas.includes(p)){
 			if((p + "()").isSubstringOf(bare_action_string)){
-				bare_action_string = bare_action_string.replace(p + "\\(\\)", p + "_input");
+				bare_action_string = bare_action_string.replace("(?<![A-Za-z0-9_])" + p + "\\(\\)", p + "_input");
 			}
 		} else {
 			if(p.isSubstringOf(bare_action_string)){
@@ -1988,7 +2013,7 @@ for(p in zop_tuple.paras){
 // FORK: lens-rebind params: <p>() -> <p>_input. See main action loop.
 if(zop_tuple.lensParas.includes(p)){
 if((p + "()").isSubstringOf(target_action_string)){
-	target_action_string = target_action_string.replace(p + "\\(\\)", p + "_input");
+	target_action_string = target_action_string.replace("(?<![A-Za-z0-9_])" + p + "\\(\\)", p + "_input");
 }
 } else {
 if(p.isSubstringOf(target_action_string))
@@ -1998,12 +2023,12 @@ if(p.isSubstringOf(target_action_string))
 // FORK: bare state-var read: <sv>() -> <sv>.
 for(svName in stateVarNames){
 	if((svName + "()").isSubstringOf(target_action_string)){
-		target_action_string = target_action_string.replace(svName + "\\(\\)", svName);
+		target_action_string = target_action_string.replace("(?<![A-Za-z0-9_])" + svName + "\\(\\)", svName);
 	}
 }
 for(elName in enumLiteralNames){
 	if((elName + "()").isSubstringOf(target_action_string)){
-		target_action_string = target_action_string.replace(elName + "\\(\\)", elName);
+		target_action_string = target_action_string.replace("(?<![A-Za-z0-9_])" + elName + "\\(\\)", elName);
 	}
 }
 %]
@@ -2041,7 +2066,7 @@ for(p in zop_tuple.paras){
 // FORK: lens-rebind params: <p>() -> <p>_input. See main action loop.
 if(zop_tuple.lensParas.includes(p)){
 	if((p + "()").isSubstringOf(target_action_string)){
-		target_action_string = target_action_string.replace(p + "\\(\\)", p + "_input");
+		target_action_string = target_action_string.replace("(?<![A-Za-z0-9_])" + p + "\\(\\)", p + "_input");
 	}
 } else {
 	if(p.isSubstringOf(target_action_string))
@@ -2053,12 +2078,12 @@ if(zop_tuple.lensParas.includes(p)){
 // FORK: bare state-var read: <sv>() -> <sv>.
 for(svName in stateVarNames){
 	if((svName + "()").isSubstringOf(target_action_string)){
-		target_action_string = target_action_string.replace(svName + "\\(\\)", svName);
+		target_action_string = target_action_string.replace("(?<![A-Za-z0-9_])" + svName + "\\(\\)", svName);
 	}
 }
 for(elName in enumLiteralNames){
 	if((elName + "()").isSubstringOf(target_action_string)){
-		target_action_string = target_action_string.replace(elName + "\\(\\)", elName);
+		target_action_string = target_action_string.replace("(?<![A-Za-z0-9_])" + elName + "\\(\\)", elName);
 	}
 }
 %]

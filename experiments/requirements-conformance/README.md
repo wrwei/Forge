@@ -15,7 +15,7 @@ experiment (`../mutation-testing`) accepts.
 | `ambiguity_log.md` | the 8 interpretive decisions, each resolved from the text alone |
 | `ordering_attestation.txt` | SHA-256 hashes of the three files above, with the written record that they were compiled before any implementation artefact was read |
 | `conformance_diff.csv` | verdict for every (mode, event, guard valuation) cell of the extracted LRE model, 458,752 rows |
-| `survivor_scoring.csv` | one row per LRE mutant surviving every verifier, 54 rows (47 scoreable, 23 killed) |
+| `survivor_scoring.csv` | one row per LRE mutant surviving every verifier, 54 rows (51 scoreable, 23 killed) |
 | `idle_check.csv` | per theory, the check that each `Idle_<State>` operation is the complement of that state's transitions |
 | `reqconf_report.md` | the analysis report |
 | `reqconf_relation.py` | the relation, the grid and the comparison (library used by the two programs below) |
@@ -45,7 +45,7 @@ disagreements, all in the guard values the extraction leaves uncomputed.
 The second reads `../mutation-testing/kill_table.csv`, scores every LRE mutant
 with `disposition == survived` against the relation, and with `--check`
 compares the verdicts row by row with the shipped `survivor_scoring.csv`.
-Expected: 54 rows, 47 scoreable, 23 killed. A mutant whose theory is identical to
+Expected: 54 rows, 51 scoreable, 23 killed. A mutant whose theory is identical to
 the unmutated one (the defect changes only the Dafny program or the RoboChart
 model) is recorded as not scoreable.
 

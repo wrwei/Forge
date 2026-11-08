@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:27:32
+-- Automatically generated on 07-11-2026 11:28:06
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -400,13 +400,13 @@
 			-- Transition identifiers
 			-- declaring identifiers of transitions
 			datatype NIDS = 
-			              NID_Found|
-			              NID_Avoiding|
-			              NID_TryingAgain|
-			              NID_Waiting|
 			              NID_Going|
-			              NID_Final|
+			              NID_TryingAgain|
 			              NID_AvoidingAgain|
+			              NID_Avoiding|
+			              NID_Found|
+			              NID_Waiting|
+			              NID_Final|
 			              NID_GettingOut|
 			              NID_i0
 			
@@ -459,25 +459,25 @@
 			channel moveCall: core_real.Angle
 			
 			enterSS = {|
-			Found::enter,
-			Avoiding::enter,
-			TryingAgain::enter,
-			Waiting::enter,
 			Going::enter,
-			Final::enter,
+			TryingAgain::enter,
 			AvoidingAgain::enter,
+			Avoiding::enter,
+			Found::enter,
+			Waiting::enter,
+			Final::enter,
 			GettingOut::enter,
 			i0::enter
 			|}
 			
 			enteredSS = 	{|
-			Found::entered,
-			Avoiding::entered,
-			TryingAgain::entered,
-			Waiting::entered,
 			Going::entered,
-			Final::entered,
+			TryingAgain::entered,
 			AvoidingAgain::entered,
+			Avoiding::entered,
+			Found::entered,
+			Waiting::entered,
+			Final::entered,
 			GettingOut::entered
 			|}
 			
@@ -514,8 +514,8 @@
 			-- declaring all nodes
 			
 			----------------------------------------------------------------------
-			-- State: Found
-			module Found
+			-- State: Going
+			module Going
 			
 			enterSS = {}
 			
@@ -553,16 +553,16 @@
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= true&(share__choice(flag.out -> SKIP));true&CALL__move(
+					Active 		= share__choice(get_a?a -> true&CALL__move(
 								id__,
 							    const_MovementController_lv,
 							    const_MovementController_evadetime,
 							    const_MovementController_stuckperiod,
 							    const_MovementController_stuckdist,
 							    const_MovementController_outperiod,
-								0,
-								Angle_Front
-							) ; 
+								const_MovementController_lv,
+								a
+							)) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -583,92 +583,16 @@
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= true&(share__choice(flag.out -> SKIP));true&CALL__move(
+					Active 		= share__choice(get_a?a -> true&CALL__move(
 								id__,
 							    const_MovementController_lv,
 							    const_MovementController_evadetime,
 							    const_MovementController_stuckperiod,
 							    const_MovementController_stuckdist,
 							    const_MovementController_outperiod,
-								0,
-								Angle_Front
-							) ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-				
-			
-			endmodule
-			----------------------------------------------------------------------
-			
-			
-			----------------------------------------------------------------------
-			-- State: Avoiding
-			module Avoiding
-			
-			enterSS = {}
-			
-			enteredSS = {}
-			
-			exports
-			
-				--  Declarations
-				
-				channel enter, entered, interrupt
-				channel enteredL, enteredR
-				
-								
-				
-				--	Nodes
-				-- declaring all nodes
-				
-				
-				--	Rule: behaviours(Node)
-				--  Note that FDR has problems with efficiently compiling the process below
-				-- 	if using a different recursion pattern.
-				D__(id__,
-						    const_MovementController_lv,
-						    const_MovementController_evadetime,
-						    const_MovementController_stuckperiod,
-						    const_MovementController_stuckdist,
-						    const_MovementController_outperiod) = 
-				dbisim(let
-					-- IMPLEMENTATION NOTE: 
-					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-					-- however FDR struggles with that form in certain cases. So we use the exception operator
-					-- instead to 'terminate'.
-					
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SKIP ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-					
-				VS_O__(id__,
-						    const_MovementController_lv,
-						    const_MovementController_evadetime,
-						    const_MovementController_stuckperiod,
-						    const_MovementController_stuckdist,
-						    const_MovementController_outperiod) = 
-				dbisim(let
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SKIP ; 
+								const_MovementController_lv,
+								a
+							)) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -778,6 +702,252 @@
 			
 			
 			----------------------------------------------------------------------
+			-- State: AvoidingAgain
+			module AvoidingAgain
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_MovementController_lv,
+						    const_MovementController_evadetime,
+						    const_MovementController_stuckperiod,
+						    const_MovementController_stuckdist,
+						    const_MovementController_outperiod) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_MovementController_lv,
+						    const_MovementController_evadetime,
+						    const_MovementController_stuckperiod,
+						    const_MovementController_stuckdist,
+						    const_MovementController_outperiod) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
+			-- State: Avoiding
+			module Avoiding
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_MovementController_lv,
+						    const_MovementController_evadetime,
+						    const_MovementController_stuckperiod,
+						    const_MovementController_stuckdist,
+						    const_MovementController_outperiod) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_MovementController_lv,
+						    const_MovementController_evadetime,
+						    const_MovementController_stuckperiod,
+						    const_MovementController_stuckdist,
+						    const_MovementController_outperiod) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
+			-- State: Found
+			module Found
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_MovementController_lv,
+						    const_MovementController_evadetime,
+						    const_MovementController_stuckperiod,
+						    const_MovementController_stuckdist,
+						    const_MovementController_outperiod) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(flag.out -> SKIP));true&CALL__move(
+								id__,
+							    const_MovementController_lv,
+							    const_MovementController_evadetime,
+							    const_MovementController_stuckperiod,
+							    const_MovementController_stuckdist,
+							    const_MovementController_outperiod,
+								0,
+								Angle_Front
+							) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_MovementController_lv,
+						    const_MovementController_evadetime,
+						    const_MovementController_stuckperiod,
+						    const_MovementController_stuckdist,
+						    const_MovementController_outperiod) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(flag.out -> SKIP));true&CALL__move(
+								id__,
+							    const_MovementController_lv,
+							    const_MovementController_evadetime,
+							    const_MovementController_stuckperiod,
+							    const_MovementController_stuckdist,
+							    const_MovementController_outperiod,
+								0,
+								Angle_Front
+							) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
 			-- State: Waiting
 			module Waiting
 			
@@ -854,100 +1024,6 @@
 			
 			
 			----------------------------------------------------------------------
-			-- State: Going
-			module Going
-			
-			enterSS = {}
-			
-			enteredSS = {}
-			
-			exports
-			
-				--  Declarations
-				
-				channel enter, entered, interrupt
-				channel enteredL, enteredR
-				
-								
-				
-				--	Nodes
-				-- declaring all nodes
-				
-				
-				--	Rule: behaviours(Node)
-				--  Note that FDR has problems with efficiently compiling the process below
-				-- 	if using a different recursion pattern.
-				D__(id__,
-						    const_MovementController_lv,
-						    const_MovementController_evadetime,
-						    const_MovementController_stuckperiod,
-						    const_MovementController_stuckdist,
-						    const_MovementController_outperiod) = 
-				dbisim(let
-					-- IMPLEMENTATION NOTE: 
-					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-					-- however FDR struggles with that form in certain cases. So we use the exception operator
-					-- instead to 'terminate'.
-					
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= share__choice(get_a?a -> true&CALL__move(
-								id__,
-							    const_MovementController_lv,
-							    const_MovementController_evadetime,
-							    const_MovementController_stuckperiod,
-							    const_MovementController_stuckdist,
-							    const_MovementController_outperiod,
-								const_MovementController_lv,
-								a
-							)) ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-					
-				VS_O__(id__,
-						    const_MovementController_lv,
-						    const_MovementController_evadetime,
-						    const_MovementController_stuckperiod,
-						    const_MovementController_stuckdist,
-						    const_MovementController_outperiod) = 
-				dbisim(let
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= share__choice(get_a?a -> true&CALL__move(
-								id__,
-							    const_MovementController_lv,
-							    const_MovementController_evadetime,
-							    const_MovementController_stuckperiod,
-							    const_MovementController_stuckdist,
-							    const_MovementController_outperiod,
-								const_MovementController_lv,
-								a
-							)) ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-				
-			
-			endmodule
-			----------------------------------------------------------------------
-			
-			
-			----------------------------------------------------------------------
 			-- State: Final
 			module Final
 			
@@ -1009,82 +1085,6 @@
 					Termination = terminate -> SKIP
 					
 					Active 		= SKIP ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-				
-			
-			endmodule
-			----------------------------------------------------------------------
-			
-			
-			----------------------------------------------------------------------
-			-- State: AvoidingAgain
-			module AvoidingAgain
-			
-			enterSS = {}
-			
-			enteredSS = {}
-			
-			exports
-			
-				--  Declarations
-				
-				channel enter, entered, interrupt
-				channel enteredL, enteredR
-				
-								
-				
-				--	Nodes
-				-- declaring all nodes
-				
-				
-				--	Rule: behaviours(Node)
-				--  Note that FDR has problems with efficiently compiling the process below
-				-- 	if using a different recursion pattern.
-				D__(id__,
-						    const_MovementController_lv,
-						    const_MovementController_evadetime,
-						    const_MovementController_stuckperiod,
-						    const_MovementController_stuckdist,
-						    const_MovementController_outperiod) = 
-				dbisim(let
-					-- IMPLEMENTATION NOTE: 
-					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-					-- however FDR struggles with that form in certain cases. So we use the exception operator
-					-- instead to 'terminate'.
-					
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-					
-				VS_O__(id__,
-						    const_MovementController_lv,
-						    const_MovementController_evadetime,
-						    const_MovementController_stuckperiod,
-						    const_MovementController_stuckdist,
-						    const_MovementController_outperiod) = 
-				dbisim(let
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -1351,13 +1351,13 @@
 						-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 						-- modules for defining the semantics of each node.
 						enterSS = {|
-						Found::enter,
-						Avoiding::enter,
-						TryingAgain::enter,
-						Waiting::enter,
 						Going::enter,
-						Final::enter,
+						TryingAgain::enter,
 						AvoidingAgain::enter,
+						Avoiding::enter,
+						Found::enter,
+						Waiting::enter,
+						Final::enter,
 						GettingOut::enter,
 						i0::enter
 						|}
@@ -1371,14 +1371,7 @@
 						within
 							((
 							 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-							   Found::D__(id__,
-							   		    const_MovementController_lv,
-							   		    const_MovementController_evadetime,
-							   		    const_MovementController_stuckperiod,
-							   		    const_MovementController_stuckdist,
-							   		    const_MovementController_outperiod)
-							   [| { share__, terminate } |] (
-							   Avoiding::D__(id__,
+							   Going::D__(id__,
 							   		    const_MovementController_lv,
 							   		    const_MovementController_evadetime,
 							   		    const_MovementController_stuckperiod,
@@ -1392,6 +1385,27 @@
 							   		    const_MovementController_stuckdist,
 							   		    const_MovementController_outperiod)
 							   [| { share__, terminate } |] (
+							   AvoidingAgain::D__(id__,
+							   		    const_MovementController_lv,
+							   		    const_MovementController_evadetime,
+							   		    const_MovementController_stuckperiod,
+							   		    const_MovementController_stuckdist,
+							   		    const_MovementController_outperiod)
+							   [| { share__, terminate } |] (
+							   Avoiding::D__(id__,
+							   		    const_MovementController_lv,
+							   		    const_MovementController_evadetime,
+							   		    const_MovementController_stuckperiod,
+							   		    const_MovementController_stuckdist,
+							   		    const_MovementController_outperiod)
+							   [| { share__, terminate } |] (
+							   Found::D__(id__,
+							   		    const_MovementController_lv,
+							   		    const_MovementController_evadetime,
+							   		    const_MovementController_stuckperiod,
+							   		    const_MovementController_stuckdist,
+							   		    const_MovementController_outperiod)
+							   [| { share__, terminate } |] (
 							   Waiting::D__(id__,
 							   		    const_MovementController_lv,
 							   		    const_MovementController_evadetime,
@@ -1399,21 +1413,7 @@
 							   		    const_MovementController_stuckdist,
 							   		    const_MovementController_outperiod)
 							   [| { share__, terminate } |] (
-							   Going::D__(id__,
-							   		    const_MovementController_lv,
-							   		    const_MovementController_evadetime,
-							   		    const_MovementController_stuckperiod,
-							   		    const_MovementController_stuckdist,
-							   		    const_MovementController_outperiod)
-							   [| { share__, terminate } |] (
 							   Final::D__(id__,
-							   		    const_MovementController_lv,
-							   		    const_MovementController_evadetime,
-							   		    const_MovementController_stuckperiod,
-							   		    const_MovementController_stuckdist,
-							   		    const_MovementController_outperiod)
-							   [| { share__, terminate } |] (
-							   AvoidingAgain::D__(id__,
 							   		    const_MovementController_lv,
 							   		    const_MovementController_evadetime,
 							   		    const_MovementController_stuckperiod,
@@ -1442,13 +1442,13 @@
 							   )
 							   )
 							 )
-							 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
-							 [[Avoiding::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Avoiding.in,turn__.NID_Avoiding.in,resume__.NID_Avoiding.in|}]]
-							 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
-							 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
 							 [[Going::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Going.in,turn__.NID_Going.in,obstacle__.NID_Going.in,resume__.NID_Going.in|}]]
-							 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+							 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
 							 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
+							 [[Avoiding::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Avoiding.in,turn__.NID_Avoiding.in,resume__.NID_Avoiding.in|}]]
+							 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
+							 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
+							 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 							 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt|}]]
 							 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 							 )
@@ -1579,13 +1579,13 @@
 						-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 						-- modules for defining the semantics of each node.
 						enterSS = {|
-						Found::enter,
-						Avoiding::enter,
-						TryingAgain::enter,
-						Waiting::enter,
 						Going::enter,
-						Final::enter,
+						TryingAgain::enter,
 						AvoidingAgain::enter,
+						Avoiding::enter,
+						Found::enter,
+						Waiting::enter,
+						Final::enter,
 						GettingOut::enter,
 						i0::enter
 						|}
@@ -1599,14 +1599,7 @@
 						within
 							((
 							 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-							   Found::VS_O__(id__,
-							   		    const_MovementController_lv,
-							   		    const_MovementController_evadetime,
-							   		    const_MovementController_stuckperiod,
-							   		    const_MovementController_stuckdist,
-							   		    const_MovementController_outperiod)
-							   [| { share__, terminate } |] (
-							   Avoiding::VS_O__(id__,
+							   Going::VS_O__(id__,
 							   		    const_MovementController_lv,
 							   		    const_MovementController_evadetime,
 							   		    const_MovementController_stuckperiod,
@@ -1620,6 +1613,27 @@
 							   		    const_MovementController_stuckdist,
 							   		    const_MovementController_outperiod)
 							   [| { share__, terminate } |] (
+							   AvoidingAgain::VS_O__(id__,
+							   		    const_MovementController_lv,
+							   		    const_MovementController_evadetime,
+							   		    const_MovementController_stuckperiod,
+							   		    const_MovementController_stuckdist,
+							   		    const_MovementController_outperiod)
+							   [| { share__, terminate } |] (
+							   Avoiding::VS_O__(id__,
+							   		    const_MovementController_lv,
+							   		    const_MovementController_evadetime,
+							   		    const_MovementController_stuckperiod,
+							   		    const_MovementController_stuckdist,
+							   		    const_MovementController_outperiod)
+							   [| { share__, terminate } |] (
+							   Found::VS_O__(id__,
+							   		    const_MovementController_lv,
+							   		    const_MovementController_evadetime,
+							   		    const_MovementController_stuckperiod,
+							   		    const_MovementController_stuckdist,
+							   		    const_MovementController_outperiod)
+							   [| { share__, terminate } |] (
 							   Waiting::VS_O__(id__,
 							   		    const_MovementController_lv,
 							   		    const_MovementController_evadetime,
@@ -1627,21 +1641,7 @@
 							   		    const_MovementController_stuckdist,
 							   		    const_MovementController_outperiod)
 							   [| { share__, terminate } |] (
-							   Going::VS_O__(id__,
-							   		    const_MovementController_lv,
-							   		    const_MovementController_evadetime,
-							   		    const_MovementController_stuckperiod,
-							   		    const_MovementController_stuckdist,
-							   		    const_MovementController_outperiod)
-							   [| { share__, terminate } |] (
 							   Final::VS_O__(id__,
-							   		    const_MovementController_lv,
-							   		    const_MovementController_evadetime,
-							   		    const_MovementController_stuckperiod,
-							   		    const_MovementController_stuckdist,
-							   		    const_MovementController_outperiod)
-							   [| { share__, terminate } |] (
-							   AvoidingAgain::VS_O__(id__,
 							   		    const_MovementController_lv,
 							   		    const_MovementController_evadetime,
 							   		    const_MovementController_stuckperiod,
@@ -1670,13 +1670,13 @@
 							   )
 							   )
 							 )
-							 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
-							 [[Avoiding::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Avoiding.in,turn__.NID_Avoiding.in,resume__.NID_Avoiding.in|}]]
-							 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
-							 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
 							 [[Going::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Going.in,turn__.NID_Going.in,obstacle__.NID_Going.in,resume__.NID_Going.in|}]]
-							 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+							 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
 							 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
+							 [[Avoiding::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Avoiding.in,turn__.NID_Avoiding.in,resume__.NID_Avoiding.in|}]]
+							 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
+							 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
+							 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 							 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt|}]]
 							 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 							 )

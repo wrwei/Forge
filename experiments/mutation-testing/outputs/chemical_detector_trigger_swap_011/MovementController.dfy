@@ -31,7 +31,7 @@ class MovementController {
     function nowMs(): int
         reads this
 
-    // Guard predicates (inlined from Java local variables in step())
+    // Guard predicates (inlined from Java local variables and field assignments in step())
     //   makingProgress := (nowMs() - clockResetTime < 5) || (d1 - d0 > 1.0)
     //   stuckPeriodElapsed := nowMs() - clockResetTime >= 5
     //   stuckFired := (nowMs() - clockResetTime >= 5) && (d1 - d0 <= 1.0)

@@ -11,10 +11,10 @@ holds and how its figures were computed.
 | [`v3-compile-only/`](v3-compile-only/) | Section 4.7 (RQ5), Table 8 | 15 loop runs in which the verifiers' reports are withheld from the session |
 | [`v3-analysis/`](v3-analysis/) | Tables 5–8, 10; Section 4.11 | the analysis scripts' outputs: per-session verdicts, best-of-N, convergence, token usage, the Steam Boiler requirement split |
 | [`v3-preregistration/`](v3-preregistration/) | Section 4.2 | the design of the collection with its dated amendments, the prompt given to every session, and the set-up, runner, recorder and audit scripts |
-| [`mutation-testing/`](mutation-testing/) | Section 4.8 (RQ6), Table 9 | 186 mutants of the three RoboStar studies through every verifier; manifest, generator, kill table |
-| [`requirements-conformance/`](requirements-conformance/) | Section 4.9 (RQ7), Figure 2 | the compiled requirements relations for the three studies, conformance of the shipped controllers, survivor scoring |
-| [`blind-spec/`](blind-spec/) | Section 4.9.1 | the reference specification of the LRE written from the requirements alone, and its conformance and survivor scoring |
-| [`conformance-tierB/`](conformance-tierB/) | Section 5.5 | guard-level enumeration of the LRE model against its Java |
+| [`mutation-testing/`](mutation-testing/) | Section 4.8 (RQ6), Table 9 | 186 mutants of the three RoboStar studies through every verifier; manifest, generator, kill table with per-backend Changed columns; `traceability/` links every changed artefact line to its injection site |
+| [`requirements-conformance/`](requirements-conformance/) | Section 4.9 (RQ7), Table 10, Figure 2 | the compiled requirements relations for the three studies, conformance of the shipped controllers, survivor scoring |
+| [`blind-spec/`](blind-spec/) | Section 4.9.1, Table 10 | the reference specification of the LRE written from the requirements alone, and its conformance and survivor scoring |
+| [`conformance-tierB/`](conformance-tierB/) | Section 5.5 | guard-level enumeration of the three RoboStar controllers' extracted models against their Java (7,328 states) |
 | [`final-mode-divergence/`](final-mode-divergence/) | Section 4.4 (RQ2) | a divergence between the CSP and Isabelle artefacts of one controller, and its repair |
 | [`environment-model/`](environment-model/) | Section 4.4 (RQ2) | the environment-model correction and the theories proved under it |
 | [`test-feedback/`](test-feedback/) | response letter | test-and-static-analysis feedback in place of verifier feedback |

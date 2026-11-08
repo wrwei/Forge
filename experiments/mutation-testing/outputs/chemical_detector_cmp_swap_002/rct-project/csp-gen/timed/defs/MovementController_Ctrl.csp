@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:27:22
+-- Automatically generated on 07-11-2026 11:27:57
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -460,14 +460,14 @@
 			-- Transition identifiers
 			-- declaring identifiers of transitions
 			datatype NIDS = 
-			              NID_Going|
-			              NID_GettingOut|
-			              NID_TryingAgain|
 			              NID_Waiting|
-			              NID_Found|
 			              NID_Final|
-			              NID_AvoidingAgain|
+			              NID_GettingOut|
 			              NID_Avoiding|
+			              NID_TryingAgain|
+			              NID_AvoidingAgain|
+			              NID_Found|
+			              NID_Going|
 			              NID_i0
 			
 			channel internal__ : NIDS
@@ -519,26 +519,26 @@
 			channel moveCall: core_real.Angle
 			
 			enterSS = {|
-			Going::enter,
-			GettingOut::enter,
-			TryingAgain::enter,
 			Waiting::enter,
-			Found::enter,
 			Final::enter,
-			AvoidingAgain::enter,
+			GettingOut::enter,
 			Avoiding::enter,
+			TryingAgain::enter,
+			AvoidingAgain::enter,
+			Found::enter,
+			Going::enter,
 			i0::enter
 			|}
 			
 			enteredSS = 	{|
-			Going::entered,
-			GettingOut::entered,
-			TryingAgain::entered,
 			Waiting::entered,
-			Found::entered,
 			Final::entered,
+			GettingOut::entered,
+			Avoiding::entered,
+			TryingAgain::entered,
 			AvoidingAgain::entered,
-			Avoiding::entered
+			Found::entered,
+			Going::entered
 			|}
 			
 			internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -577,18 +577,32 @@
 			localClockResets = {|clockReset.CLID_clockResetTime|}
 			
 			
-			channel get_CLID_Going : core_clock_type 
+			channel get_CLID_Final : core_clock_type 
+			channel get_CLID_Found : core_clock_type 
 			channel get_CLID_Waiting : core_clock_type 
 			channel get_CLID_AvoidingAgain : core_clock_type 
+			channel get_CLID_Going : core_clock_type 
 			channel get_CLID_clockResetTime : core_clock_type 
-			channel get_CLID_Avoiding : core_clock_type 
-			channel get_CLID_Found : core_clock_type 
-			channel get_CLID_GettingOut : core_clock_type 
-			channel get_CLID_Final : core_clock_type 
 			channel get_CLID_TryingAgain : core_clock_type 
+			channel get_CLID_GettingOut : core_clock_type 
+			channel get_CLID_Avoiding : core_clock_type 
 			--channel increment__
 			
-			CLID_Going_clock_type(id__,
+			CLID_Final_clock_type(id__,
+					          const_MovementController_lv,
+					          const_MovementController_evadetime,
+					          const_MovementController_stuckperiod,
+					          const_MovementController_stuckdist,
+					          const_MovementController_outperiod) = 
+				let
+					max = (clock_type_max(Union({
+			{}
+			}))+1)
+				ctype = {0..max}
+			within
+				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+			
+			CLID_Found_clock_type(id__,
 					          const_MovementController_lv,
 					          const_MovementController_evadetime,
 					          const_MovementController_stuckperiod,
@@ -630,6 +644,20 @@
 			within
 				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 			
+			CLID_Going_clock_type(id__,
+					          const_MovementController_lv,
+					          const_MovementController_evadetime,
+					          const_MovementController_stuckperiod,
+					          const_MovementController_stuckdist,
+					          const_MovementController_outperiod) = 
+				let
+					max = (clock_type_max(Union({
+			{}
+			}))+1)
+				ctype = {0..max}
+			within
+				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+			
 			CLID_clockResetTime_clock_type(id__,
 					          const_MovementController_lv,
 					          const_MovementController_evadetime,
@@ -646,21 +674,7 @@
 			within
 				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 			
-			CLID_Avoiding_clock_type(id__,
-					          const_MovementController_lv,
-					          const_MovementController_evadetime,
-					          const_MovementController_stuckperiod,
-					          const_MovementController_stuckdist,
-					          const_MovementController_outperiod) = 
-				let
-					max = (clock_type_max(Union({
-			{}
-			}))+1)
-				ctype = {0..max}
-			within
-				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
-			
-			CLID_Found_clock_type(id__,
+			CLID_TryingAgain_clock_type(id__,
 					          const_MovementController_lv,
 					          const_MovementController_evadetime,
 					          const_MovementController_stuckperiod,
@@ -688,21 +702,7 @@
 			within
 				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 			
-			CLID_Final_clock_type(id__,
-					          const_MovementController_lv,
-					          const_MovementController_evadetime,
-					          const_MovementController_stuckperiod,
-					          const_MovementController_stuckdist,
-					          const_MovementController_outperiod) = 
-				let
-					max = (clock_type_max(Union({
-			{}
-			}))+1)
-				ctype = {0..max}
-			within
-				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
-			
-			CLID_TryingAgain_clock_type(id__,
+			CLID_Avoiding_clock_type(id__,
 					          const_MovementController_lv,
 					          const_MovementController_evadetime,
 					          const_MovementController_stuckperiod,
@@ -722,8 +722,8 @@
 				-- declaring all nodes
 				
 				----------------------------------------------------------------------
-				-- State: Going
-				module Going
+				-- State: Waiting
+				module Waiting
 				
 				enterSS = {}
 				
@@ -765,16 +765,7 @@
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= share__choice(get_a?a -> true&CALL__move(
-										id__,
-									    const_MovementController_lv,
-									    const_MovementController_evadetime,
-									    const_MovementController_stuckperiod,
-									    const_MovementController_stuckdist,
-									    const_MovementController_outperiod,
-										const_MovementController_lv,
-										a
-									)) ; 
+							Active 		= true&(share__choice(randomWalk.out -> SKIP)) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -795,16 +786,99 @@
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= share__choice(get_a?a -> true&CALL__move(
-										id__,
-									    const_MovementController_lv,
-									    const_MovementController_evadetime,
-									    const_MovementController_stuckperiod,
-									    const_MovementController_stuckdist,
-									    const_MovementController_outperiod,
-										const_MovementController_lv,
-										a
-									)) ; 
+							Active 		= true&(share__choice(randomWalk.out -> SKIP)) ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+						
+						
+						-- Clocks
+						
+						StateClocks(id__,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod) = terminate -> SKIP
+						
+						stateClockSync = {||}
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: Final
+				module Final
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--channel increment__
+					
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					Timed(OneStep) {
+						--	Rule: behaviours(Node)
+						--  Note that FDR has problems with efficiently compiling the process below
+						-- 	if using a different recursion pattern.
+						D__(id__,
+								    const_MovementController_lv,
+								    const_MovementController_evadetime,
+								    const_MovementController_stuckperiod,
+								    const_MovementController_stuckdist,
+								    const_MovementController_outperiod) = 
+						dbisim(let
+							-- IMPLEMENTATION NOTE: 
+							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+							-- however FDR struggles with that form in certain cases. So we use the exception operator
+							-- instead to 'terminate'.
+							
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= SKIP ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+							
+						VS_O__(id__,
+								    const_MovementController_lv,
+								    const_MovementController_evadetime,
+								    const_MovementController_stuckperiod,
+								    const_MovementController_stuckdist,
+								    const_MovementController_outperiod) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= SKIP ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -897,6 +971,98 @@
 							Termination = terminate -> SKIP
 							
 							Active 		= true&(share__choice(shortRandomWalk.out -> SKIP));SHARE_WAIT(const_MovementController_outperiod) ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+						
+						
+						-- Clocks
+						
+						StateClocks(id__,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod) = terminate -> SKIP
+						
+						stateClockSync = {||}
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: Avoiding
+				module Avoiding
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--channel increment__
+					
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					Timed(OneStep) {
+						--	Rule: behaviours(Node)
+						--  Note that FDR has problems with efficiently compiling the process below
+						-- 	if using a different recursion pattern.
+						D__(id__,
+								    const_MovementController_lv,
+								    const_MovementController_evadetime,
+								    const_MovementController_stuckperiod,
+								    const_MovementController_stuckdist,
+								    const_MovementController_outperiod) = 
+						dbisim(let
+							-- IMPLEMENTATION NOTE: 
+							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+							-- however FDR struggles with that form in certain cases. So we use the exception operator
+							-- instead to 'terminate'.
+							
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SHARE_WAIT(const_MovementController_evadetime) ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+							
+						VS_O__(id__,
+								    const_MovementController_lv,
+								    const_MovementController_evadetime,
+								    const_MovementController_stuckperiod,
+								    const_MovementController_stuckdist,
+								    const_MovementController_outperiod) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SHARE_WAIT(const_MovementController_evadetime) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -1034,8 +1200,8 @@
 				
 				
 				----------------------------------------------------------------------
-				-- State: Waiting
-				module Waiting
+				-- State: AvoidingAgain
+				module AvoidingAgain
 				
 				enterSS = {}
 				
@@ -1077,7 +1243,7 @@
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= true&(share__choice(randomWalk.out -> SKIP)) ; 
+							Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -1098,7 +1264,7 @@
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= true&(share__choice(randomWalk.out -> SKIP)) ; 
+							Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -1236,8 +1402,8 @@
 				
 				
 				----------------------------------------------------------------------
-				-- State: Final
-				module Final
+				-- State: Going
+				module Going
 				
 				enterSS = {}
 				
@@ -1279,7 +1445,16 @@
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= SKIP ; 
+							Active 		= share__choice(get_a?a -> true&CALL__move(
+										id__,
+									    const_MovementController_lv,
+									    const_MovementController_evadetime,
+									    const_MovementController_stuckperiod,
+									    const_MovementController_stuckdist,
+									    const_MovementController_outperiod,
+										const_MovementController_lv,
+										a
+									)) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -1300,191 +1475,16 @@
 							
 							Termination = terminate -> SKIP
 							
-							Active 		= SKIP ; 
-									 	  Behaviour ; 
-									 	  share__choice(exit -> SKIP) ; SKIP ; 
-									 	  share__choice(exited -> SKIP) ; Inactive
-						
-							Behaviour 	= entered -> During
-							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-						within
-							Inactive [| {terminate} |> SKIP)
-						
-						
-						-- Clocks
-						
-						StateClocks(id__,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod) = terminate -> SKIP
-						
-						stateClockSync = {||}
-					}
-				
-				endmodule
-				----------------------------------------------------------------------
-				
-				
-				----------------------------------------------------------------------
-				-- State: AvoidingAgain
-				module AvoidingAgain
-				
-				enterSS = {}
-				
-				enteredSS = {}
-				
-				exports
-				
-					--  Declarations
-					
-					channel enter, entered, interrupt
-					channel enteredL, enteredR
-					
-									
-					
-					--channel increment__
-					
-					
-					--	Nodes
-					-- declaring all nodes
-					
-					
-					Timed(OneStep) {
-						--	Rule: behaviours(Node)
-						--  Note that FDR has problems with efficiently compiling the process below
-						-- 	if using a different recursion pattern.
-						D__(id__,
-								    const_MovementController_lv,
-								    const_MovementController_evadetime,
-								    const_MovementController_stuckperiod,
-								    const_MovementController_stuckdist,
-								    const_MovementController_outperiod) = 
-						dbisim(let
-							-- IMPLEMENTATION NOTE: 
-							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-							-- however FDR struggles with that form in certain cases. So we use the exception operator
-							-- instead to 'terminate'.
-							
-							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-							
-							Termination = terminate -> SKIP
-							
-							Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
-									 	  Behaviour ; 
-									 	  share__choice(exit -> SKIP) ; SKIP ; 
-									 	  share__choice(exited -> SKIP) ; Inactive
-						
-							Behaviour 	= entered -> During
-							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-						within
-							Inactive [| {terminate} |> SKIP)
-							
-						VS_O__(id__,
-								    const_MovementController_lv,
-								    const_MovementController_evadetime,
-								    const_MovementController_stuckperiod,
-								    const_MovementController_stuckdist,
-								    const_MovementController_outperiod) = 
-						dbisim(let
-							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-							
-							Termination = terminate -> SKIP
-							
-							Active 		= share__choice(true & (share__choice(set_d1!0 -> SKIP))) ; 
-									 	  Behaviour ; 
-									 	  share__choice(exit -> SKIP) ; SKIP ; 
-									 	  share__choice(exited -> SKIP) ; Inactive
-						
-							Behaviour 	= entered -> During
-							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-						within
-							Inactive [| {terminate} |> SKIP)
-						
-						
-						-- Clocks
-						
-						StateClocks(id__,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod) = terminate -> SKIP
-						
-						stateClockSync = {||}
-					}
-				
-				endmodule
-				----------------------------------------------------------------------
-				
-				
-				----------------------------------------------------------------------
-				-- State: Avoiding
-				module Avoiding
-				
-				enterSS = {}
-				
-				enteredSS = {}
-				
-				exports
-				
-					--  Declarations
-					
-					channel enter, entered, interrupt
-					channel enteredL, enteredR
-					
-									
-					
-					--channel increment__
-					
-					
-					--	Nodes
-					-- declaring all nodes
-					
-					
-					Timed(OneStep) {
-						--	Rule: behaviours(Node)
-						--  Note that FDR has problems with efficiently compiling the process below
-						-- 	if using a different recursion pattern.
-						D__(id__,
-								    const_MovementController_lv,
-								    const_MovementController_evadetime,
-								    const_MovementController_stuckperiod,
-								    const_MovementController_stuckdist,
-								    const_MovementController_outperiod) = 
-						dbisim(let
-							-- IMPLEMENTATION NOTE: 
-							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-							-- however FDR struggles with that form in certain cases. So we use the exception operator
-							-- instead to 'terminate'.
-							
-							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-							
-							Termination = terminate -> SKIP
-							
-							Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SHARE_WAIT(const_MovementController_evadetime) ; 
-									 	  Behaviour ; 
-									 	  share__choice(exit -> SKIP) ; SKIP ; 
-									 	  share__choice(exited -> SKIP) ; Inactive
-						
-							Behaviour 	= entered -> During
-							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-						within
-							Inactive [| {terminate} |> SKIP)
-							
-						VS_O__(id__,
-								    const_MovementController_lv,
-								    const_MovementController_evadetime,
-								    const_MovementController_stuckperiod,
-								    const_MovementController_stuckdist,
-								    const_MovementController_outperiod) = 
-						dbisim(let
-							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-							
-							Termination = terminate -> SKIP
-							
-							Active 		= share__choice(true & (share__choice(set_d0!0 -> SKIP)));share__choice(get_l?l -> true&(share__choice(compute.out!l -> SKIP)));SHARE_WAIT(const_MovementController_evadetime) ; 
+							Active 		= share__choice(get_a?a -> true&CALL__move(
+										id__,
+									    const_MovementController_lv,
+									    const_MovementController_evadetime,
+									    const_MovementController_stuckperiod,
+									    const_MovementController_stuckdist,
+									    const_MovementController_outperiod,
+										const_MovementController_lv,
+										a
+									)) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -1700,14 +1700,14 @@
 							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 							-- modules for defining the semantics of each node.
 							enterSS = {|
-							Going::enter,
-							GettingOut::enter,
-							TryingAgain::enter,
 							Waiting::enter,
-							Found::enter,
 							Final::enter,
-							AvoidingAgain::enter,
+							GettingOut::enter,
 							Avoiding::enter,
+							TryingAgain::enter,
+							AvoidingAgain::enter,
+							Found::enter,
+							Going::enter,
 							i0::enter
 							|}
 							hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -1720,35 +1720,7 @@
 							within
 								((
 								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-								   Going::D__(id__,
-								   		    const_MovementController_lv,
-								   		    const_MovementController_evadetime,
-								   		    const_MovementController_stuckperiod,
-								   		    const_MovementController_stuckdist,
-								   		    const_MovementController_outperiod)
-								   [| { share__, terminate } |] (
-								   GettingOut::D__(id__,
-								   		    const_MovementController_lv,
-								   		    const_MovementController_evadetime,
-								   		    const_MovementController_stuckperiod,
-								   		    const_MovementController_stuckdist,
-								   		    const_MovementController_outperiod)
-								   [| { share__, terminate } |] (
-								   TryingAgain::D__(id__,
-								   		    const_MovementController_lv,
-								   		    const_MovementController_evadetime,
-								   		    const_MovementController_stuckperiod,
-								   		    const_MovementController_stuckdist,
-								   		    const_MovementController_outperiod)
-								   [| { share__, terminate } |] (
 								   Waiting::D__(id__,
-								   		    const_MovementController_lv,
-								   		    const_MovementController_evadetime,
-								   		    const_MovementController_stuckperiod,
-								   		    const_MovementController_stuckdist,
-								   		    const_MovementController_outperiod)
-								   [| { share__, terminate } |] (
-								   Found::D__(id__,
 								   		    const_MovementController_lv,
 								   		    const_MovementController_evadetime,
 								   		    const_MovementController_stuckperiod,
@@ -1762,7 +1734,7 @@
 								   		    const_MovementController_stuckdist,
 								   		    const_MovementController_outperiod)
 								   [| { share__, terminate } |] (
-								   AvoidingAgain::D__(id__,
+								   GettingOut::D__(id__,
 								   		    const_MovementController_lv,
 								   		    const_MovementController_evadetime,
 								   		    const_MovementController_stuckperiod,
@@ -1770,6 +1742,34 @@
 								   		    const_MovementController_outperiod)
 								   [| { share__, terminate } |] (
 								   Avoiding::D__(id__,
+								   		    const_MovementController_lv,
+								   		    const_MovementController_evadetime,
+								   		    const_MovementController_stuckperiod,
+								   		    const_MovementController_stuckdist,
+								   		    const_MovementController_outperiod)
+								   [| { share__, terminate } |] (
+								   TryingAgain::D__(id__,
+								   		    const_MovementController_lv,
+								   		    const_MovementController_evadetime,
+								   		    const_MovementController_stuckperiod,
+								   		    const_MovementController_stuckdist,
+								   		    const_MovementController_outperiod)
+								   [| { share__, terminate } |] (
+								   AvoidingAgain::D__(id__,
+								   		    const_MovementController_lv,
+								   		    const_MovementController_evadetime,
+								   		    const_MovementController_stuckperiod,
+								   		    const_MovementController_stuckdist,
+								   		    const_MovementController_outperiod)
+								   [| { share__, terminate } |] (
+								   Found::D__(id__,
+								   		    const_MovementController_lv,
+								   		    const_MovementController_evadetime,
+								   		    const_MovementController_stuckperiod,
+								   		    const_MovementController_stuckdist,
+								   		    const_MovementController_outperiod)
+								   [| { share__, terminate } |] (
+								   Going::D__(id__,
 								   		    const_MovementController_lv,
 								   		    const_MovementController_evadetime,
 								   		    const_MovementController_stuckperiod,
@@ -1791,14 +1791,14 @@
 								   )
 								   )
 								 )
-								 [[Going::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Going.in,turn__.NID_Going.in,obstacle__.NID_Going.in,resume__.NID_Going.in|}]]
-								 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_GettingOut.in,turn__.NID_GettingOut.in,resume__.NID_GettingOut.in|}]]
-								 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
 								 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
-								 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
 								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
-								 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
+								 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_GettingOut.in,turn__.NID_GettingOut.in,resume__.NID_GettingOut.in|}]]
 								 [[Avoiding::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Avoiding.in,turn__.NID_Avoiding.in,resume__.NID_Avoiding.in|}]]
+								 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
+								 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
+								 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
+								 [[Going::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Going.in,turn__.NID_Going.in,obstacle__.NID_Going.in,resume__.NID_Going.in|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
 								  [[ share__ <- x__ | x__ <- {| share__,setR_a,setR_l |} ]] 
@@ -1859,7 +1859,7 @@
 						    const_MovementController_stuckdist,
 						    const_MovementController_outperiod) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_TryingAgain,TryingAgain::entered|}
+						stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Found,Found::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Going,Going::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Avoiding,Avoiding::entered|}
 					 within
 						(MachineBody(id__,
 								    const_MovementController_lv,
@@ -1882,7 +1882,7 @@
 						    const_MovementController_stuckdist,
 						    const_MovementController_outperiod) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_TryingAgain,TryingAgain::entered|}
+						stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Found,Found::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Going,Going::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Avoiding,Avoiding::entered|}
 					 within
 						(dbisim(
 							sbisim(
@@ -1906,77 +1906,77 @@
 																								    const_MovementController_stuckperiod,
 																								    const_MovementController_stuckdist,
 																								    const_MovementController_outperiod)
-																						[| {|get_CLID_TryingAgain,TryingAgain::entered,terminate|} |]
-																						dbisim(Clock_CLID_TryingAgain(id__,0,
+																						[| {|get_CLID_Avoiding,Avoiding::entered,terminate|} |]
+																						dbisim(Clock_CLID_Avoiding(id__,0,
 																								          const_MovementController_lv,
 																								          const_MovementController_evadetime,
 																								          const_MovementController_stuckperiod,
 																								          const_MovementController_stuckdist,
 																								          const_MovementController_outperiod))
-																					)\{|get_CLID_TryingAgain|}
+																					)\{|get_CLID_Avoiding|}
 																				)
-																				[| {|get_CLID_Final,Final::entered,terminate|} |]
-																				dbisim(Clock_CLID_Final(id__,0,
+																				[| {|get_CLID_GettingOut,GettingOut::entered,terminate|} |]
+																				dbisim(Clock_CLID_GettingOut(id__,0,
 																						          const_MovementController_lv,
 																						          const_MovementController_evadetime,
 																						          const_MovementController_stuckperiod,
 																						          const_MovementController_stuckdist,
 																						          const_MovementController_outperiod))
-																			)\{|get_CLID_Final|}
+																			)\{|get_CLID_GettingOut|}
 																		)
-																		[| {|get_CLID_GettingOut,GettingOut::entered,terminate|} |]
-																		dbisim(Clock_CLID_GettingOut(id__,0,
+																		[| {|get_CLID_TryingAgain,TryingAgain::entered,terminate|} |]
+																		dbisim(Clock_CLID_TryingAgain(id__,0,
 																				          const_MovementController_lv,
 																				          const_MovementController_evadetime,
 																				          const_MovementController_stuckperiod,
 																				          const_MovementController_stuckdist,
 																				          const_MovementController_outperiod))
-																	)\{|get_CLID_GettingOut|}
+																	)\{|get_CLID_TryingAgain|}
 																)
-																[| {|get_CLID_Found,Found::entered,terminate|} |]
-																dbisim(Clock_CLID_Found(id__,0,
+																[| {|get_CLID_Going,Going::entered,terminate|} |]
+																dbisim(Clock_CLID_Going(id__,0,
 																		          const_MovementController_lv,
 																		          const_MovementController_evadetime,
 																		          const_MovementController_stuckperiod,
 																		          const_MovementController_stuckdist,
 																		          const_MovementController_outperiod))
-															)\{|get_CLID_Found|}
+															)\{|get_CLID_Going|}
 														)
-														[| {|get_CLID_Avoiding,Avoiding::entered,terminate|} |]
-														dbisim(Clock_CLID_Avoiding(id__,0,
+														[| {|get_CLID_AvoidingAgain,AvoidingAgain::entered,terminate|} |]
+														dbisim(Clock_CLID_AvoidingAgain(id__,0,
 																          const_MovementController_lv,
 																          const_MovementController_evadetime,
 																          const_MovementController_stuckperiod,
 																          const_MovementController_stuckdist,
 																          const_MovementController_outperiod))
-													)\{|get_CLID_Avoiding|}
+													)\{|get_CLID_AvoidingAgain|}
 												)
-												[| {|get_CLID_AvoidingAgain,AvoidingAgain::entered,terminate|} |]
-												dbisim(Clock_CLID_AvoidingAgain(id__,0,
+												[| {|get_CLID_Waiting,Waiting::entered,terminate|} |]
+												dbisim(Clock_CLID_Waiting(id__,0,
 														          const_MovementController_lv,
 														          const_MovementController_evadetime,
 														          const_MovementController_stuckperiod,
 														          const_MovementController_stuckdist,
 														          const_MovementController_outperiod))
-											)\{|get_CLID_AvoidingAgain|}
+											)\{|get_CLID_Waiting|}
 										)
-										[| {|get_CLID_Waiting,Waiting::entered,terminate|} |]
-										dbisim(Clock_CLID_Waiting(id__,0,
+										[| {|get_CLID_Found,Found::entered,terminate|} |]
+										dbisim(Clock_CLID_Found(id__,0,
 												          const_MovementController_lv,
 												          const_MovementController_evadetime,
 												          const_MovementController_stuckperiod,
 												          const_MovementController_stuckdist,
 												          const_MovementController_outperiod))
-									)\{|get_CLID_Waiting|}
+									)\{|get_CLID_Found|}
 								)
-								[| {|get_CLID_Going,Going::entered,terminate|} |]
-								dbisim(Clock_CLID_Going(id__,0,
+								[| {|get_CLID_Final,Final::entered,terminate|} |]
+								dbisim(Clock_CLID_Final(id__,0,
 										          const_MovementController_lv,
 										          const_MovementController_evadetime,
 										          const_MovementController_stuckperiod,
 										          const_MovementController_stuckdist,
 										          const_MovementController_outperiod))
-							)\{|get_CLID_Going|}
+							)\{|get_CLID_Final|}
 						)
 						) \ union(stateClockSync,enteredSS)
 					)
@@ -2061,14 +2061,14 @@
 							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 							-- modules for defining the semantics of each node.
 							enterSS = {|
-							Going::enter,
-							GettingOut::enter,
-							TryingAgain::enter,
 							Waiting::enter,
-							Found::enter,
 							Final::enter,
-							AvoidingAgain::enter,
+							GettingOut::enter,
 							Avoiding::enter,
+							TryingAgain::enter,
+							AvoidingAgain::enter,
+							Found::enter,
+							Going::enter,
 							i0::enter
 							|}
 							hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -2081,35 +2081,7 @@
 							within
 								((
 								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-								   Going::VS_O__(id__,
-								   		    const_MovementController_lv,
-								   		    const_MovementController_evadetime,
-								   		    const_MovementController_stuckperiod,
-								   		    const_MovementController_stuckdist,
-								   		    const_MovementController_outperiod)
-								   [| { share__, terminate } |] (
-								   GettingOut::VS_O__(id__,
-								   		    const_MovementController_lv,
-								   		    const_MovementController_evadetime,
-								   		    const_MovementController_stuckperiod,
-								   		    const_MovementController_stuckdist,
-								   		    const_MovementController_outperiod)
-								   [| { share__, terminate } |] (
-								   TryingAgain::VS_O__(id__,
-								   		    const_MovementController_lv,
-								   		    const_MovementController_evadetime,
-								   		    const_MovementController_stuckperiod,
-								   		    const_MovementController_stuckdist,
-								   		    const_MovementController_outperiod)
-								   [| { share__, terminate } |] (
 								   Waiting::VS_O__(id__,
-								   		    const_MovementController_lv,
-								   		    const_MovementController_evadetime,
-								   		    const_MovementController_stuckperiod,
-								   		    const_MovementController_stuckdist,
-								   		    const_MovementController_outperiod)
-								   [| { share__, terminate } |] (
-								   Found::VS_O__(id__,
 								   		    const_MovementController_lv,
 								   		    const_MovementController_evadetime,
 								   		    const_MovementController_stuckperiod,
@@ -2123,7 +2095,7 @@
 								   		    const_MovementController_stuckdist,
 								   		    const_MovementController_outperiod)
 								   [| { share__, terminate } |] (
-								   AvoidingAgain::VS_O__(id__,
+								   GettingOut::VS_O__(id__,
 								   		    const_MovementController_lv,
 								   		    const_MovementController_evadetime,
 								   		    const_MovementController_stuckperiod,
@@ -2131,6 +2103,34 @@
 								   		    const_MovementController_outperiod)
 								   [| { share__, terminate } |] (
 								   Avoiding::VS_O__(id__,
+								   		    const_MovementController_lv,
+								   		    const_MovementController_evadetime,
+								   		    const_MovementController_stuckperiod,
+								   		    const_MovementController_stuckdist,
+								   		    const_MovementController_outperiod)
+								   [| { share__, terminate } |] (
+								   TryingAgain::VS_O__(id__,
+								   		    const_MovementController_lv,
+								   		    const_MovementController_evadetime,
+								   		    const_MovementController_stuckperiod,
+								   		    const_MovementController_stuckdist,
+								   		    const_MovementController_outperiod)
+								   [| { share__, terminate } |] (
+								   AvoidingAgain::VS_O__(id__,
+								   		    const_MovementController_lv,
+								   		    const_MovementController_evadetime,
+								   		    const_MovementController_stuckperiod,
+								   		    const_MovementController_stuckdist,
+								   		    const_MovementController_outperiod)
+								   [| { share__, terminate } |] (
+								   Found::VS_O__(id__,
+								   		    const_MovementController_lv,
+								   		    const_MovementController_evadetime,
+								   		    const_MovementController_stuckperiod,
+								   		    const_MovementController_stuckdist,
+								   		    const_MovementController_outperiod)
+								   [| { share__, terminate } |] (
+								   Going::VS_O__(id__,
 								   		    const_MovementController_lv,
 								   		    const_MovementController_evadetime,
 								   		    const_MovementController_stuckperiod,
@@ -2152,14 +2152,14 @@
 								   )
 								   )
 								 )
-								 [[Going::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Going.in,turn__.NID_Going.in,obstacle__.NID_Going.in,resume__.NID_Going.in|}]]
-								 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_GettingOut.in,turn__.NID_GettingOut.in,resume__.NID_GettingOut.in|}]]
-								 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
 								 [[Waiting::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Waiting.in,turn__.NID_Waiting.in,resume__.NID_Waiting.in|}]]
-								 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
 								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
-								 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
+								 [[GettingOut::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_GettingOut.in,turn__.NID_GettingOut.in,resume__.NID_GettingOut.in|}]]
 								 [[Avoiding::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Avoiding.in,turn__.NID_Avoiding.in,resume__.NID_Avoiding.in|}]]
+								 [[TryingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_TryingAgain.in,turn__.NID_TryingAgain.in,obstacle__.NID_TryingAgain.in,resume__.NID_TryingAgain.in|}]]
+								 [[AvoidingAgain::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_AvoidingAgain.in,resume__.NID_AvoidingAgain.in,internal__.NID_AvoidingAgain,internal__.NID_AvoidingAgain|}]]
+								 [[Found::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Found|}]]
+								 [[Going::interrupt <- x__ | x__ <- {|interrupt,stop__.NID_Going.in,turn__.NID_Going.in,obstacle__.NID_Going.in,resume__.NID_Going.in|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
 								  [[ share__ <- x__ | x__ <- {| share__,setR_a,setR_l |} ]] 
@@ -2220,7 +2220,7 @@
 						    const_MovementController_stuckdist,
 						    const_MovementController_outperiod) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_TryingAgain,TryingAgain::entered|}
+						stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Found,Found::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Going,Going::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Avoiding,Avoiding::entered|}
 					 within
 						(MachineBody_VS_O(id__,
 								    const_MovementController_lv,
@@ -2243,7 +2243,7 @@
 						    const_MovementController_stuckdist,
 						    const_MovementController_outperiod) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_TryingAgain,TryingAgain::entered|}
+						stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Found,Found::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Going,Going::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Avoiding,Avoiding::entered|}
 					 within
 						(dbisim(
 							sbisim(
@@ -2267,77 +2267,77 @@
 																								    const_MovementController_stuckperiod,
 																								    const_MovementController_stuckdist,
 																								    const_MovementController_outperiod)
-																						[| {|get_CLID_TryingAgain,TryingAgain::entered,terminate|} |]
-																						dbisim(Clock_CLID_TryingAgain(id__,0,
+																						[| {|get_CLID_Avoiding,Avoiding::entered,terminate|} |]
+																						dbisim(Clock_CLID_Avoiding(id__,0,
 																								          const_MovementController_lv,
 																								          const_MovementController_evadetime,
 																								          const_MovementController_stuckperiod,
 																								          const_MovementController_stuckdist,
 																								          const_MovementController_outperiod))
-																					)\{|get_CLID_TryingAgain|}
+																					)\{|get_CLID_Avoiding|}
 																				)
-																				[| {|get_CLID_Final,Final::entered,terminate|} |]
-																				dbisim(Clock_CLID_Final(id__,0,
+																				[| {|get_CLID_GettingOut,GettingOut::entered,terminate|} |]
+																				dbisim(Clock_CLID_GettingOut(id__,0,
 																						          const_MovementController_lv,
 																						          const_MovementController_evadetime,
 																						          const_MovementController_stuckperiod,
 																						          const_MovementController_stuckdist,
 																						          const_MovementController_outperiod))
-																			)\{|get_CLID_Final|}
+																			)\{|get_CLID_GettingOut|}
 																		)
-																		[| {|get_CLID_GettingOut,GettingOut::entered,terminate|} |]
-																		dbisim(Clock_CLID_GettingOut(id__,0,
+																		[| {|get_CLID_TryingAgain,TryingAgain::entered,terminate|} |]
+																		dbisim(Clock_CLID_TryingAgain(id__,0,
 																				          const_MovementController_lv,
 																				          const_MovementController_evadetime,
 																				          const_MovementController_stuckperiod,
 																				          const_MovementController_stuckdist,
 																				          const_MovementController_outperiod))
-																	)\{|get_CLID_GettingOut|}
+																	)\{|get_CLID_TryingAgain|}
 																)
-																[| {|get_CLID_Found,Found::entered,terminate|} |]
-																dbisim(Clock_CLID_Found(id__,0,
+																[| {|get_CLID_Going,Going::entered,terminate|} |]
+																dbisim(Clock_CLID_Going(id__,0,
 																		          const_MovementController_lv,
 																		          const_MovementController_evadetime,
 																		          const_MovementController_stuckperiod,
 																		          const_MovementController_stuckdist,
 																		          const_MovementController_outperiod))
-															)\{|get_CLID_Found|}
+															)\{|get_CLID_Going|}
 														)
-														[| {|get_CLID_Avoiding,Avoiding::entered,terminate|} |]
-														dbisim(Clock_CLID_Avoiding(id__,0,
+														[| {|get_CLID_AvoidingAgain,AvoidingAgain::entered,terminate|} |]
+														dbisim(Clock_CLID_AvoidingAgain(id__,0,
 																          const_MovementController_lv,
 																          const_MovementController_evadetime,
 																          const_MovementController_stuckperiod,
 																          const_MovementController_stuckdist,
 																          const_MovementController_outperiod))
-													)\{|get_CLID_Avoiding|}
+													)\{|get_CLID_AvoidingAgain|}
 												)
-												[| {|get_CLID_AvoidingAgain,AvoidingAgain::entered,terminate|} |]
-												dbisim(Clock_CLID_AvoidingAgain(id__,0,
+												[| {|get_CLID_Waiting,Waiting::entered,terminate|} |]
+												dbisim(Clock_CLID_Waiting(id__,0,
 														          const_MovementController_lv,
 														          const_MovementController_evadetime,
 														          const_MovementController_stuckperiod,
 														          const_MovementController_stuckdist,
 														          const_MovementController_outperiod))
-											)\{|get_CLID_AvoidingAgain|}
+											)\{|get_CLID_Waiting|}
 										)
-										[| {|get_CLID_Waiting,Waiting::entered,terminate|} |]
-										dbisim(Clock_CLID_Waiting(id__,0,
+										[| {|get_CLID_Found,Found::entered,terminate|} |]
+										dbisim(Clock_CLID_Found(id__,0,
 												          const_MovementController_lv,
 												          const_MovementController_evadetime,
 												          const_MovementController_stuckperiod,
 												          const_MovementController_stuckdist,
 												          const_MovementController_outperiod))
-									)\{|get_CLID_Waiting|}
+									)\{|get_CLID_Found|}
 								)
-								[| {|get_CLID_Going,Going::entered,terminate|} |]
-								dbisim(Clock_CLID_Going(id__,0,
+								[| {|get_CLID_Final,Final::entered,terminate|} |]
+								dbisim(Clock_CLID_Final(id__,0,
 										          const_MovementController_lv,
 										          const_MovementController_evadetime,
 										          const_MovementController_stuckperiod,
 										          const_MovementController_stuckdist,
 										          const_MovementController_outperiod))
-							)\{|get_CLID_Going|}
+							)\{|get_CLID_Final|}
 						)
 						) \ diff(union(stateClockSync,enteredSS),enteredSS)
 					)
@@ -2565,28 +2565,60 @@
 				
 				clockSync = {|get_CLID_clockResetTime,clockReset.CLID_clockResetTime|}
 				
-				Clock_CLID_Going(id__,x__,
+				Clock_CLID_Final(id__,x__,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
 						          const_MovementController_stuckdist,
 						          const_MovementController_outperiod) = 
 					TimeOut_1(
-						Going::entered -> Clock_CLID_Going(id__,0,
+						Final::entered -> Clock_CLID_Final(id__,0,
 								          const_MovementController_lv,
 								          const_MovementController_evadetime,
 								          const_MovementController_stuckperiod,
 								          const_MovementController_stuckdist,
 								          const_MovementController_outperiod)
 						[]
-						get_CLID_Going!x__ -> Clock_CLID_Going(id__,x__,
+						get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
 								          const_MovementController_lv,
 								          const_MovementController_evadetime,
 								          const_MovementController_stuckperiod,
 								          const_MovementController_stuckdist,
 								          const_MovementController_outperiod)
 						[]
-						terminate -> SKIP,Clock_CLID_Going(id__,clock_type_plus(x__,1,CLID_Going_clock_type(id__,
+						terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)),
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod))
+				Clock_CLID_Found(id__,x__,
+						          const_MovementController_lv,
+						          const_MovementController_evadetime,
+						          const_MovementController_stuckperiod,
+						          const_MovementController_stuckdist,
+						          const_MovementController_outperiod) = 
+					TimeOut_1(
+						Found::entered -> Clock_CLID_Found(id__,0,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)
+						[]
+						get_CLID_Found!x__ -> Clock_CLID_Found(id__,x__,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)
+						[]
+						terminate -> SKIP,Clock_CLID_Found(id__,clock_type_plus(x__,1,CLID_Found_clock_type(id__,
 								          const_MovementController_lv,
 								          const_MovementController_evadetime,
 								          const_MovementController_stuckperiod,
@@ -2661,124 +2693,28 @@
 								          const_MovementController_stuckperiod,
 								          const_MovementController_stuckdist,
 								          const_MovementController_outperiod))
-				Clock_CLID_Avoiding(id__,x__,
+				Clock_CLID_Going(id__,x__,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
 						          const_MovementController_stuckdist,
 						          const_MovementController_outperiod) = 
 					TimeOut_1(
-						Avoiding::entered -> Clock_CLID_Avoiding(id__,0,
+						Going::entered -> Clock_CLID_Going(id__,0,
 								          const_MovementController_lv,
 								          const_MovementController_evadetime,
 								          const_MovementController_stuckperiod,
 								          const_MovementController_stuckdist,
 								          const_MovementController_outperiod)
 						[]
-						get_CLID_Avoiding!x__ -> Clock_CLID_Avoiding(id__,x__,
+						get_CLID_Going!x__ -> Clock_CLID_Going(id__,x__,
 								          const_MovementController_lv,
 								          const_MovementController_evadetime,
 								          const_MovementController_stuckperiod,
 								          const_MovementController_stuckdist,
 								          const_MovementController_outperiod)
 						[]
-						terminate -> SKIP,Clock_CLID_Avoiding(id__,clock_type_plus(x__,1,CLID_Avoiding_clock_type(id__,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)),
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod))
-				Clock_CLID_Found(id__,x__,
-						          const_MovementController_lv,
-						          const_MovementController_evadetime,
-						          const_MovementController_stuckperiod,
-						          const_MovementController_stuckdist,
-						          const_MovementController_outperiod) = 
-					TimeOut_1(
-						Found::entered -> Clock_CLID_Found(id__,0,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)
-						[]
-						get_CLID_Found!x__ -> Clock_CLID_Found(id__,x__,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)
-						[]
-						terminate -> SKIP,Clock_CLID_Found(id__,clock_type_plus(x__,1,CLID_Found_clock_type(id__,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)),
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod))
-				Clock_CLID_GettingOut(id__,x__,
-						          const_MovementController_lv,
-						          const_MovementController_evadetime,
-						          const_MovementController_stuckperiod,
-						          const_MovementController_stuckdist,
-						          const_MovementController_outperiod) = 
-					TimeOut_1(
-						GettingOut::entered -> Clock_CLID_GettingOut(id__,0,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)
-						[]
-						get_CLID_GettingOut!x__ -> Clock_CLID_GettingOut(id__,x__,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)
-						[]
-						terminate -> SKIP,Clock_CLID_GettingOut(id__,clock_type_plus(x__,1,CLID_GettingOut_clock_type(id__,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)),
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod))
-				Clock_CLID_Final(id__,x__,
-						          const_MovementController_lv,
-						          const_MovementController_evadetime,
-						          const_MovementController_stuckperiod,
-						          const_MovementController_stuckdist,
-						          const_MovementController_outperiod) = 
-					TimeOut_1(
-						Final::entered -> Clock_CLID_Final(id__,0,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)
-						[]
-						get_CLID_Final!x__ -> Clock_CLID_Final(id__,x__,
-								          const_MovementController_lv,
-								          const_MovementController_evadetime,
-								          const_MovementController_stuckperiod,
-								          const_MovementController_stuckdist,
-								          const_MovementController_outperiod)
-						[]
-						terminate -> SKIP,Clock_CLID_Final(id__,clock_type_plus(x__,1,CLID_Final_clock_type(id__,
+						terminate -> SKIP,Clock_CLID_Going(id__,clock_type_plus(x__,1,CLID_Going_clock_type(id__,
 								          const_MovementController_lv,
 								          const_MovementController_evadetime,
 								          const_MovementController_stuckperiod,
@@ -2821,13 +2757,84 @@
 								          const_MovementController_stuckperiod,
 								          const_MovementController_stuckdist,
 								          const_MovementController_outperiod))
+				Clock_CLID_GettingOut(id__,x__,
+						          const_MovementController_lv,
+						          const_MovementController_evadetime,
+						          const_MovementController_stuckperiod,
+						          const_MovementController_stuckdist,
+						          const_MovementController_outperiod) = 
+					TimeOut_1(
+						GettingOut::entered -> Clock_CLID_GettingOut(id__,0,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)
+						[]
+						get_CLID_GettingOut!x__ -> Clock_CLID_GettingOut(id__,x__,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)
+						[]
+						terminate -> SKIP,Clock_CLID_GettingOut(id__,clock_type_plus(x__,1,CLID_GettingOut_clock_type(id__,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)),
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod))
+				Clock_CLID_Avoiding(id__,x__,
+						          const_MovementController_lv,
+						          const_MovementController_evadetime,
+						          const_MovementController_stuckperiod,
+						          const_MovementController_stuckdist,
+						          const_MovementController_outperiod) = 
+					TimeOut_1(
+						Avoiding::entered -> Clock_CLID_Avoiding(id__,0,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)
+						[]
+						get_CLID_Avoiding!x__ -> Clock_CLID_Avoiding(id__,x__,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)
+						[]
+						terminate -> SKIP,Clock_CLID_Avoiding(id__,clock_type_plus(x__,1,CLID_Avoiding_clock_type(id__,
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod)),
+								          const_MovementController_lv,
+								          const_MovementController_evadetime,
+								          const_MovementController_stuckperiod,
+								          const_MovementController_stuckdist,
+								          const_MovementController_outperiod))
 				
 				StateClocks(id__,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
 						          const_MovementController_stuckdist,
-						          const_MovementController_outperiod) = dbisim(Clock_CLID_Going(id__,0,
+						          const_MovementController_outperiod) = dbisim(Clock_CLID_Final(id__,0,
+						          const_MovementController_lv,
+						          const_MovementController_evadetime,
+						          const_MovementController_stuckperiod,
+						          const_MovementController_stuckdist,
+						          const_MovementController_outperiod))
+				[| { terminate } |] (
+				dbisim(Clock_CLID_Found(id__,0,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
@@ -2848,14 +2855,14 @@
 						          const_MovementController_stuckdist,
 						          const_MovementController_outperiod))
 				[| { terminate } |] (
-				dbisim(Clock_CLID_Avoiding(id__,0,
+				dbisim(Clock_CLID_Going(id__,0,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
 						          const_MovementController_stuckdist,
 						          const_MovementController_outperiod))
 				[| { terminate } |] (
-				dbisim(Clock_CLID_Found(id__,0,
+				dbisim(Clock_CLID_TryingAgain(id__,0,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
@@ -2869,14 +2876,7 @@
 						          const_MovementController_stuckdist,
 						          const_MovementController_outperiod))
 				[| { terminate } |] (
-				dbisim(Clock_CLID_Final(id__,0,
-						          const_MovementController_lv,
-						          const_MovementController_evadetime,
-						          const_MovementController_stuckperiod,
-						          const_MovementController_stuckdist,
-						          const_MovementController_outperiod))
-				[| { terminate } |] (
-				dbisim(Clock_CLID_TryingAgain(id__,0,
+				dbisim(Clock_CLID_Avoiding(id__,0,
 						          const_MovementController_lv,
 						          const_MovementController_evadetime,
 						          const_MovementController_stuckperiod,
@@ -2890,7 +2890,7 @@
 				)
 				)
 				
-				stateClockSync = {|get_CLID_Going,Going::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Avoiding,Avoiding::entered,get_CLID_Found,Found::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Final,Final::entered,get_CLID_TryingAgain,TryingAgain::entered|}
+				stateClockSync = {|get_CLID_Final,Final::entered,get_CLID_Found,Found::entered,get_CLID_Waiting,Waiting::entered,get_CLID_AvoidingAgain,AvoidingAgain::entered,get_CLID_Going,Going::entered,get_CLID_TryingAgain,TryingAgain::entered,get_CLID_GettingOut,GettingOut::entered,get_CLID_Avoiding,Avoiding::entered|}
 				
 				-- Shared memory
 				-- Shared memory variables

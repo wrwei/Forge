@@ -59,13 +59,13 @@ show_record Intensity
 
 text \<open> function definition \<close>
 
-consts location :: " GasSensor list \<Rightarrow> Angle"
-consts analysis :: " GasSensor list \<Rightarrow> Status"
 consts peakIntensity :: " GasSensor list \<Rightarrow> real"
+consts analysis :: " GasSensor list \<Rightarrow> Status"
+consts location :: " GasSensor list \<Rightarrow> Angle"
 consts since :: "'a \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts clockResetTime :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts stuckperiod :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts stuckdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition stuckperiod :: "unit \<Rightarrow> real" where "stuckperiod u = 5"  (* named constant; value from the model *)
+definition stuckdist :: "unit \<Rightarrow> real" where "stuckdist u = 1"  (* named constant; value from the model *)
 
 subsection \<open> State Space \<close>
 
@@ -90,10 +90,10 @@ zstore GasAnalysisController =
                             presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
     "tr \<noteq> []
-                      \<and> (st = Reading \<longrightarrow> listens = {gas, tick})
+                      \<and> (st = Reading \<longrightarrow> listens = {tick, gas})
                       \<and> (st = Analysis \<longrightarrow> listens = {tick})
                       \<and> (st = GasDetected \<longrightarrow> listens = {tick})
-                                                                                     \<and> (st = Reading \<longrightarrow> (offered = {} \<or> offered = {gas} \<or> offered = {tick}))
+                                                                                     \<and> (st = Reading \<longrightarrow> (offered = {} \<or> offered = {tick} \<or> offered = {gas}))
                                                                                      \<and> (st = Analysis \<longrightarrow> (offered = {} \<or> offered = {tick}))
                                                                                      \<and> (st = NoGas \<longrightarrow> (offered = {}))
                                                                                      \<and> (st = GasDetected \<longrightarrow> (offered = {} \<or> offered = {tick}))
@@ -104,11 +104,11 @@ subsection \<open> Operations \<close>
 
 zoperation InitialToReading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}" 
+  params nxt \<in> "{{}, {tick}, {gas}}" 
   pre "st= initial"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,listens\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {tick, gas}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -125,11 +125,11 @@ zoperation ReadingToAnalysis =
         
 zoperation ReadingToReading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}" 
+  params nxt \<in> "{{}, {tick}, {gas}}" 
   pre "st= Reading \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr @ [Event tick] @ [State Reading]
-         ,listens\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {tick, gas}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -165,11 +165,11 @@ zoperation AnalysisToAnalysis =
         
 zoperation NoGasToReading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}" 
+  params nxt \<in> "{{}, {tick}, {gas}}" 
   pre "st= NoGas"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,listens\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {tick, gas}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -184,12 +184,12 @@ zoperation GasDetectedToFinal =
         
 zoperation GasDetectedToReading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}" 
+  params nxt \<in> "{{}, {tick}, {gas}}" 
   pre "st= GasDetected \<and> \<not>insVal\<ge>10.0"
   update "[st\<Zprime>= Reading
          ,anl\<Zprime> = location(gs)
          ,tr\<Zprime> =tr @ [Event turn] @ [State Reading]
-         ,listens\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {tick, gas}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -207,7 +207,7 @@ zoperation GasDetectedToGasDetected =
   
 zoperation Idle_Reading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}"
+  params nxt \<in> "{{}, {tick}, {gas}}"
   pre "st= Reading \<and> \<not>(gas \<in> offered) \<and> \<not>(tick \<in> offered)"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> = tr
@@ -333,16 +333,9 @@ lemma "Idle_Analysis (nxt) preserves R1 under GasAnalysisController_inv"
 
 definition [z_defs]: "GasAnalysisController_axioms = True"
 
-(* WARNING -- THIS OBLIGATION IS FALSE AS EMITTED.
-   State(s) with no outgoing transition: Final.
-   Under `loop` semantics such a state offers Vis {} = deadlock, so
-   deadlock_free does not hold. This is a MODEL defect (a missing tick-triggered
-   self-loop in the Java), not a proof-search problem: no tactic can close it.
-   Measured on chemical_detector v2 -- auto OOM 978s, metis 1825s, blast 922s,
-   fastforce 923s; refuted by probe_Y3_obligation_refuted with witness
-   st = Final.
-   Fix the Java per forge.assets/prompts/java_codegen_rules.txt ("EVERY MODE
-   MUST HAVE AN OUTGOING TRANSITION"), re-extract, and this marker disappears. *)
+(* Terminal state(s), with no outgoing transition: Final.
+   The machine's `until` clause exempts them from the deadlock-freedom
+   obligation below: the machine has finished there. *)
 lemma GasAnalysisController_deadlock_free: "GasAnalysisController_axioms  \<Longrightarrow> deadlock_free GasAnalysisControllerMachine"
   unfolding GasAnalysisControllerMachine_def
   apply deadlock_free

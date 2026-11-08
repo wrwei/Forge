@@ -2,6 +2,10 @@
 
 An end-to-end workflow combining AI-assisted code generation with formal verification to produce trustworthy Java software. A developer writes Java source code interactively with LLM assistance (Claude Code / Cline in VS Code), following strict structural constraints. The code is then transformed into formal RoboChart models and verified using FDR4 (CSP model checker) and Dafny (deductive verifier). A web dashboard orchestrates the deterministic transformation and verification phases.
 
+## Version
+
+The `main` branch is the version of the pipeline whose results the accompanying paper reports: every recorded run, the mutation campaign and the requirements-level checks under `experiments/` were produced by, or re-derived with, this code. Earlier versions are in the history.
+
 ## Architecture Overview
 
 ```
@@ -416,6 +420,11 @@ enumeration (`experiments/conformance-tierB/`) were run at the same revision.
 ```
 bash scripts/regression_test.sh                    # extraction determinism (RQ1)
 cd forge.dashboard && python -m pytest tests       # includes the Phase 6d positive controls
+```
+
+Phase 6d (the vacuity audit) reports blocking findings (an unsatisfiable precondition, an antecedent that never holds, an empty domain, an initial state outside the invariant, a mode or transition unreachable in the symbolic model, a constant that differs between backends) and advisory ones (unreachability under the narrowed FDR4 instantiation, narrowed singleton domains, terminal states that offer nothing, and the two generator placeholders: the Dafny class invariant `Valid()` being `true` while the per-transition `ensures` clauses carry the obligations, and the Isabelle requirement predicate `R1` being `True` with one lemma per operation preserving it, each reported with the number of obligations it accounts for).
+
+```
 python experiments/conformance-tierB/run_tierb.py prefix   # guard-level enumeration (Section 5.5)
 ```
 

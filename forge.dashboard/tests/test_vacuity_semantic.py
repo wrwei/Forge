@@ -311,10 +311,13 @@ def test_dead_offered_pairs_found():
 # ---------------------------------------------------------------------------
 
 ARCHIVED_EXPECTED = {
-    # study -> exact multiset of firing signals
-    "lre": ["R2", "T2"],
-    "sranger": ["K1"],
-    "chemical_detector": ["R2", "T2"],
+    # study -> exact multiset of firing signals. D2 and I2 (Amendment 21) fire
+    # on every generated artefact: the templates' Valid() and R1 placeholders.
+    # The archived Chemical Detector artefacts predate per-controller emission
+    # (one Dafny file, one theory), so one of each here.
+    "lre": ["D2", "I2", "R2", "T2"],
+    "sranger": ["D2", "I2", "K1"],
+    "chemical_detector": ["D2", "I2", "R2", "T2"],
 }
 
 

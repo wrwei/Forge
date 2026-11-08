@@ -70,6 +70,15 @@ ADVISORY_KINDS = frozenset({
     # push requirement-free edits to satisfy an instrument bound.
     # dead_state_offered_pair (dead in BOTH tiers) remains BLOCKING.
     "dead_state_offered_pair_checked",
+    # D2 / I2 (Amendment 21, 8 Nov 2026). Placeholders the generator templates
+    # emit whatever the Java: `Valid() { true }` while the behavioural
+    # obligations are the per-transition `ensures` clauses, and the
+    # requirement predicate `zexpr R1 is "True"` with its `preserves R1`
+    # lemmas. Reported so the obligation and lemma counts can be read for
+    # what they contain; not blocking, because no code-generation iteration
+    # can remove a template placeholder.
+    "dafny_valid_placeholder",
+    "isabelle_requirement_placeholder",
 })
 
 
@@ -196,17 +205,35 @@ def check_dafny_valid_vacuous(dafny_path: Path, repo_root: Path) -> Finding | No
     if body not in {"", "true", "true;"}:
         return None  # Valid() carries non-trivial content — D1 doesn't fire.
 
+    def artifact_of(path: Path) -> str:
+        try:
+            return str(path.relative_to(repo_root).as_posix())
+        except ValueError:
+            return str(path.as_posix())
+    artifact = artifact_of(dafny_path)
+
     # Valid() is vacuous — but the verification may still be load-bearing
     # if other behavioural `ensures` clauses are active on the transition
     # methods. Only flag D1 when nothing else carries the load.
     behavioural_count = _count_behavioural_ensures(text)
     if behavioural_count > 0:
-        return None  # Active behavioural obligations exist; D1 is moot.
-
-    try:
-        artifact = str(dafny_path.relative_to(repo_root).as_posix())
-    except ValueError:
-        artifact = str(dafny_path.as_posix())
+        # D1 is moot, but the class invariant is still a placeholder: say so
+        # (Amendment 21). Advisory; the obligations live in the ensures clauses.
+        return Finding(
+            signal="D2",
+            kind="dafny_valid_placeholder",
+            title="Dafny Valid() body is literally `true`; the obligations are the per-transition ensures clauses",
+            artifact=artifact_of(dafny_path),
+            raw=f"predicate Valid() {{ {body or '(empty)'} }}  /* {behavioural_count} behavioural ensures clauses active */",
+            fix_directive=(
+                "The generated class invariant `Valid()` is `true`, so every "
+                "`ensures Valid()` is `ensures true` and carries no content. "
+                f"The {behavioural_count} behavioural `ensures` clauses on the "
+                "transition methods are the obligations Dafny discharges; read "
+                "the obligation count as those clauses, not as an invariant proof. "
+                "Advisory: a generator template placeholder, not a property of the Java."
+            ),
+        )
 
     return Finding(
         signal="D1",
@@ -305,6 +332,58 @@ def check_isabelle_inv_vacuous(thy_path: Path, repo_root: Path) -> Finding | Non
             "invariant lemmas do not."
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# Signal I2 — requirement predicate `zexpr <R> is "True"` (Amendment 21)
+# ---------------------------------------------------------------------------
+
+_ZEXPR_TRUE_RE = re.compile(r'^\s*zexpr\s+(?P<name>\w+)\s+is\s+"\s*True\s*"', re.MULTILINE)
+
+
+def check_isabelle_requirement_placeholder(thy_path: Path, repo_root: Path) -> list[Finding]:
+    """I2: a named requirement predicate declared literally ``True``.
+
+    The Isabelle generator emits ``zexpr R1 is "True"`` as a slot for a
+    user-stated safety requirement, with ``Init establishes R1`` and one
+    ``<op> preserves R1 under <Store>_inv`` lemma per operation. Those lemmas
+    close by ``zpog_full`` and prove nothing. I1 does not see this: it checks
+    the *store* invariant, which is not literally ``True``. I2 reports each
+    such predicate with the number of lemmas that reference it, so the
+    theory's lemma count can be read for what it contains. Advisory.
+    """
+    if not thy_path.exists():
+        return []
+    text = thy_path.read_text(encoding="utf-8")
+    try:
+        artifact = str(thy_path.relative_to(repo_root).as_posix())
+    except ValueError:
+        artifact = str(thy_path.as_posix())
+    out: list[Finding] = []
+    total_lemmas = len(re.findall(r"^\s*lemma\b", text, re.MULTILINE))
+    for m in _ZEXPR_TRUE_RE.finditer(text):
+        name = m.group("name")
+        n_ref = len(re.findall(
+            r'^\s*lemma\b[^\n]*"[^"\n]*\b(?:establishes|preserves)\s+' + re.escape(name) + r'\b',
+            text, re.MULTILINE))
+        out.append(Finding(
+            signal="I2",
+            kind="isabelle_requirement_placeholder",
+            title=f"Isabelle requirement predicate {name} is literally `True`; "
+                  f"{n_ref} of {total_lemmas} lemmas establish or preserve it",
+            artifact=artifact,
+            raw=m.group(0).strip(),
+            fix_directive=(
+                f"`zexpr {name} is \"True\"` is the generator's placeholder for a "
+                f"user-stated safety requirement. The {n_ref} lemmas that establish "
+                f"or preserve {name} prove that True is preserved and have no "
+                f"behavioural content; the theory's remaining {total_lemmas - n_ref} "
+                "lemmas (store-invariant preservation, deadlock freedom) are the "
+                "ones that do. Read the lemma count accordingly. Advisory: a "
+                "generator template placeholder, not a property of the Java."
+            ),
+        ))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -979,6 +1058,8 @@ def audit(t2m_output: Path, repo_root: Path,
     for thy in thy_files:
         f = check_isabelle_inv_vacuous(thy, repo_root)
         if f:
+            report.add(f)
+        for f in check_isabelle_requirement_placeholder(thy, repo_root):
             report.add(f)
 
     # ── semantic checks over the behavioural theory ─────────────────────────

@@ -59,13 +59,13 @@ show_record Intensity
 
 text \<open> function definition \<close>
 
-consts peakIntensity :: " GasSensor list \<Rightarrow> real"
 consts location :: " GasSensor list \<Rightarrow> Angle"
+consts peakIntensity :: " GasSensor list \<Rightarrow> real"
 consts analysis :: " GasSensor list \<Rightarrow> Status"
 consts since :: "'a \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts clockResetTime :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts stuckperiod :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts stuckdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition stuckperiod :: "unit \<Rightarrow> real" where "stuckperiod u = 5"  (* named constant; value from the model *)
+definition stuckdist :: "unit \<Rightarrow> real" where "stuckdist u = 1"  (* named constant; value from the model *)
 
 subsection \<open> State Space \<close>
 

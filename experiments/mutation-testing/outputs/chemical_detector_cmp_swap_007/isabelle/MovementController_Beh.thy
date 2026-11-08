@@ -59,9 +59,9 @@ show_record Intensity
 
 text \<open> function definition \<close>
 
+consts location :: " GasSensor list \<Rightarrow> Angle"
 consts analysis :: " GasSensor list \<Rightarrow> Status"
 consts peakIntensity :: " GasSensor list \<Rightarrow> real"
-consts location :: " GasSensor list \<Rightarrow> Angle"
 
 subsection \<open> State Space \<close>
 
@@ -85,18 +85,18 @@ zstore MovementController =
                             presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
     "tr \<noteq> []
-                      \<and> (st = Waiting \<longrightarrow> listens = {stop, resume, turn})
-                      \<and> (st = Going \<longrightarrow> listens = {obstacle, stop, turn, resume})
-                      \<and> (st = Avoiding \<longrightarrow> listens = {turn, resume, stop})
-                      \<and> (st = TryingAgain \<longrightarrow> listens = {turn, resume, stop, obstacle})
-                      \<and> (st = GettingOut \<longrightarrow> listens = {resume, turn, stop})
+                      \<and> (st = Waiting \<longrightarrow> listens = {stop, turn, resume})
+                      \<and> (st = Going \<longrightarrow> listens = {turn, stop, resume, obstacle})
+                      \<and> (st = Avoiding \<longrightarrow> listens = {turn, stop, resume})
+                      \<and> (st = TryingAgain \<longrightarrow> listens = {turn, stop, resume, obstacle})
+                      \<and> (st = GettingOut \<longrightarrow> listens = {turn, stop, resume})
                       \<and> (st = Final \<longrightarrow> listens = {tick})
-                                                                               \<and> (st = Waiting \<longrightarrow> (offered = {} \<or> offered = {stop} \<or> offered = {resume} \<or> offered = {turn}))
-                                                                               \<and> (st = Going \<longrightarrow> (offered = {} \<or> offered = {obstacle} \<or> offered = {stop} \<or> offered = {turn} \<or> offered = {resume}))
-                                                                               \<and> (st = Avoiding \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {resume} \<or> offered = {stop}))
-                                                                               \<and> (st = TryingAgain \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {resume} \<or> offered = {stop} \<or> offered = {obstacle}))
+                                                                               \<and> (st = Waiting \<longrightarrow> (offered = {} \<or> offered = {stop} \<or> offered = {turn} \<or> offered = {resume}))
+                                                                               \<and> (st = Going \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {stop} \<or> offered = {resume} \<or> offered = {obstacle}))
+                                                                               \<and> (st = Avoiding \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {stop} \<or> offered = {resume}))
+                                                                               \<and> (st = TryingAgain \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {stop} \<or> offered = {resume} \<or> offered = {obstacle}))
                                                                                \<and> (st = AvoidingAgain \<longrightarrow> (offered = {}))
-                                                                               \<and> (st = GettingOut \<longrightarrow> (offered = {} \<or> offered = {resume} \<or> offered = {turn} \<or> offered = {stop}))
+                                                                               \<and> (st = GettingOut \<longrightarrow> (offered = {} \<or> offered = {turn} \<or> offered = {stop} \<or> offered = {resume}))
                                                                                \<and> (st = Found \<longrightarrow> (offered = {}))
                                                                                \<and> (st = Final \<longrightarrow> (offered = {} \<or> offered = {tick}))
                                                                                \<and> (st = initial \<longrightarrow> (offered = {}))"
@@ -105,11 +105,11 @@ subsection \<open> Operations \<close>
 
 zoperation InitialToWaiting =
   over MovementController
-  params nxt \<in> "{{}, {stop}, {resume}, {turn}}" 
+  params nxt \<in> "{{}, {stop}, {turn}, {resume}}" 
   pre "st= initial"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {stop, resume, turn}
+         ,listens\<Zprime> = {stop, turn, resume}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -124,21 +124,21 @@ zoperation WaitingToFound =
         
 zoperation WaitingToGoing =
   over MovementController
-  params nxt \<in> "{{}, {obstacle}, {stop}, {turn}, {resume}}" 
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}, {obstacle}}" 
   pre "st= Waiting \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Going
          ,tr\<Zprime> =tr @ [Event turn] @ [State Going]
-         ,listens\<Zprime> = {obstacle, stop, turn, resume}
+         ,listens\<Zprime> = {turn, stop, resume, obstacle}
          ,offered\<Zprime> = nxt
          ]"
         
 zoperation WaitingToWaiting =
   over MovementController
-  params nxt \<in> "{{}, {stop}, {resume}, {turn}}" 
+  params nxt \<in> "{{}, {stop}, {turn}, {resume}}" 
   pre "st= Waiting \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {stop, resume, turn}
+         ,listens\<Zprime> = {stop, turn, resume}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -153,32 +153,32 @@ zoperation GoingToFound =
         
 zoperation GoingToGoing =
   over MovementController
-  params nxt \<in> "{{}, {obstacle}, {stop}, {turn}, {resume}}" 
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}, {obstacle}}" 
   pre "st= Going \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Going
          ,tr\<Zprime> =tr @ [Event turn] @ [State Going]
-         ,listens\<Zprime> = {obstacle, stop, turn, resume}
+         ,listens\<Zprime> = {turn, stop, resume, obstacle}
          ,offered\<Zprime> = nxt
          ]"
         
 zoperation GoingToAvoiding =
   over MovementController
-  params nxt \<in> "{{}, {turn}, {resume}, {stop}}" 
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}}" 
   pre "st= Going \<and> obstacle \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Avoiding
          ,d0\<Zprime> = 0.0
          ,tr\<Zprime> =tr @ [Event obstacle]@ [Event compute] @ [State Avoiding]
-         ,listens\<Zprime> = {turn, resume, stop}
+         ,listens\<Zprime> = {turn, stop, resume}
          ,offered\<Zprime> = nxt
          ]"
         
 zoperation GoingToWaiting =
   over MovementController
-  params nxt \<in> "{{}, {stop}, {resume}, {turn}}" 
+  params nxt \<in> "{{}, {stop}, {turn}, {resume}}" 
   pre "st= Going \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {stop, resume, turn}
+         ,listens\<Zprime> = {stop, turn, resume}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -203,21 +203,21 @@ zoperation AvoidingToFound =
         
 zoperation AvoidingToTryingAgain =
   over MovementController
-  params nxt \<in> "{{}, {turn}, {resume}, {stop}, {obstacle}}" 
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}, {obstacle}}" 
   pre "st= Avoiding \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= TryingAgain
          ,tr\<Zprime> =tr @ [Event turn] @ [State TryingAgain]
-         ,listens\<Zprime> = {turn, resume, stop, obstacle}
+         ,listens\<Zprime> = {turn, stop, resume, obstacle}
          ,offered\<Zprime> = nxt
          ]"
         
 zoperation AvoidingToWaiting =
   over MovementController
-  params nxt \<in> "{{}, {stop}, {resume}, {turn}}" 
+  params nxt \<in> "{{}, {stop}, {turn}, {resume}}" 
   pre "st= Avoiding \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {stop, resume, turn}
+         ,listens\<Zprime> = {stop, turn, resume}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -232,11 +232,11 @@ zoperation TryingAgainToFound =
         
 zoperation TryingAgainToTryingAgain =
   over MovementController
-  params nxt \<in> "{{}, {turn}, {resume}, {stop}, {obstacle}}" 
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}, {obstacle}}" 
   pre "st= TryingAgain \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= TryingAgain
          ,tr\<Zprime> =tr @ [Event turn] @ [State TryingAgain]
-         ,listens\<Zprime> = {turn, resume, stop, obstacle}
+         ,listens\<Zprime> = {turn, stop, resume, obstacle}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -251,11 +251,11 @@ zoperation TryingAgainToAvoidingAgain =
         
 zoperation TryingAgainToWaiting =
   over MovementController
-  params nxt \<in> "{{}, {stop}, {resume}, {turn}}" 
+  params nxt \<in> "{{}, {stop}, {turn}, {resume}}" 
   pre "st= TryingAgain \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {stop, resume, turn}
+         ,listens\<Zprime> = {stop, turn, resume}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -270,21 +270,21 @@ zoperation GettingOutToFound =
         
 zoperation GettingOutToGoing =
   over MovementController
-  params nxt \<in> "{{}, {obstacle}, {stop}, {turn}, {resume}}" 
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}, {obstacle}}" 
   pre "st= GettingOut \<and> turn \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Going
          ,tr\<Zprime> =tr @ [Event turn] @ [State Going]
-         ,listens\<Zprime> = {obstacle, stop, turn, resume}
+         ,listens\<Zprime> = {turn, stop, resume, obstacle}
          ,offered\<Zprime> = nxt
          ]"
         
 zoperation GettingOutToWaiting =
   over MovementController
-  params nxt \<in> "{{}, {stop}, {resume}, {turn}}" 
+  params nxt \<in> "{{}, {stop}, {turn}, {resume}}" 
   pre "st= GettingOut \<and> resume \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> =tr @ [Event resume]@ [Event randomWalk] @ [State Waiting]
-         ,listens\<Zprime> = {stop, resume, turn}
+         ,listens\<Zprime> = {stop, turn, resume}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -302,7 +302,7 @@ zoperation FinalToFinal =
   
 zoperation Idle_Waiting =
   over MovementController
-  params nxt \<in> "{{}, {stop}, {resume}, {turn}}"
+  params nxt \<in> "{{}, {stop}, {turn}, {resume}}"
   pre "st= Waiting \<and> \<not>(stop \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(resume \<in> offered)"
   update "[st\<Zprime>= Waiting
          ,tr\<Zprime> = tr
@@ -311,7 +311,7 @@ zoperation Idle_Waiting =
 
 zoperation Idle_Going =
   over MovementController
-  params nxt \<in> "{{}, {obstacle}, {stop}, {turn}, {resume}}"
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}, {obstacle}}"
   pre "st= Going \<and> \<not>(stop \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(obstacle \<in> offered) \<and> \<not>(resume \<in> offered)"
   update "[st\<Zprime>= Going
          ,tr\<Zprime> = tr
@@ -320,7 +320,7 @@ zoperation Idle_Going =
 
 zoperation Idle_Avoiding =
   over MovementController
-  params nxt \<in> "{{}, {turn}, {resume}, {stop}}"
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}}"
   pre "st= Avoiding \<and> \<not>(stop \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(resume \<in> offered)"
   update "[st\<Zprime>= Avoiding
          ,tr\<Zprime> = tr
@@ -329,7 +329,7 @@ zoperation Idle_Avoiding =
 
 zoperation Idle_TryingAgain =
   over MovementController
-  params nxt \<in> "{{}, {turn}, {resume}, {stop}, {obstacle}}"
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}, {obstacle}}"
   pre "st= TryingAgain \<and> \<not>(stop \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(obstacle \<in> offered) \<and> \<not>(resume \<in> offered)"
   update "[st\<Zprime>= TryingAgain
          ,tr\<Zprime> = tr
@@ -338,7 +338,7 @@ zoperation Idle_TryingAgain =
 
 zoperation Idle_GettingOut =
   over MovementController
-  params nxt \<in> "{{}, {resume}, {turn}, {stop}}"
+  params nxt \<in> "{{}, {turn}, {stop}, {resume}}"
   pre "st= GettingOut \<and> \<not>(stop \<in> offered) \<and> \<not>(turn \<in> offered) \<and> \<not>(resume \<in> offered)"
   update "[st\<Zprime>= GettingOut
          ,tr\<Zprime> = tr
@@ -548,16 +548,9 @@ lemma "Idle_Final (nxt) preserves R1 under MovementController_inv"
 
 definition [z_defs]: "MovementController_axioms = True"
 
-(* WARNING -- THIS OBLIGATION IS FALSE AS EMITTED.
-   State(s) with no outgoing transition: AvoidingAgain.
-   Under `loop` semantics such a state offers Vis {} = deadlock, so
-   deadlock_free does not hold. This is a MODEL defect (a missing tick-triggered
-   self-loop in the Java), not a proof-search problem: no tactic can close it.
-   Measured on chemical_detector v2 -- auto OOM 978s, metis 1825s, blast 922s,
-   fastforce 923s; refuted by probe_Y3_obligation_refuted with witness
-   st = AvoidingAgain.
-   Fix the Java per forge.assets/prompts/java_codegen_rules.txt ("EVERY MODE
-   MUST HAVE AN OUTGOING TRANSITION"), re-extract, and this marker disappears. *)
+(* Terminal state(s), with no outgoing transition: AvoidingAgain.
+   The machine's `until` clause exempts them from the deadlock-freedom
+   obligation below: the machine has finished there. *)
 lemma MovementController_deadlock_free: "MovementController_axioms  \<Longrightarrow> deadlock_free MovementControllerMachine"
   unfolding MovementControllerMachine_def
   apply deadlock_free

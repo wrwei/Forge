@@ -236,16 +236,9 @@ lemma "Idle_Final (nxt) preserves R1 under SRangerController_inv"
 
 definition [z_defs]: "SRangerController_axioms = True"
 
-(* WARNING -- THIS OBLIGATION IS FALSE AS EMITTED.
-   State(s) with no outgoing transition: Moving.
-   Under `loop` semantics such a state offers Vis {} = deadlock, so
-   deadlock_free does not hold. This is a MODEL defect (a missing tick-triggered
-   self-loop in the Java), not a proof-search problem: no tactic can close it.
-   Measured on chemical_detector v2 -- auto OOM 978s, metis 1825s, blast 922s,
-   fastforce 923s; refuted by probe_Y3_obligation_refuted with witness
-   st = Moving.
-   Fix the Java per forge.assets/prompts/java_codegen_rules.txt ("EVERY MODE
-   MUST HAVE AN OUTGOING TRANSITION"), re-extract, and this marker disappears. *)
+(* Terminal state(s), with no outgoing transition: Moving.
+   The machine's `until` clause exempts them from the deadlock-freedom
+   obligation below: the machine has finished there. *)
 lemma SRangerController_deadlock_free: "SRangerController_axioms  \<Longrightarrow> deadlock_free SRangerControllerMachine"
   unfolding SRangerControllerMachine_def
   apply deadlock_free

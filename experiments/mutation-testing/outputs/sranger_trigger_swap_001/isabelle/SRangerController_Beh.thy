@@ -47,7 +47,7 @@ end
 text \<open> function definition \<close>
 
 consts distance :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts obstaclethreshold :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition obstaclethreshold :: "unit \<Rightarrow> real" where "obstaclethreshold u = 0.5"  (* named constant; value from the model *)
 
 subsection \<open> State Space \<close>
 
@@ -71,7 +71,7 @@ zstore SRangerController =
                             presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
     "tr \<noteq> []
-                      \<and> (st = Moving \<longrightarrow> listens = {tick, endTask, tick})
+                      \<and> (st = Moving \<longrightarrow> listens = {tick, tick, endTask})
                       \<and> (st = Turning \<longrightarrow> listens = {endTask, tick})
                       \<and> (st = Final \<longrightarrow> listens = {tick})
                                                                                \<and> (st = Moving \<longrightarrow> (offered = {} \<or> offered = {tick} \<or> offered = {endTask}))
@@ -89,7 +89,7 @@ zoperation InitialToMoving =
          ,resetTime\<Zprime> = 0
          ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr  @ [State Moving]
-         ,listens\<Zprime> = {tick, endTask, tick}
+         ,listens\<Zprime> = {tick, tick, endTask}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -125,7 +125,7 @@ zoperation MovingToMoving =
          ,resetTime\<Zprime> = 0
          ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr @ [Event tick] @ [State Moving]
-         ,listens\<Zprime> = {tick, endTask, tick}
+         ,listens\<Zprime> = {tick, tick, endTask}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -137,7 +137,7 @@ zoperation TurningToMoving =
          ,resetTime\<Zprime> = 0
          ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr @ [Event move] @ [State Moving]
-         ,listens\<Zprime> = {tick, endTask, tick}
+         ,listens\<Zprime> = {tick, tick, endTask}
          ,offered\<Zprime> = nxt
          ]"
         

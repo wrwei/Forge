@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:31:39
+-- Automatically generated on 07-11-2026 11:31:52
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -398,9 +398,9 @@ module SRangerController_Module
 				-- Transition identifiers
 				-- declaring identifiers of transitions
 				datatype NIDS = 
-				              NID_Turning|
-				              NID_Final|
 				              NID_Moving|
+				              NID_Final|
+				              NID_Turning|
 				              NID_i0
 				
 				channel internal__ : NIDS
@@ -434,16 +434,16 @@ module SRangerController_Module
 				-- Declaring call and ret events for undefined operations
 				
 				enterSS = {|
-				Turning::enter,
-				Final::enter,
 				Moving::enter,
+				Final::enter,
+				Turning::enter,
 				i0::enter
 				|}
 				
 				enteredSS = 	{|
-				Turning::entered,
+				Moving::entered,
 				Final::entered,
-				Moving::entered
+				Turning::entered
 				|}
 				
 				internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -469,8 +469,8 @@ module SRangerController_Module
 				-- declaring all nodes
 				
 				----------------------------------------------------------------------
-				-- State: Turning
-				module Turning
+				-- State: Moving
+				module Moving
 				
 				enterSS = {}
 				
@@ -503,7 +503,7 @@ module SRangerController_Module
 						
 						Termination = terminate -> SKIP
 						
-						Active 		= SKIP ; 
+						Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
 								 	  Behaviour ; 
 								 	  share__choice(exit -> SKIP) ; SKIP ; 
 								 	  share__choice(exited -> SKIP) ; Inactive
@@ -519,7 +519,7 @@ module SRangerController_Module
 						
 						Termination = terminate -> SKIP
 						
-						Active 		= SKIP ; 
+						Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
 								 	  Behaviour ; 
 								 	  share__choice(exit -> SKIP) ; SKIP ; 
 								 	  share__choice(exited -> SKIP) ; Inactive
@@ -601,8 +601,8 @@ module SRangerController_Module
 				
 				
 				----------------------------------------------------------------------
-				-- State: Moving
-				module Moving
+				-- State: Turning
+				module Turning
 				
 				enterSS = {}
 				
@@ -635,7 +635,7 @@ module SRangerController_Module
 						
 						Termination = terminate -> SKIP
 						
-						Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
+						Active 		= SKIP ; 
 								 	  Behaviour ; 
 								 	  share__choice(exit -> SKIP) ; SKIP ; 
 								 	  share__choice(exited -> SKIP) ; Inactive
@@ -651,7 +651,7 @@ module SRangerController_Module
 						
 						Termination = terminate -> SKIP
 						
-						Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
+						Active 		= SKIP ; 
 								 	  Behaviour ; 
 								 	  share__choice(exit -> SKIP) ; SKIP ; 
 								 	  share__choice(exited -> SKIP) ; Inactive
@@ -763,9 +763,9 @@ module SRangerController_Module
 							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 							-- modules for defining the semantics of each node.
 							enterSS = {|
-							Turning::enter,
-							Final::enter,
 							Moving::enter,
+							Final::enter,
+							Turning::enter,
 							i0::enter
 							|}
 							hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -778,20 +778,20 @@ module SRangerController_Module
 							within
 								((
 								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-								   Turning::D__(id__)
+								   Moving::D__(id__)
 								   [| { share__, terminate } |] (
 								   Final::D__(id__)
 								   [| { share__, terminate } |] (
-								   Moving::D__(id__)
+								   Turning::D__(id__)
 								   [| { share__, terminate } |] (
 								   i0::D__(id__)
 								   )
 								   )
 								   )
 								 )
-								 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
-								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 								 [[Moving::interrupt <- x__ | x__ <- {|interrupt|}]]
+								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+								 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
 								  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -847,9 +847,9 @@ module SRangerController_Module
 							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 							-- modules for defining the semantics of each node.
 							enterSS = {|
-							Turning::enter,
-							Final::enter,
 							Moving::enter,
+							Final::enter,
+							Turning::enter,
 							i0::enter
 							|}
 							hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -862,20 +862,20 @@ module SRangerController_Module
 							within
 								((
 								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-								   Turning::VS_O__(id__)
+								   Moving::VS_O__(id__)
 								   [| { share__, terminate } |] (
 								   Final::VS_O__(id__)
 								   [| { share__, terminate } |] (
-								   Moving::VS_O__(id__)
+								   Turning::VS_O__(id__)
 								   [| { share__, terminate } |] (
 								   i0::VS_O__(id__)
 								   )
 								   )
 								   )
 								 )
-								 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
-								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 								 [[Moving::interrupt <- x__ | x__ <- {|interrupt|}]]
+								 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+								 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
 								  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -1722,9 +1722,9 @@ endmodule
 			-- Transition identifiers
 			-- declaring identifiers of transitions
 			datatype NIDS = 
-			              NID_Turning|
-			              NID_Final|
 			              NID_Moving|
+			              NID_Final|
+			              NID_Turning|
 			              NID_i0
 			
 			channel internal__ : NIDS
@@ -1758,16 +1758,16 @@ endmodule
 			-- Declaring call and ret events for undefined operations
 			
 			enterSS = {|
-			Turning::enter,
-			Final::enter,
 			Moving::enter,
+			Final::enter,
+			Turning::enter,
 			i0::enter
 			|}
 			
 			enteredSS = 	{|
-			Turning::entered,
+			Moving::entered,
 			Final::entered,
-			Moving::entered
+			Turning::entered
 			|}
 			
 			internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -1793,8 +1793,8 @@ endmodule
 			-- declaring all nodes
 			
 			----------------------------------------------------------------------
-			-- State: Turning
-			module Turning
+			-- State: Moving
+			module Moving
 			
 			enterSS = {}
 			
@@ -1827,7 +1827,7 @@ endmodule
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= SKIP ; 
+					Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -1843,7 +1843,7 @@ endmodule
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= SKIP ; 
+					Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -1925,8 +1925,8 @@ endmodule
 			
 			
 			----------------------------------------------------------------------
-			-- State: Moving
-			module Moving
+			-- State: Turning
+			module Turning
 			
 			enterSS = {}
 			
@@ -1959,7 +1959,7 @@ endmodule
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
+					Active 		= SKIP ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -1975,7 +1975,7 @@ endmodule
 					
 					Termination = terminate -> SKIP
 					
-					Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
+					Active 		= SKIP ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -2087,9 +2087,9 @@ endmodule
 						-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 						-- modules for defining the semantics of each node.
 						enterSS = {|
-						Turning::enter,
-						Final::enter,
 						Moving::enter,
+						Final::enter,
+						Turning::enter,
 						i0::enter
 						|}
 						hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -2102,20 +2102,20 @@ endmodule
 						within
 							((
 							 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-							   Turning::D__(id__)
+							   Moving::D__(id__)
 							   [| { share__, terminate } |] (
 							   Final::D__(id__)
 							   [| { share__, terminate } |] (
-							   Moving::D__(id__)
+							   Turning::D__(id__)
 							   [| { share__, terminate } |] (
 							   i0::D__(id__)
 							   )
 							   )
 							   )
 							 )
-							 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
-							 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 							 [[Moving::interrupt <- x__ | x__ <- {|interrupt|}]]
+							 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+							 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
 							 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 							 )
 							  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -2171,9 +2171,9 @@ endmodule
 						-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 						-- modules for defining the semantics of each node.
 						enterSS = {|
-						Turning::enter,
-						Final::enter,
 						Moving::enter,
+						Final::enter,
+						Turning::enter,
 						i0::enter
 						|}
 						hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -2186,20 +2186,20 @@ endmodule
 						within
 							((
 							 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-							   Turning::VS_O__(id__)
+							   Moving::VS_O__(id__)
 							   [| { share__, terminate } |] (
 							   Final::VS_O__(id__)
 							   [| { share__, terminate } |] (
-							   Moving::VS_O__(id__)
+							   Turning::VS_O__(id__)
 							   [| { share__, terminate } |] (
 							   i0::VS_O__(id__)
 							   )
 							   )
 							   )
 							 )
-							 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
-							 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 							 [[Moving::interrupt <- x__ | x__ <- {|interrupt|}]]
+							 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+							 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
 							 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 							 )
 							  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -2474,9 +2474,9 @@ exports
 	-- Transition identifiers
 	-- declaring identifiers of transitions
 	datatype NIDS = 
-	              NID_Turning|
-	              NID_Final|
 	              NID_Moving|
+	              NID_Final|
+	              NID_Turning|
 	              NID_i0
 	
 	channel internal__ : NIDS
@@ -2510,16 +2510,16 @@ exports
 	-- Declaring call and ret events for undefined operations
 	
 	enterSS = {|
-	Turning::enter,
-	Final::enter,
 	Moving::enter,
+	Final::enter,
+	Turning::enter,
 	i0::enter
 	|}
 	
 	enteredSS = 	{|
-	Turning::entered,
+	Moving::entered,
 	Final::entered,
-	Moving::entered
+	Turning::entered
 	|}
 	
 	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -2545,8 +2545,8 @@ exports
 	-- declaring all nodes
 	
 	----------------------------------------------------------------------
-	-- State: Turning
-	module Turning
+	-- State: Moving
+	module Moving
 	
 	enterSS = {}
 	
@@ -2579,7 +2579,7 @@ exports
 			
 			Termination = terminate -> SKIP
 			
-			Active 		= SKIP ; 
+			Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
 					 	  Behaviour ; 
 					 	  share__choice(exit -> SKIP) ; SKIP ; 
 					 	  share__choice(exited -> SKIP) ; Inactive
@@ -2595,7 +2595,7 @@ exports
 			
 			Termination = terminate -> SKIP
 			
-			Active 		= SKIP ; 
+			Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
 					 	  Behaviour ; 
 					 	  share__choice(exit -> SKIP) ; SKIP ; 
 					 	  share__choice(exited -> SKIP) ; Inactive
@@ -2677,8 +2677,8 @@ exports
 	
 	
 	----------------------------------------------------------------------
-	-- State: Moving
-	module Moving
+	-- State: Turning
+	module Turning
 	
 	enterSS = {}
 	
@@ -2711,7 +2711,7 @@ exports
 			
 			Termination = terminate -> SKIP
 			
-			Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
+			Active 		= SKIP ; 
 					 	  Behaviour ; 
 					 	  share__choice(exit -> SKIP) ; SKIP ; 
 					 	  share__choice(exited -> SKIP) ; Inactive
@@ -2727,7 +2727,7 @@ exports
 			
 			Termination = terminate -> SKIP
 			
-			Active 		= true&(share__choice(move.out!1 -> SKIP)) ; 
+			Active 		= SKIP ; 
 					 	  Behaviour ; 
 					 	  share__choice(exit -> SKIP) ; SKIP ; 
 					 	  share__choice(exited -> SKIP) ; Inactive
@@ -2839,9 +2839,9 @@ exports
 				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 				-- modules for defining the semantics of each node.
 				enterSS = {|
-				Turning::enter,
-				Final::enter,
 				Moving::enter,
+				Final::enter,
+				Turning::enter,
 				i0::enter
 				|}
 				hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -2854,20 +2854,20 @@ exports
 				within
 					((
 					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-					   Turning::D__(id__)
+					   Moving::D__(id__)
 					   [| { share__, terminate } |] (
 					   Final::D__(id__)
 					   [| { share__, terminate } |] (
-					   Moving::D__(id__)
+					   Turning::D__(id__)
 					   [| { share__, terminate } |] (
 					   i0::D__(id__)
 					   )
 					   )
 					   )
 					 )
-					 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
-					 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 					 [[Moving::interrupt <- x__ | x__ <- {|interrupt|}]]
+					 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+					 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
 					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 					 )
 					  [[ share__ <- x__ | x__ <- {| share__ |} ]] 
@@ -2923,9 +2923,9 @@ exports
 				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 				-- modules for defining the semantics of each node.
 				enterSS = {|
-				Turning::enter,
-				Final::enter,
 				Moving::enter,
+				Final::enter,
+				Turning::enter,
 				i0::enter
 				|}
 				hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -2938,20 +2938,20 @@ exports
 				within
 					((
 					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-					   Turning::VS_O__(id__)
+					   Moving::VS_O__(id__)
 					   [| { share__, terminate } |] (
 					   Final::VS_O__(id__)
 					   [| { share__, terminate } |] (
-					   Moving::VS_O__(id__)
+					   Turning::VS_O__(id__)
 					   [| { share__, terminate } |] (
 					   i0::VS_O__(id__)
 					   )
 					   )
 					   )
 					 )
-					 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
-					 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 					 [[Moving::interrupt <- x__ | x__ <- {|interrupt|}]]
+					 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
+					 [[Turning::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Turning,endTask__.NID_Turning.in,tick__.NID_Turning.in|}]]
 					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 					 )
 					  [[ share__ <- x__ | x__ <- {| share__ |} ]] 

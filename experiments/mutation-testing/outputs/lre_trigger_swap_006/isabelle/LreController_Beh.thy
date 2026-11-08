@@ -49,24 +49,24 @@ show_record Obstacle
 
 text \<open> function definition \<close>
 
-consts hdist :: " int \<Rightarrow> real"
-consts sqrt :: " real \<Rightarrow> real"
+consts obsEwVel :: " int \<Rightarrow> real"
+consts vdist :: " int \<Rightarrow> real"
 consts odist :: " int \<Rightarrow> real"
 consts nsRelDist :: " int \<Rightarrow> real"
 consts obsNsVel :: " int \<Rightarrow> real"
 consts ewRelDist :: " int \<Rightarrow> real"
-consts obsEwVel :: " int \<Rightarrow> real"
-consts vdist :: " int \<Rightarrow> real"
-consts minsafedist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+consts sqrt :: " real \<Rightarrow> real"
+consts hdist :: " int \<Rightarrow> real"
+definition minsafedist :: "unit \<Rightarrow> real" where "minsafedist u = 1"  (* named constant; value from the model *)
 consts closestDynamicIndex :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts ns_vel :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts ew_vel :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts closestStaticIndex :: "unit \<Rightarrow> int"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts rate_of_climb :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
 consts depth_fn :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobshorizdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobsdfltvertdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts staticobsvertdist :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition staticobshorizdist :: "unit \<Rightarrow> real" where "staticobshorizdist u = 1"  (* named constant; value from the model *)
+definition staticobsdfltvertdist :: "unit \<Rightarrow> real" where "staticobsdfltvertdist u = 1"  (* named constant; value from the model *)
+definition staticobsvertdist :: "unit \<Rightarrow> real" where "staticobsvertdist u = 1"  (* named constant; value from the model *)
 
 subsection \<open> State Space \<close>
 
@@ -99,7 +99,7 @@ zstore LreController =
   where inv:
     "tr \<noteq> []
                       \<and> (st = OCM \<longrightarrow> listens = {reqVel, reqHdng, reqMOM})
-                      \<and> (st = MOM \<longrightarrow> listens = {reqHCM, reqHCM, reqOCM})
+                      \<and> (st = MOM \<longrightarrow> listens = {reqHCM, reqOCM, reqHCM})
                       \<and> (st = HCM \<longrightarrow> listens = {reqOCM})
                       \<and> (st = CAM \<longrightarrow> listens = {reqOCM})
                                                                                \<and> (st = OCM \<longrightarrow> (offered = {} \<or> offered = {reqVel} \<or> offered = {reqHdng} \<or> offered = {reqMOM}))
@@ -190,7 +190,7 @@ zoperation OCMToMOM =
          ,hcmActive\<Zprime> = (((sqrt(((ns_vel() * ns_vel()) + (ew_vel() * ew_vel()))))\<ge>1.0 \<and> hdist((closestStaticIndex()))\<le>staticobshorizdist() \<or> vdist((closestStaticIndex()))\<le>staticobsdfltvertdist()) \<or> (rate_of_climb())\<ge>1.0 \<and> vdist((closestStaticIndex()))\<le>staticobsvertdist())
          ,momReturn\<Zprime> = hdist((closestStaticIndex()))>staticobshorizdist() \<and> vdist((closestStaticIndex()))>staticobsvertdist()
          ,tr\<Zprime> =tr @ [Event reqMOM]@ [Event advVel] @ [State MOM]
-         ,listens\<Zprime> = {reqHCM, reqHCM, reqOCM}
+         ,listens\<Zprime> = {reqHCM, reqOCM, reqHCM}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -379,7 +379,7 @@ zoperation HCMToMOM =
          ,hcmActive\<Zprime> = (((sqrt(((ns_vel() * ns_vel()) + (ew_vel() * ew_vel()))))\<ge>1.0 \<and> hdist((closestStaticIndex()))\<le>staticobshorizdist() \<or> vdist((closestStaticIndex()))\<le>staticobsdfltvertdist()) \<or> (rate_of_climb())\<ge>1.0 \<and> vdist((closestStaticIndex()))\<le>staticobsvertdist())
          ,momReturn\<Zprime> = hdist((closestStaticIndex()))>staticobshorizdist() \<and> vdist((closestStaticIndex()))>staticobsvertdist()
          ,tr\<Zprime> =tr @ [Event advVel] @ [State MOM]
-         ,listens\<Zprime> = {reqHCM, reqHCM, reqOCM}
+         ,listens\<Zprime> = {reqHCM, reqOCM, reqHCM}
          ,offered\<Zprime> = nxt
          ]"
         

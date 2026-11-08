@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:26:25
+-- Automatically generated on 07-11-2026 11:27:14
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -17,11 +17,11 @@ exports
 	-- Transition identifiers
 	-- declaring identifiers of transitions
 	datatype NIDS = 
-	              NID_NoGas|
-	              NID_Final|
-	              NID_GasDetected|
 	              NID_Reading|
 	              NID_Analysis|
+	              NID_NoGas|
+	              NID_GasDetected|
+	              NID_Final|
 	              NID_i0
 	
 	channel internal__ : NIDS
@@ -72,20 +72,20 @@ exports
 	-- Declaring call and ret events for undefined operations
 	
 	enterSS = {|
-	NoGas::enter,
-	Final::enter,
-	GasDetected::enter,
 	Reading::enter,
 	Analysis::enter,
+	NoGas::enter,
+	GasDetected::enter,
+	Final::enter,
 	i0::enter
 	|}
 	
 	enteredSS = 	{|
-	NoGas::entered,
-	Final::entered,
-	GasDetected::entered,
 	Reading::entered,
-	Analysis::entered
+	Analysis::entered,
+	NoGas::entered,
+	GasDetected::entered,
+	Final::entered
 	|}
 	
 	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -118,234 +118,6 @@ exports
 
 	-- Nodes --
 	-- declaring all nodes
-	
-	----------------------------------------------------------------------
-	-- State: NoGas
-	module NoGas
-	
-	enterSS = {}
-	
-	enteredSS = {}
-	
-	exports
-	
-		--  Declarations
-		
-		channel enter, entered, interrupt
-		channel enteredL, enteredR
-		
-						
-		
-		--	Nodes
-		-- declaring all nodes
-		
-		
-		--	Rule: behaviours(Node)
-		--  Note that FDR has problems with efficiently compiling the process below
-		-- 	if using a different recursion pattern.
-		D__(id__,
-				    const_GasAnalysisController_lv,
-				    const_GasAnalysisController_evadetime,
-				    const_GasAnalysisController_stuckperiod,
-				    const_GasAnalysisController_stuckdist,
-				    const_GasAnalysisController_outperiod) = 
-		dbisim(let
-			-- IMPLEMENTATION NOTE: 
-			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-			-- however FDR struggles with that form in certain cases. So we use the exception operator
-			-- instead to 'terminate'.
-			
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= true&(share__choice(resume.out -> SKIP)) ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-			
-		VS_O__(id__,
-				    const_GasAnalysisController_lv,
-				    const_GasAnalysisController_evadetime,
-				    const_GasAnalysisController_stuckperiod,
-				    const_GasAnalysisController_stuckdist,
-				    const_GasAnalysisController_outperiod) = 
-		dbisim(let
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= true&(share__choice(resume.out -> SKIP)) ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-		
-	
-	endmodule
-	----------------------------------------------------------------------
-	
-	
-	----------------------------------------------------------------------
-	-- State: Final
-	module Final
-	
-	enterSS = {}
-	
-	enteredSS = {}
-	
-	exports
-	
-		--  Declarations
-		
-		channel enter, entered, interrupt
-		channel enteredL, enteredR
-		
-						
-		
-		--	Nodes
-		-- declaring all nodes
-		
-		
-		--	Rule: behaviours(Node)
-		--  Note that FDR has problems with efficiently compiling the process below
-		-- 	if using a different recursion pattern.
-		D__(id__,
-				    const_GasAnalysisController_lv,
-				    const_GasAnalysisController_evadetime,
-				    const_GasAnalysisController_stuckperiod,
-				    const_GasAnalysisController_stuckdist,
-				    const_GasAnalysisController_outperiod) = 
-		dbisim(let
-			-- IMPLEMENTATION NOTE: 
-			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-			-- however FDR struggles with that form in certain cases. So we use the exception operator
-			-- instead to 'terminate'.
-			
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= true&(share__choice(stop.out -> SKIP)) ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-			
-		VS_O__(id__,
-				    const_GasAnalysisController_lv,
-				    const_GasAnalysisController_evadetime,
-				    const_GasAnalysisController_stuckperiod,
-				    const_GasAnalysisController_stuckdist,
-				    const_GasAnalysisController_outperiod) = 
-		dbisim(let
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= true&(share__choice(stop.out -> SKIP)) ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-		
-	
-	endmodule
-	----------------------------------------------------------------------
-	
-	
-	----------------------------------------------------------------------
-	-- State: GasDetected
-	module GasDetected
-	
-	enterSS = {}
-	
-	enteredSS = {}
-	
-	exports
-	
-		--  Declarations
-		
-		channel enter, entered, interrupt
-		channel enteredL, enteredR
-		
-						
-		
-		--	Nodes
-		-- declaring all nodes
-		
-		
-		--	Rule: behaviours(Node)
-		--  Note that FDR has problems with efficiently compiling the process below
-		-- 	if using a different recursion pattern.
-		D__(id__,
-				    const_GasAnalysisController_lv,
-				    const_GasAnalysisController_evadetime,
-				    const_GasAnalysisController_stuckperiod,
-				    const_GasAnalysisController_stuckdist,
-				    const_GasAnalysisController_outperiod) = 
-		dbisim(let
-			-- IMPLEMENTATION NOTE: 
-			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-			-- however FDR struggles with that form in certain cases. So we use the exception operator
-			-- instead to 'terminate'.
-			
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= share__choice(share__choice(get_gs?gs -> true & (share__choice(set_insVal!peakIntensity(gs) -> SKIP)))) ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-			
-		VS_O__(id__,
-				    const_GasAnalysisController_lv,
-				    const_GasAnalysisController_evadetime,
-				    const_GasAnalysisController_stuckperiod,
-				    const_GasAnalysisController_stuckdist,
-				    const_GasAnalysisController_outperiod) = 
-		dbisim(let
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= share__choice(share__choice(get_gs?gs -> true & (share__choice(set_insVal!peakIntensity(gs) -> SKIP)))) ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-		
-	
-	endmodule
-	----------------------------------------------------------------------
-	
 	
 	----------------------------------------------------------------------
 	-- State: Reading
@@ -485,6 +257,234 @@ exports
 			Termination = terminate -> SKIP
 			
 			Active 		= share__choice(share__choice(get_gs?gs -> true & (share__choice(set_sts!analysis(gs) -> SKIP)))) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: NoGas
+	module NoGas
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_GasAnalysisController_lv,
+				    const_GasAnalysisController_evadetime,
+				    const_GasAnalysisController_stuckperiod,
+				    const_GasAnalysisController_stuckdist,
+				    const_GasAnalysisController_outperiod) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(resume.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_GasAnalysisController_lv,
+				    const_GasAnalysisController_evadetime,
+				    const_GasAnalysisController_stuckperiod,
+				    const_GasAnalysisController_stuckdist,
+				    const_GasAnalysisController_outperiod) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(resume.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: GasDetected
+	module GasDetected
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_GasAnalysisController_lv,
+				    const_GasAnalysisController_evadetime,
+				    const_GasAnalysisController_stuckperiod,
+				    const_GasAnalysisController_stuckdist,
+				    const_GasAnalysisController_outperiod) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= share__choice(share__choice(get_gs?gs -> true & (share__choice(set_insVal!peakIntensity(gs) -> SKIP)))) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_GasAnalysisController_lv,
+				    const_GasAnalysisController_evadetime,
+				    const_GasAnalysisController_stuckperiod,
+				    const_GasAnalysisController_stuckdist,
+				    const_GasAnalysisController_outperiod) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= share__choice(share__choice(get_gs?gs -> true & (share__choice(set_insVal!peakIntensity(gs) -> SKIP)))) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: Final
+	module Final
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_GasAnalysisController_lv,
+				    const_GasAnalysisController_evadetime,
+				    const_GasAnalysisController_stuckperiod,
+				    const_GasAnalysisController_stuckdist,
+				    const_GasAnalysisController_outperiod) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(stop.out -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_GasAnalysisController_lv,
+				    const_GasAnalysisController_evadetime,
+				    const_GasAnalysisController_stuckperiod,
+				    const_GasAnalysisController_stuckdist,
+				    const_GasAnalysisController_outperiod) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(stop.out -> SKIP)) ; 
 					 	  Behaviour ; 
 					 	  share__choice(exit -> SKIP) ; SKIP ; 
 					 	  share__choice(exited -> SKIP) ; Inactive
@@ -657,11 +657,11 @@ exports
 				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 				-- modules for defining the semantics of each node.
 				enterSS = {|
-				NoGas::enter,
-				Final::enter,
-				GasDetected::enter,
 				Reading::enter,
 				Analysis::enter,
+				NoGas::enter,
+				GasDetected::enter,
+				Final::enter,
 				i0::enter
 				|}
 				hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -674,14 +674,21 @@ exports
 				within
 					((
 					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-					   NoGas::D__(id__,
+					   Reading::D__(id__,
 					   		    const_GasAnalysisController_lv,
 					   		    const_GasAnalysisController_evadetime,
 					   		    const_GasAnalysisController_stuckperiod,
 					   		    const_GasAnalysisController_stuckdist,
 					   		    const_GasAnalysisController_outperiod)
 					   [| { share__, terminate } |] (
-					   Final::D__(id__,
+					   Analysis::D__(id__,
+					   		    const_GasAnalysisController_lv,
+					   		    const_GasAnalysisController_evadetime,
+					   		    const_GasAnalysisController_stuckperiod,
+					   		    const_GasAnalysisController_stuckdist,
+					   		    const_GasAnalysisController_outperiod)
+					   [| { share__, terminate } |] (
+					   NoGas::D__(id__,
 					   		    const_GasAnalysisController_lv,
 					   		    const_GasAnalysisController_evadetime,
 					   		    const_GasAnalysisController_stuckperiod,
@@ -695,14 +702,7 @@ exports
 					   		    const_GasAnalysisController_stuckdist,
 					   		    const_GasAnalysisController_outperiod)
 					   [| { share__, terminate } |] (
-					   Reading::D__(id__,
-					   		    const_GasAnalysisController_lv,
-					   		    const_GasAnalysisController_evadetime,
-					   		    const_GasAnalysisController_stuckperiod,
-					   		    const_GasAnalysisController_stuckdist,
-					   		    const_GasAnalysisController_outperiod)
-					   [| { share__, terminate } |] (
-					   Analysis::D__(id__,
+					   Final::D__(id__,
 					   		    const_GasAnalysisController_lv,
 					   		    const_GasAnalysisController_evadetime,
 					   		    const_GasAnalysisController_stuckperiod,
@@ -721,11 +721,11 @@ exports
 					   )
 					   )
 					 )
-					 [[NoGas::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NoGas|}]]
-					 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
-					 [[GasDetected::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_GasDetected,tick__.NID_GasDetected.in,internal__.NID_GasDetected|}]]
 					 [[Reading::interrupt <- x__ | x__ <- {|interrupt,gas__.NID_Reading.in,tick__.NID_Reading.in|}]]
 					 [[Analysis::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Analysis,internal__.NID_Analysis,tick__.NID_Analysis.in|}]]
+					 [[NoGas::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NoGas|}]]
+					 [[GasDetected::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_GasDetected,tick__.NID_GasDetected.in,internal__.NID_GasDetected|}]]
+					 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 					 )
 					  [[ share__ <- x__ | x__ <- {| share__,setR_gs |} ]] 
@@ -854,11 +854,11 @@ exports
 				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 				-- modules for defining the semantics of each node.
 				enterSS = {|
-				NoGas::enter,
-				Final::enter,
-				GasDetected::enter,
 				Reading::enter,
 				Analysis::enter,
+				NoGas::enter,
+				GasDetected::enter,
+				Final::enter,
 				i0::enter
 				|}
 				hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -871,14 +871,21 @@ exports
 				within
 					((
 					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-					   NoGas::VS_O__(id__,
+					   Reading::VS_O__(id__,
 					   		    const_GasAnalysisController_lv,
 					   		    const_GasAnalysisController_evadetime,
 					   		    const_GasAnalysisController_stuckperiod,
 					   		    const_GasAnalysisController_stuckdist,
 					   		    const_GasAnalysisController_outperiod)
 					   [| { share__, terminate } |] (
-					   Final::VS_O__(id__,
+					   Analysis::VS_O__(id__,
+					   		    const_GasAnalysisController_lv,
+					   		    const_GasAnalysisController_evadetime,
+					   		    const_GasAnalysisController_stuckperiod,
+					   		    const_GasAnalysisController_stuckdist,
+					   		    const_GasAnalysisController_outperiod)
+					   [| { share__, terminate } |] (
+					   NoGas::VS_O__(id__,
 					   		    const_GasAnalysisController_lv,
 					   		    const_GasAnalysisController_evadetime,
 					   		    const_GasAnalysisController_stuckperiod,
@@ -892,14 +899,7 @@ exports
 					   		    const_GasAnalysisController_stuckdist,
 					   		    const_GasAnalysisController_outperiod)
 					   [| { share__, terminate } |] (
-					   Reading::VS_O__(id__,
-					   		    const_GasAnalysisController_lv,
-					   		    const_GasAnalysisController_evadetime,
-					   		    const_GasAnalysisController_stuckperiod,
-					   		    const_GasAnalysisController_stuckdist,
-					   		    const_GasAnalysisController_outperiod)
-					   [| { share__, terminate } |] (
-					   Analysis::VS_O__(id__,
+					   Final::VS_O__(id__,
 					   		    const_GasAnalysisController_lv,
 					   		    const_GasAnalysisController_evadetime,
 					   		    const_GasAnalysisController_stuckperiod,
@@ -918,11 +918,11 @@ exports
 					   )
 					   )
 					 )
-					 [[NoGas::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NoGas|}]]
-					 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
-					 [[GasDetected::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_GasDetected,tick__.NID_GasDetected.in,internal__.NID_GasDetected|}]]
 					 [[Reading::interrupt <- x__ | x__ <- {|interrupt,gas__.NID_Reading.in,tick__.NID_Reading.in|}]]
 					 [[Analysis::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_Analysis,internal__.NID_Analysis,tick__.NID_Analysis.in|}]]
+					 [[NoGas::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_NoGas|}]]
+					 [[GasDetected::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_GasDetected,tick__.NID_GasDetected.in,internal__.NID_GasDetected|}]]
+					 [[Final::interrupt <- x__ | x__ <- {|interrupt,tick__.NID_Final.in|}]]
 					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 					 )
 					  [[ share__ <- x__ | x__ <- {| share__,setR_gs |} ]] 

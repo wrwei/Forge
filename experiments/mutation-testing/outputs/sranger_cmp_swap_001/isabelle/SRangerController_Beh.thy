@@ -47,7 +47,7 @@ end
 text \<open> function definition \<close>
 
 consts distance :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts obstaclethreshold :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition obstaclethreshold :: "unit \<Rightarrow> real" where "obstaclethreshold u = 0.5"  (* named constant; value from the model *)
 
 subsection \<open> State Space \<close>
 
@@ -70,9 +70,9 @@ zstore SRangerController =
                             presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
     "tr \<noteq> []
-                      \<and> (st = Moving \<longrightarrow> listens = {tick, endTask, obstacle})
+                      \<and> (st = Moving \<longrightarrow> listens = {tick, obstacle, endTask})
                       \<and> (st = Final \<longrightarrow> listens = {tick})
-                                                                               \<and> (st = Moving \<longrightarrow> (offered = {} \<or> offered = {tick} \<or> offered = {endTask} \<or> offered = {obstacle}))
+                                                                               \<and> (st = Moving \<longrightarrow> (offered = {} \<or> offered = {tick} \<or> offered = {obstacle} \<or> offered = {endTask}))
                                                                                \<and> (st = Turning \<longrightarrow> (offered = {}))
                                                                                \<and> (st = Final \<longrightarrow> (offered = {} \<or> offered = {tick}))
                                                                                \<and> (st = initial \<longrightarrow> (offered = {}))"
@@ -81,13 +81,13 @@ subsection \<open> Operations \<close>
 
 zoperation InitialToMoving =
   over SRangerController
-  params nxt \<in> "{{}, {tick}, {endTask}, {obstacle}}" 
+  params nxt \<in> "{{}, {tick}, {obstacle}, {endTask}}" 
   pre "st= initial"
   update "[st\<Zprime>= Moving
          ,resetTime\<Zprime> = 0
          ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr  @ [State Moving]
-         ,listens\<Zprime> = {tick, endTask, obstacle}
+         ,listens\<Zprime> = {tick, obstacle, endTask}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -116,13 +116,13 @@ zoperation MovingToTurning =
         
 zoperation MovingToMoving =
   over SRangerController
-  params nxt \<in> "{{}, {tick}, {endTask}, {obstacle}}" 
+  params nxt \<in> "{{}, {tick}, {obstacle}, {endTask}}" 
   pre "st= Moving \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Moving
          ,resetTime\<Zprime> = 0
          ,elapsed\<Zprime> = False
          ,tr\<Zprime> =tr @ [Event tick] @ [State Moving]
-         ,listens\<Zprime> = {tick, endTask, obstacle}
+         ,listens\<Zprime> = {tick, obstacle, endTask}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -142,7 +142,7 @@ zoperation FinalToFinal =
   
 zoperation Idle_Moving =
   over SRangerController
-  params nxt \<in> "{{}, {tick}, {endTask}, {obstacle}}"
+  params nxt \<in> "{{}, {tick}, {obstacle}, {endTask}}"
   pre "st= Moving \<and> \<not>(endTask \<in> offered) \<and> \<not>(distance()\<le>obstaclethreshold() \<and> obstacle \<in> offered) \<and> \<not>(tick \<in> offered)"
   update "[st\<Zprime>= Moving
          ,tr\<Zprime> = tr
@@ -238,16 +238,9 @@ lemma "Idle_Final (nxt) preserves R1 under SRangerController_inv"
 
 definition [z_defs]: "SRangerController_axioms = True"
 
-(* WARNING -- THIS OBLIGATION IS FALSE AS EMITTED.
-   State(s) with no outgoing transition: Turning.
-   Under `loop` semantics such a state offers Vis {} = deadlock, so
-   deadlock_free does not hold. This is a MODEL defect (a missing tick-triggered
-   self-loop in the Java), not a proof-search problem: no tactic can close it.
-   Measured on chemical_detector v2 -- auto OOM 978s, metis 1825s, blast 922s,
-   fastforce 923s; refuted by probe_Y3_obligation_refuted with witness
-   st = Turning.
-   Fix the Java per forge.assets/prompts/java_codegen_rules.txt ("EVERY MODE
-   MUST HAVE AN OUTGOING TRANSITION"), re-extract, and this marker disappears. *)
+(* Terminal state(s), with no outgoing transition: Turning.
+   The machine's `until` clause exempts them from the deadlock-freedom
+   obligation below: the machine has finished there. *)
 lemma SRangerController_deadlock_free: "SRangerController_axioms  \<Longrightarrow> deadlock_free SRangerControllerMachine"
   unfolding SRangerControllerMachine_def
   apply deadlock_free

@@ -59,9 +59,9 @@ show_record Intensity
 
 text \<open> function definition \<close>
 
+consts location :: " GasSensor list \<Rightarrow> Angle"
 consts analysis :: " GasSensor list \<Rightarrow> Status"
 consts peakIntensity :: " GasSensor list \<Rightarrow> real"
-consts location :: " GasSensor list \<Rightarrow> Angle"
 
 subsection \<open> State Space \<close>
 
@@ -86,11 +86,11 @@ zstore GasAnalysisController =
                             presence conjuncts (C2) and absence conjuncts (C1). *)
   where inv:
     "tr \<noteq> []
-                      \<and> (st = Reading \<longrightarrow> listens = {gas, tick})
+                      \<and> (st = Reading \<longrightarrow> listens = {tick, gas})
                       \<and> (st = Analysis \<longrightarrow> listens = {tick})
                       \<and> (st = GasDetected \<longrightarrow> listens = {tick})
                       \<and> (st = Final \<longrightarrow> listens = {tick})
-                                                                               \<and> (st = Reading \<longrightarrow> (offered = {} \<or> offered = {gas} \<or> offered = {tick}))
+                                                                               \<and> (st = Reading \<longrightarrow> (offered = {} \<or> offered = {tick} \<or> offered = {gas}))
                                                                                \<and> (st = Analysis \<longrightarrow> (offered = {} \<or> offered = {tick}))
                                                                                \<and> (st = NoGas \<longrightarrow> (offered = {}))
                                                                                \<and> (st = GasDetected \<longrightarrow> (offered = {} \<or> offered = {tick}))
@@ -101,11 +101,11 @@ subsection \<open> Operations \<close>
 
 zoperation InitialToReading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}" 
+  params nxt \<in> "{{}, {tick}, {gas}}" 
   pre "st= initial"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,listens\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {tick, gas}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -122,11 +122,11 @@ zoperation ReadingToAnalysis =
         
 zoperation ReadingToReading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}" 
+  params nxt \<in> "{{}, {tick}, {gas}}" 
   pre "st= Reading \<and> tick \<in> offered \<and> offered \<subseteq> listens"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr @ [Event tick] @ [State Reading]
-         ,listens\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {tick, gas}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -162,11 +162,11 @@ zoperation AnalysisToAnalysis =
         
 zoperation NoGasToReading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}" 
+  params nxt \<in> "{{}, {tick}, {gas}}" 
   pre "st= NoGas"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> =tr  @ [State Reading]
-         ,listens\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {tick, gas}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -182,12 +182,12 @@ zoperation GasDetectedToFinal =
         
 zoperation GasDetectedToReading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}" 
+  params nxt \<in> "{{}, {tick}, {gas}}" 
   pre "st= GasDetected \<and> \<not>insVal\<ge>10.0"
   update "[st\<Zprime>= Reading
          ,anl\<Zprime> = location(gs)
          ,tr\<Zprime> =tr @ [Event turn] @ [State Reading]
-         ,listens\<Zprime> = {gas, tick}
+         ,listens\<Zprime> = {tick, gas}
          ,offered\<Zprime> = nxt
          ]"
         
@@ -215,7 +215,7 @@ zoperation FinalToFinal =
   
 zoperation Idle_Reading =
   over GasAnalysisController
-  params nxt \<in> "{{}, {gas}, {tick}}"
+  params nxt \<in> "{{}, {tick}, {gas}}"
   pre "st= Reading \<and> \<not>(gas \<in> offered) \<and> \<not>(tick \<in> offered)"
   update "[st\<Zprime>= Reading
          ,tr\<Zprime> = tr

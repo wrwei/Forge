@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:29:43
+-- Automatically generated on 07-11-2026 11:30:03
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -2634,10 +2634,10 @@ module LreController_Module
 				-- Transition identifiers
 				-- declaring identifiers of transitions
 				datatype NIDS = 
+				              NID_MOM|
+				              NID_HCM|
 				              NID_CAM|
 				              NID_OCM|
-				              NID_HCM|
-				              NID_MOM|
 				              NID_i0
 				
 				channel internal__ : NIDS
@@ -2694,18 +2694,18 @@ module LreController_Module
 				-- Declaring call and ret events for undefined operations
 				
 				enterSS = {|
+				MOM::enter,
+				HCM::enter,
 				CAM::enter,
 				OCM::enter,
-				HCM::enter,
-				MOM::enter,
 				i0::enter
 				|}
 				
 				enteredSS = 	{|
-				CAM::entered,
-				OCM::entered,
+				MOM::entered,
 				HCM::entered,
-				MOM::entered
+				CAM::entered,
+				OCM::entered
 				|}
 				
 				internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -2748,6 +2748,154 @@ module LreController_Module
 			
 				-- Nodes --
 				-- declaring all nodes
+				
+				----------------------------------------------------------------------
+				-- State: MOM
+				module MOM
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					--	Rule: behaviours(Node)
+					--  Note that FDR has problems with efficiently compiling the process below
+					-- 	if using a different recursion pattern.
+					D__(id__,
+							    const_LreController_minsafedist,
+							    const_LreController_staticobshorizdist,
+							    const_LreController_staticobsdfltvertdist,
+							    const_LreController_staticobsvertdist) = 
+					dbisim(let
+						-- IMPLEMENTATION NOTE: 
+						-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+						-- however FDR struggles with that form in certain cases. So we use the exception operator
+						-- instead to 'terminate'.
+						
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+						
+					VS_O__(id__,
+							    const_LreController_minsafedist,
+							    const_LreController_staticobshorizdist,
+							    const_LreController_staticobsdfltvertdist,
+							    const_LreController_staticobsvertdist) = 
+					dbisim(let
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+					
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: HCM
+				module HCM
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					--	Rule: behaviours(Node)
+					--  Note that FDR has problems with efficiently compiling the process below
+					-- 	if using a different recursion pattern.
+					D__(id__,
+							    const_LreController_minsafedist,
+							    const_LreController_staticobshorizdist,
+							    const_LreController_staticobsdfltvertdist,
+							    const_LreController_staticobsvertdist) = 
+					dbisim(let
+						-- IMPLEMENTATION NOTE: 
+						-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+						-- however FDR struggles with that form in certain cases. So we use the exception operator
+						-- instead to 'terminate'.
+						
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= SKIP ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+						
+					VS_O__(id__,
+							    const_LreController_minsafedist,
+							    const_LreController_staticobshorizdist,
+							    const_LreController_staticobsdfltvertdist,
+							    const_LreController_staticobsvertdist) = 
+					dbisim(let
+						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+						
+						Termination = terminate -> SKIP
+						
+						Active 		= SKIP ; 
+								 	  Behaviour ; 
+								 	  share__choice(exit -> SKIP) ; SKIP ; 
+								 	  share__choice(exited -> SKIP) ; Inactive
+					
+						Behaviour 	= entered -> During
+						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+					within
+						Inactive [| {terminate} |> SKIP)
+					
+				
+				endmodule
+				----------------------------------------------------------------------
+				
 				
 				----------------------------------------------------------------------
 				-- State: CAM
@@ -2883,154 +3031,6 @@ module LreController_Module
 						Termination = terminate -> SKIP
 						
 						Active 		= SKIP ; 
-								 	  Behaviour ; 
-								 	  share__choice(exit -> SKIP) ; SKIP ; 
-								 	  share__choice(exited -> SKIP) ; Inactive
-					
-						Behaviour 	= entered -> During
-						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-					within
-						Inactive [| {terminate} |> SKIP)
-					
-				
-				endmodule
-				----------------------------------------------------------------------
-				
-				
-				----------------------------------------------------------------------
-				-- State: HCM
-				module HCM
-				
-				enterSS = {}
-				
-				enteredSS = {}
-				
-				exports
-				
-					--  Declarations
-					
-					channel enter, entered, interrupt
-					channel enteredL, enteredR
-					
-									
-					
-					--	Nodes
-					-- declaring all nodes
-					
-					
-					--	Rule: behaviours(Node)
-					--  Note that FDR has problems with efficiently compiling the process below
-					-- 	if using a different recursion pattern.
-					D__(id__,
-							    const_LreController_minsafedist,
-							    const_LreController_staticobshorizdist,
-							    const_LreController_staticobsdfltvertdist,
-							    const_LreController_staticobsvertdist) = 
-					dbisim(let
-						-- IMPLEMENTATION NOTE: 
-						-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-						-- however FDR struggles with that form in certain cases. So we use the exception operator
-						-- instead to 'terminate'.
-						
-						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-						
-						Termination = terminate -> SKIP
-						
-						Active 		= SKIP ; 
-								 	  Behaviour ; 
-								 	  share__choice(exit -> SKIP) ; SKIP ; 
-								 	  share__choice(exited -> SKIP) ; Inactive
-					
-						Behaviour 	= entered -> During
-						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-					within
-						Inactive [| {terminate} |> SKIP)
-						
-					VS_O__(id__,
-							    const_LreController_minsafedist,
-							    const_LreController_staticobshorizdist,
-							    const_LreController_staticobsdfltvertdist,
-							    const_LreController_staticobsvertdist) = 
-					dbisim(let
-						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-						
-						Termination = terminate -> SKIP
-						
-						Active 		= SKIP ; 
-								 	  Behaviour ; 
-								 	  share__choice(exit -> SKIP) ; SKIP ; 
-								 	  share__choice(exited -> SKIP) ; Inactive
-					
-						Behaviour 	= entered -> During
-						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-					within
-						Inactive [| {terminate} |> SKIP)
-					
-				
-				endmodule
-				----------------------------------------------------------------------
-				
-				
-				----------------------------------------------------------------------
-				-- State: MOM
-				module MOM
-				
-				enterSS = {}
-				
-				enteredSS = {}
-				
-				exports
-				
-					--  Declarations
-					
-					channel enter, entered, interrupt
-					channel enteredL, enteredR
-					
-									
-					
-					--	Nodes
-					-- declaring all nodes
-					
-					
-					--	Rule: behaviours(Node)
-					--  Note that FDR has problems with efficiently compiling the process below
-					-- 	if using a different recursion pattern.
-					D__(id__,
-							    const_LreController_minsafedist,
-							    const_LreController_staticobshorizdist,
-							    const_LreController_staticobsdfltvertdist,
-							    const_LreController_staticobsvertdist) = 
-					dbisim(let
-						-- IMPLEMENTATION NOTE: 
-						-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-						-- however FDR struggles with that form in certain cases. So we use the exception operator
-						-- instead to 'terminate'.
-						
-						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-						
-						Termination = terminate -> SKIP
-						
-						Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
-								 	  Behaviour ; 
-								 	  share__choice(exit -> SKIP) ; SKIP ; 
-								 	  share__choice(exited -> SKIP) ; Inactive
-					
-						Behaviour 	= entered -> During
-						During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-					within
-						Inactive [| {terminate} |> SKIP)
-						
-					VS_O__(id__,
-							    const_LreController_minsafedist,
-							    const_LreController_staticobshorizdist,
-							    const_LreController_staticobsdfltvertdist,
-							    const_LreController_staticobsvertdist) = 
-					dbisim(let
-						Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-						
-						Termination = terminate -> SKIP
-						
-						Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
 								 	  Behaviour ; 
 								 	  share__choice(exit -> SKIP) ; SKIP ; 
 								 	  share__choice(exited -> SKIP) ; Inactive
@@ -3191,10 +3191,10 @@ module LreController_Module
 							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 							-- modules for defining the semantics of each node.
 							enterSS = {|
+							MOM::enter,
+							HCM::enter,
 							CAM::enter,
 							OCM::enter,
-							HCM::enter,
-							MOM::enter,
 							i0::enter
 							|}
 							hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -3207,13 +3207,7 @@ module LreController_Module
 							within
 								((
 								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-								   CAM::D__(id__,
-								   		    const_LreController_minsafedist,
-								   		    const_LreController_staticobshorizdist,
-								   		    const_LreController_staticobsdfltvertdist,
-								   		    const_LreController_staticobsvertdist)
-								   [| { share__, terminate } |] (
-								   OCM::D__(id__,
+								   MOM::D__(id__,
 								   		    const_LreController_minsafedist,
 								   		    const_LreController_staticobshorizdist,
 								   		    const_LreController_staticobsdfltvertdist,
@@ -3225,7 +3219,13 @@ module LreController_Module
 								   		    const_LreController_staticobsdfltvertdist,
 								   		    const_LreController_staticobsvertdist)
 								   [| { share__, terminate } |] (
-								   MOM::D__(id__,
+								   CAM::D__(id__,
+								   		    const_LreController_minsafedist,
+								   		    const_LreController_staticobshorizdist,
+								   		    const_LreController_staticobsdfltvertdist,
+								   		    const_LreController_staticobsvertdist)
+								   [| { share__, terminate } |] (
+								   OCM::D__(id__,
 								   		    const_LreController_minsafedist,
 								   		    const_LreController_staticobshorizdist,
 								   		    const_LreController_staticobsdfltvertdist,
@@ -3241,10 +3241,10 @@ module LreController_Module
 								   )
 								   )
 								 )
+								 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
+								 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 								 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 								 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
-								 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
-								 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
 								  [[ share__ <- x__ | x__ <- {| share__,setR_v |} ]] 
@@ -3363,10 +3363,10 @@ module LreController_Module
 							-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 							-- modules for defining the semantics of each node.
 							enterSS = {|
+							MOM::enter,
+							HCM::enter,
 							CAM::enter,
 							OCM::enter,
-							HCM::enter,
-							MOM::enter,
 							i0::enter
 							|}
 							hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -3379,13 +3379,7 @@ module LreController_Module
 							within
 								((
 								 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-								   CAM::VS_O__(id__,
-								   		    const_LreController_minsafedist,
-								   		    const_LreController_staticobshorizdist,
-								   		    const_LreController_staticobsdfltvertdist,
-								   		    const_LreController_staticobsvertdist)
-								   [| { share__, terminate } |] (
-								   OCM::VS_O__(id__,
+								   MOM::VS_O__(id__,
 								   		    const_LreController_minsafedist,
 								   		    const_LreController_staticobshorizdist,
 								   		    const_LreController_staticobsdfltvertdist,
@@ -3397,7 +3391,13 @@ module LreController_Module
 								   		    const_LreController_staticobsdfltvertdist,
 								   		    const_LreController_staticobsvertdist)
 								   [| { share__, terminate } |] (
-								   MOM::VS_O__(id__,
+								   CAM::VS_O__(id__,
+								   		    const_LreController_minsafedist,
+								   		    const_LreController_staticobshorizdist,
+								   		    const_LreController_staticobsdfltvertdist,
+								   		    const_LreController_staticobsvertdist)
+								   [| { share__, terminate } |] (
+								   OCM::VS_O__(id__,
 								   		    const_LreController_minsafedist,
 								   		    const_LreController_staticobshorizdist,
 								   		    const_LreController_staticobsdfltvertdist,
@@ -3413,10 +3413,10 @@ module LreController_Module
 								   )
 								   )
 								 )
+								 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
+								 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 								 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 								 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
-								 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
-								 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
 								  [[ share__ <- x__ | x__ <- {| share__,setR_v |} ]] 
@@ -7071,10 +7071,10 @@ endmodule
 			-- Transition identifiers
 			-- declaring identifiers of transitions
 			datatype NIDS = 
+			              NID_MOM|
+			              NID_HCM|
 			              NID_CAM|
 			              NID_OCM|
-			              NID_HCM|
-			              NID_MOM|
 			              NID_i0
 			
 			channel internal__ : NIDS
@@ -7131,18 +7131,18 @@ endmodule
 			-- Declaring call and ret events for undefined operations
 			
 			enterSS = {|
+			MOM::enter,
+			HCM::enter,
 			CAM::enter,
 			OCM::enter,
-			HCM::enter,
-			MOM::enter,
 			i0::enter
 			|}
 			
 			enteredSS = 	{|
-			CAM::entered,
-			OCM::entered,
+			MOM::entered,
 			HCM::entered,
-			MOM::entered
+			CAM::entered,
+			OCM::entered
 			|}
 			
 			internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -7185,6 +7185,154 @@ endmodule
 		
 			-- Nodes --
 			-- declaring all nodes
+			
+			----------------------------------------------------------------------
+			-- State: MOM
+			module MOM
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
+			
+			----------------------------------------------------------------------
+			-- State: HCM
+			module HCM
+			
+			enterSS = {}
+			
+			enteredSS = {}
+			
+			exports
+			
+				--  Declarations
+				
+				channel enter, entered, interrupt
+				channel enteredL, enteredR
+				
+								
+				
+				--	Nodes
+				-- declaring all nodes
+				
+				
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+			
+			endmodule
+			----------------------------------------------------------------------
+			
 			
 			----------------------------------------------------------------------
 			-- State: CAM
@@ -7320,154 +7468,6 @@ endmodule
 					Termination = terminate -> SKIP
 					
 					Active 		= SKIP ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-				
-			
-			endmodule
-			----------------------------------------------------------------------
-			
-			
-			----------------------------------------------------------------------
-			-- State: HCM
-			module HCM
-			
-			enterSS = {}
-			
-			enteredSS = {}
-			
-			exports
-			
-				--  Declarations
-				
-				channel enter, entered, interrupt
-				channel enteredL, enteredR
-				
-								
-				
-				--	Nodes
-				-- declaring all nodes
-				
-				
-				--	Rule: behaviours(Node)
-				--  Note that FDR has problems with efficiently compiling the process below
-				-- 	if using a different recursion pattern.
-				D__(id__,
-						    const_LreController_minsafedist,
-						    const_LreController_staticobshorizdist,
-						    const_LreController_staticobsdfltvertdist,
-						    const_LreController_staticobsvertdist) = 
-				dbisim(let
-					-- IMPLEMENTATION NOTE: 
-					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-					-- however FDR struggles with that form in certain cases. So we use the exception operator
-					-- instead to 'terminate'.
-					
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= SKIP ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-					
-				VS_O__(id__,
-						    const_LreController_minsafedist,
-						    const_LreController_staticobshorizdist,
-						    const_LreController_staticobsdfltvertdist,
-						    const_LreController_staticobsvertdist) = 
-				dbisim(let
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= SKIP ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-				
-			
-			endmodule
-			----------------------------------------------------------------------
-			
-			
-			----------------------------------------------------------------------
-			-- State: MOM
-			module MOM
-			
-			enterSS = {}
-			
-			enteredSS = {}
-			
-			exports
-			
-				--  Declarations
-				
-				channel enter, entered, interrupt
-				channel enteredL, enteredR
-				
-								
-				
-				--	Nodes
-				-- declaring all nodes
-				
-				
-				--	Rule: behaviours(Node)
-				--  Note that FDR has problems with efficiently compiling the process below
-				-- 	if using a different recursion pattern.
-				D__(id__,
-						    const_LreController_minsafedist,
-						    const_LreController_staticobshorizdist,
-						    const_LreController_staticobsdfltvertdist,
-						    const_LreController_staticobsvertdist) = 
-				dbisim(let
-					-- IMPLEMENTATION NOTE: 
-					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-					-- however FDR struggles with that form in certain cases. So we use the exception operator
-					-- instead to 'terminate'.
-					
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-					
-				VS_O__(id__,
-						    const_LreController_minsafedist,
-						    const_LreController_staticobshorizdist,
-						    const_LreController_staticobsdfltvertdist,
-						    const_LreController_staticobsvertdist) = 
-				dbisim(let
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -7628,10 +7628,10 @@ endmodule
 						-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 						-- modules for defining the semantics of each node.
 						enterSS = {|
+						MOM::enter,
+						HCM::enter,
 						CAM::enter,
 						OCM::enter,
-						HCM::enter,
-						MOM::enter,
 						i0::enter
 						|}
 						hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -7644,13 +7644,7 @@ endmodule
 						within
 							((
 							 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-							   CAM::D__(id__,
-							   		    const_LreController_minsafedist,
-							   		    const_LreController_staticobshorizdist,
-							   		    const_LreController_staticobsdfltvertdist,
-							   		    const_LreController_staticobsvertdist)
-							   [| { share__, terminate } |] (
-							   OCM::D__(id__,
+							   MOM::D__(id__,
 							   		    const_LreController_minsafedist,
 							   		    const_LreController_staticobshorizdist,
 							   		    const_LreController_staticobsdfltvertdist,
@@ -7662,7 +7656,13 @@ endmodule
 							   		    const_LreController_staticobsdfltvertdist,
 							   		    const_LreController_staticobsvertdist)
 							   [| { share__, terminate } |] (
-							   MOM::D__(id__,
+							   CAM::D__(id__,
+							   		    const_LreController_minsafedist,
+							   		    const_LreController_staticobshorizdist,
+							   		    const_LreController_staticobsdfltvertdist,
+							   		    const_LreController_staticobsvertdist)
+							   [| { share__, terminate } |] (
+							   OCM::D__(id__,
 							   		    const_LreController_minsafedist,
 							   		    const_LreController_staticobshorizdist,
 							   		    const_LreController_staticobsdfltvertdist,
@@ -7678,10 +7678,10 @@ endmodule
 							   )
 							   )
 							 )
+							 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
+							 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 							 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 							 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
-							 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
-							 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
 							 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 							 )
 							  [[ share__ <- x__ | x__ <- {| share__,setR_v |} ]] 
@@ -7800,10 +7800,10 @@ endmodule
 						-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 						-- modules for defining the semantics of each node.
 						enterSS = {|
+						MOM::enter,
+						HCM::enter,
 						CAM::enter,
 						OCM::enter,
-						HCM::enter,
-						MOM::enter,
 						i0::enter
 						|}
 						hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -7816,13 +7816,7 @@ endmodule
 						within
 							((
 							 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-							   CAM::VS_O__(id__,
-							   		    const_LreController_minsafedist,
-							   		    const_LreController_staticobshorizdist,
-							   		    const_LreController_staticobsdfltvertdist,
-							   		    const_LreController_staticobsvertdist)
-							   [| { share__, terminate } |] (
-							   OCM::VS_O__(id__,
+							   MOM::VS_O__(id__,
 							   		    const_LreController_minsafedist,
 							   		    const_LreController_staticobshorizdist,
 							   		    const_LreController_staticobsdfltvertdist,
@@ -7834,7 +7828,13 @@ endmodule
 							   		    const_LreController_staticobsdfltvertdist,
 							   		    const_LreController_staticobsvertdist)
 							   [| { share__, terminate } |] (
-							   MOM::VS_O__(id__,
+							   CAM::VS_O__(id__,
+							   		    const_LreController_minsafedist,
+							   		    const_LreController_staticobshorizdist,
+							   		    const_LreController_staticobsdfltvertdist,
+							   		    const_LreController_staticobsvertdist)
+							   [| { share__, terminate } |] (
+							   OCM::VS_O__(id__,
 							   		    const_LreController_minsafedist,
 							   		    const_LreController_staticobshorizdist,
 							   		    const_LreController_staticobsdfltvertdist,
@@ -7850,10 +7850,10 @@ endmodule
 							   )
 							   )
 							 )
+							 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
+							 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 							 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 							 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
-							 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
-							 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
 							 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 							 )
 							  [[ share__ <- x__ | x__ <- {| share__,setR_v |} ]] 
@@ -8527,10 +8527,10 @@ exports
 	-- Transition identifiers
 	-- declaring identifiers of transitions
 	datatype NIDS = 
+	              NID_MOM|
+	              NID_HCM|
 	              NID_CAM|
 	              NID_OCM|
-	              NID_HCM|
-	              NID_MOM|
 	              NID_i0
 	
 	channel internal__ : NIDS
@@ -8587,18 +8587,18 @@ exports
 	-- Declaring call and ret events for undefined operations
 	
 	enterSS = {|
+	MOM::enter,
+	HCM::enter,
 	CAM::enter,
 	OCM::enter,
-	HCM::enter,
-	MOM::enter,
 	i0::enter
 	|}
 	
 	enteredSS = 	{|
-	CAM::entered,
-	OCM::entered,
+	MOM::entered,
 	HCM::entered,
-	MOM::entered
+	CAM::entered,
+	OCM::entered
 	|}
 	
 	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -8641,6 +8641,154 @@ exports
 
 	-- Nodes --
 	-- declaring all nodes
+	
+	----------------------------------------------------------------------
+	-- State: MOM
+	module MOM
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
+	-- State: HCM
+	module HCM
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
 	
 	----------------------------------------------------------------------
 	-- State: CAM
@@ -8776,154 +8924,6 @@ exports
 			Termination = terminate -> SKIP
 			
 			Active 		= SKIP ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-		
-	
-	endmodule
-	----------------------------------------------------------------------
-	
-	
-	----------------------------------------------------------------------
-	-- State: HCM
-	module HCM
-	
-	enterSS = {}
-	
-	enteredSS = {}
-	
-	exports
-	
-		--  Declarations
-		
-		channel enter, entered, interrupt
-		channel enteredL, enteredR
-		
-						
-		
-		--	Nodes
-		-- declaring all nodes
-		
-		
-		--	Rule: behaviours(Node)
-		--  Note that FDR has problems with efficiently compiling the process below
-		-- 	if using a different recursion pattern.
-		D__(id__,
-				    const_LreController_minsafedist,
-				    const_LreController_staticobshorizdist,
-				    const_LreController_staticobsdfltvertdist,
-				    const_LreController_staticobsvertdist) = 
-		dbisim(let
-			-- IMPLEMENTATION NOTE: 
-			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-			-- however FDR struggles with that form in certain cases. So we use the exception operator
-			-- instead to 'terminate'.
-			
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= SKIP ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-			
-		VS_O__(id__,
-				    const_LreController_minsafedist,
-				    const_LreController_staticobshorizdist,
-				    const_LreController_staticobsdfltvertdist,
-				    const_LreController_staticobsvertdist) = 
-		dbisim(let
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= SKIP ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-		
-	
-	endmodule
-	----------------------------------------------------------------------
-	
-	
-	----------------------------------------------------------------------
-	-- State: MOM
-	module MOM
-	
-	enterSS = {}
-	
-	enteredSS = {}
-	
-	exports
-	
-		--  Declarations
-		
-		channel enter, entered, interrupt
-		channel enteredL, enteredR
-		
-						
-		
-		--	Nodes
-		-- declaring all nodes
-		
-		
-		--	Rule: behaviours(Node)
-		--  Note that FDR has problems with efficiently compiling the process below
-		-- 	if using a different recursion pattern.
-		D__(id__,
-				    const_LreController_minsafedist,
-				    const_LreController_staticobshorizdist,
-				    const_LreController_staticobsdfltvertdist,
-				    const_LreController_staticobsvertdist) = 
-		dbisim(let
-			-- IMPLEMENTATION NOTE: 
-			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-			-- however FDR struggles with that form in certain cases. So we use the exception operator
-			-- instead to 'terminate'.
-			
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-			
-		VS_O__(id__,
-				    const_LreController_minsafedist,
-				    const_LreController_staticobshorizdist,
-				    const_LreController_staticobsdfltvertdist,
-				    const_LreController_staticobsvertdist) = 
-		dbisim(let
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
 					 	  Behaviour ; 
 					 	  share__choice(exit -> SKIP) ; SKIP ; 
 					 	  share__choice(exited -> SKIP) ; Inactive
@@ -9084,10 +9084,10 @@ exports
 				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 				-- modules for defining the semantics of each node.
 				enterSS = {|
+				MOM::enter,
+				HCM::enter,
 				CAM::enter,
 				OCM::enter,
-				HCM::enter,
-				MOM::enter,
 				i0::enter
 				|}
 				hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -9100,13 +9100,7 @@ exports
 				within
 					((
 					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-					   CAM::D__(id__,
-					   		    const_LreController_minsafedist,
-					   		    const_LreController_staticobshorizdist,
-					   		    const_LreController_staticobsdfltvertdist,
-					   		    const_LreController_staticobsvertdist)
-					   [| { share__, terminate } |] (
-					   OCM::D__(id__,
+					   MOM::D__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
@@ -9118,7 +9112,13 @@ exports
 					   		    const_LreController_staticobsdfltvertdist,
 					   		    const_LreController_staticobsvertdist)
 					   [| { share__, terminate } |] (
-					   MOM::D__(id__,
+					   CAM::D__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   OCM::D__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
@@ -9134,10 +9134,10 @@ exports
 					   )
 					   )
 					 )
+					 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
+					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 					 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 					 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
-					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
-					 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
 					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 					 )
 					  [[ share__ <- x__ | x__ <- {| share__,setR_v |} ]] 
@@ -9256,10 +9256,10 @@ exports
 				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 				-- modules for defining the semantics of each node.
 				enterSS = {|
+				MOM::enter,
+				HCM::enter,
 				CAM::enter,
 				OCM::enter,
-				HCM::enter,
-				MOM::enter,
 				i0::enter
 				|}
 				hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -9272,13 +9272,7 @@ exports
 				within
 					((
 					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-					   CAM::VS_O__(id__,
-					   		    const_LreController_minsafedist,
-					   		    const_LreController_staticobshorizdist,
-					   		    const_LreController_staticobsdfltvertdist,
-					   		    const_LreController_staticobsvertdist)
-					   [| { share__, terminate } |] (
-					   OCM::VS_O__(id__,
+					   MOM::VS_O__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
@@ -9290,7 +9284,13 @@ exports
 					   		    const_LreController_staticobsdfltvertdist,
 					   		    const_LreController_staticobsvertdist)
 					   [| { share__, terminate } |] (
-					   MOM::VS_O__(id__,
+					   CAM::VS_O__(id__,
+					   		    const_LreController_minsafedist,
+					   		    const_LreController_staticobshorizdist,
+					   		    const_LreController_staticobsdfltvertdist,
+					   		    const_LreController_staticobsvertdist)
+					   [| { share__, terminate } |] (
+					   OCM::VS_O__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
@@ -9306,10 +9306,10 @@ exports
 					   )
 					   )
 					 )
+					 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
+					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 					 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 					 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
-					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
-					 [[MOM::interrupt <- x__ | x__ <- {|interrupt|}]]
 					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 					 )
 					  [[ share__ <- x__ | x__ <- {| share__,setR_v |} ]] 

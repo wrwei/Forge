@@ -81,6 +81,7 @@ public class IsabelleEgxRunner {
             vars.put("stm_name", stmName);
             vars.put("stm_index", idx);
             vars.put("statefulLensNames", lenses);
+            vars.put("constantDefaults", loadConstantDefaults(outputDir.resolve("constant_defaults.json")));   // Amendment 20
             EglGenerationRunner runner = new EglGenerationRunner();
             runner.run(eglPath, "RC", rcResource, rcMetamodel, thyPath, vars);
             System.out.println("Isabelle theory written to: " + thyPath.toAbsolutePath());
@@ -88,6 +89,30 @@ public class IsabelleEgxRunner {
         }
         writeRootFile(isabelleDir, stmNames);
         return out;
+    }
+
+    /** Amendment 20: the named constants and their values, as the T2M phase wrote them
+     *  (the same file the RCT generator reads); empty when absent. */
+    private static Map<String, Object> loadConstantDefaults(Path path) {
+        Map<String, Object> result = new HashMap<>();
+        if (!Files.exists(path)) return result;
+        try {
+            for (String line : Files.readString(path).split("\n")) {
+                line = line.trim();
+                if (!line.startsWith("\"")) continue;
+                int closeQuote = line.indexOf('"', 1);
+                int colonIdx = closeQuote < 0 ? -1 : line.indexOf(':', closeQuote);
+                if (colonIdx < 0) continue;
+                String key = line.substring(1, closeQuote);
+                String val = line.substring(colonIdx + 1).trim();
+                if (val.endsWith(",")) val = val.substring(0, val.length() - 1).trim();
+                if (val.startsWith("\"") && val.endsWith("\"") && val.length() >= 2) val = val.substring(1, val.length() - 1);
+                result.put(key, val);
+            }
+        } catch (java.io.IOException e) {
+            System.err.println("constant_defaults.json unreadable: " + e.getMessage());
+        }
+        return result;
     }
 
     /**

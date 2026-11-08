@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:29:35
+-- Automatically generated on 07-11-2026 11:29:56
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -17,10 +17,10 @@ exports
 	-- Transition identifiers
 	-- declaring identifiers of transitions
 	datatype NIDS = 
-	              NID_CAM|
-	              NID_HCM|
-	              NID_MOM|
 	              NID_OCM|
+	              NID_HCM|
+	              NID_CAM|
+	              NID_MOM|
 	              NID_i0
 	
 	channel internal__ : NIDS
@@ -81,18 +81,18 @@ exports
 	-- Declaring call and ret events for undefined operations
 	
 	enterSS = {|
-	CAM::enter,
-	HCM::enter,
-	MOM::enter,
 	OCM::enter,
+	HCM::enter,
+	CAM::enter,
+	MOM::enter,
 	i0::enter
 	|}
 	
 	enteredSS = 	{|
-	CAM::entered,
+	OCM::entered,
 	HCM::entered,
-	MOM::entered,
-	OCM::entered
+	CAM::entered,
+	MOM::entered
 	|}
 	
 	internal_events = union(enteredSS,union(enterSS,{|interrupt,exited|}))
@@ -139,8 +139,8 @@ exports
 	-- declaring all nodes
 	
 	----------------------------------------------------------------------
-	-- State: CAM
-	module CAM
+	-- State: OCM
+	module OCM
 	
 	enterSS = {}
 	
@@ -287,6 +287,80 @@ exports
 	
 	
 	----------------------------------------------------------------------
+	-- State: CAM
+	module CAM
+	
+	enterSS = {}
+	
+	enteredSS = {}
+	
+	exports
+	
+		--  Declarations
+		
+		channel enter, entered, interrupt
+		channel enteredL, enteredR
+		
+						
+		
+		--	Nodes
+		-- declaring all nodes
+		
+		
+		--	Rule: behaviours(Node)
+		--  Note that FDR has problems with efficiently compiling the process below
+		-- 	if using a different recursion pattern.
+		D__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			-- IMPLEMENTATION NOTE: 
+			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+			-- however FDR struggles with that form in certain cases. So we use the exception operator
+			-- instead to 'terminate'.
+			
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+			
+		VS_O__(id__,
+				    const_LreController_minsafedist,
+				    const_LreController_staticobshorizdist,
+				    const_LreController_staticobsdfltvertdist,
+				    const_LreController_staticobsvertdist) = 
+		dbisim(let
+			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+			
+			Termination = terminate -> SKIP
+			
+			Active 		= SKIP ; 
+					 	  Behaviour ; 
+					 	  share__choice(exit -> SKIP) ; SKIP ; 
+					 	  share__choice(exited -> SKIP) ; Inactive
+		
+			Behaviour 	= entered -> During
+			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+		within
+			Inactive [| {terminate} |> SKIP)
+		
+	
+	endmodule
+	----------------------------------------------------------------------
+	
+	
+	----------------------------------------------------------------------
 	-- State: MOM
 	module MOM
 	
@@ -346,80 +420,6 @@ exports
 			Termination = terminate -> SKIP
 			
 			Active 		= true&(share__choice(advVel.out!1 -> SKIP)) ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-		
-	
-	endmodule
-	----------------------------------------------------------------------
-	
-	
-	----------------------------------------------------------------------
-	-- State: OCM
-	module OCM
-	
-	enterSS = {}
-	
-	enteredSS = {}
-	
-	exports
-	
-		--  Declarations
-		
-		channel enter, entered, interrupt
-		channel enteredL, enteredR
-		
-						
-		
-		--	Nodes
-		-- declaring all nodes
-		
-		
-		--	Rule: behaviours(Node)
-		--  Note that FDR has problems with efficiently compiling the process below
-		-- 	if using a different recursion pattern.
-		D__(id__,
-				    const_LreController_minsafedist,
-				    const_LreController_staticobshorizdist,
-				    const_LreController_staticobsdfltvertdist,
-				    const_LreController_staticobsvertdist) = 
-		dbisim(let
-			-- IMPLEMENTATION NOTE: 
-			-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-			-- however FDR struggles with that form in certain cases. So we use the exception operator
-			-- instead to 'terminate'.
-			
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= SKIP ; 
-					 	  Behaviour ; 
-					 	  share__choice(exit -> SKIP) ; SKIP ; 
-					 	  share__choice(exited -> SKIP) ; Inactive
-		
-			Behaviour 	= entered -> During
-			During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-		within
-			Inactive [| {terminate} |> SKIP)
-			
-		VS_O__(id__,
-				    const_LreController_minsafedist,
-				    const_LreController_staticobshorizdist,
-				    const_LreController_staticobsdfltvertdist,
-				    const_LreController_staticobsvertdist) = 
-		dbisim(let
-			Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-			
-			Termination = terminate -> SKIP
-			
-			Active 		= SKIP ; 
 					 	  Behaviour ; 
 					 	  share__choice(exit -> SKIP) ; SKIP ; 
 					 	  share__choice(exited -> SKIP) ; Inactive
@@ -586,10 +586,10 @@ exports
 				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 				-- modules for defining the semantics of each node.
 				enterSS = {|
-				CAM::enter,
-				HCM::enter,
-				MOM::enter,
 				OCM::enter,
+				HCM::enter,
+				CAM::enter,
+				MOM::enter,
 				i0::enter
 				|}
 				hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -602,7 +602,7 @@ exports
 				within
 					((
 					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-					   CAM::D__(id__,
+					   OCM::D__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
@@ -614,13 +614,13 @@ exports
 					   		    const_LreController_staticobsdfltvertdist,
 					   		    const_LreController_staticobsvertdist)
 					   [| { share__, terminate } |] (
-					   MOM::D__(id__,
+					   CAM::D__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
 					   		    const_LreController_staticobsvertdist)
 					   [| { share__, terminate } |] (
-					   OCM::D__(id__,
+					   MOM::D__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
@@ -636,10 +636,10 @@ exports
 					   )
 					   )
 					 )
-					 [[CAM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_CAM,reqOCM__.NID_CAM.in|}]]
-					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
-					 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
 					 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
+					 [[CAM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_CAM,reqOCM__.NID_CAM.in|}]]
+					 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
 					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 					 )
 					  [[ share__ <- x__ | x__ <- {| share__,setR_v |} ]] 
@@ -761,10 +761,10 @@ exports
 				-- Here the 'enter' channel set is calculated explicitly because of the use of CSPM 
 				-- modules for defining the semantics of each node.
 				enterSS = {|
-				CAM::enter,
-				HCM::enter,
-				MOM::enter,
 				OCM::enter,
+				HCM::enter,
+				CAM::enter,
+				MOM::enter,
 				i0::enter
 				|}
 				hideSet = union(enterSS,{|exit,exited,internal__|})
@@ -777,7 +777,7 @@ exports
 				within
 					((
 					 (((-- RULE composeNodes(nc:NodeContainer)^nops : CSPProcess
-					   CAM::VS_O__(id__,
+					   OCM::VS_O__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
@@ -789,13 +789,13 @@ exports
 					   		    const_LreController_staticobsdfltvertdist,
 					   		    const_LreController_staticobsvertdist)
 					   [| { share__, terminate } |] (
-					   MOM::VS_O__(id__,
+					   CAM::VS_O__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
 					   		    const_LreController_staticobsvertdist)
 					   [| { share__, terminate } |] (
-					   OCM::VS_O__(id__,
+					   MOM::VS_O__(id__,
 					   		    const_LreController_minsafedist,
 					   		    const_LreController_staticobshorizdist,
 					   		    const_LreController_staticobsdfltvertdist,
@@ -811,10 +811,10 @@ exports
 					   )
 					   )
 					 )
-					 [[CAM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_CAM,reqOCM__.NID_CAM.in|}]]
-					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
-					 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
 					 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+					 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
+					 [[CAM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_CAM,reqOCM__.NID_CAM.in|}]]
+					 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
 					 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 					 )
 					  [[ share__ <- x__ | x__ <- {| share__,setR_v |} ]] 

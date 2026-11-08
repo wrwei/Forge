@@ -47,7 +47,7 @@ end
 text \<open> function definition \<close>
 
 consts distance :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
-consts obstaclethreshold :: "unit \<Rightarrow> real"  (* FORK: auto-emitted for CallExp identifier used in guards *)
+definition obstaclethreshold :: "unit \<Rightarrow> real" where "obstaclethreshold u = 0.5"  (* named constant; value from the model *)
 
 subsection \<open> State Space \<close>
 

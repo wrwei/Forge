@@ -1,7 +1,7 @@
 
 --
 -- RoboChart generator version <unknown>
--- Automatically generated on 25-10-2026 18:30:11
+-- Automatically generated on 07-11-2026 11:30:30
 --
 -- Iterated compression status: true
 -- Assertions compression status: true
@@ -3100,8 +3100,8 @@ module LreController_Module
 				-- declaring identifiers of transitions
 				datatype NIDS = 
 				              NID_MOM|
-				              NID_HCM|
 				              NID_OCM|
+				              NID_HCM|
 				              NID_CAM|
 				              NID_i0
 				
@@ -3164,16 +3164,16 @@ module LreController_Module
 				
 				enterSS = {|
 				MOM::enter,
-				HCM::enter,
 				OCM::enter,
+				HCM::enter,
 				CAM::enter,
 				i0::enter
 				|}
 				
 				enteredSS = 	{|
 				MOM::entered,
-				HCM::entered,
 				OCM::entered,
+				HCM::entered,
 				CAM::entered
 				|}
 				
@@ -3222,24 +3222,11 @@ module LreController_Module
 				localClockResets = {||}
 				
 				
-				channel get_CLID_HCM : core_clock_type 
 				channel get_CLID_OCM : core_clock_type 
 				channel get_CLID_MOM : core_clock_type 
 				channel get_CLID_CAM : core_clock_type 
+				channel get_CLID_HCM : core_clock_type 
 				--channel increment__
-				
-				CLID_HCM_clock_type(id__,
-						          const_LreController_minsafedist,
-						          const_LreController_staticobshorizdist,
-						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist) = 
-					let
-						max = (clock_type_max(Union({
-				{}
-				}))+1)
-					ctype = {0..max}
-				within
-					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
 				CLID_OCM_clock_type(id__,
 						          const_LreController_minsafedist,
@@ -3268,6 +3255,19 @@ module LreController_Module
 					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 				
 				CLID_CAM_clock_type(id__,
+						          const_LreController_minsafedist,
+						          const_LreController_staticobshorizdist,
+						          const_LreController_staticobsdfltvertdist,
+						          const_LreController_staticobsvertdist) = 
+					let
+						max = (clock_type_max(Union({
+				{}
+				}))+1)
+					ctype = {0..max}
+				within
+					if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+				
+				CLID_HCM_clock_type(id__,
 						          const_LreController_minsafedist,
 						          const_LreController_staticobshorizdist,
 						          const_LreController_staticobsdfltvertdist,
@@ -3375,95 +3375,6 @@ module LreController_Module
 					
 					
 					----------------------------------------------------------------------
-					-- State: HCM
-					module HCM
-					
-					enterSS = {}
-					
-					enteredSS = {}
-					
-					exports
-					
-						--  Declarations
-						
-						channel enter, entered, interrupt
-						channel enteredL, enteredR
-						
-										
-						
-						--channel increment__
-						
-						
-						--	Nodes
-						-- declaring all nodes
-						
-						
-						Timed(OneStep) {
-							--	Rule: behaviours(Node)
-							--  Note that FDR has problems with efficiently compiling the process below
-							-- 	if using a different recursion pattern.
-							D__(id__,
-									    const_LreController_minsafedist,
-									    const_LreController_staticobshorizdist,
-									    const_LreController_staticobsdfltvertdist,
-									    const_LreController_staticobsvertdist) = 
-							dbisim(let
-								-- IMPLEMENTATION NOTE: 
-								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-								-- however FDR struggles with that form in certain cases. So we use the exception operator
-								-- instead to 'terminate'.
-								
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-								
-							VS_O__(id__,
-									    const_LreController_minsafedist,
-									    const_LreController_staticobshorizdist,
-									    const_LreController_staticobsdfltvertdist,
-									    const_LreController_staticobsvertdist) = 
-							dbisim(let
-								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-								
-								Termination = terminate -> SKIP
-								
-								Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
-										 	  Behaviour ; 
-										 	  share__choice(exit -> SKIP) ; SKIP ; 
-										 	  share__choice(exited -> SKIP) ; Inactive
-							
-								Behaviour 	= entered -> During
-								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-							within
-								Inactive [| {terminate} |> SKIP)
-							
-							
-							-- Clocks
-							
-							StateClocks(id__,
-									          const_LreController_minsafedist,
-									          const_LreController_staticobshorizdist,
-									          const_LreController_staticobsdfltvertdist,
-									          const_LreController_staticobsvertdist) = terminate -> SKIP
-							
-							stateClockSync = {||}
-						}
-					
-					endmodule
-					----------------------------------------------------------------------
-					
-					
-					----------------------------------------------------------------------
 					-- State: OCM
 					module OCM
 					
@@ -3527,6 +3438,95 @@ module LreController_Module
 								Termination = terminate -> SKIP
 								
 								Active 		= SKIP ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+							
+							
+							-- Clocks
+							
+							StateClocks(id__,
+									          const_LreController_minsafedist,
+									          const_LreController_staticobshorizdist,
+									          const_LreController_staticobsdfltvertdist,
+									          const_LreController_staticobsvertdist) = terminate -> SKIP
+							
+							stateClockSync = {||}
+						}
+					
+					endmodule
+					----------------------------------------------------------------------
+					
+					
+					----------------------------------------------------------------------
+					-- State: HCM
+					module HCM
+					
+					enterSS = {}
+					
+					enteredSS = {}
+					
+					exports
+					
+						--  Declarations
+						
+						channel enter, entered, interrupt
+						channel enteredL, enteredR
+						
+										
+						
+						--channel increment__
+						
+						
+						--	Nodes
+						-- declaring all nodes
+						
+						
+						Timed(OneStep) {
+							--	Rule: behaviours(Node)
+							--  Note that FDR has problems with efficiently compiling the process below
+							-- 	if using a different recursion pattern.
+							D__(id__,
+									    const_LreController_minsafedist,
+									    const_LreController_staticobshorizdist,
+									    const_LreController_staticobsdfltvertdist,
+									    const_LreController_staticobsvertdist) = 
+							dbisim(let
+								-- IMPLEMENTATION NOTE: 
+								-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+								-- however FDR struggles with that form in certain cases. So we use the exception operator
+								-- instead to 'terminate'.
+								
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
+										 	  Behaviour ; 
+										 	  share__choice(exit -> SKIP) ; SKIP ; 
+										 	  share__choice(exited -> SKIP) ; Inactive
+							
+								Behaviour 	= entered -> During
+								During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+							within
+								Inactive [| {terminate} |> SKIP)
+								
+							VS_O__(id__,
+									    const_LreController_minsafedist,
+									    const_LreController_staticobshorizdist,
+									    const_LreController_staticobsdfltvertdist,
+									    const_LreController_staticobsvertdist) = 
+							dbisim(let
+								Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+								
+								Termination = terminate -> SKIP
+								
+								Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
 										 	  Behaviour ; 
 										 	  share__choice(exit -> SKIP) ; SKIP ; 
 										 	  share__choice(exited -> SKIP) ; Inactive
@@ -3797,8 +3797,8 @@ module LreController_Module
 								-- modules for defining the semantics of each node.
 								enterSS = {|
 								MOM::enter,
-								HCM::enter,
 								OCM::enter,
+								HCM::enter,
 								CAM::enter,
 								i0::enter
 								|}
@@ -3818,13 +3818,13 @@ module LreController_Module
 									   		    const_LreController_staticobsdfltvertdist,
 									   		    const_LreController_staticobsvertdist)
 									   [| { share__, terminate } |] (
-									   HCM::D__(id__,
+									   OCM::D__(id__,
 									   		    const_LreController_minsafedist,
 									   		    const_LreController_staticobshorizdist,
 									   		    const_LreController_staticobsdfltvertdist,
 									   		    const_LreController_staticobsvertdist)
 									   [| { share__, terminate } |] (
-									   OCM::D__(id__,
+									   HCM::D__(id__,
 									   		    const_LreController_minsafedist,
 									   		    const_LreController_staticobshorizdist,
 									   		    const_LreController_staticobsdfltvertdist,
@@ -3847,8 +3847,8 @@ module LreController_Module
 									   )
 									 )
 									 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
-									 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 									 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+									 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 									 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 									 )
@@ -3909,7 +3909,7 @@ module LreController_Module
 							    const_LreController_staticobsdfltvertdist,
 							    const_LreController_staticobsvertdist) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+							stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 						 within
 							(MachineBody(id__,
 									    const_LreController_minsafedist,
@@ -3929,7 +3929,7 @@ module LreController_Module
 							    const_LreController_staticobsdfltvertdist,
 							    const_LreController_staticobsvertdist) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+							stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 						 within
 							(dbisim(
 								sbisim(
@@ -3944,37 +3944,37 @@ module LreController_Module
 																	    const_LreController_staticobshorizdist,
 																	    const_LreController_staticobsdfltvertdist,
 																	    const_LreController_staticobsvertdist)
-															[| {|get_CLID_CAM,CAM::entered,terminate|} |]
-															dbisim(Clock_CLID_CAM(id__,0,
+															[| {|get_CLID_HCM,HCM::entered,terminate|} |]
+															dbisim(Clock_CLID_HCM(id__,0,
 																	          const_LreController_minsafedist,
 																	          const_LreController_staticobshorizdist,
 																	          const_LreController_staticobsdfltvertdist,
 																	          const_LreController_staticobsvertdist))
-														)\{|get_CLID_CAM|}
+														)\{|get_CLID_HCM|}
 													)
-													[| {|get_CLID_MOM,MOM::entered,terminate|} |]
-													dbisim(Clock_CLID_MOM(id__,0,
+													[| {|get_CLID_CAM,CAM::entered,terminate|} |]
+													dbisim(Clock_CLID_CAM(id__,0,
 															          const_LreController_minsafedist,
 															          const_LreController_staticobshorizdist,
 															          const_LreController_staticobsdfltvertdist,
 															          const_LreController_staticobsvertdist))
-												)\{|get_CLID_MOM|}
+												)\{|get_CLID_CAM|}
 											)
-											[| {|get_CLID_OCM,OCM::entered,terminate|} |]
-											dbisim(Clock_CLID_OCM(id__,0,
+											[| {|get_CLID_MOM,MOM::entered,terminate|} |]
+											dbisim(Clock_CLID_MOM(id__,0,
 													          const_LreController_minsafedist,
 													          const_LreController_staticobshorizdist,
 													          const_LreController_staticobsdfltvertdist,
 													          const_LreController_staticobsvertdist))
-										)\{|get_CLID_OCM|}
+										)\{|get_CLID_MOM|}
 									)
-									[| {|get_CLID_HCM,HCM::entered,terminate|} |]
-									dbisim(Clock_CLID_HCM(id__,0,
+									[| {|get_CLID_OCM,OCM::entered,terminate|} |]
+									dbisim(Clock_CLID_OCM(id__,0,
 											          const_LreController_minsafedist,
 											          const_LreController_staticobshorizdist,
 											          const_LreController_staticobsdfltvertdist,
 											          const_LreController_staticobsvertdist))
-								)\{|get_CLID_HCM|}
+								)\{|get_CLID_OCM|}
 							)
 							) \ union(stateClockSync,enteredSS)
 						)
@@ -4042,8 +4042,8 @@ module LreController_Module
 								-- modules for defining the semantics of each node.
 								enterSS = {|
 								MOM::enter,
-								HCM::enter,
 								OCM::enter,
+								HCM::enter,
 								CAM::enter,
 								i0::enter
 								|}
@@ -4063,13 +4063,13 @@ module LreController_Module
 									   		    const_LreController_staticobsdfltvertdist,
 									   		    const_LreController_staticobsvertdist)
 									   [| { share__, terminate } |] (
-									   HCM::VS_O__(id__,
+									   OCM::VS_O__(id__,
 									   		    const_LreController_minsafedist,
 									   		    const_LreController_staticobshorizdist,
 									   		    const_LreController_staticobsdfltvertdist,
 									   		    const_LreController_staticobsvertdist)
 									   [| { share__, terminate } |] (
-									   OCM::VS_O__(id__,
+									   HCM::VS_O__(id__,
 									   		    const_LreController_minsafedist,
 									   		    const_LreController_staticobshorizdist,
 									   		    const_LreController_staticobsdfltvertdist,
@@ -4092,8 +4092,8 @@ module LreController_Module
 									   )
 									 )
 									 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
-									 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 									 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+									 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 									 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 									 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 									 )
@@ -4154,7 +4154,7 @@ module LreController_Module
 							    const_LreController_staticobsdfltvertdist,
 							    const_LreController_staticobsvertdist) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+							stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 						 within
 							(MachineBody_VS_O(id__,
 									    const_LreController_minsafedist,
@@ -4174,7 +4174,7 @@ module LreController_Module
 							    const_LreController_staticobsdfltvertdist,
 							    const_LreController_staticobsvertdist) = 
 						dbisim((let
-							stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+							stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 						 within
 							(dbisim(
 								sbisim(
@@ -4189,37 +4189,37 @@ module LreController_Module
 																	    const_LreController_staticobshorizdist,
 																	    const_LreController_staticobsdfltvertdist,
 																	    const_LreController_staticobsvertdist)
-															[| {|get_CLID_CAM,CAM::entered,terminate|} |]
-															dbisim(Clock_CLID_CAM(id__,0,
+															[| {|get_CLID_HCM,HCM::entered,terminate|} |]
+															dbisim(Clock_CLID_HCM(id__,0,
 																	          const_LreController_minsafedist,
 																	          const_LreController_staticobshorizdist,
 																	          const_LreController_staticobsdfltvertdist,
 																	          const_LreController_staticobsvertdist))
-														)\{|get_CLID_CAM|}
+														)\{|get_CLID_HCM|}
 													)
-													[| {|get_CLID_MOM,MOM::entered,terminate|} |]
-													dbisim(Clock_CLID_MOM(id__,0,
+													[| {|get_CLID_CAM,CAM::entered,terminate|} |]
+													dbisim(Clock_CLID_CAM(id__,0,
 															          const_LreController_minsafedist,
 															          const_LreController_staticobshorizdist,
 															          const_LreController_staticobsdfltvertdist,
 															          const_LreController_staticobsvertdist))
-												)\{|get_CLID_MOM|}
+												)\{|get_CLID_CAM|}
 											)
-											[| {|get_CLID_OCM,OCM::entered,terminate|} |]
-											dbisim(Clock_CLID_OCM(id__,0,
+											[| {|get_CLID_MOM,MOM::entered,terminate|} |]
+											dbisim(Clock_CLID_MOM(id__,0,
 													          const_LreController_minsafedist,
 													          const_LreController_staticobshorizdist,
 													          const_LreController_staticobsdfltvertdist,
 													          const_LreController_staticobsvertdist))
-										)\{|get_CLID_OCM|}
+										)\{|get_CLID_MOM|}
 									)
-									[| {|get_CLID_HCM,HCM::entered,terminate|} |]
-									dbisim(Clock_CLID_HCM(id__,0,
+									[| {|get_CLID_OCM,OCM::entered,terminate|} |]
+									dbisim(Clock_CLID_OCM(id__,0,
 											          const_LreController_minsafedist,
 											          const_LreController_staticobshorizdist,
 											          const_LreController_staticobsdfltvertdist,
 											          const_LreController_staticobsvertdist))
-								)\{|get_CLID_HCM|}
+								)\{|get_CLID_OCM|}
 							)
 							) \ diff(union(stateClockSync,enteredSS),enteredSS)
 						)
@@ -4375,33 +4375,6 @@ module LreController_Module
 					
 					clockSync = {||}
 					
-					Clock_CLID_HCM(id__,x__,
-							          const_LreController_minsafedist,
-							          const_LreController_staticobshorizdist,
-							          const_LreController_staticobsdfltvertdist,
-							          const_LreController_staticobsvertdist) = 
-						TimeOut_1(
-							HCM::entered -> Clock_CLID_HCM(id__,0,
-									          const_LreController_minsafedist,
-									          const_LreController_staticobshorizdist,
-									          const_LreController_staticobsdfltvertdist,
-									          const_LreController_staticobsvertdist)
-							[]
-							get_CLID_HCM!x__ -> Clock_CLID_HCM(id__,x__,
-									          const_LreController_minsafedist,
-									          const_LreController_staticobshorizdist,
-									          const_LreController_staticobsdfltvertdist,
-									          const_LreController_staticobsvertdist)
-							[]
-							terminate -> SKIP,Clock_CLID_HCM(id__,clock_type_plus(x__,1,CLID_HCM_clock_type(id__,
-									          const_LreController_minsafedist,
-									          const_LreController_staticobshorizdist,
-									          const_LreController_staticobsdfltvertdist,
-									          const_LreController_staticobsvertdist)),
-									          const_LreController_minsafedist,
-									          const_LreController_staticobshorizdist,
-									          const_LreController_staticobsdfltvertdist,
-									          const_LreController_staticobsvertdist))
 					Clock_CLID_OCM(id__,x__,
 							          const_LreController_minsafedist,
 							          const_LreController_staticobshorizdist,
@@ -4483,18 +4456,39 @@ module LreController_Module
 									          const_LreController_staticobshorizdist,
 									          const_LreController_staticobsdfltvertdist,
 									          const_LreController_staticobsvertdist))
+					Clock_CLID_HCM(id__,x__,
+							          const_LreController_minsafedist,
+							          const_LreController_staticobshorizdist,
+							          const_LreController_staticobsdfltvertdist,
+							          const_LreController_staticobsvertdist) = 
+						TimeOut_1(
+							HCM::entered -> Clock_CLID_HCM(id__,0,
+									          const_LreController_minsafedist,
+									          const_LreController_staticobshorizdist,
+									          const_LreController_staticobsdfltvertdist,
+									          const_LreController_staticobsvertdist)
+							[]
+							get_CLID_HCM!x__ -> Clock_CLID_HCM(id__,x__,
+									          const_LreController_minsafedist,
+									          const_LreController_staticobshorizdist,
+									          const_LreController_staticobsdfltvertdist,
+									          const_LreController_staticobsvertdist)
+							[]
+							terminate -> SKIP,Clock_CLID_HCM(id__,clock_type_plus(x__,1,CLID_HCM_clock_type(id__,
+									          const_LreController_minsafedist,
+									          const_LreController_staticobshorizdist,
+									          const_LreController_staticobsdfltvertdist,
+									          const_LreController_staticobsvertdist)),
+									          const_LreController_minsafedist,
+									          const_LreController_staticobshorizdist,
+									          const_LreController_staticobsdfltvertdist,
+									          const_LreController_staticobsvertdist))
 					
 					StateClocks(id__,
 							          const_LreController_minsafedist,
 							          const_LreController_staticobshorizdist,
 							          const_LreController_staticobsdfltvertdist,
-							          const_LreController_staticobsvertdist) = dbisim(Clock_CLID_HCM(id__,0,
-							          const_LreController_minsafedist,
-							          const_LreController_staticobshorizdist,
-							          const_LreController_staticobsdfltvertdist,
-							          const_LreController_staticobsvertdist))
-					[| { terminate } |] (
-					dbisim(Clock_CLID_OCM(id__,0,
+							          const_LreController_staticobsvertdist) = dbisim(Clock_CLID_OCM(id__,0,
 							          const_LreController_minsafedist,
 							          const_LreController_staticobshorizdist,
 							          const_LreController_staticobsdfltvertdist,
@@ -4511,11 +4505,17 @@ module LreController_Module
 							          const_LreController_staticobshorizdist,
 							          const_LreController_staticobsdfltvertdist,
 							          const_LreController_staticobsvertdist))
+					[| { terminate } |] (
+					dbisim(Clock_CLID_HCM(id__,0,
+							          const_LreController_minsafedist,
+							          const_LreController_staticobshorizdist,
+							          const_LreController_staticobsdfltvertdist,
+							          const_LreController_staticobsvertdist))
 					)
 					)
 					)
 					
-					stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+					stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 					
 					-- Shared memory
 					-- Shared memory variables
@@ -8473,8 +8473,8 @@ endmodule
 			-- declaring identifiers of transitions
 			datatype NIDS = 
 			              NID_MOM|
-			              NID_HCM|
 			              NID_OCM|
+			              NID_HCM|
 			              NID_CAM|
 			              NID_i0
 			
@@ -8537,16 +8537,16 @@ endmodule
 			
 			enterSS = {|
 			MOM::enter,
-			HCM::enter,
 			OCM::enter,
+			HCM::enter,
 			CAM::enter,
 			i0::enter
 			|}
 			
 			enteredSS = 	{|
 			MOM::entered,
-			HCM::entered,
 			OCM::entered,
+			HCM::entered,
 			CAM::entered
 			|}
 			
@@ -8595,24 +8595,11 @@ endmodule
 			localClockResets = {||}
 			
 			
-			channel get_CLID_HCM : core_clock_type 
 			channel get_CLID_OCM : core_clock_type 
 			channel get_CLID_MOM : core_clock_type 
 			channel get_CLID_CAM : core_clock_type 
+			channel get_CLID_HCM : core_clock_type 
 			--channel increment__
-			
-			CLID_HCM_clock_type(id__,
-					          const_LreController_minsafedist,
-					          const_LreController_staticobshorizdist,
-					          const_LreController_staticobsdfltvertdist,
-					          const_LreController_staticobsvertdist) = 
-				let
-					max = (clock_type_max(Union({
-			{}
-			}))+1)
-				ctype = {0..max}
-			within
-				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 			
 			CLID_OCM_clock_type(id__,
 					          const_LreController_minsafedist,
@@ -8641,6 +8628,19 @@ endmodule
 				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 			
 			CLID_CAM_clock_type(id__,
+					          const_LreController_minsafedist,
+					          const_LreController_staticobshorizdist,
+					          const_LreController_staticobsdfltvertdist,
+					          const_LreController_staticobsvertdist) = 
+				let
+					max = (clock_type_max(Union({
+			{}
+			}))+1)
+				ctype = {0..max}
+			within
+				if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+			
+			CLID_HCM_clock_type(id__,
 					          const_LreController_minsafedist,
 					          const_LreController_staticobshorizdist,
 					          const_LreController_staticobsdfltvertdist,
@@ -8748,95 +8748,6 @@ endmodule
 				
 				
 				----------------------------------------------------------------------
-				-- State: HCM
-				module HCM
-				
-				enterSS = {}
-				
-				enteredSS = {}
-				
-				exports
-				
-					--  Declarations
-					
-					channel enter, entered, interrupt
-					channel enteredL, enteredR
-					
-									
-					
-					--channel increment__
-					
-					
-					--	Nodes
-					-- declaring all nodes
-					
-					
-					Timed(OneStep) {
-						--	Rule: behaviours(Node)
-						--  Note that FDR has problems with efficiently compiling the process below
-						-- 	if using a different recursion pattern.
-						D__(id__,
-								    const_LreController_minsafedist,
-								    const_LreController_staticobshorizdist,
-								    const_LreController_staticobsdfltvertdist,
-								    const_LreController_staticobsvertdist) = 
-						dbisim(let
-							-- IMPLEMENTATION NOTE: 
-							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-							-- however FDR struggles with that form in certain cases. So we use the exception operator
-							-- instead to 'terminate'.
-							
-							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-							
-							Termination = terminate -> SKIP
-							
-							Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
-									 	  Behaviour ; 
-									 	  share__choice(exit -> SKIP) ; SKIP ; 
-									 	  share__choice(exited -> SKIP) ; Inactive
-						
-							Behaviour 	= entered -> During
-							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-						within
-							Inactive [| {terminate} |> SKIP)
-							
-						VS_O__(id__,
-								    const_LreController_minsafedist,
-								    const_LreController_staticobshorizdist,
-								    const_LreController_staticobsdfltvertdist,
-								    const_LreController_staticobsvertdist) = 
-						dbisim(let
-							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-							
-							Termination = terminate -> SKIP
-							
-							Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
-									 	  Behaviour ; 
-									 	  share__choice(exit -> SKIP) ; SKIP ; 
-									 	  share__choice(exited -> SKIP) ; Inactive
-						
-							Behaviour 	= entered -> During
-							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-						within
-							Inactive [| {terminate} |> SKIP)
-						
-						
-						-- Clocks
-						
-						StateClocks(id__,
-								          const_LreController_minsafedist,
-								          const_LreController_staticobshorizdist,
-								          const_LreController_staticobsdfltvertdist,
-								          const_LreController_staticobsvertdist) = terminate -> SKIP
-						
-						stateClockSync = {||}
-					}
-				
-				endmodule
-				----------------------------------------------------------------------
-				
-				
-				----------------------------------------------------------------------
 				-- State: OCM
 				module OCM
 				
@@ -8900,6 +8811,95 @@ endmodule
 							Termination = terminate -> SKIP
 							
 							Active 		= SKIP ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+						
+						
+						-- Clocks
+						
+						StateClocks(id__,
+								          const_LreController_minsafedist,
+								          const_LreController_staticobshorizdist,
+								          const_LreController_staticobsdfltvertdist,
+								          const_LreController_staticobsvertdist) = terminate -> SKIP
+						
+						stateClockSync = {||}
+					}
+				
+				endmodule
+				----------------------------------------------------------------------
+				
+				
+				----------------------------------------------------------------------
+				-- State: HCM
+				module HCM
+				
+				enterSS = {}
+				
+				enteredSS = {}
+				
+				exports
+				
+					--  Declarations
+					
+					channel enter, entered, interrupt
+					channel enteredL, enteredR
+					
+									
+					
+					--channel increment__
+					
+					
+					--	Nodes
+					-- declaring all nodes
+					
+					
+					Timed(OneStep) {
+						--	Rule: behaviours(Node)
+						--  Note that FDR has problems with efficiently compiling the process below
+						-- 	if using a different recursion pattern.
+						D__(id__,
+								    const_LreController_minsafedist,
+								    const_LreController_staticobshorizdist,
+								    const_LreController_staticobsdfltvertdist,
+								    const_LreController_staticobsvertdist) = 
+						dbisim(let
+							-- IMPLEMENTATION NOTE: 
+							-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+							-- however FDR struggles with that form in certain cases. So we use the exception operator
+							-- instead to 'terminate'.
+							
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
+									 	  Behaviour ; 
+									 	  share__choice(exit -> SKIP) ; SKIP ; 
+									 	  share__choice(exited -> SKIP) ; Inactive
+						
+							Behaviour 	= entered -> During
+							During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+						within
+							Inactive [| {terminate} |> SKIP)
+							
+						VS_O__(id__,
+								    const_LreController_minsafedist,
+								    const_LreController_staticobshorizdist,
+								    const_LreController_staticobsdfltvertdist,
+								    const_LreController_staticobsvertdist) = 
+						dbisim(let
+							Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+							
+							Termination = terminate -> SKIP
+							
+							Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
 									 	  Behaviour ; 
 									 	  share__choice(exit -> SKIP) ; SKIP ; 
 									 	  share__choice(exited -> SKIP) ; Inactive
@@ -9170,8 +9170,8 @@ endmodule
 							-- modules for defining the semantics of each node.
 							enterSS = {|
 							MOM::enter,
-							HCM::enter,
 							OCM::enter,
+							HCM::enter,
 							CAM::enter,
 							i0::enter
 							|}
@@ -9191,13 +9191,13 @@ endmodule
 								   		    const_LreController_staticobsdfltvertdist,
 								   		    const_LreController_staticobsvertdist)
 								   [| { share__, terminate } |] (
-								   HCM::D__(id__,
+								   OCM::D__(id__,
 								   		    const_LreController_minsafedist,
 								   		    const_LreController_staticobshorizdist,
 								   		    const_LreController_staticobsdfltvertdist,
 								   		    const_LreController_staticobsvertdist)
 								   [| { share__, terminate } |] (
-								   OCM::D__(id__,
+								   HCM::D__(id__,
 								   		    const_LreController_minsafedist,
 								   		    const_LreController_staticobshorizdist,
 								   		    const_LreController_staticobsdfltvertdist,
@@ -9220,8 +9220,8 @@ endmodule
 								   )
 								 )
 								 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
-								 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 								 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+								 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 								 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
@@ -9282,7 +9282,7 @@ endmodule
 						    const_LreController_staticobsdfltvertdist,
 						    const_LreController_staticobsvertdist) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+						stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 					 within
 						(MachineBody(id__,
 								    const_LreController_minsafedist,
@@ -9302,7 +9302,7 @@ endmodule
 						    const_LreController_staticobsdfltvertdist,
 						    const_LreController_staticobsvertdist) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+						stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 					 within
 						(dbisim(
 							sbisim(
@@ -9317,37 +9317,37 @@ endmodule
 																    const_LreController_staticobshorizdist,
 																    const_LreController_staticobsdfltvertdist,
 																    const_LreController_staticobsvertdist)
-														[| {|get_CLID_CAM,CAM::entered,terminate|} |]
-														dbisim(Clock_CLID_CAM(id__,0,
+														[| {|get_CLID_HCM,HCM::entered,terminate|} |]
+														dbisim(Clock_CLID_HCM(id__,0,
 																          const_LreController_minsafedist,
 																          const_LreController_staticobshorizdist,
 																          const_LreController_staticobsdfltvertdist,
 																          const_LreController_staticobsvertdist))
-													)\{|get_CLID_CAM|}
+													)\{|get_CLID_HCM|}
 												)
-												[| {|get_CLID_MOM,MOM::entered,terminate|} |]
-												dbisim(Clock_CLID_MOM(id__,0,
+												[| {|get_CLID_CAM,CAM::entered,terminate|} |]
+												dbisim(Clock_CLID_CAM(id__,0,
 														          const_LreController_minsafedist,
 														          const_LreController_staticobshorizdist,
 														          const_LreController_staticobsdfltvertdist,
 														          const_LreController_staticobsvertdist))
-											)\{|get_CLID_MOM|}
+											)\{|get_CLID_CAM|}
 										)
-										[| {|get_CLID_OCM,OCM::entered,terminate|} |]
-										dbisim(Clock_CLID_OCM(id__,0,
+										[| {|get_CLID_MOM,MOM::entered,terminate|} |]
+										dbisim(Clock_CLID_MOM(id__,0,
 												          const_LreController_minsafedist,
 												          const_LreController_staticobshorizdist,
 												          const_LreController_staticobsdfltvertdist,
 												          const_LreController_staticobsvertdist))
-									)\{|get_CLID_OCM|}
+									)\{|get_CLID_MOM|}
 								)
-								[| {|get_CLID_HCM,HCM::entered,terminate|} |]
-								dbisim(Clock_CLID_HCM(id__,0,
+								[| {|get_CLID_OCM,OCM::entered,terminate|} |]
+								dbisim(Clock_CLID_OCM(id__,0,
 										          const_LreController_minsafedist,
 										          const_LreController_staticobshorizdist,
 										          const_LreController_staticobsdfltvertdist,
 										          const_LreController_staticobsvertdist))
-							)\{|get_CLID_HCM|}
+							)\{|get_CLID_OCM|}
 						)
 						) \ union(stateClockSync,enteredSS)
 					)
@@ -9415,8 +9415,8 @@ endmodule
 							-- modules for defining the semantics of each node.
 							enterSS = {|
 							MOM::enter,
-							HCM::enter,
 							OCM::enter,
+							HCM::enter,
 							CAM::enter,
 							i0::enter
 							|}
@@ -9436,13 +9436,13 @@ endmodule
 								   		    const_LreController_staticobsdfltvertdist,
 								   		    const_LreController_staticobsvertdist)
 								   [| { share__, terminate } |] (
-								   HCM::VS_O__(id__,
+								   OCM::VS_O__(id__,
 								   		    const_LreController_minsafedist,
 								   		    const_LreController_staticobshorizdist,
 								   		    const_LreController_staticobsdfltvertdist,
 								   		    const_LreController_staticobsvertdist)
 								   [| { share__, terminate } |] (
-								   OCM::VS_O__(id__,
+								   HCM::VS_O__(id__,
 								   		    const_LreController_minsafedist,
 								   		    const_LreController_staticobshorizdist,
 								   		    const_LreController_staticobsdfltvertdist,
@@ -9465,8 +9465,8 @@ endmodule
 								   )
 								 )
 								 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
-								 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 								 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+								 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 								 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 								 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 								 )
@@ -9527,7 +9527,7 @@ endmodule
 						    const_LreController_staticobsdfltvertdist,
 						    const_LreController_staticobsvertdist) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+						stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 					 within
 						(MachineBody_VS_O(id__,
 								    const_LreController_minsafedist,
@@ -9547,7 +9547,7 @@ endmodule
 						    const_LreController_staticobsdfltvertdist,
 						    const_LreController_staticobsvertdist) = 
 					dbisim((let
-						stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+						stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 					 within
 						(dbisim(
 							sbisim(
@@ -9562,37 +9562,37 @@ endmodule
 																    const_LreController_staticobshorizdist,
 																    const_LreController_staticobsdfltvertdist,
 																    const_LreController_staticobsvertdist)
-														[| {|get_CLID_CAM,CAM::entered,terminate|} |]
-														dbisim(Clock_CLID_CAM(id__,0,
+														[| {|get_CLID_HCM,HCM::entered,terminate|} |]
+														dbisim(Clock_CLID_HCM(id__,0,
 																          const_LreController_minsafedist,
 																          const_LreController_staticobshorizdist,
 																          const_LreController_staticobsdfltvertdist,
 																          const_LreController_staticobsvertdist))
-													)\{|get_CLID_CAM|}
+													)\{|get_CLID_HCM|}
 												)
-												[| {|get_CLID_MOM,MOM::entered,terminate|} |]
-												dbisim(Clock_CLID_MOM(id__,0,
+												[| {|get_CLID_CAM,CAM::entered,terminate|} |]
+												dbisim(Clock_CLID_CAM(id__,0,
 														          const_LreController_minsafedist,
 														          const_LreController_staticobshorizdist,
 														          const_LreController_staticobsdfltvertdist,
 														          const_LreController_staticobsvertdist))
-											)\{|get_CLID_MOM|}
+											)\{|get_CLID_CAM|}
 										)
-										[| {|get_CLID_OCM,OCM::entered,terminate|} |]
-										dbisim(Clock_CLID_OCM(id__,0,
+										[| {|get_CLID_MOM,MOM::entered,terminate|} |]
+										dbisim(Clock_CLID_MOM(id__,0,
 												          const_LreController_minsafedist,
 												          const_LreController_staticobshorizdist,
 												          const_LreController_staticobsdfltvertdist,
 												          const_LreController_staticobsvertdist))
-									)\{|get_CLID_OCM|}
+									)\{|get_CLID_MOM|}
 								)
-								[| {|get_CLID_HCM,HCM::entered,terminate|} |]
-								dbisim(Clock_CLID_HCM(id__,0,
+								[| {|get_CLID_OCM,OCM::entered,terminate|} |]
+								dbisim(Clock_CLID_OCM(id__,0,
 										          const_LreController_minsafedist,
 										          const_LreController_staticobshorizdist,
 										          const_LreController_staticobsdfltvertdist,
 										          const_LreController_staticobsvertdist))
-							)\{|get_CLID_HCM|}
+							)\{|get_CLID_OCM|}
 						)
 						) \ diff(union(stateClockSync,enteredSS),enteredSS)
 					)
@@ -9748,33 +9748,6 @@ endmodule
 				
 				clockSync = {||}
 				
-				Clock_CLID_HCM(id__,x__,
-						          const_LreController_minsafedist,
-						          const_LreController_staticobshorizdist,
-						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist) = 
-					TimeOut_1(
-						HCM::entered -> Clock_CLID_HCM(id__,0,
-								          const_LreController_minsafedist,
-								          const_LreController_staticobshorizdist,
-								          const_LreController_staticobsdfltvertdist,
-								          const_LreController_staticobsvertdist)
-						[]
-						get_CLID_HCM!x__ -> Clock_CLID_HCM(id__,x__,
-								          const_LreController_minsafedist,
-								          const_LreController_staticobshorizdist,
-								          const_LreController_staticobsdfltvertdist,
-								          const_LreController_staticobsvertdist)
-						[]
-						terminate -> SKIP,Clock_CLID_HCM(id__,clock_type_plus(x__,1,CLID_HCM_clock_type(id__,
-								          const_LreController_minsafedist,
-								          const_LreController_staticobshorizdist,
-								          const_LreController_staticobsdfltvertdist,
-								          const_LreController_staticobsvertdist)),
-								          const_LreController_minsafedist,
-								          const_LreController_staticobshorizdist,
-								          const_LreController_staticobsdfltvertdist,
-								          const_LreController_staticobsvertdist))
 				Clock_CLID_OCM(id__,x__,
 						          const_LreController_minsafedist,
 						          const_LreController_staticobshorizdist,
@@ -9856,18 +9829,39 @@ endmodule
 								          const_LreController_staticobshorizdist,
 								          const_LreController_staticobsdfltvertdist,
 								          const_LreController_staticobsvertdist))
+				Clock_CLID_HCM(id__,x__,
+						          const_LreController_minsafedist,
+						          const_LreController_staticobshorizdist,
+						          const_LreController_staticobsdfltvertdist,
+						          const_LreController_staticobsvertdist) = 
+					TimeOut_1(
+						HCM::entered -> Clock_CLID_HCM(id__,0,
+								          const_LreController_minsafedist,
+								          const_LreController_staticobshorizdist,
+								          const_LreController_staticobsdfltvertdist,
+								          const_LreController_staticobsvertdist)
+						[]
+						get_CLID_HCM!x__ -> Clock_CLID_HCM(id__,x__,
+								          const_LreController_minsafedist,
+								          const_LreController_staticobshorizdist,
+								          const_LreController_staticobsdfltvertdist,
+								          const_LreController_staticobsvertdist)
+						[]
+						terminate -> SKIP,Clock_CLID_HCM(id__,clock_type_plus(x__,1,CLID_HCM_clock_type(id__,
+								          const_LreController_minsafedist,
+								          const_LreController_staticobshorizdist,
+								          const_LreController_staticobsdfltvertdist,
+								          const_LreController_staticobsvertdist)),
+								          const_LreController_minsafedist,
+								          const_LreController_staticobshorizdist,
+								          const_LreController_staticobsdfltvertdist,
+								          const_LreController_staticobsvertdist))
 				
 				StateClocks(id__,
 						          const_LreController_minsafedist,
 						          const_LreController_staticobshorizdist,
 						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist) = dbisim(Clock_CLID_HCM(id__,0,
-						          const_LreController_minsafedist,
-						          const_LreController_staticobshorizdist,
-						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist))
-				[| { terminate } |] (
-				dbisim(Clock_CLID_OCM(id__,0,
+						          const_LreController_staticobsvertdist) = dbisim(Clock_CLID_OCM(id__,0,
 						          const_LreController_minsafedist,
 						          const_LreController_staticobshorizdist,
 						          const_LreController_staticobsdfltvertdist,
@@ -9884,11 +9878,17 @@ endmodule
 						          const_LreController_staticobshorizdist,
 						          const_LreController_staticobsdfltvertdist,
 						          const_LreController_staticobsvertdist))
+				[| { terminate } |] (
+				dbisim(Clock_CLID_HCM(id__,0,
+						          const_LreController_minsafedist,
+						          const_LreController_staticobshorizdist,
+						          const_LreController_staticobsdfltvertdist,
+						          const_LreController_staticobsvertdist))
 				)
 				)
 				)
 				
-				stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+				stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 				
 				-- Shared memory
 				-- Shared memory variables
@@ -10388,8 +10388,8 @@ exports
 	-- declaring identifiers of transitions
 	datatype NIDS = 
 	              NID_MOM|
-	              NID_HCM|
 	              NID_OCM|
+	              NID_HCM|
 	              NID_CAM|
 	              NID_i0
 	
@@ -10452,16 +10452,16 @@ exports
 	
 	enterSS = {|
 	MOM::enter,
-	HCM::enter,
 	OCM::enter,
+	HCM::enter,
 	CAM::enter,
 	i0::enter
 	|}
 	
 	enteredSS = 	{|
 	MOM::entered,
-	HCM::entered,
 	OCM::entered,
+	HCM::entered,
 	CAM::entered
 	|}
 	
@@ -10510,24 +10510,11 @@ exports
 	localClockResets = {||}
 	
 	
-	channel get_CLID_HCM : core_clock_type 
 	channel get_CLID_OCM : core_clock_type 
 	channel get_CLID_MOM : core_clock_type 
 	channel get_CLID_CAM : core_clock_type 
+	channel get_CLID_HCM : core_clock_type 
 	--channel increment__
-	
-	CLID_HCM_clock_type(id__,
-			          const_LreController_minsafedist,
-			          const_LreController_staticobshorizdist,
-			          const_LreController_staticobsdfltvertdist,
-			          const_LreController_staticobsvertdist) = 
-		let
-			max = (clock_type_max(Union({
-	{}
-	}))+1)
-		ctype = {0..max}
-	within
-		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 	
 	CLID_OCM_clock_type(id__,
 			          const_LreController_minsafedist,
@@ -10556,6 +10543,19 @@ exports
 		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
 	
 	CLID_CAM_clock_type(id__,
+			          const_LreController_minsafedist,
+			          const_LreController_staticobshorizdist,
+			          const_LreController_staticobsdfltvertdist,
+			          const_LreController_staticobsvertdist) = 
+		let
+			max = (clock_type_max(Union({
+	{}
+	}))+1)
+		ctype = {0..max}
+	within
+		if member(max,core_clock_type) then ctype else error("core_clock_type is not wide enough")
+	
+	CLID_HCM_clock_type(id__,
 			          const_LreController_minsafedist,
 			          const_LreController_staticobshorizdist,
 			          const_LreController_staticobsdfltvertdist,
@@ -10663,95 +10663,6 @@ exports
 		
 		
 		----------------------------------------------------------------------
-		-- State: HCM
-		module HCM
-		
-		enterSS = {}
-		
-		enteredSS = {}
-		
-		exports
-		
-			--  Declarations
-			
-			channel enter, entered, interrupt
-			channel enteredL, enteredR
-			
-							
-			
-			--channel increment__
-			
-			
-			--	Nodes
-			-- declaring all nodes
-			
-			
-			Timed(OneStep) {
-				--	Rule: behaviours(Node)
-				--  Note that FDR has problems with efficiently compiling the process below
-				-- 	if using a different recursion pattern.
-				D__(id__,
-						    const_LreController_minsafedist,
-						    const_LreController_staticobshorizdist,
-						    const_LreController_staticobsdfltvertdist,
-						    const_LreController_staticobsvertdist) = 
-				dbisim(let
-					-- IMPLEMENTATION NOTE: 
-					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
-					-- however FDR struggles with that form in certain cases. So we use the exception operator
-					-- instead to 'terminate'.
-					
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-					
-				VS_O__(id__,
-						    const_LreController_minsafedist,
-						    const_LreController_staticobshorizdist,
-						    const_LreController_staticobsdfltvertdist,
-						    const_LreController_staticobsvertdist) = 
-				dbisim(let
-					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
-					
-					Termination = terminate -> SKIP
-					
-					Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
-							 	  Behaviour ; 
-							 	  share__choice(exit -> SKIP) ; SKIP ; 
-							 	  share__choice(exited -> SKIP) ; Inactive
-				
-					Behaviour 	= entered -> During
-					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
-				within
-					Inactive [| {terminate} |> SKIP)
-				
-				
-				-- Clocks
-				
-				StateClocks(id__,
-						          const_LreController_minsafedist,
-						          const_LreController_staticobshorizdist,
-						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist) = terminate -> SKIP
-				
-				stateClockSync = {||}
-			}
-		
-		endmodule
-		----------------------------------------------------------------------
-		
-		
-		----------------------------------------------------------------------
 		-- State: OCM
 		module OCM
 		
@@ -10815,6 +10726,95 @@ exports
 					Termination = terminate -> SKIP
 					
 					Active 		= SKIP ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+				
+				
+				-- Clocks
+				
+				StateClocks(id__,
+						          const_LreController_minsafedist,
+						          const_LreController_staticobshorizdist,
+						          const_LreController_staticobsdfltvertdist,
+						          const_LreController_staticobsvertdist) = terminate -> SKIP
+				
+				stateClockSync = {||}
+			}
+		
+		endmodule
+		----------------------------------------------------------------------
+		
+		
+		----------------------------------------------------------------------
+		-- State: HCM
+		module HCM
+		
+		enterSS = {}
+		
+		enteredSS = {}
+		
+		exports
+		
+			--  Declarations
+			
+			channel enter, entered, interrupt
+			channel enteredL, enteredR
+			
+							
+			
+			--channel increment__
+			
+			
+			--	Nodes
+			-- declaring all nodes
+			
+			
+			Timed(OneStep) {
+				--	Rule: behaviours(Node)
+				--  Note that FDR has problems with efficiently compiling the process below
+				-- 	if using a different recursion pattern.
+				D__(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist) = 
+				dbisim(let
+					-- IMPLEMENTATION NOTE: 
+					-- The following should be defined as: Inactive = share__choice(Activation [] Termination),
+					-- however FDR struggles with that form in certain cases. So we use the exception operator
+					-- instead to 'terminate'.
+					
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
+							 	  Behaviour ; 
+							 	  share__choice(exit -> SKIP) ; SKIP ; 
+							 	  share__choice(exited -> SKIP) ; Inactive
+				
+					Behaviour 	= entered -> During
+					During 		= ((SKIP ; SStop) /\ interrupt -> SKIP)
+				within
+					Inactive [| {terminate} |> SKIP)
+					
+				VS_O__(id__,
+						    const_LreController_minsafedist,
+						    const_LreController_staticobshorizdist,
+						    const_LreController_staticobsdfltvertdist,
+						    const_LreController_staticobsvertdist) = 
+				dbisim(let
+					Inactive 	= share__choice(enter -> SKIP [] terminate -> SKIP) ; Active
+					
+					Termination = terminate -> SKIP
+					
+					Active 		= true&(share__choice(advVel.out!0 -> SKIP)) ; 
 							 	  Behaviour ; 
 							 	  share__choice(exit -> SKIP) ; SKIP ; 
 							 	  share__choice(exited -> SKIP) ; Inactive
@@ -11085,8 +11085,8 @@ exports
 					-- modules for defining the semantics of each node.
 					enterSS = {|
 					MOM::enter,
-					HCM::enter,
 					OCM::enter,
+					HCM::enter,
 					CAM::enter,
 					i0::enter
 					|}
@@ -11106,13 +11106,13 @@ exports
 						   		    const_LreController_staticobsdfltvertdist,
 						   		    const_LreController_staticobsvertdist)
 						   [| { share__, terminate } |] (
-						   HCM::D__(id__,
+						   OCM::D__(id__,
 						   		    const_LreController_minsafedist,
 						   		    const_LreController_staticobshorizdist,
 						   		    const_LreController_staticobsdfltvertdist,
 						   		    const_LreController_staticobsvertdist)
 						   [| { share__, terminate } |] (
-						   OCM::D__(id__,
+						   HCM::D__(id__,
 						   		    const_LreController_minsafedist,
 						   		    const_LreController_staticobshorizdist,
 						   		    const_LreController_staticobsdfltvertdist,
@@ -11135,8 +11135,8 @@ exports
 						   )
 						 )
 						 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
-						 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 						 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+						 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 						 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 						 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 						 )
@@ -11197,7 +11197,7 @@ exports
 				    const_LreController_staticobsdfltvertdist,
 				    const_LreController_staticobsvertdist) = 
 			dbisim((let
-				stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+				stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 			 within
 				(MachineBody(id__,
 						    const_LreController_minsafedist,
@@ -11217,7 +11217,7 @@ exports
 				    const_LreController_staticobsdfltvertdist,
 				    const_LreController_staticobsvertdist) = 
 			dbisim((let
-				stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+				stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 			 within
 				(dbisim(
 					sbisim(
@@ -11232,37 +11232,37 @@ exports
 														    const_LreController_staticobshorizdist,
 														    const_LreController_staticobsdfltvertdist,
 														    const_LreController_staticobsvertdist)
-												[| {|get_CLID_CAM,CAM::entered,terminate|} |]
-												dbisim(Clock_CLID_CAM(id__,0,
+												[| {|get_CLID_HCM,HCM::entered,terminate|} |]
+												dbisim(Clock_CLID_HCM(id__,0,
 														          const_LreController_minsafedist,
 														          const_LreController_staticobshorizdist,
 														          const_LreController_staticobsdfltvertdist,
 														          const_LreController_staticobsvertdist))
-											)\{|get_CLID_CAM|}
+											)\{|get_CLID_HCM|}
 										)
-										[| {|get_CLID_MOM,MOM::entered,terminate|} |]
-										dbisim(Clock_CLID_MOM(id__,0,
+										[| {|get_CLID_CAM,CAM::entered,terminate|} |]
+										dbisim(Clock_CLID_CAM(id__,0,
 												          const_LreController_minsafedist,
 												          const_LreController_staticobshorizdist,
 												          const_LreController_staticobsdfltvertdist,
 												          const_LreController_staticobsvertdist))
-									)\{|get_CLID_MOM|}
+									)\{|get_CLID_CAM|}
 								)
-								[| {|get_CLID_OCM,OCM::entered,terminate|} |]
-								dbisim(Clock_CLID_OCM(id__,0,
+								[| {|get_CLID_MOM,MOM::entered,terminate|} |]
+								dbisim(Clock_CLID_MOM(id__,0,
 										          const_LreController_minsafedist,
 										          const_LreController_staticobshorizdist,
 										          const_LreController_staticobsdfltvertdist,
 										          const_LreController_staticobsvertdist))
-							)\{|get_CLID_OCM|}
+							)\{|get_CLID_MOM|}
 						)
-						[| {|get_CLID_HCM,HCM::entered,terminate|} |]
-						dbisim(Clock_CLID_HCM(id__,0,
+						[| {|get_CLID_OCM,OCM::entered,terminate|} |]
+						dbisim(Clock_CLID_OCM(id__,0,
 								          const_LreController_minsafedist,
 								          const_LreController_staticobshorizdist,
 								          const_LreController_staticobsdfltvertdist,
 								          const_LreController_staticobsvertdist))
-					)\{|get_CLID_HCM|}
+					)\{|get_CLID_OCM|}
 				)
 				) \ union(stateClockSync,enteredSS)
 			)
@@ -11330,8 +11330,8 @@ exports
 					-- modules for defining the semantics of each node.
 					enterSS = {|
 					MOM::enter,
-					HCM::enter,
 					OCM::enter,
+					HCM::enter,
 					CAM::enter,
 					i0::enter
 					|}
@@ -11351,13 +11351,13 @@ exports
 						   		    const_LreController_staticobsdfltvertdist,
 						   		    const_LreController_staticobsvertdist)
 						   [| { share__, terminate } |] (
-						   HCM::VS_O__(id__,
+						   OCM::VS_O__(id__,
 						   		    const_LreController_minsafedist,
 						   		    const_LreController_staticobshorizdist,
 						   		    const_LreController_staticobsdfltvertdist,
 						   		    const_LreController_staticobsvertdist)
 						   [| { share__, terminate } |] (
-						   OCM::VS_O__(id__,
+						   HCM::VS_O__(id__,
 						   		    const_LreController_minsafedist,
 						   		    const_LreController_staticobshorizdist,
 						   		    const_LreController_staticobsdfltvertdist,
@@ -11380,8 +11380,8 @@ exports
 						   )
 						 )
 						 [[MOM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_MOM,internal__.NID_MOM,internal__.NID_MOM,reqOCM__.NID_MOM.in,endTask__.NID_MOM.in,reqHCM__.NID_MOM.in|}]]
-						 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 						 [[OCM::interrupt <- x__ | x__ <- {|interrupt,reqVel__.NID_OCM.in,reqHdng__.NID_OCM.in,reqMOM__.NID_OCM.in|}]]
+						 [[HCM::interrupt <- x__ | x__ <- {|interrupt,internal__.NID_HCM,internal__.NID_HCM,internal__.NID_HCM,reqOCM__.NID_HCM.in|}]]
 						 [[CAM::interrupt <- x__ | x__ <- {|interrupt,reqOCM__.NID_CAM.in,internal__.NID_CAM|}]]
 						 [[i0::interrupt <- x__ | x__ <- {|internal__.NID_i0|}]]
 						 )
@@ -11442,7 +11442,7 @@ exports
 				    const_LreController_staticobsdfltvertdist,
 				    const_LreController_staticobsvertdist) = 
 			dbisim((let
-				stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+				stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 			 within
 				(MachineBody_VS_O(id__,
 						    const_LreController_minsafedist,
@@ -11462,7 +11462,7 @@ exports
 				    const_LreController_staticobsdfltvertdist,
 				    const_LreController_staticobsvertdist) = 
 			dbisim((let
-				stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+				stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 			 within
 				(dbisim(
 					sbisim(
@@ -11477,37 +11477,37 @@ exports
 														    const_LreController_staticobshorizdist,
 														    const_LreController_staticobsdfltvertdist,
 														    const_LreController_staticobsvertdist)
-												[| {|get_CLID_CAM,CAM::entered,terminate|} |]
-												dbisim(Clock_CLID_CAM(id__,0,
+												[| {|get_CLID_HCM,HCM::entered,terminate|} |]
+												dbisim(Clock_CLID_HCM(id__,0,
 														          const_LreController_minsafedist,
 														          const_LreController_staticobshorizdist,
 														          const_LreController_staticobsdfltvertdist,
 														          const_LreController_staticobsvertdist))
-											)\{|get_CLID_CAM|}
+											)\{|get_CLID_HCM|}
 										)
-										[| {|get_CLID_MOM,MOM::entered,terminate|} |]
-										dbisim(Clock_CLID_MOM(id__,0,
+										[| {|get_CLID_CAM,CAM::entered,terminate|} |]
+										dbisim(Clock_CLID_CAM(id__,0,
 												          const_LreController_minsafedist,
 												          const_LreController_staticobshorizdist,
 												          const_LreController_staticobsdfltvertdist,
 												          const_LreController_staticobsvertdist))
-									)\{|get_CLID_MOM|}
+									)\{|get_CLID_CAM|}
 								)
-								[| {|get_CLID_OCM,OCM::entered,terminate|} |]
-								dbisim(Clock_CLID_OCM(id__,0,
+								[| {|get_CLID_MOM,MOM::entered,terminate|} |]
+								dbisim(Clock_CLID_MOM(id__,0,
 										          const_LreController_minsafedist,
 										          const_LreController_staticobshorizdist,
 										          const_LreController_staticobsdfltvertdist,
 										          const_LreController_staticobsvertdist))
-							)\{|get_CLID_OCM|}
+							)\{|get_CLID_MOM|}
 						)
-						[| {|get_CLID_HCM,HCM::entered,terminate|} |]
-						dbisim(Clock_CLID_HCM(id__,0,
+						[| {|get_CLID_OCM,OCM::entered,terminate|} |]
+						dbisim(Clock_CLID_OCM(id__,0,
 								          const_LreController_minsafedist,
 								          const_LreController_staticobshorizdist,
 								          const_LreController_staticobsdfltvertdist,
 								          const_LreController_staticobsvertdist))
-					)\{|get_CLID_HCM|}
+					)\{|get_CLID_OCM|}
 				)
 				) \ diff(union(stateClockSync,enteredSS),enteredSS)
 			)
@@ -11663,33 +11663,6 @@ exports
 		
 		clockSync = {||}
 		
-		Clock_CLID_HCM(id__,x__,
-				          const_LreController_minsafedist,
-				          const_LreController_staticobshorizdist,
-				          const_LreController_staticobsdfltvertdist,
-				          const_LreController_staticobsvertdist) = 
-			TimeOut_1(
-				HCM::entered -> Clock_CLID_HCM(id__,0,
-						          const_LreController_minsafedist,
-						          const_LreController_staticobshorizdist,
-						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist)
-				[]
-				get_CLID_HCM!x__ -> Clock_CLID_HCM(id__,x__,
-						          const_LreController_minsafedist,
-						          const_LreController_staticobshorizdist,
-						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist)
-				[]
-				terminate -> SKIP,Clock_CLID_HCM(id__,clock_type_plus(x__,1,CLID_HCM_clock_type(id__,
-						          const_LreController_minsafedist,
-						          const_LreController_staticobshorizdist,
-						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist)),
-						          const_LreController_minsafedist,
-						          const_LreController_staticobshorizdist,
-						          const_LreController_staticobsdfltvertdist,
-						          const_LreController_staticobsvertdist))
 		Clock_CLID_OCM(id__,x__,
 				          const_LreController_minsafedist,
 				          const_LreController_staticobshorizdist,
@@ -11771,18 +11744,39 @@ exports
 						          const_LreController_staticobshorizdist,
 						          const_LreController_staticobsdfltvertdist,
 						          const_LreController_staticobsvertdist))
+		Clock_CLID_HCM(id__,x__,
+				          const_LreController_minsafedist,
+				          const_LreController_staticobshorizdist,
+				          const_LreController_staticobsdfltvertdist,
+				          const_LreController_staticobsvertdist) = 
+			TimeOut_1(
+				HCM::entered -> Clock_CLID_HCM(id__,0,
+						          const_LreController_minsafedist,
+						          const_LreController_staticobshorizdist,
+						          const_LreController_staticobsdfltvertdist,
+						          const_LreController_staticobsvertdist)
+				[]
+				get_CLID_HCM!x__ -> Clock_CLID_HCM(id__,x__,
+						          const_LreController_minsafedist,
+						          const_LreController_staticobshorizdist,
+						          const_LreController_staticobsdfltvertdist,
+						          const_LreController_staticobsvertdist)
+				[]
+				terminate -> SKIP,Clock_CLID_HCM(id__,clock_type_plus(x__,1,CLID_HCM_clock_type(id__,
+						          const_LreController_minsafedist,
+						          const_LreController_staticobshorizdist,
+						          const_LreController_staticobsdfltvertdist,
+						          const_LreController_staticobsvertdist)),
+						          const_LreController_minsafedist,
+						          const_LreController_staticobshorizdist,
+						          const_LreController_staticobsdfltvertdist,
+						          const_LreController_staticobsvertdist))
 		
 		StateClocks(id__,
 				          const_LreController_minsafedist,
 				          const_LreController_staticobshorizdist,
 				          const_LreController_staticobsdfltvertdist,
-				          const_LreController_staticobsvertdist) = dbisim(Clock_CLID_HCM(id__,0,
-				          const_LreController_minsafedist,
-				          const_LreController_staticobshorizdist,
-				          const_LreController_staticobsdfltvertdist,
-				          const_LreController_staticobsvertdist))
-		[| { terminate } |] (
-		dbisim(Clock_CLID_OCM(id__,0,
+				          const_LreController_staticobsvertdist) = dbisim(Clock_CLID_OCM(id__,0,
 				          const_LreController_minsafedist,
 				          const_LreController_staticobshorizdist,
 				          const_LreController_staticobsdfltvertdist,
@@ -11799,11 +11793,17 @@ exports
 				          const_LreController_staticobshorizdist,
 				          const_LreController_staticobsdfltvertdist,
 				          const_LreController_staticobsvertdist))
+		[| { terminate } |] (
+		dbisim(Clock_CLID_HCM(id__,0,
+				          const_LreController_minsafedist,
+				          const_LreController_staticobshorizdist,
+				          const_LreController_staticobsdfltvertdist,
+				          const_LreController_staticobsvertdist))
 		)
 		)
 		)
 		
-		stateClockSync = {|get_CLID_HCM,HCM::entered,get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered|}
+		stateClockSync = {|get_CLID_OCM,OCM::entered,get_CLID_MOM,MOM::entered,get_CLID_CAM,CAM::entered,get_CLID_HCM,HCM::entered|}
 		
 		-- Shared memory
 		-- Shared memory variables
