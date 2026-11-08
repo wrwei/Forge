@@ -1,5 +1,5 @@
 # Pipeline Manifest — single source of truth for phase definitions and runtime tuning.
-# Read by both the Python dashboard (forge.dashboard/web/manifest.py) and the Java
+# Read by both the Python pipeline (forge.pipeline/forge_pipeline/manifest.py) and the Java
 # CLI (forge.transformations App.java) in later tasks of the manifest refactor.
 # Today (Task 1) this file is new but not yet consumed by either side.
 #
@@ -20,7 +20,7 @@ phases:
     label: "2a — Compile (gradle build)"
     runner:
       kind: python
-      function: "forge.dashboard.web.runners:run_compile"
+      function: "forge_pipeline.phases.compile:run"
     # Runs `gradlew build` against java.generated.project/.
     # Feedback written to corrections_dir as post_compile.{md,json}.
     output_files: []
@@ -30,7 +30,7 @@ phases:
     label: "2b — Coverage (Requirement ↔ Java trace)"
     runner:
       kind: python
-      function: "forge.dashboard.web.runners:run_coverage"
+      function: "forge_pipeline.phases.coverage:run"
     depends_on: [compile]
     # Reads requirements + result_codegen.json + Java source.
     # Feedback written to corrections_dir as post_coverage.{md,json}.
@@ -135,7 +135,7 @@ phases:
     label: "6b — Formal Verification (FDR4)"
     runner:
       kind: python
-      function: "forge.dashboard.web.runners:run_fdr4"
+      function: "forge_pipeline.phases.fdr4:run"
     depends_on: [m2t]
     output_dir: ${output_dir}/csp-gen/defs
     # FDR4 writes unified feedback to corrections_dir — no files under output_dir.
@@ -146,7 +146,7 @@ phases:
     # future consumer had honoured it, pre-cleaning csp-gen would delete
     # FDR4's own input (produced by m2t, which correctly declares the
     # csp-gen clear_dirs itself).
-    # Runtime tuning (verbatim from forge.dashboard/config.yaml)
+    # Runtime tuning (runtime tuning)
     # csp_file is OPTIONAL. When unset (or pointing at a non-existent
     # path), the runner auto-discovers a *_coreassertions.csp file under
     # ${output_dir}/csp-gen/defs/ in this preference order:
@@ -197,12 +197,12 @@ phases:
     label: "6a — Dafny Verification"
     runner:
       kind: python
-      function: "forge.dashboard.web.runners:run_dafny_verify"
+      function: "forge_pipeline.phases.dafny:run"
     depends_on: [dafny_gen]
     output_dir: ${output_dir}
     # Dafny writes unified feedback to corrections_dir — no files under output_dir.
     output_files: []
-    # Runtime tuning (verbatim from forge.dashboard/config.yaml)
+    # Runtime tuning (runtime tuning)
     # Bare binary names resolve via PATH (shutil.which); absolute paths
     # are used verbatim. On Windows, Dafny doesn't self-register on
     # PATH, so pin the win32 entry.
@@ -216,7 +216,7 @@ phases:
     label: "6c — Isabelle Verification (Z-Machine)"
     runner:
       kind: python
-      function: "forge.dashboard.web.runners:run_isabelle_verify"
+      function: "forge_pipeline.phases.isabelle:run"
     # session_dir is runtime tuning read from the phase CONFIG by
     # run_isabelle_verify (ctx.config['session_dir']). It used to sit
     # under args:, which the manifest loader routes to phase.args —
@@ -227,7 +227,7 @@ phases:
     output_dir: ${output_dir}/isabelle
     # Isabelle build writes unified feedback to corrections_dir — no new artifacts here.
     output_files: []
-    # Runtime tuning (verbatim from forge.dashboard/config.yaml)
+    # Runtime tuning (runtime tuning)
     # Bare binary names resolve via PATH (shutil.which). Override with
     # an absolute path if needed. Windows uses wsl.exe — the runner
     # bridges to the isabelle binary inside WSL via wsl_isabelle_bin.
@@ -268,7 +268,7 @@ phases:
     label: "6d — Vacuity Audit (Dafny + Isabelle)"
     runner:
       kind: python
-      function: "forge.dashboard.web.runners:run_vacuity"
+      function: "forge_pipeline.phases.vacuity:run"
     depends_on: [dafny_gen, isabelle_gen]
     output_dir: ${output_dir}
     # Vacuity writes only unified feedback to corrections_dir — no files under output_dir.

@@ -8,7 +8,7 @@ This project implements a formal-methods pipeline for safety controllers. Java s
 
 The active case study is whatever `pipeline.yaml` `agent.active_case_study`
 says — **read it, do not assume**. That key is the single authority: the
-dashboard and its Requirements tab both read it, and this file previously
+pipeline reads it, and this file previously
 restated a value that drifted out of sync with it. Substitute that name for
 `<study>` in any path that uses the placeholder, unless the user names a
 different one. The three studies present are `sranger`, `lre` and
@@ -18,8 +18,7 @@ live under `forge.assets/case-studies/<study>/system/system_description.txt`
 description when the user points you at it (e.g., during Layer 1 of
 `forge.assets/vibe-coding-prompts/`).
 
-To switch case studies, change `agent.active_case_study` in `pipeline.yaml`
-(or use the dashboard's Requirements-tab dropdown, which writes that key).
+To switch case studies, change `agent.active_case_study` in `pipeline.yaml`.
 
 ### Pipeline Architecture
 
@@ -41,8 +40,8 @@ Java source code (this is what you write/refine)
 The canonical phase manifest is [pipeline.yaml](pipeline.yaml). Each entry
 declares the runner kind (`java`/`python`/`gradle`/`sequence`), its
 implementation class or function, dependencies, output files, and any
-runtime tuning (timeouts, tool paths). Both the Python dashboard
-([forge.dashboard/web/bridge.py](forge.dashboard/web/bridge.py))
+runtime tuning (timeouts, tool paths). Both the Python pipeline
+([forge.pipeline/forge_pipeline/engine.py](forge.pipeline/forge_pipeline/engine.py))
 and the Java CLI ([forge.transformations/.../App.java](forge.transformations/src/main/java/forge/transformations/core/App.java))
 read this file directly. See
 [docs/superpowers/specs/2026-05-11-pipeline-manifest-design.md](docs/superpowers/specs/2026-05-11-pipeline-manifest-design.md)
@@ -57,7 +56,7 @@ for the design rationale.
 - `forge.assets/case-studies/<study>/` — Per-case-study assets. Each has its own `system_description.txt` and `requirements/` directory. The active study is named in the "Active case study" section above.
 - `docs/corpus/` — **Vendored Isabelle theory references** (the Z-machine RAG corpus): `zmachine-framework/` (5 files — `Z_Machine.thy`, `Z_Operations.thy`, `Z_Testing.thy`, `Z_Animator.thy`, `Show_Record.thy`) and `zmachine-examples/` (19 canonical Z-method textbook examples: BirthdayBook, BoxOffice, DwarfSignal, FileSystem, Incubator, TelephoneExchange, Ring_Buffer, Dining_Philosophers, etc.). Consult these when diagnosing an Isabelle proof failure or looking up the canonical pattern for a Z-machine construct. See [docs/corpus/README.md](docs/corpus/README.md) for the full inventory and provenance.
 - `docs/archive/` — Additional vendored references: ICECCS2023 paper supplements (`theory generation for GasAnalysis/`, `theory generation for LRE/`) and the `RoboChart_project4Z-Machine-transformation` archive. Same RAG-corpus status as `docs/corpus/` — read-only reference material the agents may consult.
-- `forge.dashboard/` — Web dashboard for running deterministic pipeline phases
+- `forge.pipeline/` — Python package running the deterministic pipeline phases (`python -m forge_pipeline run-iteration`)
 - `java.codegen.pipeline/` — *removed in May 2026*. Was the legacy AutoGen + DeepSeek codegen pipeline. Recover via `git checkout v1.0-autogen-pipeline -- java.codegen.pipeline/` if needed.
 - `forge.transformations/` — Spoon discovery + ETL/EGL transformations + Dafny generation
 - `forge.transformations/output/` — Transformation outputs (XMI, RCT, CSP, Dafny)
@@ -230,13 +229,13 @@ All transformation commands run from `forge.transformations/`. Use
 is the state-machine name the pipeline derives from the controller
 class — it's resolved automatically by the runners and appears in
 `output/robochart_model.xmi`. Substitute it in the verifier filenames
-below if you're invoking them outside the dashboard.
+below if you're invoking them outside the pipeline.
 
 The first argument must be a phase id from [pipeline.yaml](pipeline.yaml)
 and every other argument must be `key=value` — `App.java` silently drops
 bare tokens and rejects unknown phase ids. Only `kind: java` phases can be
 run this way; `sequence`, `gradle` and `python` phases are expanded by the
-dashboard, not by `App.java`.
+pipeline, not by `App.java`.
 
 ```bash
 # Phase 2c — Preflight (Structural Lint)
@@ -250,7 +249,7 @@ cd forge.transformations && ./gradlew run --args="m2m source=../java.generated.p
 
 # Phase 5b — M2T: RCT + CSP Generation
 # `m2t` is a SEQUENCE phase — App.java refuses it. Run the two steps directly,
-# or run the m2t phase from the dashboard, which expands the sequence.
+# or run the m2t phase through the pipeline (`python -m forge_pipeline run-phase m2t`), which expands the sequence.
 cd forge.transformations && ./gradlew run --args="forge.transformations.m2t.RctPhase output=output"
 cd forge.transformations && ./gradlew roboChartCspGen -ProboChartProject=output
 
@@ -279,8 +278,7 @@ cd java.generated.project && ./gradlew build
 `<FDR4_PATH>` is configured in [pipeline.yaml](pipeline.yaml) under
 `phases.fdr4.fdr4_path`, per OS. The macOS default is the bare name
 `refines` (resolved via `PATH`), not an `/Applications` path.
-(`forge.dashboard/config.yaml` no longer exists — its contents were folded
-into `pipeline.yaml` during the May 2026 manifest migration.)
+(All runtime tuning lives in `pipeline.yaml`.)
 
 See [docs/design/isabelle_wsl_setup.md](docs/design/isabelle_wsl_setup.md) for the WSL setup procedure and [docs/fixes/I1_deadlock_free_proof.md](docs/fixes/I1_deadlock_free_proof.md) for the proof tactic used in the deadlock-freedom lemma.
 
@@ -375,7 +373,7 @@ Java source — items below are emitted only when applicable.
 
 **Linter output**:
 - The M2M phase emits `[deadlock-lint] <stm>.<state>: ...` to
-  stdout for states it flags. The dashboard surfaces these in
+  stdout for states it flags. The pipeline surfaces these in
   `post_m2m.json` as advisory Issues (status remains "passed").
 
   ABLATION (condition D2). The text that stood here defined which
@@ -453,7 +451,7 @@ Every pipeline phase (2a-6c) writes a pair of files to
 failure. The pair is always `post_<phase>.md` (human-readable) +
 `post_<phase>.json` (structured, same content). Phase 2 (interactive
 codegen) also writes `post_codegen.*`, but that file is authored by
-Claude per the Layer 5 prompt rather than by the dashboard:
+Claude per the Layer 5 prompt rather than by the pipeline:
 
 - `post_codegen.*` — written by Claude at the end of every Phase 2
   (interactive code generation) turn, per the Layer 5 prompt in
@@ -499,7 +497,7 @@ Claude per the Layer 5 prompt rather than by the dashboard:
   (Dafny `Valid()` body is `true` AND no other behavioural `ensures`
   clauses are active on transition methods) and `isabelle_inv_vacuous`
   (Isabelle zstore `where inv:` is `"True"`). Pure-Python check,
-  no subprocess. Implementation: [forge.dashboard/web/vacuity.py](forge.dashboard/web/vacuity.py).
+  no subprocess. Implementation: [forge.pipeline/forge_pipeline/audit/](forge.pipeline/forge_pipeline/audit/).
   Without this phase, "Dafny verifies; Isabelle proves 24 lemmas" can
   be entirely vacuous even on broken Java — the vacuity audit
   that motivated these signals is preserved in the first-round experiment
@@ -516,8 +514,8 @@ When refining code, invoke `/fix-from-feedback` or read the most recent
 `post_<phase>.md` for the failed phase. Files are overwritten on every
 phase run — treat them as current state only.
 
-NOTE: `forge.dashboard/corrections/` is a **separate** directory
-holding user CSP type-range configuration. It is not the feedback
+NOTE: `forge.pipeline/forge_pipeline/csp/data/` is a **separate** directory
+holding the CSP type-range configuration. It is not the feedback
 directory.
 
 ---
@@ -532,30 +530,5 @@ directory.
 - **RoboChart CSP generator**: `.rct` textual format does NOT support function bodies (must be empty `{ }`)
 - **RoboChart CSP generator**: Does NOT support function-typed variable application (crashes with "Other types of callees not yet supported")
 - **Isabelle/UTP Z-Machine `deadlock_free` proof**: closed by one of two tactics the generator picks via `hasPayloadDomain` — `using St.exhaust_disc by auto` for payload-domain machines, `by (metis St.exhaust_disc)` otherwise. Each *hangs or times out* in the other's case, so the choice is not cosmetic. `cases st; simp_all` fails on the mixed bare/guarded disjunction in both. Either closer only succeeds when the theory-generated controller has **no `Final` state** — a `Final` mode leaves an unprovable residual (no `st = Final` disjunct) and makes every closing tactic *hang*; see "Interpreting Isabelle Results". See [docs/fixes/I1_deadlock_free_proof.md](docs/fixes/I1_deadlock_free_proof.md) (documents only the `metis` branch) and [.claude/memory/isabelle-zmachine-proofs.md](.claude/memory/isabelle-zmachine-proofs.md)
-- **Isabelle build is cross-OS on Windows**: theory generation runs in Gradle on Windows (`gradlew.bat run --args="isabelle_gen output=output"` — note the phase id is `isabelle_gen`, and bare arguments without `=` are silently dropped); `isabelle build` runs in WSL (`isabelle` distribution is Linux-only). The dashboard's `isabelle_verify` phase bridges this via `wsl.exe`. See [docs/design/isabelle_wsl_setup.md](docs/design/isabelle_wsl_setup.md)
+- **Isabelle build is cross-OS on Windows**: theory generation runs in Gradle on Windows (`gradlew.bat run --args="isabelle_gen output=output"` — note the phase id is `isabelle_gen`, and bare arguments without `=` are silently dropped); `isabelle build` runs in WSL (`isabelle` distribution is Linux-only). The pipeline's `isabelle_verify` phase bridges this via `wsl.exe`. See [docs/design/isabelle_wsl_setup.md](docs/design/isabelle_wsl_setup.md)
 
----
-
-## Dashboard Claude chat
-
-The pipeline dashboard embeds Claude Code as a chat input at the bottom
-of the log panel. Each user message spawns a `claude -p` subprocess that
-resumes a persistent session id stored at
-`forge.dashboard/agent/session.json`. Destructive tool calls (Edit /
-Write / Bash) trigger an in-browser approval modal via a PreToolUse hook
-registered in a dashboard-owned settings file (`--settings` flag), which
-keeps the dashboard's hook isolated from your VS Code Claude Code
-sessions.
-
-The `agent:` block in [pipeline.yaml](pipeline.yaml) configures the
-`claude` binary path per-OS and the approval timeout.
-
-#### Selecting requirements from the dashboard
-
-The right panel has a **Requirements** tab. The active case study is set
-in `pipeline.yaml` (`agent.active_case_study`) and surfaced as a
-dropdown that writes back to the file on change. The tab lists all
-`*.json` files under `forge.assets/case-studies/<study>/requirements/`;
-checking any and clicking **Load selected → Claude** sends a single
-chat message asking Claude to read those files plus the always-relevant
-`<study>/system/system_description.txt`.

@@ -1,10 +1,10 @@
 # Formal-Method-Guided Vibe Coding
 
-An end-to-end workflow combining AI-assisted code generation with formal verification to produce trustworthy Java software. A developer writes Java source code interactively with LLM assistance (Claude Code / Cline in VS Code), following strict structural constraints. The code is then transformed into formal RoboChart models and verified using FDR4 (CSP model checker) and Dafny (deductive verifier). A web dashboard orchestrates the deterministic transformation and verification phases.
+An end-to-end workflow combining AI-assisted code generation with formal verification to produce trustworthy Java software. A developer writes Java source code interactively with LLM assistance (Claude Code / Cline in VS Code), following strict structural constraints. The code is then transformed into formal RoboChart models and verified using FDR4 (CSP model checker) and Dafny (deductive verifier). A Python pipeline runs the deterministic transformation and verification phases.
 
 ## Version
 
-The `main` branch is the version of the pipeline whose results the accompanying paper reports: every recorded run, the mutation campaign and the requirements-level checks under `experiments/` were produced by, or re-derived with, this code. Earlier versions are in the history.
+The `main` branch is the version of the pipeline whose results the accompanying paper reports: every recorded run, the mutation campaign and the requirements-level checks under `experiments/` were produced by, or re-derived with, this code. After the collections closed, the Python code that runs the phases (`forge.pipeline/`, formerly `forge.dashboard/`) was restructured without re-running them; the transformations, generators and verifier invocations it drives are unchanged. Earlier versions are in the history.
 
 ## Architecture Overview
 
@@ -21,7 +21,7 @@ Requirements (51 structured requirements in forge.assets/case-studies/lre/requir
                     │  java.generated.project/src/ (Java classes)
                     ▼
 ┌────────────────────────────────────────────────┐
-│  forge.dashboard  (FastAPI, localhost:8000) │  Orchestrates Phases 2a–6c
+│  forge.pipeline  (python -m forge_pipeline)    │  Orchestrates Phases 2a–6c
 │  Runs deterministic phases as subprocesses     │  No LLM — pure tool execution
 └───────────────────┬────────────────────────────┘
                     │
@@ -99,7 +99,7 @@ The LRE implements a four-mode safety state machine:
 
 ### [forge.assets/](forge.assets/)
 
-Shared assets used by both the developer (via `CLAUDE.md` `@file` references) and the dashboard:
+Shared assets used by both the developer (via `CLAUDE.md` `@file` references) and the pipeline:
 
 - `prompts/` — Domain-independent LLM-context material: codegen rules, chain-of-thought reasoning, few-shot examples, FDR4 feedback guide (auto-loaded into Claude's context via CLAUDE.md `@file` references)
 - `vibe-coding-prompts/` — User-driven workflow prompts (the top-down five-layer codegen sequence). Open a layer file and copy or reference its content to start that layer.
@@ -120,19 +120,21 @@ The `prompts/java_codegen_rules.txt` asset enforces strict patterns required for
 - **`@RoboChartType` annotations** — type hints (`"nat"`, `"real"`) on fields/parameters for RoboChart type mapping
 - **Operation `compute()` methods** — only direct `this.field = expression` assignments (no local variables)
 
-### [forge.dashboard/](forge.dashboard/)
+### [forge.pipeline/](forge.pipeline/)
 
-A lightweight FastAPI web dashboard for orchestrating the deterministic pipeline phases (3–6). No LLM dependencies — all code generation is done interactively in VS Code.
+The deterministic pipeline phases (2a–6c) and the vacuity audit, as a Python package with a command line. No LLM dependencies: code generation is done interactively (Claude Code / Cline), and this package only runs tools and writes reports.
 
 ```bash
-cd forge.dashboard
-pip install -r requirements.txt   # fastapi, uvicorn, pyyaml — no pyautogen
-python run.py                     # starts on http://localhost:8000
+cd forge.pipeline
+pip install -r requirements.txt   # pyyaml, jsonschema, ruamel.yaml
+python -m forge_pipeline run-iteration        # every phase in order
+python -m forge_pipeline run-phase fdr4       # one phase
+python -m pytest tests
 ```
 
-The dashboard provides a 3-panel layout: pipeline tree (with Start/Stop buttons) | phase output log | file sidebar with syntax-highlighted preview.
+`experiments/scripts/run_experiment_iteration.py` is a thin wrapper around `run-iteration`. Each phase writes `forge.assets/corrections/post_<phase>.{md,json}`; the phase's own report, not the exit status, is the verdict.
 
-| Phase button | Command | Description |
+| Phase | Id | Description |
 |---|---|---|
 | **2a — Compile** | `compile` | `gradlew build` against `java.generated.project/`; surfaces Java compile errors before any model-extraction phase runs |
 | **2b — Coverage** | `coverage` | Bidirectional requirement ↔ Java trace check; flags missing implementations and over-implementations against `requirement_all.json` |
@@ -156,7 +158,7 @@ The previous AutoGen + DeepSeek multi-agent pipeline. Removed from main in May 2
 git checkout v1.0-autogen-pipeline -- java.codegen.pipeline/
 ```
 
-The CSP corrections logic (`phases/apply_csp_corrections.py`) and its `csp_overrides.csp` / `type_ranges.json` configuration files lived under that directory; the equivalent overrides path in the current architecture is hand-maintained CSP-M overrides at `forge.assets/corrections/csp_overrides.csp` (consumed by the dashboard's CSP generation phase, not by an autogen pre-run).
+The CSP corrections logic (`phases/apply_csp_corrections.py`) and its `csp_overrides.csp` / `type_ranges.json` configuration files lived under that directory; the equivalent overrides path in the current architecture is hand-maintained CSP-M overrides at `forge.assets/corrections/csp_overrides.csp` (consumed by the pipeline's CSP corrections step, not by an autogen pre-run).
 
 ---
 
@@ -383,7 +385,7 @@ The developer drives an iterative refinement cycle using verification feedback:
       pass
        │
        ▼
- Dashboard: T2M → M2M → M2T → FDR4 / Dafny
+ Pipeline: T2M → M2M → M2T → FDR4 / Dafny / Isabelle
        │
       fail ──▶  forge.assets/corrections/
        │                    │
@@ -419,7 +421,7 @@ enumeration (`experiments/conformance-tierB/`) were run at the same revision.
 
 ```
 bash scripts/regression_test.sh                    # extraction determinism (RQ1)
-cd forge.dashboard && python -m pytest tests       # includes the Phase 6d positive controls
+cd forge.pipeline && python -m pytest tests        # includes the Phase 6d positive controls
 ```
 
 Phase 6d (the vacuity audit) reports blocking findings (an unsatisfiable precondition, an antecedent that never holds, an empty domain, an initial state outside the invariant, a mode or transition unreachable in the symbolic model, a constant that differs between backends) and advisory ones (unreachability under the narrowed FDR4 instantiation, narrowed singleton domains, terminal states that offer nothing, and the two generator placeholders: the Dafny class invariant `Valid()` being `true` while the per-transition `ensures` clauses carry the obligations, and the Isabelle requirement predicate `R1` being `True` with one lemma per operation preserving it, each reported with the number of obligations it accounts for).
@@ -448,11 +450,11 @@ python experiments/conformance-tierB/run_tierb.py prefix   # guard-level enumera
 Install Dafny 4.11.0 from its GitHub releases page and put `dafny` on the `PATH`; the
 pipeline invokes it as `dafny verify` with the bundled Z3.
 
-### Dashboard setup
+### Pipeline setup
 
 ```bash
-cd forge.dashboard
-pip install -r requirements.txt   # fastapi, uvicorn, pyyaml
+cd forge.pipeline
+pip install -r requirements.txt   # pyyaml, jsonschema, ruamel.yaml
 ```
 
 ---
@@ -464,18 +466,16 @@ pip install -r requirements.txt   # fastapi, uvicorn, pyyaml
 #    Guided by CLAUDE.md and the five-layer top-down prompts under
 #    forge.assets/vibe-coding-prompts/.
 
-# 2. Start the dashboard.
-cd forge.dashboard
-python run.py
-# Open http://localhost:8000.
-# Click Start on each phase from 2a (Compile) through 6c (Isabelle).
+# 2. Run the pipeline, every phase from 2a (Compile) through 6c (Isabelle).
+python experiments/scripts/run_experiment_iteration.py
+# (or: cd forge.pipeline && python -m forge_pipeline run-iteration)
 # Each phase writes forge.assets/corrections/post_<phase>.{md,json}.
 
 # 3. Read any post_<phase>.md that reports failure, then in Claude Code:
 #    /fix-from-feedback
 # Apply the suggested fix, re-run the failed phase, repeat.
 
-# Manual CLI alternative (instead of dashboard):
+# Phase-by-phase alternative from Claude Code:
 #   /run-pipeline   — runs the gradle-driven phases sequentially
 #   /verify         — runs FDR4 + Dafny + Isabelle
 #   /gen-trace      — produces result_codegen.json (input to coverage)
@@ -515,15 +515,18 @@ Forge/
 │           ├── system_description.txt
 │           └── requirements/        #     51 requirements (JSON + TXT)
 │
-├── forge.dashboard/              # Web dashboard for deterministic phases
-│   │                                #   (config.yaml removed May 2026 — see pipeline.yaml)
-│   ├── run.py                       #   Entry point: python run.py
-│   ├── requirements.txt             #   fastapi, uvicorn, pyyaml
-│   └── web/
-│       ├── server.py                #     FastAPI + REST + WebSocket
-│       ├── bridge.py                #     Subprocess phase runner
-│       ├── state.py                 #     Session state + persistence
-│       └── static/                  #     Frontend (index.html, app.js, style.css)
+├── forge.pipeline/               # Deterministic phases + vacuity audit (Python)
+│   ├── README.md
+│   ├── requirements.txt             #   pyyaml, jsonschema, ruamel.yaml
+│   ├── tests/
+│   └── forge_pipeline/
+│       ├── engine.py                #     Runs one phase of any kind, writes its report
+│       ├── iteration.py             #     Phase order and authoritative verdicts
+│       ├── cli.py                   #     python -m forge_pipeline ...
+│       ├── phases/                  #     One module per Python phase
+│       ├── feedback/                #     Report schema and per-backend classifiers
+│       ├── audit/                   #     Vacuity audit (checks/, sat.py)
+│       └── csp/                     #     instantiations.csp type-range corrections
 │
 ├── forge.transformations/         # Gradle model extraction tool
 │   ├── build.gradle                 #   Dependencies: Spoon 11.3.0, Epsilon 2.8.0, EMF 2.41.0

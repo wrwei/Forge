@@ -3,9 +3,9 @@
 
 Usage: python3 scripts/apply_corrections_standalone.py <csp-gen-dir>
 
-Reuses forge.dashboard/web/csp_corrections.py's own parsing/merge/naming logic
+Reuses forge.pipeline/forge_pipeline/csp/corrections.py's own parsing/merge/naming logic
 (_parse_generate_blocks, _merge, _build_nametype, the block->core_* name map,
-DEFAULT_TYPE_RANGES, corrections/type_ranges.json, corrections/csp_overrides.csp)
+DEFAULT_TYPE_RANGES, csp/data/type_ranges.json, csp/data/csp_overrides.csp)
 so the transform is the pipeline's, not a reimplementation. The only difference
 from apply_csp_corrections() is that the target file is given explicitly instead
 of resolved through pipeline.yaml — that function is config-bound, which is why
@@ -39,7 +39,7 @@ _WANTED_ASSIGNS = {"DEFAULT_TYPE_RANGES"}
 
 
 def _load_pipeline_pieces():
-    src_path = REPO / "forge.dashboard" / "web" / "csp_corrections.py"
+    src_path = REPO / "forge.pipeline" / "forge_pipeline" / "csp" / "corrections.py"
     src = src_path.read_text()
     tree = ast.parse(src)
     segments = []
@@ -89,13 +89,13 @@ CSP_NAMES = {
 
 def build_overrides() -> dict[str, list[str]]:
     overrides = {n: [d] for n, d in cc.DEFAULT_TYPE_RANGES.items()}
-    ranges_file = REPO / "forge.dashboard" / "corrections" / "type_ranges.json"
+    ranges_file = REPO / "forge.pipeline" / "forge_pipeline" / "csp" / "data" / "type_ranges.json"
     if ranges_file.exists():
         for name, cfg in json.loads(ranges_file.read_text()).items():
             if name in CSP_NAMES:
                 overrides[name] = [cc._build_nametype(
                     CSP_NAMES[name], cfg["lower"], cfg["upper"])]
-    ov_file = REPO / "forge.dashboard" / "corrections" / "csp_overrides.csp"
+    ov_file = REPO / "forge.pipeline" / "forge_pipeline" / "csp" / "data" / "csp_overrides.csp"
     if ov_file.exists():
         for name, lines in cc._parse_generate_blocks(ov_file.read_text()).items():
             overrides[name] = lines

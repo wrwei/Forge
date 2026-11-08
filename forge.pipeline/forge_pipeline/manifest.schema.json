@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pipeline Manifest",
+  "type": "object",
+  "required": ["phases"],
+  "properties": {
+    "output_dir":     { "type": "string" },
+    "generated_src":  { "type": "string" },
+    "corrections_dir":{ "type": "string" },
+    "phases": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/phase" }
+    },
+    "agent": {
+      "type": "object",
+      "properties": {
+        "claude_path": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "approval_timeout_seconds": { "type": "integer", "minimum": 10 },
+        "active_case_study": { "type": "string", "minLength": 1 },
+        "llm_residual_translation": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "phase": {
+      "type": "object",
+      "required": ["label", "runner"],
+      "properties": {
+        "label":        { "type": "string" },
+        "runner":       { "$ref": "#/$defs/runner" },
+        "args":         { "type": "object", "additionalProperties": { "type": "string" } },
+        "depends_on":   { "type": "array", "items": { "type": "string" } },
+        "output_dir":   { "type": "string" },
+        "output_files": { "type": "array", "items": { "type": "string" } },
+        "clear_dirs":   { "type": "array", "items": { "type": "string" } },
+        "timeout":      { "type": "integer", "minimum": 1 },
+        "proof_timeout":   { "type": "integer", "minimum": 1 },
+        "memory_limit_mb": { "type": "integer", "minimum": 1 },
+        "expected_failures": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "runner": {
+      "oneOf": [
+        { "type": "object", "required": ["kind", "class"],
+          "properties": { "kind": { "const": "java" }, "class": { "type": "string" } } },
+        { "type": "object", "required": ["kind", "function"],
+          "properties": { "kind": { "const": "python" }, "function": { "type": "string" } } },
+        { "type": "object", "required": ["kind", "task"],
+          "properties": { "kind": { "const": "gradle" }, "task": { "type": "string" },
+                          "project": { "type": "string" },
+                          "props": { "type": "object", "additionalProperties": { "type": "string" } } } },
+        { "type": "object", "required": ["kind", "steps"],
+          "properties": { "kind": { "const": "sequence" },
+                          "steps": { "type": "array", "items": { "$ref": "#/$defs/runner" } } } }
+      ]
+    }
+  }
+}
