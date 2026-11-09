@@ -1,0 +1,155 @@
+diagram SynController
+
+interface Inputs {
+	event endTask
+	event advance
+	event retreat
+	event tick
+}
+
+interface Outputs {
+	event move : real
+}
+
+interface Sensors {
+	var lv : real
+	var av : real
+	var reading1 : real
+	var reading2 : real
+	var reading3 : real
+}
+
+interface Actuators {
+}
+
+interface SynController_State {
+}
+
+interface Constants {
+	const threshold1 : real = 1
+	const threshold2 : real = 1
+	const threshold3 : real = 2
+}
+
+stm SynController {
+	uses Inputs uses Outputs requires SynController_State requires Constants requires Sensors
+	state M2 {
+	}
+	state M1 {
+	}
+	state M3 {
+		entry move ! 1
+	}
+	state Final {
+		entry move ! 0
+	}
+	initial i0
+	transition t_init {
+		from i0
+		to M1
+	}
+	transition t1 {
+		from M1
+		to Final
+		trigger endTask
+	}
+	transition t2 {
+		from M1
+		to M2
+		trigger advance
+		condition reading1 <= threshold1
+		action move ! 1
+	}
+	transition t3 {
+		from M1
+		to M1
+		trigger retreat
+		condition not ( reading1 <= threshold1 )
+		action move ! 0
+	}
+	transition t4 {
+		from M1
+		to M1
+		trigger tick
+	}
+	transition t5 {
+		from M2
+		to Final
+		trigger endTask
+	}
+	transition t6 {
+		from M2
+		to M3
+		trigger advance
+		condition reading2 <= threshold2
+	}
+	transition t7 {
+		from M2
+		to M1
+		trigger retreat
+		condition not ( reading2 <= threshold2 )
+		action move ! 0
+	}
+	transition t8 {
+		from M2
+		to M2
+		trigger tick
+	}
+	transition t9 {
+		from M3
+		to Final
+		trigger endTask
+	}
+	transition t10 {
+		from M3
+		to M1
+		trigger advance
+		condition reading3 <= threshold3
+		action move ! 1
+	}
+	transition t11 {
+		from M3
+		to M2
+		trigger retreat
+		condition not ( reading3 <= threshold3 )
+		action move ! 0
+	}
+	transition t12 {
+		from M3
+		to M3
+		trigger tick
+	}
+	transition t13 {
+		from Final
+		to Final
+		trigger tick
+	}
+}
+
+controller SynController_Ctrl {
+	uses Inputs uses Outputs requires SynController_State requires Constants requires Sensors
+	sref stm_ref0 = SynController
+	connection SynController_Ctrl on endTask to stm_ref0 on endTask
+	connection SynController_Ctrl on advance to stm_ref0 on advance
+	connection SynController_Ctrl on retreat to stm_ref0 on retreat
+	connection SynController_Ctrl on tick to stm_ref0 on tick
+	connection stm_ref0 on move to SynController_Ctrl on move
+}
+
+module SynController_Module {
+	robotic platform SynController_Platform {
+		provides Sensors provides Actuators provides Constants
+		event endTask
+		event advance
+		event retreat
+		event tick
+		event move : real
+	}
+	cref ctrl_ref0 = SynController_Ctrl
+	connection SynController_Platform on endTask to ctrl_ref0 on endTask
+	connection SynController_Platform on advance to ctrl_ref0 on advance
+	connection SynController_Platform on retreat to ctrl_ref0 on retreat
+	connection SynController_Platform on tick to ctrl_ref0 on tick
+	connection ctrl_ref0 on move to SynController_Platform on move
+}
+

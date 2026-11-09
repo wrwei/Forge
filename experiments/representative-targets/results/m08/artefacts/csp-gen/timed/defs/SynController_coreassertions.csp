@@ -1,0 +1,52 @@
+
+--
+-- RoboChart generator version <unknown>
+-- Automatically generated on 09-11-2026 17:46:51
+--
+-- Iterated compression status: true
+-- Assertions compression status: true
+--
+
+include "core_timed_defs.csp"
+include "core_defs.csp"
+include "file_robochart_controller_defs.csp"
+include "state_timed_defs.csp"
+include "SynController.csp"
+include "robochart_defs.csp"
+include "../instantiations.csp"
+
+transparent wbisim
+channel r__
+-- generate SynController
+P_SynController = let
+	id__ = 0
+	
+	const_SynController_threshold1 = 1
+	const_SynController_threshold2 = 1
+	const_SynController_threshold3 = 2
+	const_SynController_threshold4 = 2
+	const_SynController_threshold5 = 2
+	const_SynController_threshold6 = 2
+	const_SynController_threshold7 = 3
+	
+	
+within
+	SynController::O__(
+		id__,
+		const_SynController_threshold1,
+		const_SynController_threshold2,
+		const_SynController_threshold3,
+		const_SynController_threshold4,
+		const_SynController_threshold5,
+		const_SynController_threshold6,
+		const_SynController_threshold7
+	)
+assert P_SynController :[deadlock-free]	
+assert P_SynController;RUN({r__}) :[deadlock-free]
+assert P_SynController :[deterministic]
+assert P_SynController :[divergence-free]
+-- timed deadlock free
+assert prioritise(P_SynController[[tock<-tock,tock<-tock']],<diff(Events,{tock',tock}),{tock}>)\{tock} :[divergence free [FD]]
+
+-- timelock free
+assert RUN({tock}) ||| CHAOS(diff(Events,{|tock|})) [F= P_SynController
