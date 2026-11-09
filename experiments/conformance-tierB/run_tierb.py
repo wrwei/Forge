@@ -1,4 +1,4 @@
-"""Guard-level (Tier-B) conformance enumeration for the three case studies.
+"""Guard-level (Tier-B) conformance enumeration for the three case studies (four controllers).
 
 For every mode, guard valuation and input event, compare the next mode the
 Java controller takes against the set of targets the extracted Isabelle model
@@ -30,16 +30,19 @@ def java_next(cfg, jmodes, mode, g, ev):
         return lib.lre_java_next(jmodes, mode, g, ev, cfgs.LRE_PREDS)
     if cfg["java_kind"] == "sranger":
         return lib.sr_java_next(mode, g, ev)
+    if cfg["java_kind"] == "movement":
+        return lib.mv_java_next(mode, g, ev)
     return lib.cd_java_next(mode, g, ev)
 
 def enumerate_arm(arm, thy_root, java_root):
     rows, unknown_all = [], {}
     for study, cfg in cfgs.STUDIES.items():
-        hits = glob.glob(os.path.join(thy_root, study, "**", cfg["thy"]), recursive=True)
+        sdir = cfg.get("dir", study)
+        hits = glob.glob(os.path.join(thy_root, sdir, "**", cfg["thy"]), recursive=True)
         if not hits:
-            sys.exit(f"no {cfg['thy']} under {os.path.join(thy_root, study)}")
+            sys.exit(f"no {cfg['thy']} under {os.path.join(thy_root, sdir)}")
         ops, listens = lib.parse_thy(hits[0])
-        jp = os.path.join(java_root, study, cfg["java_rel"])
+        jp = os.path.join(java_root, sdir, cfg["java_rel"])
         jmodes = lib.lre_java_chains(jp) if cfg["java_kind"] == "lre" else None
         unknown, gnames = set(), list(cfg["gvars"])
         for mode in cfg["modes"]:

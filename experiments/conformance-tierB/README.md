@@ -1,15 +1,21 @@
-# Guard-level conformance enumeration (Figure 2, Section 5.5)
+# Guard-level conformance enumeration (Section 5.5)
 
 For every mode, guard valuation and input event, the enumeration compares the
 next mode the Java controller takes with the set of targets the extracted
 Isabelle model admits. A state agrees when the admitted target set is exactly
 the Java's next mode (the current mode when nothing is enabled).
 
-| study | states | archived extraction | published extractor |
+| controller | states | archived extraction | published extractor |
 |---|--:|--:|--:|
 | LRE | 7,168 | 88.8% | 100% |
 | SRanger | 60 | 80.0% | 100% |
-| Chemical Detector | 100 | 92.0% | 100% |
+| Chemical Detector, gas analysis | 100 | 92.0% | 100% |
+| Chemical Detector, movement | 160 | – | 100% |
+
+The movement controller was added to the enumeration on 9 November 2026 (8 modes, the two
+stuck-detection guards of `AvoidingAgain`, 5 events); the archived extraction (`reference-runs/`)
+carries no theory for it, so it has a published-extractor row only. Its Java side is
+`mv_java_next` in `tierb_harness_gen.py`, transcribed from `MovementController.step()`.
 
 ## Reproducing
 

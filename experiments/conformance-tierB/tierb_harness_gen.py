@@ -275,3 +275,29 @@ def cd_java_next(mode, p, ev):
     if mode == "GasDetected":
         return "Final" if p["insAboveThr"] else "Reading"
     return "Final"
+
+
+def mv_java_next(mode, p, ev):
+    """MovementController.step() of reference-runs/chemical_detector, transcribed.
+    `tick` is not a MovementEvent case, so it falls through every event branch."""
+    if mode == "Waiting":
+        return {"stop": "Found", "turn": "Going", "resume": "Waiting"}.get(ev, "Waiting")
+    if mode == "Going":
+        return {"stop": "Found", "turn": "Going", "obstacle": "Avoiding", "resume": "Waiting"}.get(ev, "Going")
+    if mode == "Found":
+        return "Final"
+    if mode == "Avoiding":
+        return {"stop": "Found", "turn": "TryingAgain", "resume": "Waiting"}.get(ev, "Avoiding")
+    if mode == "TryingAgain":
+        return {"stop": "Found", "turn": "TryingAgain", "obstacle": "AvoidingAgain", "resume": "Waiting"}.get(ev, "TryingAgain")
+    if mode == "AvoidingAgain":
+        if ev == "stop":
+            return "Found"
+        if ev == "resume":
+            return "Waiting"
+        if p["withinStuckPeriod"] or p["distanceProgressed"]:      # makingProgress
+            return "Avoiding"
+        return "GettingOut"                                          # stuckFired
+    if mode == "GettingOut":
+        return {"stop": "Found", "turn": "Going", "resume": "Waiting"}.get(ev, "GettingOut")
+    return "Final"

@@ -69,3 +69,29 @@ STUDIES['chemical_detector'] = dict(
     java_kind='chem',
     java_rel='java/gasanalysis/GasAnalysisController.java',
 )
+
+# The Chemical Detector's second controller. Its only guards are the two stuck
+# tests read in AvoidingAgain (the Java's withinStuckPeriod and distanceProgressed;
+# stuckPeriodElapsed and distanceStagnant are their negations).
+LT = '<'
+STUDIES['chemical_detector_movement'] = dict(
+    dir='chemical_detector',
+    thy='MovementController_Beh.thy',
+    modes=["Waiting", "Going", "Found", "Avoiding", "TryingAgain", "AvoidingAgain",
+           "GettingOut", "Final"],
+    gvars=OrderedDict([("withinStuckPeriod", [False, True]),
+                       ("distanceProgressed", [False, True])]),
+    events=["stop", "turn", "resume", "obstacle", "tick"],
+    ev_thy={e: e for e in ["stop", "turn", "resume", "obstacle", "tick"]},
+    input_events={"stop", "turn", "resume", "obstacle", "tick"},
+    atoms={
+        'since(clockResetTime())' + LT + 'stuckperiod()': lambda g: g['withinStuckPeriod'],
+        '(d1 - d0)>stuckdist()':                           lambda g: g['distanceProgressed'],
+        'since(clockResetTime())' + GE + 'stuckperiod()': lambda g: not g['withinStuckPeriod'],
+        '(d1 - d0)' + LE + 'stuckdist()':                  lambda g: not g['distanceProgressed'],
+        '(since(clockResetTime())' + LT + 'stuckperiod() \\<or> (d1 - d0)>stuckdist())':
+            lambda g: g['withinStuckPeriod'] or g['distanceProgressed'],
+    },
+    java_kind='movement',
+    java_rel='java/movement/MovementController.java',
+)
