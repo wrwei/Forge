@@ -7,7 +7,7 @@ Two checks of the deterministic pipeline, with no LLM session.
   classes of their own, `A2` inside `Sensor` and `Actuator`. Each subject has its Java and the
   codegen trace used by the coverage phase.
 * `synthetic/` — `make_synthetic.py` and the five generated controllers (4, 8, 12, 16, 20
-  modes; 13–77 transitions), each with requirements and a codegen trace.
+  modes; 14–78 transitions, counting the initial one), each with requirements and a codegen trace.
 * `results/<subject>/` — `run.log`, the phase reports and `phase_timings.json` (`feedback/`),
   and every generated artefact (`artefacts/`).
 * `run_all.sh` — runs every phase on the subjects in a throw-away export of the repository.
