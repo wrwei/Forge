@@ -1,0 +1,11 @@
+include "LreController_coreassertions.csp"
+
+-- Property-mutation supplement, LRE addendum: six trace assertions on the controller state
+-- machine as checked by Phase 6b. OCM has no entry action, so traces begin with the input.
+-- Run 2: C3 includes the OCM self-transition action advVel.out.0 that follows reqVel (run 1 omitted it).
+assert P_LreController :[has trace [T]]: <LreController::reqMOM.in, LreController::advVel.out.1>
+assert P_LreController :[has trace [T]]: <LreController::reqVel.in.0>
+assert P_LreController :[has trace [T]]: <LreController::reqVel.in.0, LreController::advVel.out.0, LreController::reqHdng.in.0>
+assert P_LreController :[has trace [T]]: <LreController::advVel.out.1>
+assert P_LreController :[has trace [T]]: <LreController::reqOCM.in>
+assert P_LreController :[has trace [T]]: <LreController::endTask.in>

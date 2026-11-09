@@ -1,0 +1,8 @@
+include "SteamBoilerController_coreassertions.csp"
+-- Probe 2: is the program-ready handshake reachable at all in the checked CSP? Each assertion
+-- hides every event but one and asks whether the result is trace-equivalent to STOP, i.e.
+-- whether that event ever occurs. PASS = never occurs.
+assert STOP [T= P_SteamBoilerController \ diff(Events, {|SteamBoilerController::programReady|})
+assert STOP [T= P_SteamBoilerController \ diff(Events, {|SteamBoilerController::set_programReadySent|})
+assert STOP [T= P_SteamBoilerController \ diff(Events, {|SteamBoilerController::mode|})
+assert STOP [T= P_SteamBoilerController \ diff(Events, {|SteamBoilerController::transmission|})
