@@ -23,6 +23,7 @@ holds and how its figures were computed.
 | [`test-feedback/`](test-feedback/) | response letter | test-and-static-analysis feedback in place of verifier feedback |
 | [`steam-boiler/`](steam-boiler/) | Section 2.4 | the Steam Boiler specification as used by the pipeline, and the first run on it |
 | `regression-*/` | response letter | for each pipeline change after the first collection, every recorded Java source and every mutant re-extracted at the revision before and after |
+| [`differential-guard-check/`](differential-guard-check/) | Section 5.5 | Java step vs extracted theory on 2,184,386 concrete inputs; every disagreement comes from double vs real arithmetic |
 
 ## Reproducing the pipeline's verdicts
 
