@@ -1575,7 +1575,12 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
         // read from the executable signature; arity is preserved so
         // multi-arg methods get the right number of parameters in
         // the Dafny declaration.
-        if (target.isDefined() and target.eClass().getName() = "CtTypeAccess") {
+        // A call to a method of the controller itself (`helper()` or
+        // `this.helper()`) is abstracted like a static helper: an
+        // uninterpreted function of the controller, as the other back ends
+        // represent it.
+        if (target.isDefined() and (target.eClass().getName() = "CtTypeAccess"
+                or target.eClass().getName() = "CtThisAccess")) {
             abstractedMethods.put(methodName, "args");
             abstractedArgCount.put(methodName, args.size());
             if (not abstractedArgTypesList.containsKey(methodName)) {
@@ -1596,11 +1601,23 @@ operation formatSpoonExpr(expr : Any, abstractedMethods : Map,
             }
             if (not abstractedReturnTypes.containsKey(methodName)) {
                 var retT = "real";
+                var typedRef = false;
                 if (execRef.isDefined()) {
                     var retTypeRef = getFeature(execRef, "type");
                     if (retTypeRef.isDefined()) {
                         var rtn = getFeature(retTypeRef, "name");
-                        if (rtn.isDefined()) { retT = mapDafnyType(rtn); }
+                        if (rtn.isDefined()) { retT = mapDafnyType(rtn); typedRef = true; }
+                    }
+                }
+                // An untyped reference to the controller's own method: take the
+                // return type from the method's declaration.
+                if (not typedRef and target.eClass().getName() = "CtThisAccess") {
+                    for (mdecl in Spoon!CtMethod.all) {
+                        if (getFeature(mdecl, "name") = methodName) {
+                            var dtr = getFeature(mdecl, "type");
+                            if (dtr.isDefined() and getFeature(dtr, "name").isDefined()) { retT = mapDafnyType(getFeature(dtr, "name")); }
+                            break;
+                        }
                     }
                 }
                 abstractedReturnTypes.put(methodName, retT);
