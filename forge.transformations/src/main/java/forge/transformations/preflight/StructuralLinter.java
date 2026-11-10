@@ -591,7 +591,17 @@ public class StructuralLinter {
     private void checkDoubleAnnotation(CtElement elem, String typeName, String kind, String qualifiedName) {
         if (!("double".equals(typeName) || "Double".equals(typeName))) return;
         if (hasAnnotation(elem, ROBOCHART_TYPE)) return;
-        add("rule4_double_missing_real_annotation", "error",
+        // A record's fields are implicit: the annotation is written on the record component.
+        if (elem instanceof CtField && ((CtField<?>) elem).getDeclaringType() instanceof spoon.reflect.declaration.CtRecord) {
+            spoon.reflect.declaration.CtRecord rec = (spoon.reflect.declaration.CtRecord) ((CtField<?>) elem).getDeclaringType();
+            for (spoon.reflect.declaration.CtRecordComponent rc : rec.getRecordComponents()) {
+                if (rc.getSimpleName().equals(((CtField<?>) elem).getSimpleName()) && hasAnnotation(rc, ROBOCHART_TYPE)) return;
+            }
+        }
+        // The instructions require the annotation on every double field; on a parameter it is
+        // recommended, not required, so a missing one is reported as a warning.
+        String severity = "parameter".equals(kind) ? "warning" : "error";
+        add("rule4_double_missing_real_annotation", severity,
                 elem,
                 kind + " '" + qualifiedName + "' is a double without @RoboChartType(\"real\")",
                 "Annotate with @RoboChartType(\"real\"). Without the annotation, the formal model "

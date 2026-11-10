@@ -1879,7 +1879,17 @@ if(caseAReadsDataPlane){
 	var caseAStack: OrderedSet;
 	tr_action_string=","+tr.action.statements.at(i).left.name.name+"\\<Zprime> = "+tr.action.statements.at(i).right.inlineRender(dataDefExpr, stateVarNames, enumLiteralNames, caseAStack);
 } else {
-	tr_action_string=","+tr.action.statements.at(i).left.name.name+"\\<Zprime> = "+tr.action.statements.at(i).right.oneSideOfBianryString();
+	// A compound right-hand side (e.g. `x = x + a * b - c`) has no
+	// leaf rendering, and `oneSideOfBianryString` returns "" for it,
+	// which left an empty substitution. Render such an RHS with
+	// `inlineRender`, which covers the arithmetic and comparison
+	// operators; a leaf RHS keeps its original rendering.
+	var caseARhs = tr.action.statements.at(i).right.oneSideOfBianryString();
+	if(caseARhs.isUndefined() or caseARhs == ""){
+		var caseAStack2: OrderedSet;
+		caseARhs = tr.action.statements.at(i).right.inlineRender(dataDefExpr, stateVarNames, enumLiteralNames, caseAStack2);
+	}
+	tr_action_string=","+tr.action.statements.at(i).left.name.name+"\\<Zprime> = "+caseARhs;
 }
 
 //CASE b, there is input event, we need to use var_input instead of var
@@ -2006,7 +2016,10 @@ if(tr.target.actions.at(0).action.  isTypeOf(Assignment)){
 
 
 //CASE a, there is no input event involved in this target action
-target_action_string=tr.target.actions.at(0).action.left.name.name+"\\<Zprime> ="+tr.target.actions.at(0).action.right.oneSideOfBianryString();
+// A compound RHS has no leaf rendering (see the transition-action loop above).
+var tgtRhs1 = tr.target.actions.at(0).action.right.oneSideOfBianryString();
+if(tgtRhs1.isUndefined() or tgtRhs1 == ""){ var tgtStack1: OrderedSet; tgtRhs1 = tr.target.actions.at(0).action.right.inlineRender(dataDefExpr, stateVarNames, enumLiteralNames, tgtStack1); }
+target_action_string=tr.target.actions.at(0).action.left.name.name+"\\<Zprime> ="+tgtRhs1;
 
 //CASE b, there is input event involved, we need to use var_input instead of var
 for(p in zop_tuple.paras){
@@ -2059,7 +2072,9 @@ while(i<tr.target.actions.at(0).action.statements.size())
 if(tr.target.actions.at(0).action.statements.at(i).isTypeOf(Assignment)){
 
 //CASE a, there is no input event involved in this target action
-target_action_string=tr.target.actions.at(0).action.statements.at(i).left.name.name+"\\<Zprime> ="+tr.target.actions.at(0).action.statements.at(i).right.oneSideOfBianryString();
+var tgtRhs2 = tr.target.actions.at(0).action.statements.at(i).right.oneSideOfBianryString();
+if(tgtRhs2.isUndefined() or tgtRhs2 == ""){ var tgtStack2: OrderedSet; tgtRhs2 = tr.target.actions.at(0).action.statements.at(i).right.inlineRender(dataDefExpr, stateVarNames, enumLiteralNames, tgtStack2); }
+target_action_string=tr.target.actions.at(0).action.statements.at(i).left.name.name+"\\<Zprime> ="+tgtRhs2;
 
 //CASE b, there is input event involved, we need to use var_input instead of var
 for(p in zop_tuple.paras){

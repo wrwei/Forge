@@ -273,6 +273,13 @@ def parse_conjunction(s: str) -> list[Atom]:
             # with "(", so the paren-strip loop never fired, and the
             # `"&&" in stripped` branch re-parsed the identical string.)
             atoms.append(Atom(kind="unknown", raw=stripped))
+        elif "&&" in stripped and split_top(stripped, "&&") == [stripped]:
+            # The `&&` is not at top level and the chunk is not one parenthesised
+            # conjunction, e.g. a top-level disjunction `(A \<or> B && C) \<or> D`.
+            # Re-parsing the same string would recurse without end; a disjunction is
+            # outside this engine's decidable fragment, so per the module contract the
+            # verdict contribution is UNKNOWN.
+            atoms.append(Atom(kind="unknown", raw=stripped))
         elif "&&" in stripped:
             atoms.extend(parse_conjunction(stripped))
         else:
