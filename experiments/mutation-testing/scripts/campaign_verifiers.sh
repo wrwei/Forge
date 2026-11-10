@@ -12,7 +12,7 @@
 # Layout (written by regen_campaign.py): <campaign-dir>/out/<id>/{rct-project/csp-gen, isabelle/}
 # Outputs: <campaign-dir>/fdr4/results.csv, <campaign-dir>/isabelle/results.csv, logs beside them.
 #
-# Rules (pre-registration, paper repo review/prereg-mutation-campaign-published-extractor-2026-10-25.md):
+# Rules:
 #   FDR4: pipeline range corrections applied to a staged copy of csp-gen; determinism
 #   assertions set aside as the pipeline does; refines --format framed_json, 1200 s cap.
 #   A subject whose CSP is identical to its baseline's is not re-checked (inherits).
