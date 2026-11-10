@@ -1,23 +1,14 @@
-"""Generalised Tier-B guard-level conformance enumeration.
+"""Guard-level conformance enumeration (Section 5.5).
 
-ONE enumeration loop, ONE agreement definition, ONE Java side; the only arm
-difference is how the *triggering event* is recovered from the theory:
+For every mode, truth value of each named guard predicate and input event, compare the next mode
+the Java controller takes with the set of target modes the extracted Isabelle theory admits.
+The theory puts the triggering event in each operation's precondition as `e \\<in> offered` or
+`\\<not>(e \\<in> offered)`, with `offered \\<subseteq> listens` and each mode's `listens` set in
+the store invariant; the enumeration offers {event} when the event is in the mode's listens set,
+and nothing otherwise.
 
-  arm='prefix'  the pre-fix encoding puts no event in `pre`. The published
-                harness recovered it from the trace update `[Event e]`, and
-                ONLY for operations whose precondition is a bare `st= X`
-                (operations that carry a real guard were treated as
-                event-independent). Reproduced verbatim here.
-  arm='fixed'   the post-fix encoding puts the event in `pre` as
-                `e \\<in> offered` / `\\<not>(e \\<in> offered)`, with
-                `offered \\<subseteq> listens` and the per-state `listens` pin
-                in the zstore invariant. Tier-B instantiation (same as the
-                archived harness's reading of `triggers`):
-                offered := {event} if event in listens(state) else {}.
-
-Agreement (identical in both arms): let ADM be the set of target states of the
-enabled operations, or {mode} when none is enabled; the row agrees iff
-ADM == {java_next}.
+Agreement: let ADM be the set of target modes of the enabled operations, or {mode} when none is
+enabled; a state agrees iff ADM == {java_next}.
 """
 import re
 import itertools
@@ -132,7 +123,7 @@ def eval_atom(a, g, atom_table, unknown):
     return None
 
 
-def model_admits(ops, listens, mode, g, ev_thy, cfg, arm, unknown):
+def model_admits(ops, listens, mode, g, ev_thy, cfg, unknown):
     """Return list of enabled ops for (mode, g, event)."""
     inputs = cfg['input_events']
     out = []
@@ -141,7 +132,7 @@ def model_admits(ops, listens, mode, g, ev_thy, cfg, arm, unknown):
             continue
         ok = True
         for a in op['atoms']:
-            if arm != 'prefix' and a.startswith(NOT + "(") and (AND in a or IN in a):
+            if a.startswith(NOT + "(") and (AND in a or IN in a):
                 continue   # compound conjunct: evaluated below with the offer in scope
             v = eval_atom(a, g, cfg['atoms'], unknown)
             if v is None:
@@ -150,35 +141,19 @@ def model_admits(ops, listens, mode, g, ev_thy, cfg, arm, unknown):
                 ok = False; break
         if not ok:
             continue
-        if arm == 'prefix':
-            # Published recovery: the pre-fix `pre` carries no event, so the
-            # trigger is read off the trace update, and ONLY for operations
-            # whose precondition is a bare `st = X` (an operation carrying a
-            # real guard is guard-only, hence event-independent).  An operation
-            # with a bare pre and no *input* event in its trace (only output
-            # events, or none) is likewise ungated: its precondition is
-            # literally `st = X`, true for every event.  This is exactly the
-            # published CD_TRIG / SR_TRIG / ISO_EVENT membership test.
-            req = None
-            if not op['atoms']:
-                trace_in = [e for e in op['trace'] if e in inputs]
-                req = trace_in[0] if trace_in else None
-            if req is not None and req != ev_thy:
-                continue
-        else:
-            lset = listens.get(mode, set())
-            offered = {ev_thy} if (ev_thy is not None and ev_thy in lset) else set()
-            if any(e not in offered for e in op['presence']):
-                continue
-            if any(e in offered for e in op['absence']):
-                continue
-            # compound conjuncts (model-B Idle_X): re-evaluate every atom with the
-            # offer in scope; plain atoms give the same value as above.
-            vals = [eval_conjunct(a, g, offered, cfg['atoms'], unknown) for a in op['atoms']]
-            if any(v is None for v in vals):
-                raise ValueError(f"unrecognised conjunct in operation {op.get('name', '?')}")
-            if not all(vals):
-                continue
+        lset = listens.get(mode, set())
+        offered = {ev_thy} if (ev_thy is not None and ev_thy in lset) else set()
+        if any(e not in offered for e in op['presence']):
+            continue
+        if any(e in offered for e in op['absence']):
+            continue
+        # compound conjuncts (model-B Idle_X): re-evaluate every atom with the
+        # offer in scope; plain atoms give the same value as above.
+        vals = [eval_conjunct(a, g, offered, cfg['atoms'], unknown) for a in op['atoms']]
+        if any(v is None for v in vals):
+            raise ValueError(f"unrecognised conjunct in operation {op.get('name', '?')}")
+        if not all(vals):
+            continue
         out.append(op)
     return out
 

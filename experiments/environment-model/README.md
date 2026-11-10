@@ -29,7 +29,7 @@ Section 5.5 of the TOSEM revision.
   identical to `regenerated/` up to the order of set elements.
 - `tierB-modelB/` — the guard-level conformance enumeration (Section 5.5) on
   theories the repaired generator extracts: 100% on all three studies, and
-  exactly one operation enabled in every one of the 7,328 cells.
+  exactly one operation enabled in every cell.
 
 Summary of the decision run (all builds `Finished`, no `oops`, no warnings):
 

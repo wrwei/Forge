@@ -3,12 +3,12 @@
 
 Relation side: requirements_model_{sranger,cd_ga,cd_mv}.json (set-valued; staying
 admitted exactly when no behavioural transition is enabled).
-Model side: parse_thy / model_admits from the published Tier-B library (fixed arm).
+Model side: parse_thy from the guard-level enumeration library.
 """
 import json, os, re, sys, csv, itertools
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "conformance-tierB"))
-import tierb_harness_gen as lib
-import tierb_studies as cfgs
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "guard-level-enumeration"))
+import enumeration_lib as lib
+import enumeration_studies as cfgs
 
 # The extractor emits one Idle_<State> operation per state: the Java else branch, "no
 # transition from State".  The relations represent "no transition" as "no enabled

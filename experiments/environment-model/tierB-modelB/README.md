@@ -1,10 +1,10 @@
 # Guard-level conformance under environment model B
 
-The enumeration of `experiments/conformance-tierB` re-run on theories the
+The enumeration of `experiments/guard-level-enumeration` run on theories the
 repaired generator (environment model B) extracts from the same Java
 (`reference-runs/<study>/java`), against the same Java step function.
 
-| study | cells | model A (shipped `tierb_fixed_rows.csv`, reproduced today) | model B |
+| study | cells | model A | model B |
 |---|--:|--:|--:|
 | LRE | 7,168 | 100% | 100% |
 | SRanger | 60 | 100% | 100% |
@@ -19,9 +19,9 @@ cells exactly one operation is enabled: the extracted step relation is total
 and deterministic, as the Java step function is. The two row files differ
 only in the `model_ops`/`n_adm` columns of those 2,412 rows.
 
-The harness (`tierb_harness_gen.py`) gained one capability for this run:
+The harness (`enumeration_lib.py`) gained one capability for this run:
 `Idle_X` preconditions are conjunctions of negated conjunctions, so top-level
 conjuncts are now split with parenthesis depth and a negated conjunction is
-evaluated recursively with the offer in scope. The archived `prefix` and
-model-A `fixed` rows are reproduced byte-identically by the extended harness.
+evaluated recursively with the offer in scope. The model-A rows are reproduced
+byte-identically by the extended harness.
 `theories/<study>/` are the model-B theories enumerated here.

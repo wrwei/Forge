@@ -414,7 +414,7 @@ the prompt every session received and the scripts that set up, ran, recorded and
 each session are in `experiments/v3-preregistration/`. The mutation campaign
 (`experiments/mutation-testing/`), the requirements-conformance checks
 (`experiments/requirements-conformance/`, `experiments/blind-spec/`) and the guard-level
-enumeration (`experiments/conformance-tierB/`) were run at the same revision.
+enumeration (`experiments/guard-level-enumeration/`) were run at the same revision.
 `experiments/README.md` maps each folder to the section and table it supports.
 
 **Checks that run from this repository.**
@@ -427,7 +427,8 @@ cd forge.pipeline && python -m pytest tests        # includes the Phase 6d posit
 Phase 6d (the vacuity audit) reports blocking findings (an unsatisfiable precondition, an antecedent that never holds, an empty domain, an initial state outside the invariant, a mode or transition unreachable in the symbolic model, a constant that differs between backends) and advisory ones (unreachability under the narrowed FDR4 instantiation, narrowed singleton domains, terminal states that offer nothing, and the two generator placeholders: the Dafny class invariant `Valid()` being `true` while the per-transition `ensures` clauses carry the obligations, and the Isabelle requirement predicate `R1` being `True` with one lemma per operation preserving it, each reported with the number of obligations it accounts for).
 
 ```
-python experiments/conformance-tierB/run_tierb.py prefix   # guard-level enumeration (Section 5.5)
+bash scripts/generate_isabelle.sh /tmp/enum-thy
+python experiments/guard-level-enumeration/run_enumeration.py --thy-root /tmp/enum-thy   # guard-level enumeration (Section 5.5)
 ```
 
 ---

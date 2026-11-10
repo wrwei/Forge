@@ -1,4 +1,4 @@
-"""Per-study configuration for the generalised Tier-B enumeration.
+"""Per-study configuration for the guard-level enumeration.
 
 `events` is the enumeration universe, in the published order/spelling.
 `ev_thy` maps each enumerated event to the Isabelle Evt constructor (None =
