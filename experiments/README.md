@@ -31,6 +31,7 @@ holds and how its figures were computed.
 | [`steam-boiler/`](steam-boiler/) | Section 2.4 | the Steam Boiler specification as used by the pipeline, and the first run on it |
 | `regression-*/` | response letter | for each pipeline change after the first collection, every recorded Java source and every mutant re-extracted at the revision before and after |
 | [`differential-guard-check/`](differential-guard-check/) | Section 5.5 | Java step vs extracted theory on 2,184,386 concrete inputs; every disagreement comes from double vs real arithmetic |
+| [`fdr4-free-guards/`](fdr4-free-guards/) | Section 5.6.2(i) | FDR4 on the 15 LRE controllers with free guards: all four modes entered, the three counted assertions hold |
 
 ## Reproducing the pipeline's verdicts
 
