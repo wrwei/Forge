@@ -22,7 +22,7 @@ generated artefact was checked by its verifier. The results are those of the pip
 - `isabelle/` — `results.csv` and a `build.log` per built theory.
 - `requirements-scoring/` — the three requirements-level checks of Section 4.9 applied to the 134
   survivors, combined (`combined_verdicts.csv`); the per-instrument programs and files live with
-  their relations in `../requirements-conformance/` and `../blind-spec/`.
+  their relations in `../requirements-conformance/` and `../reference-specification/`.
 - `driver/CampaignDriver.java` — runs the extractor's phases headlessly on one source tree.
 - `scripts/regen_campaign.py` — runs the driver and the CSP generator on all 189 subjects and the Dafny
   column; `scripts/campaign_verifiers.sh` — the FDR4 and Isabelle columns (FDR4 licence and the

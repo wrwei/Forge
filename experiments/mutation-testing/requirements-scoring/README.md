@@ -7,7 +7,7 @@ The 134 mutants that survive every verifier (`../kill_table.csv`, `disposition =
 |---|---|---|
 | compiled LRE requirements relation | the mutant's `LreController_Beh.thy` | `../../requirements-conformance/run_reqconf.py` → `survivor_scoring.csv` (54 rows, 47 scoreable, 23 killed) |
 | compiled SRanger and Chemical Detector relations | `SRangerController_Beh.thy`, or `GasAnalysisController_Beh.thy` + `MovementController_Beh.thy` | `../../requirements-conformance/multi-study/score_survivors.py` → `multi_survivor_scoring.csv` (80 rows, 31 killed) |
-| independently written LRE reference specification | the mutant's Java | `../../blind-spec/blindspec3_score.py` → `blindspec3_survivor_scoring.csv` (54 rows, 32 killed) |
+| independently written LRE reference specification | the mutant's Java | `../../reference-specification/score.py` → `survivor_scoring.csv` (54 rows, 32 killed) |
 
 `combined_verdicts.csv` joins the three: one row per survivor with each instrument's scoreable and
 killed flags, `killed_by_any` and `remaining`. Totals: 63 of 134 killed by at least one check

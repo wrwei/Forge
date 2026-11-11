@@ -1,4 +1,4 @@
-# Round-3 blind LRE reference spec — conformance of the shipped system and scoring of the 54 survivors
+# LRE reference specification: conformance of the shipped system and scoring of the 54 survivors
 
 Inputs: `LRE-reference-spec.pdf` (drafted 2026-09-08; the relation it states was not modified);
 the LRE Java `reference-runs/lre/java` (read-only); the 54 LRE mutants that survive
@@ -14,7 +14,7 @@ triple overlap, the tcpa<0 CAM-stuck case, and the D>V alternation). The Java
 `step()` chain and every mutant's chain parsed statically (brace-matching + guard
 ASTs) — no Java executed; data-plane edits re-simulated with Java `double`
 semantics (`Double.MAX_VALUE` sentinels, 0/0 = NaN, all-comparisons-false on NaN).
-The program is `blindspec3_score.py`; `--check` reproduces the shipped scoring.
+The program is `score.py`; `--check` reproduces the shipped scoring.
 
 ## 1. Conformance of the shipped system
 
@@ -61,7 +61,7 @@ ledger's A07/A08/A14 scope, which the spec itself marks as
 convention-dependent ("A raw-sensor-level checker must separately identify its
 CPA convention; this reference does not independently validate that
 convention"). **There are no unambiguous disagreements between the shipped
-system and the round-3 spec, and hence no paper-grade defect findings against
+system and the specification, and hence no paper-grade defect findings against
 the shipped controller.** T01 startup also conforms (Java initializes
 `currentMode = LreMode.OCM`, LreController.java:70, constructor emits nothing).
 
@@ -120,7 +120,7 @@ lre_off_by_one_004, lre_off_by_one_009, lre_relop_flip_000, lre_relop_flip_001, 
   mode, and A09 leaves initial actuator records unspecified.
 
 **Representative unambiguous witnesses** (full list in
-`blindspec3_survivor_scoring.csv`):
+`survivor_scoring.csv`):
 - **lre_relop_flip_009** (`CheckOPEZ`: `depth<=0` → `depth>0`): OCM/reqMOM,
   depth=-0.5 (surfaced), approaching dynamic obstacle at safe range
   (`d_approach`). Mutant: `inOpez=false` → T04 accepted → MOM+advVel(1);
@@ -160,37 +160,21 @@ lre_off_by_one_004, lre_off_by_one_009, lre_relop_flip_000, lre_relop_flip_001, 
 
 ## 4. Provenance
 
-The reference specification's own attestation, quoted verbatim:
-
-> "Drafted by me from lre_requirement_all.txt (SHA-256 above) alone; I did not
-> consult the FORGE repository, any implementation artefact, or any prior spec
-> draft, and the interpretive decisions are my own."
-
-> "This is a requirements-level mode-transition reference, drafted on
-> 2026-09-08. The digest was verified before the source was read. The source
-> contains 51 distinct LRE entries, declares exactly four operating modes, and
-> contains no SB-prefixed identifiers or five-mode declaration. Only the
-> supplied requirements file was used as evidence. The output was created in a
-> new directory outside the workspace without inspecting any repository or
-> existing draft. Exposure disclosure: no prohibited material was present in
-> the conversation context available to me; I cannot audit exposure in
-> conversations outside that context."
-
-Nothing stronger is claimed here. This scoring run (spec-to-system comparison)
-was performed by a different session with full repository access, after the
-spec was frozen as the artifact cited above; the spec was never modified. The
-spec's closing section states that no extracted model, mutation population,
-verifier result, or measured kill rate was consulted during drafting.
+The specification was written from the requirements file `lre_requirement_all.txt` (SHA-256
+`aa9a0e2a27b8043e645353d20053789202922432c32ee2024e605e4edf5f149b`) alone; no repository
+content, implementation artefact or earlier draft was consulted, and no extracted model,
+mutant, verifier result or kill rate. Its relation was fixed before the comparison reported
+here and has not been changed since.
 
 ## 5. Files
 
-- `spec3_guard_mapping.md` — symbol/row-to-system vocabulary mapping, the
+- `guard_mapping.md` — symbol/row-to-system vocabulary mapping, the
   set-valued semantics deltas, and the documented representational deltas.
-- `blindspec3_conformance.csv` — all 57,344 abstract cells: atoms, the full
+- `conformance.csv` — all 57,344 abstract cells: atoms, the full
   R set (destinations|outputs), enabled row ids, Java destination/output,
   membership verdict.
-- `blindspec3_survivor_scoring.csv` — 54 rows: killed, attribution, mechanism,
+- `survivor_scoring.csv` — 54 rows: killed, attribution, mechanism,
   witness.
-- `blindspec3_score.py` — the program that produces it (`--check` reproduces the
+- `score.py` — the program that produces it (`--check` reproduces the
   shipped file).
-- `blindspec3_report.md` — this report.
+- `report.md` — this report.

@@ -413,7 +413,7 @@ code-generation instructions in `forge.assets/prompts/`; the design of the colle
 the prompt every session received and the scripts that set up, ran, recorded and audited
 each session are in `experiments/v3-preregistration/`. The mutation campaign
 (`experiments/mutation-testing/`), the requirements-conformance checks
-(`experiments/requirements-conformance/`, `experiments/blind-spec/`) and the guard-level
+(`experiments/requirements-conformance/`, `experiments/reference-specification/`) and the guard-level
 enumeration (`experiments/guard-level-enumeration/`) were run at the same revision.
 `experiments/README.md` maps each folder to the section and table it supports.
 

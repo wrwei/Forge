@@ -23,7 +23,7 @@ holds and how its figures were computed.
 | [`representative-targets/`](representative-targets/) | Section 5.4 | Library code and I/O added to the LRE (artefacts unchanged); synthetic controllers of 4–20 modes (where the verifiers stop) |
 | [`requirements-constants-check/`](requirements-constants-check/) | Section 4.9 | Every value the requirements state, checked against the code of the references, the 152 inside-boundary mutants and the 15 converged loop runs |
 | [`requirements-conformance/`](requirements-conformance/) | Section 4.9 (RQ7), Table 11, Figure 2 | the compiled requirements relations for the three studies, conformance of the shipped controllers, survivor scoring |
-| [`blind-spec/`](blind-spec/) | Section 4.9.1, Table 11 | the reference specification of the LRE written from the requirements alone, and its conformance and survivor scoring |
+| [`reference-specification/`](reference-specification/) | Section 4.9.1, Table 11 | the reference specification of the LRE written from the requirements alone, and its conformance and survivor scoring |
 | [`guard-level-enumeration/`](guard-level-enumeration/) | Section 5.5 | guard-level enumeration of the four RoboStar controllers' extracted models against their Java (7,488 states, all agree) |
 | [`final-mode-divergence/`](final-mode-divergence/) | Section 4.4 (RQ2) | a divergence between the CSP and Isabelle artefacts of one controller, and its repair |
 | [`environment-model/`](environment-model/) | Section 4.4 (RQ2) | the environment-model correction and the theories proved under it |

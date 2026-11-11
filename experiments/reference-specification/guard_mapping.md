@@ -1,9 +1,9 @@
-# Guard-vocabulary mapping — round-3 blind LRE reference spec → shipped system
+# Guard-vocabulary mapping: LRE reference specification → shipped system
 
-Scope: maps the symbols and rows of `LRE-reference-spec.md` (drafted 2026-09-08,
+Scope: maps the symbols and rows of `LRE-reference-spec.pdf` (8 September 2026,
 source SHA-256 `aa9a0e2a27b8043e645353d20053789202922432c32ee2024e605e4edf5f149b`,
-read-only) onto (a) the 11 atomic predicates of the Tier-B
-abstract enumeration, (b) the shipped Java (`reference-runs/lre/java`). All
+read-only) onto (a) the 11 atomic predicates of the guard-level
+enumeration (`../guard-level-enumeration/`), (b) the shipped Java (`reference-runs/lre/java`). All
 comparisons are static (source parsing + Python re-simulation with Java `double`
 semantics); no Java was executed.
 
@@ -26,14 +26,14 @@ semantics); no Java was executed.
 | `cda ≥ s` (T18) | | `¬cda_lt_ms` (exact reals) | `cdaAboveOrAtMinSafe` (:189) |
 
 All transition guards are Boolean combinations of the same 11 atoms as the
-previous enumerations; **no new abstract guard dimension is required**.
+guard-level enumeration; **no new abstract guard dimension is required**.
 
-## 2. The relation itself — what changed vs the previous spec
+## 2. The relation itself
 
 This spec's `R(m,e,x)` is **set-valued with no priority** (A02): the set of
 `(destination, outputs)` over ALL enabled rows T02–T18, with the explicit hold
 row `{(m, [])}` exactly when no row is enabled. Two comparison-semantics
-dimensions therefore change relative to the round-2 scoring:
+dimensions follow:
 
 1. **Membership, not equality.** Java conformance = Java's `(dest, outs)` is a
    MEMBER of `R(m,e,x)` per cell. A fixed-priority implementation "can select a
@@ -48,7 +48,7 @@ dimensions therefore change relative to the round-2 scoring:
 ## 3. Event interface and startup
 
 Spec `none` (a step without operator input) = the Java step in which every
-`instanceof` test is false = the previous enumerations' `tick`. Operator events
+`instanceof` test is false = the guard-level enumeration's `tick`. Operator events
 map 1:1 (`reqVel(v)` → `InputEvent.ReqVel`, …). T01 (power-up → OCM, no output)
 maps to the Java field initialization `currentMode = LreMode.OCM`
 (LreController.java:70); the Java constructor emits nothing — T01 conforms.
@@ -60,16 +60,16 @@ taken branch (advice is never emitted a second time on entry — same as Java).
 
 - **A05 obstacle ties**: the spec fixes smallest-identifier tie-breaking among
   equally close obstacles. Two tie configurations (`ss_tie`, `dd_tie`:
-  equidistant obstacle pairs with distinct ids) were ADDED to the concrete
-  scenario grid (8,928 scenarios total vs 8,352 previously). The shipped Java
+  equidistant obstacle pairs with distinct ids) are part of the concrete
+  scenario grid (8,928 scenarios in total). The shipped Java
   `closestStaticIndex`/`closestDynamicIndex` iterate ascending and replace only
   on strict `<`, i.e. keep the smallest id — same rule; no divergence observed.
 - **`lastVel`/`lastHdng` actuator records (A09)**: the spec declares the mode
   relation does NOT depend on them and their initial values are unspecified.
   No enumeration dimension is added; consequently the three actuator-internal
   mutants remain below R's interface (see scoring).
-- **No other extension**: `none` input, hold row, and per-row output sequences
-  were already dimensions of the round-2 machinery.
+- **No other extension**: the `none` input, the hold row and the per-row output
+  sequences are the only other dimensions.
 
 ## 5. Documented representational deltas (disclosed, not silently bridged)
 

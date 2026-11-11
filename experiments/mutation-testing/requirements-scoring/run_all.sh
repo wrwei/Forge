@@ -5,5 +5,5 @@ set -eu
 PY=${PY:-python3}
 $PY experiments/requirements-conformance/run_reqconf.py --check
 $PY experiments/requirements-conformance/multi-study/score_survivors.py --out /tmp/multi_check.csv --check
-$PY experiments/blind-spec/blindspec3_score.py --check
+$PY experiments/reference-specification/score.py --check
 $PY experiments/mutation-testing/requirements-scoring/summarize.py

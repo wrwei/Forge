@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Score the LRE mutants that survive every verifier against the independently
-written LRE reference specification, round 3 (LRE-reference-spec.pdf; paper Section 4.9.1).
+written LRE reference specification (LRE-reference-spec.pdf; paper Section 4.9.1).
 
 The specification's relation R(mode, event, observation) is the set of (destination,
 output sequence) pairs of all enabled rows T02-T18, with a hold row when none is
@@ -14,10 +14,10 @@ the mutant, and kills inside the ambiguity ledger's scope are attributed to it.
 
 The pool is experiments/mutation-testing/kill_table.csv (study == lre, disposition ==
 survived).  With --check the fresh scoring is compared row by row with the shipped
-blindspec3_survivor_scoring.csv.
+survivor_scoring.csv.
 
 Usage, from the repository root (needs numpy):
-    python3 experiments/blind-spec/blindspec3_score.py [--out FILE] [--check]
+    python3 experiments/reference-specification/score.py [--out FILE] [--check]
 """
 import argparse, re, os, csv, sys, itertools
 import numpy as np
@@ -30,18 +30,18 @@ HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.abspath(os.pat
 ap.add_argument("--forge", default=REPO, help="repository root (default: derived from this file)")
 ap.add_argument("--pool", default=os.path.join(REPO, "experiments", "mutation-testing", "kill_table.csv"), help="the campaign's kill table (lre rows with disposition == survived)")
 ap.add_argument("--exclude", default="")
-ap.add_argument("--out", default=os.path.join(HERE, "blindspec3_survivor_scoring.csv"))
-ap.add_argument("--check", action="store_true", help="compare the fresh scoring with the shipped blindspec3_survivor_scoring.csv row by row")
+ap.add_argument("--out", default=os.path.join(HERE, "survivor_scoring.csv"))
+ap.add_argument("--check", action="store_true", help="compare the fresh scoring with the shipped survivor_scoring.csv row by row")
 args = ap.parse_args()
 
 FORGE = args.forge
 BASE = os.path.join(FORGE, "reference-runs", "lre", "java")
 MUT = os.path.join(FORGE, "experiments", "mutation-testing", "mutants")
 MANIFEST = os.path.join(FORGE, "experiments", "mutation-testing", "mutants_manifest.csv")
-SHIPPED = os.path.join(FORGE, "experiments", "blind-spec", "blindspec3_survivor_scoring.csv")
+SHIPPED = os.path.join(FORGE, "experiments", "reference-specification", "survivor_scoring.csv")
 mm = {r["mutant_id"]: r for r in csv.DictReader(open(MANIFEST))}
 
-# ============ spec3 relation: SET-VALUED, no priority ============
+# ============ specification relation: SET-VALUED, no priority ============
 ATOMS = ["inOpez","vel_le_1","odc_gt_1","ocs_gt_1","cda_lt_ms","tcpa_ge_0",
          "hvel_ge_1","hdist_le_h","vdist_le_dv","vvel_ge_1","vdist_le_v"]
 EVENTS = ["reqVel","reqHdng","reqOCM","reqMOM","reqHCM","endTask","none"]
@@ -442,7 +442,7 @@ def derive_java(s, F=frozenset(), consts=(1.0,1.0,1.0,1.0)):
                 odc=odist(cdyn), ocs=odist(cstc),
                 MS=MS, HH=HH, VV=VV, DV=DV)
 
-def derive_spec3(s, consts=(1.0,1.0,1.0,1.0)):
+def derive_spec(s, consts=(1.0,1.0,1.0,1.0)):
     depth, nsv, ewv, roc, cname, obs = s
     MS, HH, VV, DV = consts
     Fs = 1.0 + max(0.0, 1.0, MS, HH, VV, DV)
@@ -581,7 +581,7 @@ def member_one(ES, me, i, code):
     return any(bool(msk[i]) and c == code for msk, c, rid in ES[me])
 
 BASE_ENVS  = [derive_java(s) for s in SCEN]
-sp = [derive_spec3(s) for s in SCEN]
+sp = [derive_spec(s) for s in SCEN]
 SPEC_ATOMS = [x[0] for x in sp]
 DOMEDGE    = np.array([x[1] for x in sp])
 SPEC_JCONV = [jconv_atoms(e) for e in BASE_ENVS]
@@ -612,7 +612,7 @@ def score_mutant(sid):
     if sid in ACTUATOR:
         return dict(mutant_id=sid, defect_class=cls, killed=False,
             attribution="not-scoreable-by-R",
-            mechanism="below-relation: actuator-internal storage; spec3's mode relation does not depend on lastVel/lastHdng records (A09), and R's outputs (emitted advice events) are unchanged",
+            mechanism="below-relation: actuator-internal storage; the specification's mode relation does not depend on lastVel/lastHdng records (A09), and R's outputs (emitted advice events) are unchanged",
             witness="")
     if sid in NOOP_DATA:
         return dict(mutant_id=sid, defect_class=cls, killed=False,
@@ -629,7 +629,7 @@ def score_mutant(sid):
         envs = [derive_java(s, frozenset(), consts) for s in SCEN]
         Aa = envs_to_arrays(envs)
         MC = java_codes_x(BASE_CTRL, Aa, NS)
-        spx = [derive_spec3(s, consts) for s in SCEN]
+        spx = [derive_spec(s, consts) for s in SCEN]
         atoms = [x[0] for x in spx]
         MDOM = np.array([x[1] for x in spx])
         jc = [jconv_atoms(e, *consts) for e in envs]
@@ -698,7 +698,7 @@ if args.check:
     dk = [r["mutant_id"] for r in common if str(r["killed"]) != ship[r["mutant_id"]]["killed"]]
     dm = [r["mutant_id"] for r in common if r["mechanism"] != ship[r["mutant_id"]]["mechanism"]]
     only = sorted(set(ship) ^ {r["mutant_id"] for r in out_rows})
-    print(f"CHECK vs shipped blindspec3_survivor_scoring.csv: {len(common)} common rows; killed differs on {len(dk)}; "
+    print(f"CHECK vs shipped survivor_scoring.csv: {len(common)} common rows; killed differs on {len(dk)}; "
           f"mechanism differs on {len(dm)}; rows only on one side: {len(only)}")
     for m_ in dk: print("  DIFF", m_, ship[m_]["killed"], "->", [r["killed"] for r in out_rows if r["mutant_id"] == m_][0])
     sys.exit(0 if (not dk and not only) else 1)

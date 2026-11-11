@@ -72,7 +72,7 @@ Produced and checked by `run_reqconf.py --check`.
 admits either order), 7 relational-operator flips and 3 off-by-one changes inside
 the computation of a guard value, which the theory carries only as the resulting
 guard; the relation's abstraction cannot distinguish them from the unmutated
-controller. The independently written specification of `../blind-spec/` reads the
+controller. The independently written specification of `../reference-specification/` reads the
 Java and kills 9 of these 10.
 
 **Not scoreable (7):** the 3 sentinel initialisers and 4 off-by-one changes whose
@@ -83,7 +83,7 @@ program or the RoboChart model, which this check does not read).
 
 - The relation is the authors' translation of the requirements; the attestation
   fixes what was compiled and when, not who could have compiled it differently.
-  The specification of `../blind-spec/` is the independently authored reference.
+  The specification of `../reference-specification/` is the independently authored reference.
 - The check compares mode-level transitions and transition-local outputs; a defect
   inside a guard's computation reaches it only when it changes the resulting guard.
 - Thresholds are bound to the implementation's declared constants, so a mutant of

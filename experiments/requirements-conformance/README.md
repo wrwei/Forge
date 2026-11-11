@@ -50,4 +50,4 @@ the unmutated one (the defect changes only the Dafny program or the RoboChart
 model) is recorded as not scoreable.
 
 The independently written reference specification of Section 4.9.1 and its
-scoring of the same 54 mutants are in [`../blind-spec/`](../blind-spec/).
+scoring of the same 54 mutants are in [`../reference-specification/`](../reference-specification/).
